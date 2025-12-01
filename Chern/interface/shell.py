@@ -155,8 +155,6 @@ def mv(source: str, destination: str) -> None:
     mv SOURCE1 SOURCE2 SOURCE3 ... DIRECTORY is not supported
     """
     source, destination = _normalize_paths(source, destination)
-    print(source)
-    print(destination)
     # Initial validation
     if not _validate_copy_operation(source, destination):
         return
