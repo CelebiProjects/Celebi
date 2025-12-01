@@ -35,7 +35,7 @@ class NavigationCommands:
             )
             # pylint: disable=attribute-defined-outside-init
             self.prompt = (
-                f"[Chern][{current_project_name}][{current_path}]\n>>>> "
+                f"[Wavelet][{current_project_name}][{current_path}]\n>>>> "
             )
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide a directory or object name. {e}")
