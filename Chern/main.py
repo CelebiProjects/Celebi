@@ -1,6 +1,6 @@
 """
     main function
-    The purpose is to start: Chern4
+    The purpose is to start: Wavelet
 
     Functions:
         cli:
@@ -20,6 +20,7 @@
         prologue:
             print the prologue
 """
+
 # pylint: disable=broad-exception-caught,import-outside-toplevel
 import os
 import logging
@@ -56,7 +57,7 @@ def start_chern_command_line():
     logger.setLevel(logging.ERROR)
 
     logger.debug("def start_chern_command_line")
-    print("Welcome to the CHERN Shell environment")
+    print("Welcome to the WAVELET Shell environment")
     print("Please type: 'helpme' to get more information")
     chern_shell = ChernShell()
     chern_shell.init()
@@ -195,37 +196,25 @@ def remove(project):
 def prologue():
     """ A prologue from the author """
     print("""
-    Chern: A data analysis management toolkit
+    Wavelet: A data analysis management toolkit
     Author: Mingrui Zhao
             2013 - 2017
           @ Center of High Energy Physics, Tsinghua University
-            2017 - now
+            2017 - 2025
           @ Department of Nuclear Physics, China Institute of Atomic Energy
             2020 - 2024
           @ Niels Bohr Institute, Copenhagen University
+            2025 - now
+          @ Peking University
     Email: mingrui.zhao@mail.labz0.org
 
-    I started the project when I was a undergraduate student in Tsinghua \
-University and working for LHCb collaboration.
-    And the software in LHCb is usually named after the Great name, such \
-as ``Gauss'' and ``Davinci''.
-    The term ``Chern''(陈) is a common surname in China and it is usually \
-written as ``Chen'' in English now.
-    The unusual spelling "Chern" is a transliteration in the old Gwoyeu \
-Romatzyh (GR) romanization used in the early twentieth century China.
-    Nowadays, when written in the form of ``Chern'', it usually refer to \
-``Shiing-Shen Chern'',
-    the great Chinese-American mathematician who made fundamental \
-contributions to differential geometry and topology.
-    The well-known ``Chern classes'', ``Chern–Gauss–Bonnet theorem'' and \
-many others are named after him.
-    This is the origin of the software name.
+
     """)
 
 
 @click.group()
 def cli_sh():
-    """ Chern command line command
+    """ wavelet command line command
     """
 
 
@@ -257,5 +246,23 @@ def sh():
 
 
 def main():
-    """Main entry point for the Chern CLI."""
+    """Main entry point for the Wavelet CLI."""
     cli()  # pylint: disable=no-value-for-parameter
+
+"""
+I started the project when I was a undergraduate student in Tsinghua \
+University and working for LHCb collaboration.
+    And the software in LHCb is usually named after the Great name, such \
+as ``Gauss'' and ``Davinci''.
+    The term ``Chern''(陈) is a common surname in China and it is usually \
+written as ``Chen'' in English now.
+    The unusual spelling "Chern" is a transliteration in the old Gwoyeu \
+Romatzyh (GR) romanization used in the early twentieth century China.
+    Nowadays, when written in the form of ``Chern'', it usually refer to \
+``Shiing-Shen Chern'',
+    the great Chinese-American mathematician who made fundamental \
+contributions to differential geometry and topology.
+    The well-known ``Chern classes'', ``Chern–Gauss–Bonnet theorem'' and \
+many others are named after him.
+    This is the origin of the software name.
+"""
