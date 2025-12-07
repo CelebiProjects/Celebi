@@ -8,6 +8,8 @@ import time
 from logging import getLogger
 
 from ..utils import csys
+from ..utils.csys import colorize_diff
+from ..utils.message import Message
 from .vobj_core import Core
 from .vimpression import VImpression
 from .chern_cache import ChernCache
@@ -323,30 +325,6 @@ class ImpressionManagement(Core):
         def is_parent(parent_uuid, child_uuid):
             return parent_uuid in VImpression(child_uuid).parents()
 
-        def colorize_diff(diff_lines):
-            # ANSI color codes for terminal output
-            _red = "\033[31m"
-            _green = "\033[32m"
-            _cyan = "\033[36m"
-            _bold = "\033[1m"
-            _reset = "\033[0m"
-
-            out = []
-            for line in diff_lines:
-                if line.startswith("---") or line.startswith("+++"):
-                    out.append(_bold + _cyan + line.rstrip() + _reset)
-                elif line.startswith("@@"):
-                    out.append(_cyan + line.rstrip() + _reset)
-                elif line.startswith("-"):
-                    out.append(_red + line.rstrip() + _reset)
-                elif line.startswith("+"):
-                    out.append(_green + line.rstrip() + _reset)
-                else:
-                    out.append(line.rstrip())
-
-            return "\n".join(out)
-
-
         for r in removed_nodes:
             for a in added_nodes:
                 if is_parent(r, a):
@@ -424,9 +402,14 @@ class ImpressionManagement(Core):
 
         print("\nTrace complete.\n")
 
-    def history(self):
+    def history(self) -> Message:
         """Print all the parents of the current impression.
         """
+        message = Message()
+        message.add(f"History of impression {self.impression().short_uuid()}:(latest->oldest)\n", "title0")
         parents = self.impression().parents()
+        # reverse the order
+        parents.reverse()
         for i, uuid in enumerate(parents):
-            print(f"[{i}] {uuid}")
+            message.add(f"[{i+1}]. {uuid}\n")
+        return message
