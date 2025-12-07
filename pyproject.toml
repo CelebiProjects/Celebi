@@ -44,5 +44,4 @@ find = {}
 include-package-data = true
 
 [project.scripts]
-wavelet = "Chern.main:main"
-chern = "Chern.main:main"
+celebi = "Chern.main:main"
