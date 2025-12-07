@@ -15,7 +15,7 @@ class ChernShellBase(cmd.Cmd):
     """Base class for Chern Shell with core functionality."""
 
     intro = ''
-    prompt = '[Wavelet]'
+    prompt = '[Celebi]'
     file = None
     readline_file = None
 
@@ -53,7 +53,7 @@ class ChernShellBase(cmd.Cmd):
         current_path = os.path.relpath(
             manager.c.path, csys.project_path(manager.c.path)
         )
-        self.prompt = f"[Wavelet][{current_project_name}][{current_path}]\n>>>> "
+        self.prompt = f"[Celebi][{current_project_name}][{current_path}]\n>>>> "
 
     def cmdloop(self, intro=None):
         """Keep tab completion and catch Ctrl-C during input"""
@@ -135,7 +135,7 @@ class ChernShellBase(cmd.Cmd):
     def do_EOF(self, _: str) -> bool:  # pylint: disable=invalid-name
         """Handle EOF (Ctrl+D) to exit shell."""
         print("")
-        print("Thank you for using WAVELET")
+        print("Thank you for using Celebi")
         print(
             "Contact Mingrui Zhao (mingrui.zhao@mail.labz0.org) "
             "for any questions"
