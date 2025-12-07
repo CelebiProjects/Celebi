@@ -11,10 +11,12 @@ from typing import TYPE_CHECKING, Tuple, List
 
 from ..utils import csys
 from ..utils.message import Message
+from ..utils.csys import colorize_diff
 from ..utils import metadata
 from .vobj_core import Core
 from .chern_cache import ChernCache
 from .chern_communicator import ChernCommunicator
+import difflib
 
 if TYPE_CHECKING:
     from .vobject import VObject
@@ -418,7 +420,7 @@ class FileManagement(Core):
                 # if in the outside directory
                 if self.relative_path(succ_object.path).startswith(".."):
                     new_object.add_arc_to(succ_object)
-                    succ_object.remove_arc_from(self)
+                    succ_object.remove_arc_from(obj)
                     alias = succ_object.path_to_alias(obj.invariant_path())
                     succ_object.remove_alias(alias, ignore_yaml=True)
                     succ_object.set_alias(alias, new_object.invariant_path(), ignore_yaml=True)
@@ -462,7 +464,8 @@ class FileManagement(Core):
 
         shutil.copytree(self.path, new_path)
 
-        self.move_to_deal_with_arcs(queue, new_path)
+        # self.move_to_deal_with_arcs(queue, new_path)
+        self.move_to_deal_with_arcs([x for x in queue if x.object_type() != "directory"], new_path)
 
         shutil.rmtree(self.path)
 
@@ -659,5 +662,94 @@ class FileManagement(Core):
                 else:
                     # All validations passed, perform the move
                     csys.move(abspath, dest)
+
+        return message
+
+
+    def changes(self):
+        """
+        Get the changes with respect to the latest impression
+        """
+        if not self.is_task_or_algorithm():
+            message = Message()
+            message.add("This function is only available for task or algorithm.", "warning")
+            return message
+
+        message = Message()
+        impression = self.impression()
+
+        if impression.is_zombie():
+            message.add("The object has no history impressed yet.", "warning")
+            return message
+
+        # --------------------------------------------------------
+        #  Run impression diff
+        # --------------------------------------------------------
+        old_impr = impression
+
+        old_root = os.path.join(old_impr.path, "contents")
+        new_root = self.path
+
+        # --------------------------------------------------------
+        #  Compare file lists (sorted, relative paths)
+        # --------------------------------------------------------
+        old_files = []
+        new_files = []
+
+        for dirpath, _, files in os.walk(old_root):
+            for f in files:
+                rel = os.path.relpath(os.path.join(dirpath, f), old_root)
+                old_files.append(rel)
+
+        for dirpath, _, files in os.walk(new_root):
+            for f in files:
+                # Exclude all the .chern/*
+                if normpath(os.path.join(dirpath, f)).startswith(
+                    normpath(os.path.join(new_root, ".chern"))
+                ):
+                    continue
+                rel = os.path.relpath(os.path.join(dirpath, f), new_root)
+                new_files.append(rel)
+
+        old_files_set = set(old_files)
+        new_files_set = set(new_files)
+
+        common = sorted(old_files_set & new_files_set)
+        removed_files = sorted(old_files_set - new_files_set)
+        added_files   = sorted(new_files_set - old_files_set)
+
+        if added_files != removed_files:
+            message.add(f"Added files: ", "title0")
+            message.add(f"{added_files}\n", "info")
+            message.add(f"Removed files: ", "title0")
+            message.add(f"{removed_files}\n", "info")
+
+        # --------------------------------------------------------
+        #  Diff common files
+        # --------------------------------------------------------
+        for rel in common:
+            old_f = os.path.join(old_root, rel)
+            new_f = os.path.join(new_root, rel)
+
+            try:
+                with open(old_f, "r", encoding="utf-8", errors="ignore") as f1:
+                    old_txt = f1.readlines()
+                with open(new_f, "r", encoding="utf-8", errors="ignore") as f2:
+                    new_txt = f2.readlines()
+            except Exception as e:
+                message.add(f"Failed to read file {rel}: {e}", "warning")
+                continue
+
+            diff = list(difflib.unified_diff(
+                old_txt,
+                new_txt,
+                fromfile=f"impressed:{rel}",   # ✅ fixed
+                tofile=f"current:{rel}"       # ✅ fixed
+            ))
+
+            if diff:
+                diff = colorize_diff(diff).splitlines(keepends=True)
+                message.add(f"\nDiff in file: {rel}\n", "title0")
+                message.add("".join(diff), "raw")
 
         return message
