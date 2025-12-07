@@ -1,6 +1,6 @@
 """
     main function
-    The purpose is to start: Wavelet
+    The purpose is to start: Celebi
 
     Functions:
         cli:
@@ -57,7 +57,7 @@ def start_chern_command_line():
     logger.setLevel(logging.ERROR)
 
     logger.debug("def start_chern_command_line")
-    print("Welcome to the WAVELET Shell environment")
+    print("Welcome to the CELEBI Shell environment")
     print("Please type: 'helpme' to get more information")
     chern_shell = ChernShell()
     chern_shell.init()
@@ -196,7 +196,7 @@ def remove(project):
 def prologue():
     """ A prologue from the author """
     print("""
-    Wavelet: A data analysis management toolkit
+    Celebi: A data analysis management toolkit
     Author: Mingrui Zhao
             2013 - 2017
           @ Center of High Energy Physics, Tsinghua University
@@ -214,23 +214,8 @@ def prologue():
 
 @click.group()
 def cli_sh():
-    """ wavelet command line command
+    """ celebi command line command
     """
-
-
-@cli_sh.command()
-def ls():
-    """List files in the current directory."""
-    from Chern.interface import shell
-    shell.ls("")
-
-
-@cli_sh.command()
-@click.argument("path", type=str)
-def mkdir(path):
-    """Create a directory at the specified path."""
-    from Chern.interface import shell
-    shell.mkdir(path)
 
 @cli_sh.command()
 @click.argument("project", type=str)
@@ -246,7 +231,7 @@ def sh():
 
 
 def main():
-    """Main entry point for the Wavelet CLI."""
+    """Main entry point for the Celebi CLI."""
     cli()  # pylint: disable=no-value-for-parameter
 
 """
