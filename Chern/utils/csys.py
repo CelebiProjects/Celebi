@@ -365,6 +365,30 @@ def dir_md5(directory_path):
 
     return md5_hash.hexdigest()
 
+def colorize_diff(diff_lines):
+    # ANSI color codes for terminal output
+    _red = "\033[31m"
+    _green = "\033[32m"
+    _cyan = "\033[36m"
+    _bold = "\033[1m"
+    _reset = "\033[0m"
+
+    out = []
+    for line in diff_lines:
+        if line.startswith("---") or line.startswith("+++"):
+            out.append(_bold + _cyan + line.rstrip() + _reset)
+        elif line.startswith("@@"):
+            out.append(_cyan + line.rstrip() + _reset)
+        elif line.startswith("-"):
+            out.append(_red + line.rstrip() + _reset)
+        elif line.startswith("+"):
+            out.append(_green + line.rstrip() + _reset)
+        else:
+            out.append(line.rstrip())
+
+    return "\n".join(out)
+
+
 
 @contextmanager
 def open_subprocess(command):
