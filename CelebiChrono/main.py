@@ -221,7 +221,7 @@ def cli_sh():
 @click.argument("project", type=str)
 def cd_project(project):
     """Switch to the project ``PROJECT'."""
-    from Chern.interface import shell
+    from CelebiChrono.interface import shell
     shell.cd_project(project)
 
 
@@ -233,21 +233,3 @@ def sh():
 def main():
     """Main entry point for the Celebi CLI."""
     cli()  # pylint: disable=no-value-for-parameter
-
-"""
-I started the project when I was a undergraduate student in Tsinghua \
-University and working for LHCb collaboration.
-    And the software in LHCb is usually named after the Great name, such \
-as ``Gauss'' and ``Davinci''.
-    The term ``Chern''(陈) is a common surname in China and it is usually \
-written as ``Chen'' in English now.
-    The unusual spelling "Chern" is a transliteration in the old Gwoyeu \
-Romatzyh (GR) romanization used in the early twentieth century China.
-    Nowadays, when written in the form of ``Chern'', it usually refer to \
-``Shiing-Shen Chern'',
-    the great Chinese-American mathematician who made fundamental \
-contributions to differential geometry and topology.
-    The well-known ``Chern classes'', ``Chern–Gauss–Bonnet theorem'' and \
-many others are named after him.
-    This is the origin of the software name.
-"""
