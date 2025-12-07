@@ -80,9 +80,16 @@ class AdvancedCommands:
     def do_history(self, _arg):
         """Print the history of the current object."""
         try:
-            shell.history()
+            print(shell.history().colored())
         except Exception as e:
             print(f"Error printing history: {e}")
+
+    def do_changes(self, _arg):
+        """Print the changes"""
+        try:
+            print(shell.changes().colored())
+        except Exception as e:
+            print(f"Error printing changes: {e}")
 
     def do_system_shell(self, _arg):
         """Enter a system shell (bash). Type 'exit' or Ctrl-D to return."""
