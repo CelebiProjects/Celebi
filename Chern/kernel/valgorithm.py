@@ -142,7 +142,7 @@ def create_algorithm(path: str, use_template: bool = False) -> None:
 
     with open(f"{path}/.chern/README.md", "w", encoding="utf-8") as readme_file:
         readme_file.write("Please write README for this algorithm")
-    subprocess.call(f"vim {path}/.chern/README.md", shell=True)
+    # subprocess.call(f"vim {path}/.chern/README.md", shell=True)
     if use_template:
         template_name = input("Please input the Dockerfile template type")
         print("Creating template, but ...")
