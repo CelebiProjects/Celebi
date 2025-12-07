@@ -25,7 +25,7 @@ class BasicCommands:
     def do_status(self, _: str) -> None:
         """Show status of current object."""
         try:
-            shell.status()
+            print(shell.status().colored())
         except Exception as e:
             print(f"Error showing status: {e}")
 
