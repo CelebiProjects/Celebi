@@ -6,8 +6,8 @@ import unittest
 import os
 import warnings
 from colored import Fore, Style
-import Chern.utils.csys as csys
-from Chern.kernel.chern_cache import ChernCache
+import CelebiChrono.utils.csys as csys
+from CelebiChrono.kernel.chern_cache import ChernCache
 import prepare
 
 CHERN_CACHE = ChernCache.instance()
@@ -38,12 +38,12 @@ class TestChernUtils(unittest.TestCase):
         """Test absolute path resolution"""
         print(Fore.BLUE + "Testing abspath..." + Style.RESET)
         self.assertEqual(csys.abspath('~/'), csys.abspath('~'))
-        
+
     def test_project_path(self):
         """Test project path resolution"""
         print(Fore.BLUE + "Testing project_path..." + Style.RESET)
         pwd = os.getcwd()
-        
+
         prepare.create_chern_project("demo_genfit")
         try:
             self.assertEqual(
@@ -187,14 +187,14 @@ class TestChernUtils(unittest.TestCase):
             src = "demo_genfit/Gen"
             archive = "demo_genfit/Gen"
             dst = "demo_genfit/Gen2"
-            
+
             csys.make_archive(src, archive)
-            
+
             # Suppress the deprecation warning for tar extraction
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", DeprecationWarning)
                 csys.unpack_archive(f"{archive}.tar.gz", dst)
-            
+
             self.assertTrue(os.path.exists(dst))
         finally:
             prepare.remove_chern_project("demo_genfit")

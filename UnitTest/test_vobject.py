@@ -1,8 +1,8 @@
 import os
 import unittest
 from colored import Fore, Style
-import Chern.kernel.vobject as vobj
-from Chern.kernel.chern_cache import ChernCache
+import CelebiChrono.kernel.vobject as vobj
+from CelebiChrono.kernel.chern_cache import ChernCache
 import prepare
 
 CHERN_CACHE = ChernCache.instance()

@@ -1,8 +1,8 @@
 import os
 import unittest
 from colored import Fore, Style
-import Chern.kernel.vobject as vobj
-from Chern.kernel.chern_cache import ChernCache
+import CelebiChrono.kernel.vobject as vobj
+from CelebiChrono.kernel.chern_cache import ChernCache
 import prepare
 
 CHERN_CACHE = ChernCache.instance()
@@ -10,12 +10,12 @@ CHERN_CACHE = ChernCache.instance()
 import unittest
 from io import BytesIO
 from unittest.mock import patch, mock_open, MagicMock
-from Chern.kernel.chern_communicator import ChernCommunicator
+from CelebiChrono.kernel.chern_communicator import ChernCommunicator
 import tarfile
 
 class TestChernCommunicator(unittest.TestCase):
 
-    @patch("Chern.kernel.chern_communicator.requests.get")
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_dite_status(self, mock_get):
         print(Fore.BLUE + "Testing Dite Status..." + Style.RESET)
         prepare.create_chern_project("demo_complex")
@@ -49,7 +49,7 @@ class TestChernCommunicator(unittest.TestCase):
         prepare.remove_chern_project("demo_complex")
         CHERN_CACHE.__init__()
 
-    @patch("Chern.kernel.chern_communicator.requests.get")
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_dite_info(self, mock_get):
         print(Fore.BLUE + "Testing Dite Info..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
@@ -84,7 +84,7 @@ class TestChernCommunicator(unittest.TestCase):
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()
 
-    @patch("Chern.kernel.chern_communicator.requests.get")
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_output_files(self, mock_get):
         print(Fore.BLUE + "Testing Output Files..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
@@ -117,7 +117,7 @@ class TestChernCommunicator(unittest.TestCase):
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()
 
-    @patch("Chern.kernel.chern_communicator.requests.get")
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def get_file(self, mock_get):
         print(Fore.BLUE + "Testing Get File..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
@@ -147,10 +147,10 @@ class TestChernCommunicator(unittest.TestCase):
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()
 
-    @patch("Chern.kernel.chern_communicator.requests.get")
-    @patch("Chern.kernel.chern_communicator.requests.post")
-    @patch("Chern.kernel.chern_communicator.open", new_callable=mock_open, read_data=b"filedata")
-    @patch("Chern.kernel.chern_communicator.tarfile.open")
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
+    @patch("CelebiChrono.kernel.chern_communicator.requests.post")
+    @patch("CelebiChrono.kernel.chern_communicator.open", new_callable=mock_open, read_data=b"filedata")
+    @patch("CelebiChrono.kernel.chern_communicator.tarfile.open")
     def test_deposit_with_data(
         self, mock_tarfile_open, mock_open_fn, mock_post, mock_get
     ):
@@ -216,7 +216,7 @@ class TestChernCommunicator(unittest.TestCase):
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()
 
-    @patch("Chern.kernel.chern_communicator.requests.get")
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_export(self, mock_get):
         print(Fore.BLUE + "Testing Export..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
@@ -260,7 +260,7 @@ class TestChernCommunicator(unittest.TestCase):
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()
 
-    @patch("Chern.kernel.chern_communicator.requests.get")
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_status(self, mock_get):
         print(Fore.BLUE + "Testing Status..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
@@ -309,7 +309,7 @@ class TestChernCommunicator(unittest.TestCase):
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()
 
-    @patch("Chern.kernel.chern_communicator.requests.get")
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_run_status(self, mock_get):
         print(Fore.BLUE + "Testing Run Status..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
@@ -358,7 +358,7 @@ class TestChernCommunicator(unittest.TestCase):
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()
 
-    @patch("Chern.kernel.chern_communicator.requests.get")
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_collect(self, mock_get):
         print(Fore.BLUE + "Testing Collect..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
@@ -397,9 +397,9 @@ class TestChernCommunicator(unittest.TestCase):
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()
 
-    @patch("Chern.kernel.chern_communicator.requests.get")
-    @patch("Chern.kernel.chern_communicator.requests.post")
-    @patch("Chern.kernel.chern_communicator.open", new_callable=mock_open,
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
+    @patch("CelebiChrono.kernel.chern_communicator.requests.post")
+    @patch("CelebiChrono.kernel.chern_communicator.open", new_callable=mock_open,
            read_data=b"filedata")
     def test_submit(self, mock_open_fn, mock_post, mock_get):
         print(Fore.BLUE + "Testing Submit..." + Style.RESET)
@@ -442,8 +442,8 @@ class TestChernCommunicator(unittest.TestCase):
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()
 
-    @patch("Chern.kernel.chern_communicator.requests.post")
-    @patch("Chern.kernel.chern_communicator.open", new_callable=mock_open,
+    @patch("CelebiChrono.kernel.chern_communicator.requests.post")
+    @patch("CelebiChrono.kernel.chern_communicator.open", new_callable=mock_open,
            read_data=b"filedata")
     def test_deposit(self, mock_open_fn, mock_post):
         print(Fore.BLUE + "Testing Deposit..." + Style.RESET)
@@ -473,7 +473,7 @@ class TestChernCommunicator(unittest.TestCase):
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()
 
-    @patch("Chern.kernel.chern_communicator.requests.get")
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_is_deposited(self, mock_get):
         print(Fore.BLUE + "Testing Is Deposited..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
@@ -508,7 +508,7 @@ class TestChernCommunicator(unittest.TestCase):
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()
 
-    @patch("Chern.kernel.chern_communicator.requests.get")
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_kill(self, mock_get):
         print(Fore.BLUE + "Testing Kill..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
@@ -543,7 +543,7 @@ class TestChernCommunicator(unittest.TestCase):
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()
 
-    @patch("Chern.kernel.chern_communicator.requests.get")
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_runners(self, mock_get):
         print(Fore.BLUE + "Testing Runners..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
@@ -572,7 +572,7 @@ class TestChernCommunicator(unittest.TestCase):
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()
 
-    @patch("Chern.kernel.chern_communicator.requests.post")
+    @patch("CelebiChrono.kernel.chern_communicator.requests.post")
     def test_register_runner(self, mock_post):
         print(Fore.BLUE + "Testing Register Runner..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
@@ -597,7 +597,7 @@ class TestChernCommunicator(unittest.TestCase):
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()
 
-    @patch("Chern.kernel.chern_communicator.requests.get")
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_sample_status(self, mock_get):
         print(Fore.BLUE + "Testing Sample Status..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
@@ -632,7 +632,7 @@ class TestChernCommunicator(unittest.TestCase):
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()
 
-    @patch("Chern.kernel.chern_communicator.subprocess.call")
+    @patch("CelebiChrono.kernel.chern_communicator.subprocess.call")
     def test_display(self, mock_subprocess):
         print(Fore.BLUE + "Testing Display..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
@@ -660,7 +660,7 @@ class TestChernCommunicator(unittest.TestCase):
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()
 
-    # @patch("Chern.kernel.chern_communicator.subprocess.call")
+    # @patch("CelebiChrono.kernel.chern_communicator.subprocess.call")
     # def test_impview(self, mock_subprocess):
     #     print(Fore.BLUE + "Testing Impview..." + Style.RESET)
     #     prepare.create_chern_project("demo_genfit_new")
@@ -712,7 +712,7 @@ class TestChernCommunicator(unittest.TestCase):
         prepare.remove_chern_project("demo_complex")
         CHERN_CACHE.__init__()
 
-    @patch("Chern.kernel.chern_communicator.requests.get")
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_get_file_fixed(self, mock_get):
         print(Fore.BLUE + "Testing Get File (Fixed)..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")

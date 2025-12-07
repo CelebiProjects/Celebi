@@ -2,9 +2,9 @@ import os
 import unittest
 from unittest.mock import patch, MagicMock, ANY, mock_open
 from colored import Fore, Style
-import Chern.kernel.vtask as vtsk
-from Chern.kernel.chern_cache import ChernCache
-from Chern.kernel.chern_communicator import ChernCommunicator
+import CelebiChrono.kernel.vtask as vtsk
+from CelebiChrono.kernel.chern_cache import ChernCache
+from CelebiChrono.kernel.chern_communicator import ChernCommunicator
 import prepare
 
 CHERN_CACHE = ChernCache.instance()
@@ -147,7 +147,7 @@ class TestChernVTask(unittest.TestCase):
 
             # Test export method - file not found case
             mock_communicator.export.return_value = "NOTFOUND"
-            with patch('Chern.kernel.vtask_job.logger') as mock_logger:
+            with patch('CelebiChrono.kernel.vtask_job.logger') as mock_logger:
                 obj_tsk.export(test_filename, test_output_file)
                 mock_logger.error.assert_called_once()
                 self.assertIn("not found", str(mock_logger.error.call_args))
@@ -244,7 +244,7 @@ class TestChernVTask(unittest.TestCase):
         self.assertIsNotNone(help_msg)
 
         # Test ls method (inherited from Core)
-        from Chern.kernel.vobj_file import LsParameters
+        from CelebiChrono.kernel.vobj_file import LsParameters
         ls_params = LsParameters()
         ls_result = obj_tsk.ls(ls_params)
         self.assertIsNotNone(ls_result)
@@ -418,8 +418,8 @@ class TestChernVTask(unittest.TestCase):
         test_path = "/test/input/path"
         test_md5 = "test_md5_hash_12345"
 
-        with patch('Chern.utils.csys.dir_md5') as mock_dir_md5, \
-             patch('Chern.utils.metadata.YamlFile') as mock_yaml_file:
+        with patch('CelebiChrono.utils.csys.dir_md5') as mock_dir_md5, \
+             patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml_file:
 
             mock_dir_md5.return_value = test_md5
             mock_yaml_instance = MagicMock()
@@ -504,7 +504,7 @@ class TestChernVTask(unittest.TestCase):
         self.assertIsInstance(original_md5, str)
 
         # Test with mocked YAML file content
-        with patch('Chern.utils.metadata.YamlFile') as mock_yaml_file:
+        with patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml_file:
             mock_yaml_instance = MagicMock()
             mock_yaml_file.return_value = mock_yaml_instance
             mock_yaml_instance.read_variable.return_value = "mocked_uuid_123"
@@ -521,7 +521,7 @@ class TestChernVTask(unittest.TestCase):
             self.assertEqual(md5_result, "mocked_uuid_123")
 
         # Test with missing UUID in YAML (should return default empty string)
-        with patch('Chern.utils.metadata.YamlFile') as mock_yaml_file:
+        with patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml_file:
             mock_yaml_instance = MagicMock()
             mock_yaml_file.return_value = mock_yaml_instance
             mock_yaml_instance.read_variable.return_value = ""
@@ -543,8 +543,8 @@ class TestChernVTask(unittest.TestCase):
         obj_tsk = vtsk.VTask(os.getcwd() + "/tasks/taskAna1")
 
         # Test set_input_md5 with directory that doesn't exist
-        with patch('Chern.utils.csys.dir_md5') as mock_dir_md5, \
-             patch('Chern.utils.metadata.YamlFile') as mock_yaml_file:
+        with patch('CelebiChrono.utils.csys.dir_md5') as mock_dir_md5, \
+             patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml_file:
 
             # Simulate dir_md5 raising an exception
             mock_dir_md5.side_effect = FileNotFoundError("Directory not found")
@@ -553,7 +553,7 @@ class TestChernVTask(unittest.TestCase):
                 obj_tsk.set_input_md5("/non/existent/path")
 
         # Test input_md5 with corrupted YAML file
-        with patch('Chern.utils.metadata.YamlFile') as mock_yaml_file:
+        with patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml_file:
             mock_yaml_instance = MagicMock()
             mock_yaml_file.return_value = mock_yaml_instance
             mock_yaml_instance.read_variable.side_effect = Exception(
@@ -588,8 +588,8 @@ class TestChernVTask(unittest.TestCase):
         test_path = "/test/source/path"
         test_md5 = "source_md5_hash_12345"
 
-        with patch('Chern.utils.csys.dir_md5') as mock_dir_md5, \
-             patch('Chern.utils.metadata.ConfigFile') as mock_config_file, \
+        with patch('CelebiChrono.utils.csys.dir_md5') as mock_dir_md5, \
+             patch('CelebiChrono.utils.metadata.ConfigFile') as mock_config_file, \
              patch.object(obj_tsk, 'impress') as mock_impress:
 
             mock_dir_md5.return_value = test_md5
@@ -609,7 +609,7 @@ class TestChernVTask(unittest.TestCase):
             mock_impress.assert_called_once()
 
         # Test send method
-        with patch('Chern.utils.csys.dir_md5') as mock_dir_md5, \
+        with patch('CelebiChrono.utils.csys.dir_md5') as mock_dir_md5, \
              patch.object(obj_tsk, 'set_input_md5') as mock_set_input_md5, \
              patch.object(obj_tsk, 'impress') as mock_impress, \
              patch.object(obj_tsk, 'send_data') as mock_send_data, \
@@ -776,7 +776,7 @@ class TestChernVTask(unittest.TestCase):
 
         # Test algorithm method with algorithm predecessor
         with patch.object(obj_tsk, 'predecessors') as mock_predecessors, \
-             patch('Chern.kernel.valgorithm.VAlgorithm') as mock_valgorithm:
+             patch('CelebiChrono.kernel.valgorithm.VAlgorithm') as mock_valgorithm:
 
             mock_predecessors.return_value = [
                 mock_task_pred, mock_algorithm_pred, mock_directory_pred
@@ -932,14 +932,14 @@ class TestChernVTask(unittest.TestCase):
         obj_tsk = vtsk.VTask(os.getcwd() + "/tasks/taskAna1")
 
         # Test add_source with invalid directory
-        with patch('Chern.utils.csys.dir_md5') as mock_dir_md5:
+        with patch('CelebiChrono.utils.csys.dir_md5') as mock_dir_md5:
             mock_dir_md5.side_effect = FileNotFoundError("Directory not found")
 
             with self.assertRaises(FileNotFoundError):
                 obj_tsk.add_source("/non/existent/path")
 
         # Test send with invalid directory
-        with patch('Chern.utils.csys.dir_md5') as mock_dir_md5:
+        with patch('CelebiChrono.utils.csys.dir_md5') as mock_dir_md5:
             mock_dir_md5.side_effect = PermissionError("Permission denied")
 
             with self.assertRaises(PermissionError):
@@ -980,7 +980,7 @@ class TestChernVTask(unittest.TestCase):
         obj_tsk = vtsk.VTask(os.getcwd() + "/tasks/taskAna1")
 
         # Test environment method
-        with patch('Chern.utils.metadata.YamlFile') as mock_yaml:
+        with patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml:
             mock_yaml_instance = MagicMock()
             mock_yaml.return_value = mock_yaml_instance
             mock_yaml_instance.read_variable.return_value = "ubuntu:20.04"
@@ -997,7 +997,7 @@ class TestChernVTask(unittest.TestCase):
             self.assertEqual(environment, "ubuntu:20.04")
 
         # Test memory_limit method
-        with patch('Chern.utils.metadata.YamlFile') as mock_yaml:
+        with patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml:
             mock_yaml_instance = MagicMock()
             mock_yaml.return_value = mock_yaml_instance
             mock_yaml_instance.read_variable.return_value = "1Gi"
@@ -1015,7 +1015,7 @@ class TestChernVTask(unittest.TestCase):
 
         # Test parameters method
         test_params = {"param1": "value1", "param2": "value2"}
-        with patch('Chern.utils.metadata.YamlFile') as mock_yaml:
+        with patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml:
             mock_yaml_instance = MagicMock()
             mock_yaml.return_value = mock_yaml_instance
             mock_yaml_instance.read_variable.return_value = test_params
@@ -1071,7 +1071,7 @@ class TestChernVTask(unittest.TestCase):
 
         # Test add_parameter method
         existing_params = {"existing_param": "existing_value"}
-        with patch('Chern.utils.metadata.YamlFile') as mock_yaml:
+        with patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml:
             mock_yaml_instance = MagicMock()
             mock_yaml.return_value = mock_yaml_instance
             mock_yaml_instance.read_variable.return_value = existing_params
@@ -1091,7 +1091,7 @@ class TestChernVTask(unittest.TestCase):
             )
 
         # Test add_parameter method with empty parameters
-        with patch('Chern.utils.metadata.YamlFile') as mock_yaml:
+        with patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml:
             mock_yaml_instance = MagicMock()
             mock_yaml.return_value = mock_yaml_instance
             mock_yaml_instance.read_variable.return_value = {}
@@ -1110,7 +1110,7 @@ class TestChernVTask(unittest.TestCase):
             "param2": "value2",
             "param3": "value3"
         }
-        with patch('Chern.utils.metadata.YamlFile') as mock_yaml:
+        with patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml:
             mock_yaml_instance = MagicMock()
             mock_yaml.return_value = mock_yaml_instance
             mock_yaml_instance.read_variable.return_value = existing_params
@@ -1128,8 +1128,8 @@ class TestChernVTask(unittest.TestCase):
 
         # Test remove_parameter method - non-existing parameter
         existing_params = {"param1": "value1"}
-        with patch('Chern.utils.metadata.YamlFile') as mock_yaml, \
-             patch('Chern.kernel.vtask_setting.logger') as mock_logger:
+        with patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml, \
+             patch('CelebiChrono.kernel.vtask_setting.logger') as mock_logger:
 
             mock_yaml_instance = MagicMock()
             mock_yaml.return_value = mock_yaml_instance
@@ -1176,7 +1176,7 @@ class TestChernVTask(unittest.TestCase):
             )
 
         # Test set_environment method
-        with patch('Chern.utils.metadata.YamlFile') as mock_yaml:
+        with patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml:
             mock_yaml_instance = MagicMock()
             mock_yaml.return_value = mock_yaml_instance
 
@@ -1191,7 +1191,7 @@ class TestChernVTask(unittest.TestCase):
             )
 
         # Test set_memory_limit method
-        with patch('Chern.utils.metadata.YamlFile') as mock_yaml:
+        with patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml:
             mock_yaml_instance = MagicMock()
             mock_yaml.return_value = mock_yaml_instance
 
@@ -1343,14 +1343,14 @@ class TestChernVTask(unittest.TestCase):
         obj_tsk = vtsk.VTask(os.getcwd() + "/tasks/taskAna1")
 
         # Test environment method with YAML file error
-        with patch('Chern.utils.metadata.YamlFile') as mock_yaml:
+        with patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml:
             mock_yaml.side_effect = Exception("YAML file error")
 
             with self.assertRaises(Exception):
                 obj_tsk.environment()
 
         # Test memory_limit method with YAML read error
-        with patch('Chern.utils.metadata.YamlFile') as mock_yaml:
+        with patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml:
             mock_yaml_instance = MagicMock()
             mock_yaml.return_value = mock_yaml_instance
             mock_yaml_instance.read_variable.side_effect = Exception(
@@ -1361,7 +1361,7 @@ class TestChernVTask(unittest.TestCase):
                 obj_tsk.memory_limit()
 
         # Test parameters method with YAML read error
-        with patch('Chern.utils.metadata.YamlFile') as mock_yaml:
+        with patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml:
             mock_yaml_instance = MagicMock()
             mock_yaml.return_value = mock_yaml_instance
             mock_yaml_instance.read_variable.side_effect = Exception(
@@ -1372,7 +1372,7 @@ class TestChernVTask(unittest.TestCase):
                 obj_tsk.parameters()
 
         # Test add_parameter with YAML write error
-        with patch('Chern.utils.metadata.YamlFile') as mock_yaml:
+        with patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml:
             mock_yaml_instance = MagicMock()
             mock_yaml.return_value = mock_yaml_instance
             mock_yaml_instance.read_variable.return_value = {}
@@ -1384,7 +1384,7 @@ class TestChernVTask(unittest.TestCase):
                 obj_tsk.add_parameter("test_param", "test_value")
 
         # Test set_environment with YAML write error
-        with patch('Chern.utils.metadata.YamlFile') as mock_yaml:
+        with patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml:
             mock_yaml_instance = MagicMock()
             mock_yaml.return_value = mock_yaml_instance
             mock_yaml_instance.write_variable.side_effect = Exception(
@@ -1464,8 +1464,8 @@ class TestChernVTask(unittest.TestCase):
         mock_file_path = "/path/to/test_file.txt"
 
         with patch.object(obj_tsk, 'get_file') as mock_get_file, \
-             patch('Chern.utils.csys.exists') as mock_exists, \
-             patch('Chern.kernel.vtask.open_subprocess') as \
+             patch('CelebiChrono.utils.csys.exists') as mock_exists, \
+             patch('CelebiChrono.kernel.vtask.open_subprocess') as \
              mock_open_subprocess:
 
             mock_get_file.return_value = mock_file_path
@@ -1482,7 +1482,7 @@ class TestChernVTask(unittest.TestCase):
 
         # Test view method with local file that doesn't exist
         with patch.object(obj_tsk, 'get_file') as mock_get_file, \
-             patch('Chern.utils.csys.exists') as mock_exists, \
+             patch('CelebiChrono.utils.csys.exists') as mock_exists, \
              patch('builtins.print') as mock_print:
 
             mock_get_file.return_value = mock_file_path
@@ -1500,7 +1500,7 @@ class TestChernVTask(unittest.TestCase):
         non_local_filename = "remote_file.txt"
 
         with patch.object(obj_tsk, 'get_file') as mock_get_file, \
-             patch('Chern.utils.csys.exists') as mock_exists:
+             patch('CelebiChrono.utils.csys.exists') as mock_exists:
 
             obj_tsk.view(non_local_filename)
 
@@ -1523,7 +1523,7 @@ class TestChernVTask(unittest.TestCase):
 
         # Test printed_status when not impressed
         with patch.object(obj_tsk, 'status') as mock_status, \
-             patch('Chern.kernel.vobject.VObject.printed_status') as mock_super:
+             patch('CelebiChrono.kernel.vobject.VObject.printed_status') as mock_super:
 
             mock_status.return_value = "new"
             mock_message = MagicMock()
@@ -1538,7 +1538,7 @@ class TestChernVTask(unittest.TestCase):
         # Test printed_status when impressed but dite not connected
         with patch.object(obj_tsk, 'status') as mock_status, \
              patch.object(ChernCommunicator, 'instance') as mock_instance, \
-             patch('Chern.kernel.vobject.VObject.printed_status') as mock_super:
+             patch('CelebiChrono.kernel.vobject.VObject.printed_status') as mock_super:
 
             mock_status.return_value = "impressed"
 
@@ -1562,7 +1562,7 @@ class TestChernVTask(unittest.TestCase):
         # Test printed_status when impressed and dite connected - job_status should be called
         with patch.object(obj_tsk, 'status') as mock_status, \
              patch.object(ChernCommunicator, 'instance') as mock_instance, \
-             patch('Chern.kernel.vobject.VObject.printed_status') as mock_super:
+             patch('CelebiChrono.kernel.vobject.VObject.printed_status') as mock_super:
 
             mock_status.return_value = "impressed"
 
@@ -1592,12 +1592,12 @@ class TestChernVTask(unittest.TestCase):
     #     # Test creating task in project directory
     #     test_path = "test_task"
     #
-    #     with patch('Chern.utils.csys.strip_path_string') as mock_strip, \
+    #     with patch('CelebiChrono.utils.csys.strip_path_string') as mock_strip, \
     #          patch('os.path.abspath') as mock_abspath, \
-    #          patch('Chern.kernel.vobject.VObject') as mock_vobject, \
-    #          patch('Chern.utils.csys.mkdir') as mock_mkdir, \
-    #          patch('Chern.utils.metadata.ConfigFile') as mock_config_file, \
-    #          patch('Chern.utils.metadata.YamlFile') as mock_yaml_file, \
+    #          patch('CelebiChrono.kernel.vobject.VObject') as mock_vobject, \
+    #          patch('CelebiChrono.utils.csys.mkdir') as mock_mkdir, \
+    #          patch('CelebiChrono.utils.metadata.ConfigFile') as mock_config_file, \
+    #          patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml_file, \
     #          patch('builtins.open', mock_open()) as mock_file:
     #
     #         mock_strip.return_value = test_path
@@ -1646,9 +1646,9 @@ class TestChernVTask(unittest.TestCase):
     #         )
 
     #     # Test creating task in non-project/directory parent
-    #     with patch('Chern.utils.csys.strip_path_string') as mock_strip, \
+    #     with patch('CelebiChrono.utils.csys.strip_path_string') as mock_strip, \
     #          patch('os.path.abspath') as mock_abspath, \
-    #          patch('Chern.kernel.vobject.VObject') as mock_vobject:
+    #          patch('CelebiChrono.kernel.vobject.VObject') as mock_vobject:
     #
     #         mock_strip.return_value = test_path
     #         mock_abspath.return_value = "/parent/path"
@@ -1668,12 +1668,12 @@ class TestChernVTask(unittest.TestCase):
 
     #     test_path = "test_data"
     #
-    #     with patch('Chern.utils.csys.strip_path_string') as mock_strip, \
+    #     with patch('CelebiChrono.utils.csys.strip_path_string') as mock_strip, \
     #          patch('os.path.abspath') as mock_abspath, \
-    #          patch('Chern.kernel.vobject.VObject') as mock_vobject, \
-    #          patch('Chern.utils.csys.mkdir') as mock_mkdir, \
-    #          patch('Chern.utils.metadata.ConfigFile') as mock_config_file, \
-    #          patch('Chern.utils.metadata.YamlFile') as mock_yaml_file, \
+    #          patch('CelebiChrono.kernel.vobject.VObject') as mock_vobject, \
+    #          patch('CelebiChrono.utils.csys.mkdir') as mock_mkdir, \
+    #          patch('CelebiChrono.utils.metadata.ConfigFile') as mock_config_file, \
+    #          patch('CelebiChrono.utils.metadata.YamlFile') as mock_yaml_file, \
     #          patch('builtins.open', mock_open()) as mock_file:
     #
     #         mock_strip.return_value = test_path
@@ -1718,9 +1718,9 @@ class TestChernVTask(unittest.TestCase):
     #         )
 
     #     # Test creating data in non-project/directory parent
-    #     with patch('Chern.utils.csys.strip_path_string') as mock_strip, \
+    #     with patch('CelebiChrono.utils.csys.strip_path_string') as mock_strip, \
     #          patch('os.path.abspath') as mock_abspath, \
-    #          patch('Chern.kernel.vobject.VObject') as mock_vobject:
+    #          patch('CelebiChrono.kernel.vobject.VObject') as mock_vobject:
     #
     #         mock_strip.return_value = test_path
     #         mock_abspath.return_value = "/parent/path"
