@@ -12,7 +12,7 @@ from ..kernel import vdirectory as vdir
 from ..kernel import vproject as vproj
 
 if TYPE_CHECKING:
-    from Chern.kernel.vobject import VObject
+    from ..kernel.vobject import VObject
 
 def create_object_instance(path: str) -> 'VObject':
     """ Create an object instance
