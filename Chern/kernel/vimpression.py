@@ -32,6 +32,11 @@ class VImpression():
         """
         return self.uuid
 
+    def short_uuid(self) -> str:
+        """ Get the short uuid of the impression
+        """
+        return self.uuid[:7]
+
     def is_zombie(self) -> bool:
         """ Check whether the impression is a zombie
         """
