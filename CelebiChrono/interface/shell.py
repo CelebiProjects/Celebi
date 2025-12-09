@@ -621,12 +621,14 @@ def workaround_preshell() -> tuple[bool, str]:
     return MANAGER.current_object().workaround_preshell()
 
 
-def workaround_postshell() -> None:
+def workaround_postshell(path: str) -> None:
     """Execute post-shell workaround for the current task."""
+    print("Working on postshell")
     if not MANAGER.current_object().is_task():
         print("Not able to call workaround if you are not in a task.")
         return
-    MANAGER.current_object().workaround_postshell("")
+    print(MANAGER.current_object())
+    MANAGER.current_object().workaround_postshell(path)
 
 
 def trace(impression: str) -> None:
@@ -637,6 +639,10 @@ def trace(impression: str) -> None:
 def history() -> Message:
     """Print the history of a task or algorithm."""
     return MANAGER.current_object().history()
+
+def watermark() -> Message:
+    """Print the watermark of a task or algorithm."""
+    return MANAGER.current_object().watermark()
 
 def changes() -> Message:
     """Print the changes of a task or algorithm."""
