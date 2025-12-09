@@ -167,7 +167,7 @@ class ChernCommunicator():
                 'config': "config.json"
             },
             files=files,
-            timeout=self.timeout
+            timeout=self.timeout * 1000
         )
 
     def deposit_with_data(self, impression, path): # UnitTest: DONE
@@ -196,7 +196,7 @@ class ChernCommunicator():
                 'config': "config.json"
             },
             files=files,
-            timeout=self.timeout
+            timeout=self.timeout * 1000
         )
         requests.get(
                 f"http://{url}/set-job-status/{impression.uuid}/archived",
@@ -331,6 +331,15 @@ class ChernCommunicator():
         )
         return r.text
 
+    def watermark(self, impression):
+        """ Set the water mark to the png files"""
+        url = self.serverurl()
+        r = requests.get(
+                f"http://{url}/watermark/{impression.uuid}",
+                timeout=self.timeout * 1000
+        )
+        return r.text
+
     # === Runner Management ===
     def runners(self):
         """ Get the list of runners """
@@ -430,7 +439,7 @@ class ChernCommunicator():
         url = self.serverurl()
         r = requests.get(
                 f"http://{url}/export/{impression.uuid}/{filename}",
-                timeout=self.timeout
+                timeout=self.timeout * 1000
         )
         with open(output, "wb") as f:
             f.write(r.content)
