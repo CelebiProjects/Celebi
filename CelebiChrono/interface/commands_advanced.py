@@ -61,9 +61,10 @@ class AdvancedCommands:
                 )
             else:
                 os.system(os.environ.get("SHELL", "/bin/bash"))
-            shell.workaround_postshell()
-            # Switch back to the original path
+            print("Before postshell")
             os.chdir(path)
+            shell.workaround_postshell(info)
+            # Switch back to the original path
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide a command to execute. {e}")
         except Exception as e:
@@ -90,6 +91,13 @@ class AdvancedCommands:
             print(shell.changes().colored())
         except Exception as e:
             print(f"Error printing changes: {e}")
+
+    def do_watermark(self, arg):
+        """Set the watermark"""
+        try:
+            shell.watermark()
+        except Exception as e:
+            print(f"Error handling watermark: {e}")
 
     def do_system_shell(self, _arg):
         """Enter a system shell (bash). Type 'exit' or Ctrl-D to return."""
