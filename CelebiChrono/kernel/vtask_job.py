@@ -37,6 +37,11 @@ class JobManager(Core):
         cherncc = ChernCommunicator.instance()
         cherncc.collect(self.impression())
 
+    def watermark(self):
+        """ Set the watermark to png files """
+        cherncc = ChernCommunicator.instance()
+        cherncc.watermark(self.impression())
+
     def display(self, filename):
         """ Display the file"""
         cherncc = ChernCommunicator.instance()
@@ -104,11 +109,17 @@ class JobManager(Core):
             print(pre_temp_dir)
             if pre.environment() == "rawdata":
                 for f in outputs:
+                    print("Executing:")
+                    print("cherncc.export(pre.impression(), f\"{f}\", os.path.join(pre_temp_dir, f))")
+                    print("-----------------------------------")
+                    print(pre.impression())
+                    print(f)
+                    print(os.path.join(pre_temp_dir, f))
                     cherncc.export(pre.impression(), f"{f}", os.path.join(pre_temp_dir, f))
             else:
-                csys.mkdir(os.path.join(pre_temp_dir, "outputs"))
+                csys.mkdir(os.path.join(pre_temp_dir, "stageout"))
                 for f in outputs:
-                    output_path = os.path.join(pre_temp_dir, "outputs", f)
+                    output_path = os.path.join(pre_temp_dir, "stageout", f)
                     cherncc.export(pre.impression(), f"{f}", output_path)
             alias = self.path_to_alias(pre.invariant_path())
             print(f"Linking preceding job {pre} to {alias}")
@@ -166,8 +177,10 @@ class JobManager(Core):
     def workaround_postshell(self, path) -> bool:
         """ Post-shell workaround"""
         algorithm = self.algorithm()
+        print("Post shell DEBUG")
         if algorithm:
             alg_temp_dir = os.path.join(path, "code")
+            print(alg_temp_dir)
             file_list = csys.tree_excluded(algorithm.path)
             for dirpath, _, filenames in file_list:
                 for f in filenames:
