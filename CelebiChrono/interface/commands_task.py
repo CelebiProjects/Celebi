@@ -5,6 +5,7 @@ This module contains command handlers for creating and configuring tasks,
 algorithms, and data objects.
 """
 # pylint: disable=broad-exception-caught
+import os
 from ..interface import shell
 from ..interface.ChernManager import get_manager
 
@@ -70,6 +71,34 @@ class TaskCommands:
             print(f"Error: Please provide a data name. {e}")
         except Exception as e:
             print(f"Error creating data: {e}")
+
+    def do_create_multi_data(self, arg: str) -> None:
+        """ Create multiple data """
+        try:
+            # args: path
+            # create all the folders as in path, and add the contents in each folder as data objects
+            objs = arg.split()
+            if len(objs) < 1:
+                print("Error: Please provide a path to create multiple data objects.")
+                return
+            base_path = objs[0]
+            if os.path.isdir(base_path):
+                for item in os.listdir(base_path):
+                    item_path = os.path.join(base_path, item)
+                    if not os.path.isdir(item_path):
+                        continue
+                    shell.mkdata(item)
+                    shell.cd(item)
+                    shell.send(item_path)
+                    shell.cd("..")
+            else:
+                print(f"Error: The path {base_path} is not a valid directory.")
+        except Exception as e:
+            print(f"Error creating multiple data objects: {e}")
+
+
+
+
 
     def do_add_algorithm(self, arg: str) -> None:
         """Add an algorithm to current task."""

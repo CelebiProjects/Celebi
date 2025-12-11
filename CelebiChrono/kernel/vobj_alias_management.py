@@ -50,7 +50,7 @@ class AliasManagement(Core):
         self.config_file.write_variable("alias_to_path", alias_to_path)
         self.config_file.write_variable("path_to_alias", path_to_alias)
         if not ignore_yaml:
-            yaml_file = metadata.YamlFile(os.path.join(self.path, "chern.yaml"))
+            yaml_file = metadata.YamlFile(os.path.join(self.path, "celebi.yaml"))
             yaml_alias = yaml_file.read_variable("alias", [])
             if alias in yaml_alias:
                 yaml_alias.remove(alias)
@@ -73,7 +73,7 @@ class AliasManagement(Core):
         self.config_file.write_variable("path_to_alias", path_to_alias)
         self.config_file.write_variable("alias_to_path", alias_to_path)
         if not ignore_yaml:
-            yaml_file = metadata.YamlFile(os.path.join(self.path, "chern.yaml"))
+            yaml_file = metadata.YamlFile(os.path.join(self.path, "celebi.yaml"))
             yaml_alias = yaml_file.read_variable("alias", [])
             if alias not in yaml_alias:
                 yaml_alias.append(alias)

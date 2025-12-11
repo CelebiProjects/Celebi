@@ -97,7 +97,7 @@ class Core(VObject):
             return message
 
         files = sorted(f for f in files
-            if not f.startswith(".") and f not in ["README.md", "chern.yaml"])
+            if not f.startswith(".") and f not in ["README.md", "celebi.yaml"])
         if not files:
             return message
 

@@ -70,12 +70,12 @@ def create_directory(path):
     if object_type not in ("project", "directory"):
         raise Exception("create directory only under project or directory")
     csys.mkdir(path)
-    csys.mkdir(path+"/.chern")
-    config_file = metadata.ConfigFile(f"{path}/.chern/config.json")
+    csys.mkdir(path+"/.celebi")
+    config_file = metadata.ConfigFile(f"{path}/.celebi/config.json")
     config_file.write_variable("object_type", "directory")
     directory = VObject(path)
 
-    with open(path + "/.chern/README.md", "w", encoding="utf-8") as f:
+    with open(path + "/README.md", "w", encoding="utf-8") as f:
         f.write(
             f"Please write README for the directory "
             f"{directory.invariant_path()}"

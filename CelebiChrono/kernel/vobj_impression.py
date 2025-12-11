@@ -23,7 +23,7 @@ class ImpressionManagement(Core):
     """
     def impress(self): # UnitTest: DONE
         """ Create an impression.
-        The impressions are store in a directory .chern/impressions/[uuid]
+        The impressions are store in a directory .celebi/impressions/[uuid]
         It is organized as following:
             [uuid]
             |------ contents
@@ -92,6 +92,17 @@ class ImpressionManagement(Core):
         # Check the file list is the same as the impression tree
         # if file_list != impression.tree():
         #     return False
+        # FIXME back-compatible patch
+        # all the chern.yaml -> celebi.yaml in the impression tree
+        for i in range(len(impression_tree)):
+            dirpath, dirnames, filenames = impression_tree[i]
+            new_filenames = []
+            for f in filenames:
+                if f == "chern.yaml":
+                    new_filenames.append("celebi.yaml")
+                else:
+                    new_filenames.append(f)
+            impression_tree[i] = [dirpath, dirnames, new_filenames]
         if csys.sorted_tree(file_list) != csys.sorted_tree(impression_tree):
             # print("Tree mismatch:")
             # print("Current tree:", csys.sorted_tree(file_list))

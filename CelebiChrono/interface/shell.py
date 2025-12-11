@@ -284,8 +284,8 @@ def rm_file(file_name: str) -> None:
     if file_name == "*":
         path = MANAGER.current_object().path
         for current_file in os.listdir(path):
-            # protect .chern and chern.yaml
-            if current_file in (".chern", "chern.yaml"):
+            # protect .chern and celebi.yaml
+            if current_file in (".celebi", "celebi.yaml"):
                 continue
             result = MANAGER.current_object().rm_file(current_file)
             if result.messages:  # If there are error messages
@@ -579,7 +579,7 @@ def view(browser: str = "open") -> None:
 
 def edit_script(obj: str) -> None:
     """Edit a script object using configured editor."""
-    path = os.path.join(os.environ["HOME"], ".chern", "config.yaml")
+    path = os.path.join(os.environ["HOME"], ".celebi", "config.yaml")
     yaml_file = metadata.YamlFile(path)
     editor = yaml_file.read_variable("editor", "vi")
     subprocess.call([editor, f"{MANAGER.current_object().path}/{obj}"])
@@ -590,12 +590,12 @@ def config() -> None:
     if not MANAGER.current_object().is_task_or_algorithm():
         print("Not able to config")
         return
-    path = os.path.join(os.environ["HOME"], ".chern", "config.yaml")
+    path = os.path.join(os.environ["HOME"], ".celebi", "config.yaml")
     yaml_file = metadata.YamlFile(path)
     editor = yaml_file.read_variable("editor", "vi")
     # Generate a template file if the config file does not exist
-    if not os.path.exists(f"{MANAGER.current_object().path}/chern.yaml"):
-        with open(f"{MANAGER.current_object().path}/chern.yaml", "w", encoding="utf-8") as f:
+    if not os.path.exists(f"{MANAGER.current_object().path}/celebi.yaml"):
+        with open(f"{MANAGER.current_object().path}/celebi.yaml", "w", encoding="utf-8") as f:
             if MANAGER.current_object().object_type() == "task":
                 f.write("""environment: chern
 memory_limit: 256Mi
@@ -606,7 +606,7 @@ parameters: {{}}""")
                 f.write("""environment: script
 commands:
   - echo 'Hello, world!'""")
-    subprocess.call([editor, f"{MANAGER.current_object().path}/chern.yaml"])
+    subprocess.call([editor, f"{MANAGER.current_object().path}/celebi.yaml"])
 
 def danger_call(cmd: str) -> None:
     """Execute a dangerous command and print the result."""

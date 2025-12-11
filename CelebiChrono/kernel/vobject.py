@@ -147,21 +147,21 @@ class VObject(ArcManagement, FileManagement, AliasManagement,
         Get the README String.
         I'd like it to support more
         """
-        with open(self.path+"/.chern/README.md", "r", encoding="utf-8") as f:
+        with open(self.path+"/README.md", "r", encoding="utf-8") as f:
             return f.read().strip("\n")
 
     def comment(self, line: str) -> None:
         """ Add a comment line to the README.md"""
-        with open(self.path+"/.chern/README.md", "a", encoding="utf-8") as f:
+        with open(self.path+"/README.md", "a", encoding="utf-8") as f:
             f.write(line + "\n")
 
     def edit_readme(self) -> None:
         """ Edit the README.md file of the object"""
         yaml_file = metadata.YamlFile(
-            join(os.environ["HOME"], ".chern", "config.yaml")
+            join(os.environ["HOME"], ".celebi", "config.yaml")
         )
         editor = yaml_file.read_variable("editor", "vi")
-        file_name = os.path.join(self.path, ".chern/README.md")
+        file_name = os.path.join(self.path, "./README.md")
         subprocess.call(f"{editor} {file_name}", shell=True)
 
     def get_vobject(self, path: str, project_path: str = "") -> 'VObject':

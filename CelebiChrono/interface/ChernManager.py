@@ -18,7 +18,7 @@ def create_object_instance(path: str) -> 'VObject':
     """ Create an object instance
     """
     path = csys.strip_path_string(path)
-    object_config_file = metadata.ConfigFile(path+"/.chern/config.json")
+    object_config_file = metadata.ConfigFile(path+"/.celebi/config.json")
     object_type = object_config_file.read_variable("object_type")
     vobject_class = {"algorithm":valg.VAlgorithm,
                      "task":vtsk.VTask,

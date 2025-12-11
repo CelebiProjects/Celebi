@@ -191,19 +191,19 @@ def create_task(path):
     if object_type not in ("project", "directory"):
         return
 
-    csys.mkdir(path+"/.chern")
-    config_file = metadata.ConfigFile(path + "/.chern/config.json")
+    csys.mkdir(path+"/.celebi")
+    config_file = metadata.ConfigFile(path + "/.celebi/config.json")
     config_file.write_variable("object_type", "task")
     config_file.write_variable("auto_download", True)
     config_file.write_variable("default_runner", "local")
     task = VObject(path)
 
-    # Create the default chern.yaml file
-    yaml_file = metadata.YamlFile(join(path, "chern.yaml"))
+    # Create the default celebi.yaml file
+    yaml_file = metadata.YamlFile(join(path, "celebi.yaml"))
     yaml_file.write_variable("environment", "reanahub/reana-env-root6:6.18.04")
     yaml_file.write_variable("memory_limit", "256Mi")
 
-    with open(path + "/.chern/README.md", "w", encoding="utf-8") as f:
+    with open(path + "/README.md", "w", encoding="utf-8") as f:
         f.write(f"Please write README for task {task.invariant_path()}")
 
 
@@ -216,14 +216,14 @@ def create_data(path):
     if object_type not in ("project", "directory"):
         return
 
-    csys.mkdir(path+"/.chern")
-    config_file = metadata.ConfigFile(path + "/.chern/config.json")
+    csys.mkdir(path+"/.celebi")
+    config_file = metadata.ConfigFile(path + "/.celebi/config.json")
     config_file.write_variable("object_type", "task")
     task = VObject(path)
 
-    with open(path + "/.chern/README.md", "w", encoding="utf-8") as f:
+    with open(path + "/README.md", "w", encoding="utf-8") as f:
         f.write(f"Please write README for task {task.invariant_path()}")
 
-    yaml_file = metadata.YamlFile(join(path, "chern.yaml"))
+    yaml_file = metadata.YamlFile(join(path, "celebi.yaml"))
     yaml_file.write_variable("environment", "rawdata")
     yaml_file.write_variable("uuid", "")

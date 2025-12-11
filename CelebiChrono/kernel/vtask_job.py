@@ -108,14 +108,10 @@ class JobManager(Core):
             outputs = cherncc.output_files(pre.impression())
             print(pre_temp_dir)
             if pre.environment() == "rawdata":
+                csys.mkdir(os.path.join(pre_temp_dir, "stageout"))
                 for f in outputs:
-                    print("Executing:")
-                    print("cherncc.export(pre.impression(), f\"{f}\", os.path.join(pre_temp_dir, f))")
-                    print("-----------------------------------")
-                    print(pre.impression())
-                    print(f)
-                    print(os.path.join(pre_temp_dir, f))
-                    cherncc.export(pre.impression(), f"{f}", os.path.join(pre_temp_dir, f))
+                    output_path = os.path.join(pre_temp_dir, "stageout", f)
+                    cherncc.export(pre.impression(), f"{f}", output_path)
             else:
                 csys.mkdir(os.path.join(pre_temp_dir, "stageout"))
                 for f in outputs:

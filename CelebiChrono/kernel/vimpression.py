@@ -23,7 +23,7 @@ class VImpression():
             self.uuid = csys.generate_uuid()
         else:
             self.uuid = uuid
-        self.path = csys.project_path() + "/.chern/impressions/" + self.uuid
+        self.path = csys.project_path() + "/.celebi/impressions/" + self.uuid
         self.config_file = metadata.ConfigFile(self.path+"/config.json")
         self.tarfile = self.path + "/packed" + self.uuid + ".tar.gz"
 

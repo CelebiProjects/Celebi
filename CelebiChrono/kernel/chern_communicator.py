@@ -74,7 +74,7 @@ class ChernCommunicator():
         self.timeout = 10
         project_path = csys.project_path()
         self.config_file = metadata.ConfigFile(
-            join(project_path, ".chern/hosts.json")
+            join(project_path, ".celebi/hosts.json")
             )
 
     @classmethod

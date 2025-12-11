@@ -225,7 +225,7 @@ class FileManagement(Core):
         message.add("o--> Predecessors:\n", "title0")
 
         # Sort the predecessors by alias
-        yaml_file = metadata.YamlFile(os.path.join(self.path, "chern.yaml"))
+        yaml_file = metadata.YamlFile(os.path.join(self.path, "celebi.yaml"))
         alias_list = yaml_file.read_variable("alias", [])
         predecessors.sort(
             key=lambda x: alias_list.index(self.path_to_alias(x.invariant_path()))
@@ -238,7 +238,7 @@ class FileManagement(Core):
             alias = self.path_to_alias(pred_object.invariant_path())
 
             # --- temporary alias‑list patch (delete after new version) ---
-            # yaml_file = metadata.YamlFile(os.path.join(self.path, "chern.yaml"))
+            # yaml_file = metadata.YamlFile(os.path.join(self.path, "celebi.yaml"))
             # alias_list = yaml_file.read_variable("alias", [])
             # if alias and alias not in alias_list:
             #     alias_list.append(alias)
@@ -619,9 +619,9 @@ class FileManagement(Core):
             message.add("The file should not be the task directory.", "warning")
             return message
 
-        # protect: should not remove the .chern and chern.yaml
-        if self.relative_path(abspath) in (".chern", "chern.yaml"):
-            message.add("The file should not be the .chern or chern.yaml.", "warning")
+        # protect: should not remove the .celebi and celebi.yaml
+        if self.relative_path(abspath) in (".celebi", "celebi.yaml"):
+            message.add("The file should not be the .celebi or celebi.yaml.", "warning")
             return message
 
         if os.path.isdir(abspath):
@@ -649,8 +649,8 @@ class FileManagement(Core):
                 message.add("The file should not go out of the task directory.", "warning")
             elif self.relative_path(abspath) == ".":
                 message.add("The file should not be the task directory.", "warning")
-            elif self.relative_path(abspath) in (".chern", "chern.yaml"):
-                message.add("The file should not be the .chern or chern.yaml.", "warning")
+            elif self.relative_path(abspath) in (".celebi", "celebi.yaml"):
+                message.add("The file should not be the .celebi or celebi.yaml.", "warning")
             else:
                 # Check if the destination directory exists
                 dest = self.path + "/" + dest_file
@@ -703,9 +703,9 @@ class FileManagement(Core):
 
         for dirpath, _, files in os.walk(new_root):
             for f in files:
-                # Exclude all the .chern/*
+                # Exclude all the .celebi/*
                 if normpath(os.path.join(dirpath, f)).startswith(
-                    normpath(os.path.join(new_root, ".chern"))
+                    normpath(os.path.join(new_root, ".celebi"))
                 ):
                     continue
                 rel = os.path.relpath(os.path.join(dirpath, f), new_root)

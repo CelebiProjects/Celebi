@@ -19,13 +19,13 @@ class FileManager(Core):
 
     def input_md5(self) -> str:
         """ Get the md5 of the input files"""
-        parameters_file = metadata.YamlFile(join(self.path, "chern.yaml"))
+        parameters_file = metadata.YamlFile(join(self.path, "celebi.yaml"))
         return parameters_file.read_variable("uuid", "")
 
     def set_input_md5(self, path: str) -> str:
         """ Set the md5 of the input files"""
         md5 = csys.dir_md5(path)
-        parameters_file = metadata.YamlFile(join(self.path, "chern.yaml"))
+        parameters_file = metadata.YamlFile(join(self.path, "celebi.yaml"))
         parameters_file.write_variable("uuid", md5)
         return md5
 

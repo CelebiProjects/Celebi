@@ -32,7 +32,7 @@ class ChernShellBase(cmd.Cmd):
         manager.c = manager.p
         os.chdir(current_project_path)
         self.readline_file = YamlFile(
-            os.path.join(os.environ["HOME"], ".chern", "readline.yaml")
+            os.path.join(os.environ["HOME"], ".celebi", "readline.yaml")
         )
 
     def preloop(self) -> None:
@@ -157,7 +157,7 @@ class ChernShellBase(cmd.Cmd):
         if os.path.exists(dirname):
             # Get all files in that directory
             candidates = [
-                f for f in os.listdir(dirname) if not f.startswith('.chern')
+                f for f in os.listdir(dirname) if not f.startswith(".celebi")
             ]
 
             # Filter for matches

@@ -1,6 +1,6 @@
 """ This module contains the SettingManager class which is responsible
     for managing the settings of the task.
-    It reads the settings from the chern.yaml file and provides methods
+    It reads the settings from the celebi.yaml file and provides methods
     to modify the settings. The settings include the environment, memory limit,
     parameters, auto_download, and default_runner.
     The environment is the type of data that the task is working with.
@@ -28,7 +28,7 @@ class SettingManager(Core):
         """
         Read the environment file
         """
-        parameters_file = metadata.YamlFile(join(self.path, "chern.yaml"))
+        parameters_file = metadata.YamlFile(join(self.path, "celebi.yaml"))
         environment = parameters_file.read_variable("environment", "")
         return environment
 
@@ -36,7 +36,7 @@ class SettingManager(Core):
         """
         Read the memory limit file
         """
-        parameters_file = metadata.YamlFile(join(self.path, "chern.yaml"))
+        parameters_file = metadata.YamlFile(join(self.path, "celebi.yaml"))
         memory_limit = parameters_file.read_variable(
             "memory_limit", "")
         # Backward compatibility
@@ -51,7 +51,7 @@ class SettingManager(Core):
         """
         Read the parameters file
         """
-        parameters_file = metadata.YamlFile(join(self.path, "chern.yaml"))
+        parameters_file = metadata.YamlFile(join(self.path, "celebi.yaml"))
         parameters = parameters_file.read_variable("parameters", {})
         return sorted(parameters.keys()), parameters
 
@@ -72,7 +72,7 @@ class SettingManager(Core):
         """
         Add a parameter to the parameters file
         """
-        parameters_file = metadata.YamlFile(join(self.path, "chern.yaml"))
+        parameters_file = metadata.YamlFile(join(self.path, "celebi.yaml"))
         parameters = parameters_file.read_variable("parameters", {})
         parameters[parameter] = value
         parameters_file.write_variable("parameters", parameters)
@@ -81,7 +81,7 @@ class SettingManager(Core):
         """
         Remove a parameter to the parameters file
         """
-        parameters_file = metadata.YamlFile(join(self.path, "chern.yaml"))
+        parameters_file = metadata.YamlFile(join(self.path, "celebi.yaml"))
         parameters = parameters_file.read_variable("parameters", {})
         if parameter not in parameters.keys():
             logger.warning("Parameter '%s' not found in parameters file", parameter)
@@ -105,14 +105,14 @@ class SettingManager(Core):
         """
         Set the environment
         """
-        parameters_file = metadata.YamlFile(join(self.path, "chern.yaml"))
+        parameters_file = metadata.YamlFile(join(self.path, "celebi.yaml"))
         parameters_file.write_variable("environment", environment)
 
     def set_memory_limit(self, memory_limit):
         """
         Set the memory limit
         """
-        parameters_file = metadata.YamlFile(join(self.path, "chern.yaml"))
+        parameters_file = metadata.YamlFile(join(self.path, "celebi.yaml"))
         parameters_file.write_variable("memory_limit", memory_limit)
 
     # Validation

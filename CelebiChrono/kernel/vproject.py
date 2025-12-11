@@ -29,21 +29,21 @@ class VProject(VDirectory):
         sub_objects = self.sub_objects()
         for sub_object in sub_objects:
             VObject(sub_object.path).clean_impressions()
-        csys.rm_tree(self.path+"/.chern/impressions")
+        csys.rm_tree(self.path+"/.celebi/impressions")
 
 ######################################
 # Helper functions
 def create_readme(project_path):
     """ Create the README.md and project.json file"""
-    with open(project_path+"/.chern/project.json", "w", encoding="utf-8"):
+    with open(project_path+"/.celebi/project.json", "w", encoding="utf-8"):
         pass
-    with open(project_path + "/.chern/README.md", "w", encoding="utf-8") as f:
+    with open(project_path + "/README.md", "w", encoding="utf-8") as f:
         f.write("")
 
 
 def create_configfile(project_path, uuid):
     """ Create the config file"""
-    config_file = metadata.ConfigFile(project_path+"/.chern/config.json")
+    config_file = metadata.ConfigFile(project_path+"/.celebi/config.json")
     config_file.write_variable("object_type", "project")
     config_file.write_variable("chern_version", "0.0.0")
     config_file.write_variable("project_uuid", uuid)
@@ -51,7 +51,7 @@ def create_configfile(project_path, uuid):
 
 def create_hostsfile(project_path):
     """ Create the hosts file"""
-    config_file = metadata.ConfigFile(project_path+"/.chern/hosts.json")
+    config_file = metadata.ConfigFile(project_path+"/.celebi/hosts.json")
     config_file.write_variable("serverurl", "127.0.0.1:3315")
 
 
@@ -84,7 +84,7 @@ def init_project():
 
     project_path = pwd
     uuid = csys.generate_uuid()
-    os.mkdir(project_path+"/.chern")
+    os.mkdir(project_path+"/.celebi")
     create_readme(project_path)
     create_configfile(project_path, uuid)
     create_hostsfile(project_path)
@@ -121,7 +121,7 @@ def use_project(path):
         check_project_failed(forbidden_names)
 
     project_path = path
-    config_file = metadata.ConfigFile(project_path+"/.chern/config.json")
+    config_file = metadata.ConfigFile(project_path+"/.celebi/config.json")
     object_type = config_file.read_variable("object_type", "")
     if object_type != "project":
         print("The path is not a project")

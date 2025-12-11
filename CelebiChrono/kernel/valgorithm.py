@@ -70,7 +70,7 @@ class VAlgorithm(VObject):
             message.add(status_str)
             message.add("\n")
 
-        message.append(self.print_files(self.path, excluded=(".chern", "chern.yaml", "README.md")))
+        message.append(self.print_files(self.path, excluded=(".celebi", "celebi.yaml", "README.md")))
 
         environment = self.environment()
         message.add(f"---- Environment: {environment}\n", "title0")
@@ -117,31 +117,31 @@ class VAlgorithm(VObject):
 
     def commands(self) -> List[str]:
         """ Get the commands from the yaml file """
-        yaml_file = metadata.YamlFile(os.path.join(self.path, "chern.yaml"))
+        yaml_file = metadata.YamlFile(os.path.join(self.path, "celebi.yaml"))
         return yaml_file.read_variable("commands", [])
 
     def build_commands(self) -> List[str]:
         """ Get the build commands from the yaml file """
-        yaml_file = metadata.YamlFile(os.path.join(self.path, "chern.yaml"))
+        yaml_file = metadata.YamlFile(os.path.join(self.path, "celebi.yaml"))
         return yaml_file.read_variable("build", [])
 
     def environment(self) -> str:
         """ Get the environment
         """
-        yaml_file = metadata.YamlFile(os.path.join(self.path, "chern.yaml"))
+        yaml_file = metadata.YamlFile(os.path.join(self.path, "celebi.yaml"))
         return yaml_file.read_variable("environment", "")
 
 def create_algorithm(path: str, use_template: bool = False) -> None:
     """ Create an algorithm """
     path = csys.strip_path_string(path)
     os.mkdir(path)
-    os.mkdir(f"{path}/.chern")
-    config_file = metadata.ConfigFile(f"{path}/.chern/config.json")
+    os.mkdir(f"{path}/.celebi")
+    config_file = metadata.ConfigFile(f"{path}/.celebi/config.json")
     config_file.write_variable("object_type", "algorithm")
 
-    with open(f"{path}/.chern/README.md", "w", encoding="utf-8") as readme_file:
+    with open(f"{path}/README.md", "w", encoding="utf-8") as readme_file:
         readme_file.write("Please write README for this algorithm")
-    # subprocess.call(f"vim {path}/.chern/README.md", shell=True)
+    # subprocess.call(f"vim {path}/README.md", shell=True)
     if use_template:
         template_name = input("Please input the Dockerfile template type")
         print("Creating template, but ...")
