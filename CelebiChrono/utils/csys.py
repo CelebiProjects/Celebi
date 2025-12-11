@@ -154,7 +154,7 @@ def walk(top):
     dirs = []
     names = []
     for f in d:
-        if f == ".chern":
+        if f == ".celebi":
             continue
         if f.startswith("."):
             continue
@@ -178,6 +178,10 @@ def tree_excluded(path):
     """
     file_tree = []
     for dirpath, dirnames, filenames in walk(path):
+        # Exclude README.md of path/README.md
+        if dirpath == ".":
+            if "README.md" in filenames:
+                filenames.remove("README.md")
         file_tree.append([dirpath, sorted(dirnames), sorted(filenames)])
     return sorted(file_tree)
 
@@ -200,7 +204,7 @@ def project_path(path=None):
     if not os.path.exists(path):
         return None
     while path != "/":
-        if exists(path+"/.chern/project.json"):
+        if exists(path+"/.celebi/project.json"):
             return abspath(path)
         path = abspath(path+"/..")
     return None
@@ -210,7 +214,7 @@ def dir_mtime(path):
     """ Get the latest modified time of the directory
     """
     mtime = os.path.getmtime(path)
-    if path.endswith(".chern"):
+    if path.endswith(".celebi"):
         mtime = -1
     if not os.path.isdir(path):
         return mtime
