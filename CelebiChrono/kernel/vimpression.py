@@ -1,5 +1,7 @@
 """ Helper class for impress operation
 """
+import hashlib
+import os
 from os.path import join
 from logging import getLogger
 from typing import Optional, List, TYPE_CHECKING, Any
@@ -20,7 +22,8 @@ class VImpression():
         """ Initialize the impression
         """
         if uuid is None:
-            self.uuid = csys.generate_uuid()
+            self.uuid = ""
+        # Write tree and dependencies to the configuration file
         else:
             self.uuid = uuid
         self.path = csys.project_path() + "/.celebi/impressions/" + self.uuid
@@ -151,3 +154,73 @@ class VImpression():
                 parent_impression.clean()
         self.config_file.write_variable("parents", parents)
         self.pack()
+
+    def update_uuid(self, obj: 'VObject') -> str:
+        """ Update the UUID of the object
+        """
+        dependencies = obj.pred_impressions()
+        dependencies_uuid = [dep.uuid for dep in dependencies]
+        print(obj.project_uuid())
+        new_uuid = self.generate_imp_uuid(obj.project_uuid(), obj.path, dependencies_uuid)
+        self.uuid = new_uuid
+        self.path = csys.project_path() + "/.celebi/impressions/" + self.uuid
+        self.config_file = metadata.ConfigFile(self.path+"/config.json")
+        self.tarfile = self.path + "/packed" + self.uuid + ".tar.gz"
+        return new_uuid
+
+    def generate_imp_uuid(self, project_uuid: str, directory_path: str, dependency_uuids: List[str]) -> str:
+        """
+        Generates a unique, deterministic hash based on:
+        1. A list of preceding impression UUIDs.
+        2. The contents of the directory (excluding README.md, '.', and '__' files).
+        """
+        # Use SHA-256 for better collision resistance than MD5,
+        # though MD5 is acceptable if legacy compatibility is required.
+        hasher = hashlib.md5()
+
+        hasher.update(project_uuid.encode('utf-8'))
+        # --- 1. Process Preceding Impressions ---
+        # We must sort the UUIDs to ensure the order doesn't change the resulting hash.
+        # If dep_A and dep_B are the same, [A, B] must equal [B, A].
+        for dep_uuid in sorted(dependency_uuids):
+            hasher.update(dep_uuid.encode('utf-8'))
+
+        # --- 2. Process Directory Contents ---
+        for root, dirs, files in os.walk(directory_path):
+            # Sort directories and files to ensure deterministic traversal order
+            dirs.sort()
+            files.sort()
+
+            # Filter out directories starting with . or __ to prevent traversing them
+            # modifying 'dirs' in-place affects os.walk recursion
+            dirs[:] = [d for d in dirs if not (d.startswith('.') or d.startswith('__'))]
+
+            for file_name in files:
+                # Exclusion Rules
+                if file_name == 'README.md':
+                    continue
+                if file_name.startswith('.') or file_name.startswith('__'):
+                    continue
+
+                # Calculate full path
+                file_path = os.path.join(root, file_name)
+
+                # Get relative path (so the hash is the same regardless of where
+                # the project folder is located on the disk)
+                rel_path = os.path.relpath(file_path, directory_path)
+
+                # Update hash with the relative file path (detects renames/moves)
+                print(rel_path)
+                hasher.update(rel_path.encode('utf-8'))
+
+                # Update hash with file content
+                # Reading in chunks prevents memory issues with large files
+                try:
+                    with open(file_path, 'rb') as f:
+                        while chunk := f.read(8192):
+                            hasher.update(chunk)
+                except (IOError, OSError):
+                    # Handle cases where file might be locked or unreadable
+                    pass
+
+        return hasher.hexdigest()

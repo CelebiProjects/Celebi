@@ -73,6 +73,9 @@ class ChernCommunicator():
         self.local_config_dir = csys.local_config_dir()
         self.timeout = 10
         project_path = csys.project_path()
+        self.project_uuid = metadata.ConfigFile(
+                join(project_path, ".celebi/config.json")
+            ).read_variable("project_uuid", "none")
         self.config_file = metadata.ConfigFile(
             join(project_path, ".celebi/hosts.json")
             )
@@ -141,14 +144,15 @@ class ChernCommunicator():
             f"http://{url}/upload",
             data={
                 'tarname': f"{impression.uuid}.tar.gz",
-                'config': "config.json"
+                'config': "config.json",
+                'project_uuid': self.project_uuid,
             },
             files=files,
             timeout=self.timeout
         )
         # FIXME: here we simply assume that the upload is always correct
         requests.get(
-            f"http://{url}/run/{impression.uuid}/{machine_id}",
+            f"http://{url}/run/{self.project_uuid}/{impression.uuid}/{machine_id}",
             timeout=self.timeout
         )
 
@@ -164,7 +168,8 @@ class ChernCommunicator():
             f"http://{url}/upload",
             data={
                 'tarname': f"{impression.uuid}.tar.gz",
-                'config': "config.json"
+                'config': "config.json",
+                'project_uuid': self.project_uuid,
             },
             files=files,
             timeout=self.timeout * 1000
@@ -193,13 +198,14 @@ class ChernCommunicator():
             f"http://{url}/upload",
             data={
                 'tarname': f"{impression.uuid}.tar.gz",
-                'config': "config.json"
+                'config': "config.json",
+                'project_uuid': self.project_uuid,
             },
             files=files,
             timeout=self.timeout * 1000
         )
         requests.get(
-                f"http://{url}/set-job-status/{impression.uuid}/archived",
+                f"http://{url}/set-job-status/{self.project_uuid}/{impression.uuid}/archived",
                 timeout=self.timeout
         )
 
@@ -213,7 +219,8 @@ class ChernCommunicator():
         ).text
         requests.post(
             f"http://{url}/execute",
-            data={'machine': machine_id},
+            data={'machine': machine_id,
+                  'project_uuid': self.project_uuid},
             files=files,
             timeout=self.timeout
         )
@@ -261,7 +268,7 @@ class ChernCommunicator():
         url = self.serverurl()
         try:
             r = requests.get(
-                f"http://{url}/deposited/{impression.uuid}",
+                f"http://{url}/deposited/{self.project_uuid}/{impression.uuid}",
                 timeout=self.timeout
             )
         except Exception as e:
@@ -274,7 +281,7 @@ class ChernCommunicator():
         url = self.serverurl()
         try:
             r = requests.get(
-                f"http://{url}/status/{impression.uuid}",
+                f"http://{url}/status/{self.project_uuid}/{impression.uuid}",
                 timeout=self.timeout
             )
         except Exception as e:
@@ -300,7 +307,7 @@ class ChernCommunicator():
         url = self.serverurl()
         try:
             r = requests.get(
-                f"http://{url}/workflow/{impression.uuid}",
+                f"http://{url}/workflow/{self.project_uuid}/{impression.uuid}",
                 timeout=self.timeout
             )
         except Exception as e:
@@ -314,7 +321,7 @@ class ChernCommunicator():
         url = self.serverurl()
         try:
             r = requests.get(
-                f"http://{url}/kill/{impression.uuid}",
+                f"http://{url}/kill/{self.project_uuid}/{impression.uuid}",
                 timeout=self.timeout
             )
         except Exception as e:
@@ -326,7 +333,7 @@ class ChernCommunicator():
         """ Collect the impression from the server """
         url = self.serverurl()
         r = requests.get(
-                f"http://{url}/collect/{impression.uuid}",
+                f"http://{url}/collect/{self.project_uuid}/{impression.uuid}",
                 timeout=self.timeout * 1000
         )
         return r.text
@@ -335,7 +342,7 @@ class ChernCommunicator():
         """ Set the water mark to the png files"""
         url = self.serverurl()
         r = requests.get(
-                f"http://{url}/watermark/{impression.uuid}",
+                f"http://{url}/watermark/{self.project_uuid}/{impression.uuid}",
                 timeout=self.timeout * 1000
         )
         return r.text
@@ -420,7 +427,7 @@ class ChernCommunicator():
                 timeout=self.timeout
             ).text
         r = requests.get(
-            f"http://{url}/outputs/{impression}/{machine_id}",
+            f"http://{url}/outputs/{self.project_uuid}/{impression}/{machine_id}",
             timeout=self.timeout
         )
         return r.text.split()
@@ -438,7 +445,7 @@ class ChernCommunicator():
         """ Export the file from the server """
         url = self.serverurl()
         r = requests.get(
-                f"http://{url}/export/{impression.uuid}/{filename}",
+                f"http://{url}/export/{self.project_uuid}/{impression.uuid}/{filename}",
                 timeout=self.timeout * 1000
         )
         with open(output, "wb") as f:
@@ -450,10 +457,10 @@ class ChernCommunicator():
         # Open the browser to display the file
         url = self.serverurl()
         # The browser is 'open'
-        subprocess.call(["open", f"http://{url}/export/{impression.uuid}/{filename}"
+        subprocess.call(["open", f"http://{url}/export/{self.project_uuid}/{impression.uuid}/{filename}"
             ])
 
     def impview(self, impression):
         """ View the impression in the browser """
         url = self.serverurl()
-        return f"http://{url}/imp-view/{impression.uuid}"
+        return f"http://{url}/imp-view/{self.project_uuid}/{impression.uuid}"

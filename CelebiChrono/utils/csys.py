@@ -230,7 +230,7 @@ def dir_mtime(path):
 def daemon_path():
     """ Get the daemon path
     """
-    path = os.environ["HOME"] + "/.Chern/daemon"
+    path = os.environ["HOME"] + "/.celebi/daemon"
     mkdir(path)
     return path
 
@@ -238,13 +238,13 @@ def daemon_path():
 def local_config_path():
     """ Get the local config path
     """
-    return os.environ["HOME"] + "/.Chern/config.json"
+    return os.environ["HOME"] + "/.celebi/config.json"
 
 
 def local_config_dir():
     """ Get the local config directory
     """
-    return os.environ["HOME"] + "/.Chern"
+    return os.environ["HOME"] + "/.celebi"
 
 
 # File Operations

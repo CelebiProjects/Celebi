@@ -48,7 +48,16 @@ class Core(ABC):
         """
         if not self._project_path:
             self._project_path = csys.project_path(self.path)
+            self._project_uuid = metadata.ConfigFile(
+                    os.path.join(self._project_path, ".celebi/config.json")
+                    ).read_variable("project_uuid", "")
         return self._project_path
+
+    def project_uuid(self) -> str:
+        """ Return the project UUID of this object
+        """
+        _ = self.project_path()
+        return self._project_uuid
 
     # Path handling, type and status
     def invariant_path(self) -> str: # Unittest: DONE

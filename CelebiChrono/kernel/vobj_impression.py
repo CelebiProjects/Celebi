@@ -48,6 +48,7 @@ class ImpressionManagement(Core):
             if not pred.is_impressed_fast():
                 pred.impress()
         impression = VImpression()
+        impression.update_uuid(self)
         impression.create(self)
         self.config_file.write_variable("impression", impression.uuid)
         # update the impression_consult_table, since the impression is changed

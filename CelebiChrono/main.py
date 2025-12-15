@@ -43,7 +43,7 @@ def is_first_time():
 def start_first_time():
     """ Start the first time """
     print("Starting the first time")
-    print("Creating the config directory $HOME/.Chern")
+    print("Creating the config directory $HOME/.celebi")
     csys.mkdir(csys.local_config_dir())
 
 

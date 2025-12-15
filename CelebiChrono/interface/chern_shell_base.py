@@ -171,6 +171,56 @@ class ChernShellBase(cmd.Cmd):
 
         return []
 
+    def get_completions(
+        self, current_path: str, filepath: str, _line: str
+    ) -> list:
+        """Get command completions for file paths."""
+
+        # Only special-case bare "." or ".."
+        if filepath in (".", ".."):
+            return [filepath + os.sep]
+
+        full_search_path = os.path.normpath(os.path.join(current_path, filepath))
+        user_dir = os.path.dirname(filepath)
+
+        # Trailing slash → list that directory
+        if filepath.endswith(os.sep):
+            dirname = full_search_path
+            basename = ""
+        else:
+            dirname = os.path.dirname(full_search_path)
+            basename = os.path.basename(full_search_path)
+
+        if not dirname:
+            dirname = current_path
+
+        if not os.path.isdir(dirname):
+            return []
+
+        candidates = [
+            f for f in os.listdir(dirname)
+            if not f.startswith(".celebi")
+        ]
+
+        # Prefix filtering only when basename exists
+        matches = (
+            [f for f in candidates if f.startswith(basename)]
+            if basename
+            else candidates
+        )
+
+        results = []
+        for m in matches:
+            full = os.path.join(dirname, m)
+            if os.path.isdir(full):
+                m += os.sep
+            results.append(m)
+
+        if user_dir:
+            return [os.path.join(user_dir, r) for r in results]
+
+        return results
+
     def get_completions_out(self, abspath: str, line: str) -> list:
         """Get command completions for absolute paths."""
         if os.path.exists(abspath):

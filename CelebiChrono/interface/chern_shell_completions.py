@@ -41,7 +41,7 @@ class ChernShellCompletions:
     ) -> list:
         """Complete cp command with available paths."""
         current_path = MANAGER.c.path
-        filepath = csys.strip_path_string(line[3:])
+        filepath = line[3:]
         return self.get_completions(current_path, filepath, line)
 
     def complete_setenv(

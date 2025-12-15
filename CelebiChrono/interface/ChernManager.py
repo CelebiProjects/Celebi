@@ -45,7 +45,7 @@ class ChernProjectManager:
 
     def init_global_config(self) -> None:
         """Initialize global configuration directory and paths."""
-        chern_config_path = os.environ.get("HOME") +"/.Chern"
+        chern_config_path = os.environ.get("HOME") +"/.celebi"
         if not os.path.exists(chern_config_path):
             os.mkdir(chern_config_path)
         self.global_config_path = csys.strip_path_string(chern_config_path) + "/config.json"
