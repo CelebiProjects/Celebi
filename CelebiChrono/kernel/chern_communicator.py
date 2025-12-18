@@ -225,6 +225,17 @@ class ChernCommunicator():
             timeout=self.timeout
         )
 
+    def purge(self, impressions):
+        """ Execute the impressions on the server """
+        files = {"impressions": " ".join(impressions)}
+        url = self.serverurl()
+        requests.post(
+            f"http://{url}/purge",
+            data={'project_uuid': self.project_uuid},
+            files=files,
+            timeout=self.timeout
+        )
+
     def resubmit(self, impression, machine="local"):
         """ Resubmit the impression to the server
 

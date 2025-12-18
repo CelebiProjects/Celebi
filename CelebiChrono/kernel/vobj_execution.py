@@ -59,6 +59,23 @@ class ExecutionManagement(Core):
         msg.add(f"Impressions {impressions} submitted to {runner}.", "info")
         return msg
 
+    def purge(self, runner: str = "local") -> Message:
+        """ Submit the impression to the runner. """
+        cherncc = ChernCommunicator.instance()
+        # Check the connection
+        dite_status = cherncc.dite_status()
+        if dite_status != "connected":
+            msg = Message()
+            msg.add("DITE is not connected. Please check the connection.", "warning")
+            # logger.error(msg)
+            return msg
+        self.deposit()
+        impressions = self.get_impressions()
+        cherncc.purge(impressions)
+        msg = Message()
+        msg.add(f"Impressions {impressions} purged.", "info")
+        return msg
+
     def resubmit(self, runner: str = "local") -> None:
         """ Resubmit the impression to the runner. """
         # FIXME: incomplete

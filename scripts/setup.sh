@@ -16,6 +16,13 @@ print(ls("").colored())
 EOF
 }
 
+celebi-impress() {
+python - <<'EOF'
+from CelebiChrono.interface.shell import impress
+print(impress().colored())
+EOF
+}
+
 celebi-status() {
 python - <<'EOF'
 from CelebiChrono.interface.shell import status
@@ -77,7 +84,7 @@ jobs("")
 EOF
 }
 
-celebi-mkalgorithm() {
+celebi-create-algorithm() {
 python - "$1" <<'EOF'
 from CelebiChrono.interface.shell import mkalgorithm
 import sys
@@ -85,7 +92,7 @@ mkalgorithm(sys.argv[1])
 EOF
 }
 
-celebi-mktask() {
+celebi-create-task() {
 python - "$1" <<'EOF'
 from CelebiChrono.interface.shell import mktask
 import sys
@@ -93,7 +100,7 @@ mktask(sys.argv[1])
 EOF
 }
 
-celebi-mkdata() {
+celebi-create-data() {
 python - "$1" <<'EOF'
 from CelebiChrono.interface.shell import mkdata
 import sys
@@ -340,9 +347,9 @@ alias history='celebi-history'
 alias changes='celebi-changes'
 alias jobs='celebi-jobs'
 alias cdproject='celebi-cdproject'
-alias mkalgorithm='celebi-mkalgorithm'
-alias mktask='celebi-mktask'
-alias mkdata='celebi-mkdata'
+alias create-algorithm='celebi-create-algorithm'
+alias create-task='celebi-create-task'
+alias create-data='celebi-create-data'
 alias rm='celebi-rm'
 alias rmfile='celebi-rmfile'
 alias mvfile='celebi-mvfile'
@@ -353,6 +360,6 @@ alias add-algorithm='celebi-add-algorithm'
 alias add-parameter='celebi-add-parameter'
 alias rm-parameter='celebi-rm-parameter'
 alias add-parameter-subtask='celebi-add-parameter-subtask'
-alias set-env='celebi-set-env'
-alias set-mem='celebi-set-mem'
+alias set-environment='celebi-set-env'
+alias set-memory-limit='celebi-set-mem'
 alias hosts='celebi-hosts'

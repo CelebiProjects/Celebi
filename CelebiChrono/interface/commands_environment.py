@@ -78,6 +78,15 @@ class EnvironmentCommands:
         except Exception as e:
             print(f"Error submitting: {e}")
 
+    def do_purge_impressions(self, _: str) -> None:
+        """Purge impressions current object."""
+        try:
+            shell.purge()
+        except Exception as e:
+            print(f"Error purge: {e}")
+
+
+
     def do_kill(self, _: str) -> None:
         """Kill current object process."""
         try:

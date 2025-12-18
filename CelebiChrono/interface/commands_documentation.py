@@ -49,7 +49,7 @@ class DocumentationCommands:
     def do_impress(self, _: str) -> None:
         """Create impression of current object."""
         try:
-            MANAGER.current_object().impress()
+            shell.impress()
         except Exception as e:
             print(e)
 

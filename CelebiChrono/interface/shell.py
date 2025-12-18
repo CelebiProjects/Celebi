@@ -566,6 +566,11 @@ def submit(runner: str = "local") -> None:
     message = MANAGER.current_object().submit(runner)
     print(message.colored())
 
+def purge():
+    """Purge"""
+    message = MANAGER.current_object().purge()
+    print(message.colored())
+
 
 def view(browser: str = "open") -> None:
     """View impressions for current task."""
@@ -575,6 +580,11 @@ def view(browser: str = "open") -> None:
         return
     url = MANAGER.current_object().impview()
     subprocess.call([browser, url])
+
+def impress():
+    """Create impression for current task or algorithm."""
+    message = MANAGER.current_object().impress()
+    return message
 
 
 def edit_script(obj: str) -> None:
