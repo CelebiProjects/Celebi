@@ -63,7 +63,8 @@ class VImpression():
     def clean(self) -> None:
         """ Clean the impression
         """
-        csys.rm_tree(self.path+"/contents")
+        if cys.exists(self.path+"contents"):
+            csys.rm_tree(self.path+"/contents")
 
     def upack(self) -> None:
         """ Unpack the impression
@@ -160,7 +161,6 @@ class VImpression():
         """
         dependencies = obj.pred_impressions()
         dependencies_uuid = [dep.uuid for dep in dependencies]
-        print(obj.project_uuid())
         new_uuid = self.generate_imp_uuid(obj.project_uuid(), obj.path, dependencies_uuid)
         self.uuid = new_uuid
         self.path = csys.project_path() + "/.celebi/impressions/" + self.uuid
@@ -210,7 +210,6 @@ class VImpression():
                 rel_path = os.path.relpath(file_path, directory_path)
 
                 # Update hash with the relative file path (detects renames/moves)
-                print(rel_path)
                 hasher.update(rel_path.encode('utf-8'))
 
                 # Update hash with file content
