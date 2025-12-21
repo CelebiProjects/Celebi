@@ -63,7 +63,7 @@ class VImpression():
     def clean(self) -> None:
         """ Clean the impression
         """
-        if cys.exists(self.path+"contents"):
+        if csys.exists(self.path+"contents"):
             csys.rm_tree(self.path+"/contents")
 
     def upack(self) -> None:
