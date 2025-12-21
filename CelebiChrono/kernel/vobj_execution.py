@@ -69,11 +69,26 @@ class ExecutionManagement(Core):
             msg.add("DITE is not connected. Please check the connection.", "warning")
             # logger.error(msg)
             return msg
-        self.deposit()
         impressions = self.get_impressions()
         cherncc.purge(impressions)
         msg = Message()
         msg.add(f"Impressions {impressions} purged.", "info")
+        return msg
+
+    def purge_old_impressions(self, runner: str = "local") -> Message:
+        """ Purge old impressions from the dite. """
+        cherncc = ChernCommunicator.instance()
+        # Check the connection
+        dite_status = cherncc.dite_status()
+        if dite_status != "connected":
+            msg = Message()
+            msg.add("DITE is not connected. Please check the connection.", "warning")
+            # logger.error(msg)
+            return msg
+        impressions = self.sub_objects_recursively_parents()
+        cherncc.purge(impressions)
+        msg = Message()
+        msg.add(f"Old impressions {impressions} purged.", "info")
         return msg
 
     def resubmit(self, runner: str = "local") -> None:

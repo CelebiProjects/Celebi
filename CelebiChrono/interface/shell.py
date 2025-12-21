@@ -571,6 +571,11 @@ def purge():
     message = MANAGER.current_object().purge()
     print(message.colored())
 
+def purge_old_impressions():
+    """Purge"""
+    message = MANAGER.current_object().purge_old_impressions()
+    print(message.colored())
+
 
 def view(browser: str = "open") -> None:
     """View impressions for current task."""

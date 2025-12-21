@@ -81,9 +81,26 @@ class EnvironmentCommands:
     def do_purge_impressions(self, _: str) -> None:
         """Purge impressions current object."""
         try:
+            # Ask for confirmation
+            answer = input("Are you sure you want to purge impressions? This action cannot be undone. (N/y): ")
+            if answer.lower() != 'y':
+                print("Purge impressions cancelled.")
+                return
             shell.purge()
         except Exception as e:
             print(f"Error purge: {e}")
+
+    def do_purge_old_impressions(self, _: str) -> None:
+        """Purge old impressions of current object."""
+        try:
+            # Ask for confirmation
+            answer = input("Are you sure you want to purge old impressions? This action cannot be undone. (N/y): ")
+            if answer.lower() != 'y':
+                print("Purge old impressions cancelled.")
+                return
+            shell.purge_old_impressions()
+        except Exception as e:
+            print(f"Error purging old impressions: {e}")
 
 
 

@@ -124,6 +124,10 @@ class FileManagement(Core):
                 # Parallelized subobject status checks
 
                 sub_objects = self.sub_objects()
+                # sort the objects according to (object_type: directory < algorithm < task, path)
+                # need to map the object_type to a sortable value
+                object_type_order = {"directory": 0, "algorithm": 1, "task": 2}
+                sub_objects.sort(key=lambda x: (object_type_order.get(x.object_type(), 99), x.path))
 
                 # Parallel check of subobject statuses (CPU-bound)
                 # with ProcessPoolExecutor(max_workers=8) as executor:
@@ -168,8 +172,18 @@ class FileManagement(Core):
             message.add(f"{'['+job_status+']'}")
             message.add("\n---------------\n")
             objects = []
-            for sub_object in self.sub_objects():
-                objects.append((str(sub_object), sub_object.job_status(now)))
+            sub_objects = self.sub_objects()
+            object_type_order = {"directory": 0, "algorithm": 1, "task": 2}
+            # Make the sort even smarter
+            # If the object is in the format of xxx_aaa_xxx_bbb, where some part is a number,
+            # we can sort according to the number
+            sub_objects.sort(key=lambda x: (object_type_order.get(x.object_type(), 99),
+                                                [int(part) if part.isdigit() else part
+                                                for part in os.path.basename(x.path).split('_')]))
+            for sub_object in sub_objects:
+                # only append the base name
+                objects.append((os.path.basename(sub_object.path),
+                                sub_object.job_status(now)))
 
             max_width = 0
             if objects:
@@ -566,6 +580,18 @@ class FileManagement(Core):
             queue += top_object.sub_objects()
             index += 1
         return queue
+
+    def sub_objects_recursively_parents(self) -> List['str']:
+        """ Return a list of all the parents impression of the sub_objects
+        """
+        sub_objects = self.sub_objects_recursively()
+        parent_impressions = []
+        for obj in sub_objects:
+            if not obj.is_task_or_algorithm():
+                continue
+            impr = obj.impression()
+            parent_impressions.extend(impr.parents())
+        return parent_impressions
 
     def import_file(self, path: str) -> Message:
         """
