@@ -130,7 +130,7 @@ Apache License, Version 2.0
 
 Mingrui Zhao  
 2013–2025
-2013--2017 Center of High Energy Physics, Tsinghua University  
-2017--2025 Department of Nuclear Physics, China Institute of Atomic Energy  
-2020--2025 Niels Bohr Institute, University of Copenhagen
-2025--now  Peking University
++ 2013--2017 Center of High Energy Physics, Tsinghua University  
++ 2017--2025 Department of Nuclear Physics, China Institute of Atomic Energy  
++ 2020--2025 Niels Bohr Institute, University of Copenhagen
++ 2025--now  Peking University
