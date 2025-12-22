@@ -1,11 +1,11 @@
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hepChern/Chern)
-# Chern
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/CelebiProjects/Celebi)
+# Celebi
 
-Chern is a data analysis management toolkit designed for high energy physics research. It provides a structured environment for organizing projects, tasks, algorithms, and data, enabling reproducible and collaborative scientific workflows.
+Celebi is a data analysis management toolkit designed for high energy physics research. It provides a structured environment for organizing projects, tasks, algorithms, and data, enabling reproducible and collaborative scientific workflows.
 
 ## Key Features and Benefits
 
-Chern provides several advantages for scientific data analysis:
+Celebi provides several advantages for scientific data analysis:
 
 - **Structured Organization:** Clear separation of data, algorithms, and tasks
 - **Dependency Tracking:** Automatic monitoring of relationships between objects
@@ -27,8 +27,8 @@ Chern provides several advantages for scientific data analysis:
 Clone the repository and install dependencies:
 
 ```sh
-git clone https://github.com/hepChern/Chern.git
-cd Chern
+git clone https://github.com/CelebiProjects/Celebi.git
+cd Celebi
 pip install .
 ```
 
@@ -129,7 +129,8 @@ Apache License, Version 2.0
 ## Author
 
 Mingrui Zhao  
-2013–2024  
-Center of High Energy Physics, Tsinghua University  
-Department of Nuclear Physics, China Institute of Atomic Energy  
-Niels Bohr Institute, University of Copenhagen
+2013–2025
+2013--2017 Center of High Energy Physics, Tsinghua University  
+2017--2025 Department of Nuclear Physics, China Institute of Atomic Energy  
+2020--2025 Niels Bohr Institute, University of Copenhagen
+2025--now  Peking University

@@ -118,18 +118,29 @@ class EnvironmentCommands:
         except Exception as e:
             print(f"Error showing runners: {e}")
 
-    def do_register_runner(self, arg: str) -> None:
-        """Register a new runner."""
+    def do_register_runner(self, _: str) -> None:
+        """Register a runner with default values if input is empty."""
+
+        # Define your defaults here
+        defaults = {
+            "runner": "default-runner",
+            "url": "http://localhost:8080",
+            "secret": "fallback-secret-123"
+        }
+
         try:
-            args = arg.split()
-            runner = args[0]
-            url = args[1]
-            secret = args[2]
+            # Prompt user: if they press Enter without typing, it uses the default
+            runner = input(f"Enter runner name [{defaults['runner']}]: ").strip() or defaults['runner']
+            url = input(f"Enter URL [{defaults['url']}]: ").strip() or defaults['url']
+            secret = input(f"Enter secret [{defaults['secret']}]: ").strip() or defaults['secret']
+
             shell.register_runner(runner, url, secret)
-        except (IndexError, ValueError) as e:
-            print(f"Error: Please provide runner name, URL, and secret. {e}")
+            print(f"--> Registered {runner} to {url}")
+
+        except EOFError:
+            print("\nOperation cancelled.")
         except Exception as e:
-            print(f"Error registering runner: {e}")
+            print(f"Error: {e}")
 
     def do_remove_runner(self, arg: str) -> None:
         """Remove a runner."""
