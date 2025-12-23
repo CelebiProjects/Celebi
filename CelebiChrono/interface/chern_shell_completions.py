@@ -73,12 +73,11 @@ class ChernShellCompletions:
         return self.get_completions(current_path, text, line)
 
     def complete_add_multi_inputs(
-        self, _: str, line: str, _begidx: int, _endidx: int
+        self, text: str, line: str, _begidx: int, _endidx: int
     ) -> list:
         """Complete add_input command with available paths."""
         current_path = MANAGER.c.path
-        filepath = csys.strip_path_string(line[16:])
-        return self.get_completions(current_path, filepath, line)
+        return self.get_completions(current_path, text, line)
 
     def complete_remove_input(
         self, text: str, _line: str, _begidx: int, _endidx: int

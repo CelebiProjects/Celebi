@@ -155,9 +155,36 @@ class TaskCommands:
             for i in range(begin_number_of_tasks, end_number_of_tasks):
                 task_name = f"{base_name}_{i}"
                 alias_index = f"{alias}_{i}"
+                print(task_name, alias_index)
                 shell.add_input(task_name, alias_index)
         except Exception as e:
             print(f"Error creating task: {e}")
+
+    def do_remove_multi_inputs(self, arg: str) -> None:
+        """Create multiple tasks with a base name and number of tasks."""
+        try:
+            objs = arg.split()
+            if len(objs) < 2:
+                print(
+                    "Error: Please provide at least two task arguments: "
+                    "alias and number_of_tasks."
+                )
+                return
+            alias = objs[0]
+            begin_number_of_tasks = 0
+            if len(objs) == 3:
+                begin_number_of_tasks = int(objs[1])
+            end_number_of_tasks = int(objs[-1])
+            number_of_tasks = end_number_of_tasks - begin_number_of_tasks
+            if number_of_tasks <= 0 or number_of_tasks > 10000:
+                print("Error: number_of_tasks should be between 1 and 10000.")
+                return
+            for i in range(begin_number_of_tasks, end_number_of_tasks):
+                alias_index = f"{alias}_{i}"
+                shell.remove_input(alias_index)
+        except Exception as e:
+            print(f"Error remove task: {e}")
+
 
     def do_remove_input(self, arg: str) -> None:
         """Remove an input from current object."""
