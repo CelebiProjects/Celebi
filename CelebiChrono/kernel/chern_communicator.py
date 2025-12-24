@@ -388,13 +388,17 @@ class ChernCommunicator():
             return ["unconnected to DITE"]
         return r.text.split()
 
-    def register_runner(self, runner, runner_url, token):
+    def register_runner(self, runner, runner_url, token, backend_type):
         """ Register a runner to the server """
         url = self.serverurl()
 
         requests.post(
             f"http://{url}/register-runner",
-            data={'runner': runner, 'url': runner_url, 'token': token},
+            data={'runner': runner,
+                  'url': runner_url,
+                  'token': token,
+                  'backend_type': backend_type,
+                  },
             timeout=self.timeout
         )
 

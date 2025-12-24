@@ -363,3 +363,10 @@ alias add-parameter-subtask='celebi-add-parameter-subtask'
 alias set-environment='celebi-set-env'
 alias set-memory-limit='celebi-set-mem'
 alias hosts='celebi-hosts'
+
+celebi-dry-snakemake-run() {
+echo "WARNING: It is not recommanded to use dry run since the environment may not be properly set up."
+echo "Use at your own risk."
+# Pass all arguments to snakemake
+snakemake "$@"
+}

@@ -125,7 +125,8 @@ class EnvironmentCommands:
         defaults = {
             "runner": "default-runner",
             "url": "http://localhost:8080",
-            "secret": "fallback-secret-123"
+            "secret": "fallback-secret-123",
+            "backend_type": "reana"
         }
 
         try:
@@ -133,8 +134,9 @@ class EnvironmentCommands:
             runner = input(f"Enter runner name [{defaults['runner']}]: ").strip() or defaults['runner']
             url = input(f"Enter URL [{defaults['url']}]: ").strip() or defaults['url']
             secret = input(f"Enter secret [{defaults['secret']}]: ").strip() or defaults['secret']
+            backend_type = input("Enter backend type [optional]: ").strip() or defaults['backend_type']
 
-            shell.register_runner(runner, url, secret)
+            shell.register_runner(runner, url, secret, backend_type)
             print(f"--> Registered {runner} to {url}")
 
         except EOFError:

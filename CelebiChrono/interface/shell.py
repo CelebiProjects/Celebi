@@ -544,10 +544,10 @@ def runners() -> None:
             print(f"{'Status: ':<20}{info['status']:20}")
 
 
-def register_runner(runner: str, url: str, secret: str) -> None:
+def register_runner(runner: str, url: str, secret: str, backend_type: str) -> None:
     """Register a runner with DITE."""
     cherncc = ChernCommunicator.instance()
-    cherncc.register_runner(runner, url, secret)
+    cherncc.register_runner(runner, url, secret, backend_type)
 
 
 def remove_runner(runner: str) -> None:
