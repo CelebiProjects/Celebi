@@ -52,7 +52,27 @@ class ExecutionManagement(Core):
             msg.add("DITE is not connected. Please check the connection.", "warning")
             # logger.error(msg)
             return msg
+        if self.is_algorithm():
+            msg = Message()
+            msg.add("Cannot submit an algorithm directly. Please submit its tasks.", "warning")
+            return msg
         self.deposit()
+        if not self.is_task_or_algorithm():
+            sub_objects = self.sub_objects_recursively()
+            from .vtask import VTask
+            for sub_object in sub_objects:
+                if not sub_object.is_task():
+                    continue
+                default_runner = VTask(sub_object.path).default_runner()
+                if default_runner != runner:
+                    msg = Message()
+                    msg.add(f"Runner mismatch: some object target runner is {default_runner}, but submit to {runner}.", "warning")
+                    return msg
+        else:
+            if self.default_runner() != runner:
+                msg = Message()
+                msg.add(f"Runner mismatch: object target runner is {self.default_runner()}, but submit to {runner}.", "warning")
+                return msg
         impressions = self.get_impressions()
         cherncc.execute(impressions, runner)
         msg = Message()
@@ -75,7 +95,7 @@ class ExecutionManagement(Core):
         msg.add(f"Impressions {impressions} purged.", "info")
         return msg
 
-    def purge_old_impressions(self, runner: str = "local") -> Message:
+    def purge_old_impressions(self) -> Message:
         """ Purge old impressions from the dite. """
         cherncc = ChernCommunicator.instance()
         # Check the connection
