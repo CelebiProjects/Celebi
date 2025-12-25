@@ -67,6 +67,12 @@ class SettingManager(Core):
         """
         return self.config_file.read_variable("default_runner", "local")
 
+    def use_eos(self):
+        """
+        Return whether use eos to store results
+        """
+        return self.config_file.read_variable("use_eos", False)
+
     # Modifying Settings
     def add_parameter(self, parameter, value):
         """
@@ -100,6 +106,12 @@ class SettingManager(Core):
         Set the default runner
         """
         self.config_file.write_variable("default_runner", runner)
+
+    def set_use_eos(self, use_eos):
+        """
+        Set whether to use eos to store results
+        """
+        self.config_file.write_variable("use_eos", use_eos)
 
     def set_environment(self, environment):
         """
