@@ -60,6 +60,21 @@ class EnvironmentCommands:
         except Exception as e:
             print(f"Error setting auto download: {e}")
 
+    def do_use_eos(self,  arg: str) -> None:
+        """Enable or disable EOS usage."""
+        try:
+            use_eos = arg.split()[0]
+            if use_eos == "on":
+                MANAGER.current_object().set_use_eos(True)
+            elif use_eos == "off":
+                MANAGER.current_object().set_use_eos(False)
+            else:
+                print("please input on or off")
+        except (IndexError, ValueError) as e:
+            print(f"Error: Please provide 'on' or 'off'. {e}")
+        except Exception as e:
+            print(f"Error setting EOS usage: {e}")
+
     def do_config(self, _: str) -> None:
         """Edit configuration."""
         try:
@@ -114,7 +129,7 @@ class EnvironmentCommands:
     def do_runners(self, _: str) -> None:
         """Show available runners."""
         try:
-            shell.runners()
+            print(shell.runners().colored())
         except Exception as e:
             print(f"Error showing runners: {e}")
 
