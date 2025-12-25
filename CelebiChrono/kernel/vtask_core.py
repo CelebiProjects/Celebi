@@ -74,14 +74,17 @@ class Core(VObject):
         message.add(f"{validated_str}")
         message.add("\n")
 
-        message.add("Auto download: ", "title0")
-        message.add(f"{self.auto_download()}")
-        message.add("\n")
+        # message.add("Auto download: ", "title0")
+        # message.add(f"{self.auto_download()}")
+        # message.add("\n")
 
         message.add("Default runner: ", "title0")
         message.add(f"{self.default_runner()}")
         message.add("\n")
 
+        message.add("Use EOS: ", "title0")
+        message.add(f"{self.use_eos()}", "message")
+        message.add("\n")
 
         return message
 
