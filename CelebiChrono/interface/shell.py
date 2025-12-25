@@ -526,29 +526,45 @@ def dite() -> None:
     dite_info = cherncc.dite_info()
     print(dite_info)
 
-def runners() -> None:
+def set_dite(url: str = "") -> None:
+    """Set DITE connection."""
+    project_path = csys.project_path()
+    config_path = os.path.join(project_path, ".celebi", "hosts.json")
+    config_file = metadata.ConfigFile(config_path)
+    if url:
+        config_file.write_variable("serverurl", url)
+        print(f"DITE URL set to: {url}")
+
+
+def runners() -> Message:
     """Display all available runners."""
+    message = Message()
     cherncc = ChernCommunicator.instance()
     dite_status = cherncc.dite_status()
     if dite_status == "unconnected":
-        print(colorize("DITE unconnected, please connect first", "warning"))
-        return
+        message.add("DITE unconnected, please connect first", "warning")
+        return message
     runner_list = cherncc.runners()
-    print(f"Number of runners registered at DITE: {len(runner_list)}")
+    message.add(f"Number of runners: {len(runner_list)}\n", "title0")
     if runner_list:
         urls = cherncc.runners_url()
         for runner, url in zip(runner_list, urls):
-            print(f"{runner:<20}{url:20}")
+            message.add(f"{runner:<20}{url:20}", "normal")
+            message.add("\n")
             info = cherncc.runner_connection(runner)
-            # print(info)
-            print(f"{'Status: ':<20}{info['status']:20}")
+            message.add(f"{'Status: ':<20}", "info")
+            if info['status'] == "Connected":
+                message.add(f"{info['status']:20}\n", "success" )
+            else:
+                message.add(f"{info['status']:20}\n", "warning" )
+            message.add("------------\n")
+    return message
 
 
 def register_runner(runner: str, url: str, secret: str, backend_type: str) -> None:
     """Register a runner with DITE."""
     cherncc = ChernCommunicator.instance()
     cherncc.register_runner(runner, url, secret, backend_type)
-
 
 def remove_runner(runner: str) -> None:
     """Remove a runner from DITE."""
@@ -564,7 +580,7 @@ def send(path: str) -> None:
 def submit(runner: str = "local") -> None:
     """Submit to the runner."""
     message = MANAGER.current_object().submit(runner)
-    print(message.colored())
+    return message
 
 def purge():
     """Purge"""
