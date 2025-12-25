@@ -33,6 +33,16 @@ class AdvancedCommands:
         except Exception as e:
             print(f"Error accessing DITE: {e}")
 
+    def do_set_dite(self, arg: str) -> None:
+        """Set DITE url."""
+        try:
+            url = arg.split()[0]
+            shell.set_dite(url)
+        except (IndexError, ValueError) as e:
+            print(f"Error: Please provide a DITE URL. {e}")
+        except Exception as e:
+            print(f"Error setting DITE URL: {e}")
+
     def do_danger_call(self, arg: str) -> None:
         """Dangerous call to execute a command directly."""
         try:
