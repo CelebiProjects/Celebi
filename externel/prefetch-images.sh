@@ -29,6 +29,6 @@ for image in \
   quay.io/jupyter/scipy-notebook:notebook-7.2.2; do
   docker pull $image
   if [ "$kubernetes" == "kind" ]; then
-    kind load docker-image $image
+    kind load -n kindeos docker-image $image
   fi
 done
