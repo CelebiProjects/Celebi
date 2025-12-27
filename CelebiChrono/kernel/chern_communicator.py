@@ -209,7 +209,7 @@ class ChernCommunicator():
                 timeout=self.timeout
         )
 
-    def execute(self, impressions, machine="local"):
+    def execute(self, impressions, use_eos, machine="local"):
         """ Execute the impressions on the server """
         files = {"impressions": " ".join(impressions)}
         url = self.serverurl()
@@ -220,6 +220,7 @@ class ChernCommunicator():
         requests.post(
             f"http://{url}/execute",
             data={'machine': machine_id,
+                  'use_eos': json.dumps(use_eos),
                   'project_uuid': self.project_uuid},
             files=files,
             timeout=self.timeout
