@@ -571,6 +571,9 @@ def remove_runner(runner: str) -> None:
     cherncc = ChernCommunicator.instance()
     cherncc.remove_runner(runner)
 
+def request_runner(runner: str) -> None:
+    MANAGER.current_object().set_default_runner(runner)
+
 
 def send(path: str) -> None:
     """Send a path to current object."""
