@@ -73,8 +73,16 @@ class ExecutionManagement(Core):
                 msg = Message()
                 msg.add(f"Runner mismatch: object target runner is {self.default_runner()}, but submit to {runner}.", "warning")
                 return msg
+        use_eos = {}
+        sub_objects = self.sub_objects_recursively()
+        for sub_object in sub_objects:
+            from .vtask import VTask
+            if not sub_object.is_task():
+                continue
+            task = VTask(sub_object.path)
+            use_eos[task.impression().uuid] = task.use_eos()
         impressions = self.get_impressions()
-        cherncc.execute(impressions, runner)
+        cherncc.execute(impressions, use_eos, runner)
         msg = Message()
         msg.add(f"Impressions {impressions} submitted to {runner}.", "info")
         return msg
