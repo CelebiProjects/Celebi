@@ -75,6 +75,16 @@ class EnvironmentCommands:
         except Exception as e:
             print(f"Error setting EOS usage: {e}")
 
+    def do_request_runner(self, arg: str) -> None:
+        """Request a runner for current object."""
+        try:
+            runner = arg.split()[0]
+            shell.request_runner(runner)
+        except (IndexError, ValueError) as e:
+            print(f"Error: Please provide a runner name. {e}")
+        except Exception as e:
+            print(f"Error requesting runner: {e}")
+
     def do_config(self, _: str) -> None:
         """Edit configuration."""
         try:
