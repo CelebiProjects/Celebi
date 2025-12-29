@@ -210,63 +210,141 @@ class FileManagement(Core):
         return message
 
     def show_sub_objects(self, sub_objects: List['VObject'], show_info: LsParameters) -> Message:
-        """ Show the sub_objects"""
+        """ Show the sub_objects with dynamic alignment """
         message = Message()
-        sub_objects = self.sub_objects()
+        # sub_objects = self.sub_objects()
         sub_objects.sort(key=lambda x: (x.object_type(), x.path))
-        if sub_objects:
-            message.add(">>>> Subobjects:\n", "title0")
 
-        for index, sub_object in enumerate(sub_objects):
-            sub_path = self.relative_path(sub_object.path)
+        if not sub_objects:
+            return message
+
+        message.add(">>>> Subobjects:\n", "title0")
+
+        # 1. Pre-calculate the relative paths and the max widths for alignment
+        processed_objects = []
+        max_idx_w = len(str(len(sub_objects) - 1))
+        max_type_w = 0
+        max_path_w = 0
+
+        for obj in sub_objects:
+            path = self.relative_path(obj.path)
+            obj_type = f"({obj.object_type()})"
+
+            processed_objects.append((obj_type, path))
+
+            # Track maximum lengths
+            max_type_w = max(max_type_w, len(obj_type))
+            max_path_w = max(max_path_w, len(path))
+
+        # 2. Iterate and build the message using calculated widths
+        for index, (obj_type, sub_path) in enumerate(processed_objects):
+            # Format the base string with dynamic padding
+            # index: right-aligned based on total count
+            # type: left-aligned
+            # path: left-aligned (usually better for readability than right-aligned)
+            order_index = f"{[index]}"
+            base_str = f"{order_index:>{max_idx_w+2}} {obj_type:<{max_type_w + 2}} {sub_path:<{max_path_w}} "
+            message.add(base_str)
+
             if show_info.status:
-                # FIXME
+                # FIXME logic
                 status = "[FIXME]"
                 color_tag = self.color_tag(status)
-                message.add(f"[{index}] {f'({sub_object.object_type()})':<12} "
-                            f"{sub_path:>20} ")
                 message.add(f"({status})", color_tag)
-                message.add("\n")
-            else:
-                message.add(f"[{index}] {f'({sub_object.object_type()})':<12} {sub_path:>20}\n")
+
+            message.add("\n")
+
         return message
 
     def show_predecessors(self, predecessors: List['VObject'], total: int) -> Message:
-        """ Show the predecessors of the object"""
+        """ Show the predecessors of the object with dynamic alignment """
         message = Message()
-
-        # Header
         message.add("o--> Predecessors:\n", "title0")
 
-        # Sort the predecessors by alias
+        if not predecessors:
+            return message
+
+        # 1. Sort the predecessors
         yaml_file = metadata.YamlFile(os.path.join(self.path, "celebi.yaml"))
         alias_list = yaml_file.read_variable("alias", [])
+
         predecessors.sort(
             key=lambda x: alias_list.index(self.path_to_alias(x.invariant_path()))
             if self.path_to_alias(x.invariant_path()) in alias_list
             else -1,
         )
 
-        # Emit each predecessor
+        # 2. Pre-process data and calculate maximum widths
+        processed_data = []
+        max_order_w = 0
+        max_type_w = 0
+        max_alias_w = 0
+
         for index, pred_object in enumerate(predecessors):
-            alias = self.path_to_alias(pred_object.invariant_path())
-
-            # --- temporary alias‑list patch (delete after new version) ---
-            # yaml_file = metadata.YamlFile(os.path.join(self.path, "celebi.yaml"))
-            # alias_list = yaml_file.read_variable("alias", [])
-            # if alias and alias not in alias_list:
-            #     alias_list.append(alias)
-            # yaml_file.write_variable("alias", alias_list)
-            # -------------------------------------------------------------
-
-            order = f"[{total + index}]"
+            order_str = f"[{total + index}]"
             obj_type = f"({pred_object.object_type()})"
-            pred_path = pred_object.invariant_path()
-            line = (f"{order} {obj_type:<12} {alias:>10}: "
-                   f"@/{pred_path:<20}\n")
+            alias = self.path_to_alias(pred_object.invariant_path()) or "code"
+            pred_path = f"@/{pred_object.invariant_path()}"
+
+            processed_data.append((order_str, obj_type, alias, pred_path))
+
+            # Update max widths
+            max_order_w = max(max_order_w, len(order_str))
+            max_type_w = max(max_type_w, len(obj_type))
+            max_alias_w = max(max_alias_w, len(alias))
+
+        # 3. Emit each predecessor with dynamic padding
+        for order, obj_type, alias, pred_path in processed_data:
+            # order: right-aligned
+            # type: left-aligned
+            # alias: left-aligned
+            # path: left-aligned
+            line = (
+                f"{order:>{max_order_w}} "
+                f"{obj_type:<{max_type_w + 1}} "
+                f"{alias:<{max_alias_w}}: "
+                f"{pred_path}\n"
+            )
             message.add(line)
 
         return message
+
+    # def show_predecessors(self, predecessors: List['VObject'], total: int) -> Message:
+    #     """ Show the predecessors of the object"""
+    #     message = Message()
+
+    #     # Header
+    #     message.add("o--> Predecessors:\n", "title0")
+
+    #     # Sort the predecessors by alias
+    #     yaml_file = metadata.YamlFile(os.path.join(self.path, "celebi.yaml"))
+    #     alias_list = yaml_file.read_variable("alias", [])
+    #     predecessors.sort(
+    #         key=lambda x: alias_list.index(self.path_to_alias(x.invariant_path()))
+    #         if self.path_to_alias(x.invariant_path()) in alias_list
+    #         else -1,
+    #     )
+
+    #     # Emit each predecessor
+    #     for index, pred_object in enumerate(predecessors):
+    #         alias = self.path_to_alias(pred_object.invariant_path())
+
+    #         # --- temporary alias‑list patch (delete after new version) ---
+    #         # yaml_file = metadata.YamlFile(os.path.join(self.path, "celebi.yaml"))
+    #         # alias_list = yaml_file.read_variable("alias", [])
+    #         # if alias and alias not in alias_list:
+    #         #     alias_list.append(alias)
+    #         # yaml_file.write_variable("alias", alias_list)
+    #         # -------------------------------------------------------------
+
+    #         order = f"[{total + index}]"
+    #         obj_type = f"({pred_object.object_type()})"
+    #         pred_path = pred_object.invariant_path()
+    #         line = (f"{order} {obj_type:<12} {alias:>10}: "
+    #                f"@/{pred_path:<20}\n")
+    #         message.add(line)
+
+    #     return message
 
     def show_successors(self, successors: List['VObject'], total: int) -> Message:
         """ Show the successors of the object"""
