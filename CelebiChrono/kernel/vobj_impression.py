@@ -211,6 +211,18 @@ class ImpressionManagement(Core):
             return None
         return VImpression(uuid)
 
+    def search_impression(self, partial_uuid: str) -> Message:
+        """ Search for the impression of the current object
+            This function will search for the impression
+        """
+        message = Message()
+        project_path = self.project_path()
+        impressions_path = f"{project_path}/.celebi/impressions"
+        for uuid in os.listdir(impressions_path):
+            if uuid.startswith(partial_uuid):
+                message.add(f"Found impression {uuid}\n")
+        return message
+
     def status(self, consult_id=None): # UnitTest: DONE
         """ Consult the status of the object
             There should be only two status locally: new|impressed

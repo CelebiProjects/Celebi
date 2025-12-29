@@ -61,6 +61,13 @@ class DocumentationCommands:
         except Exception as e:
             print(f"Error getting impression: {e}")
 
+    def do_search_impression(self, arg: str) -> None:
+        """Search impressions."""
+        try:
+            print(shell.search_impression(arg))
+        except Exception as e:
+            print(f"Error searching impressions: {e}")
+
     def do_view(self, arg: str) -> None:
         """View impressions."""
         try:

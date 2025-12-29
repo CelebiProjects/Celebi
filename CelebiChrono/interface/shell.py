@@ -574,6 +574,11 @@ def remove_runner(runner: str) -> None:
 def request_runner(runner: str) -> None:
     MANAGER.current_object().set_default_runner(runner)
 
+def search_impression(partial_uuid: str) -> Message:
+    """Search impressions by partial UUID."""
+    print("Search partial uuid", partial_uuid)
+    message = MANAGER.current_object().search_impression(partial_uuid)
+    return message
 
 def send(path: str) -> None:
     """Send a path to current object."""
