@@ -154,7 +154,7 @@ class ChernShellBase(cmd.Cmd):
         dirname = os.path.dirname(full_search_path)
         basename = os.path.basename(full_search_path)
 
-        if os.path.exists(dirname):
+        if csys.exists(dirname):
             # Get all files in that directory
             candidates = [
                 f for f in os.listdir(dirname) if not f.startswith(".celebi")
@@ -223,7 +223,7 @@ class ChernShellBase(cmd.Cmd):
 
     def get_completions_out(self, abspath: str, line: str) -> list:
         """Get command completions for absolute paths."""
-        if os.path.exists(abspath):
+        if csys.exists(abspath):
             listdir = os.listdir(abspath)
             if line.endswith("/"):
                 return listdir
@@ -231,7 +231,7 @@ class ChernShellBase(cmd.Cmd):
 
         basename = os.path.basename(abspath)
         dirname = os.path.dirname(abspath)
-        if os.path.exists(dirname):
+        if csys.exists(dirname):
             listdir = os.listdir(dirname)
             completions = [f for f in listdir if f.startswith(basename)]
             return completions
