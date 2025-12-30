@@ -368,7 +368,7 @@ class FileManagement(Core):
         """
         # Check if the destination directory exists
         destination_dir = os.path.dirname(new_path)
-        if not os.path.exists(destination_dir) and destination_dir:
+        if not csys.exists(destination_dir) and destination_dir:
             rel_dest_dir = os.path.relpath(destination_dir, self.project_path())
             error_msg = f"Destination directory '@/{rel_dest_dir}' does not exist."
             return False, error_msg
@@ -379,7 +379,7 @@ class FileManagement(Core):
             return False, error_msg
 
         # Check if the destination path already exists
-        if os.path.exists(new_path):
+        if csys.exists(new_path):
             rel_new_path = os.path.relpath(new_path, self.project_path())
             error_msg = f"Destination path '@/{rel_new_path}' already exists."
             return False, error_msg
@@ -574,12 +574,12 @@ class FileManagement(Core):
 
         # Check if the destination directory already exists
         destination_dir = os.path.dirname(new_path)
-        if not os.path.exists(destination_dir) and destination_dir:
+        if not csys.exists(destination_dir) and destination_dir:
             rel_dest_dir = os.path.relpath(destination_dir, self.project_path())
             error_msg = f"Destination directory '@/{rel_dest_dir}' does not exist."
 
         # Check if the destination path already exists
-        elif os.path.exists(new_path):
+        elif csys.exists(new_path):
             rel_new_path = os.path.relpath(new_path, self.project_path())
             error_msg = f"Destination path '@/{rel_new_path}' already exists."
 
@@ -681,12 +681,12 @@ class FileManagement(Core):
             message.add("This function is only available for task or algorithm.", "warning")
             return message
 
-        if not os.path.exists(path):
+        if not csys.exists(path):
             message.add("File does not exist.", "warning")
             return message
 
         filename = os.path.basename(path)
-        if os.path.exists(self.path + "/" + filename):
+        if csys.exists(self.path + "/" + filename):
             message.add("File already exists.", "warning")
             return message
 
@@ -709,7 +709,7 @@ class FileManagement(Core):
 
         abspath = self.path + "/" + file
 
-        if not os.path.exists(abspath):
+        if not csys.exists(abspath):
             message.add("File does not exist.", "warning")
             return message
 
@@ -747,7 +747,7 @@ class FileManagement(Core):
         else:
             abspath = self.path + "/" + file
 
-            if not os.path.exists(abspath):
+            if not csys.exists(abspath):
                 message.add("File does not exist.", "warning")
             elif self.relative_path(abspath).startswith(".."):
                 message.add("The file should not go out of the task directory.", "warning")
@@ -758,7 +758,7 @@ class FileManagement(Core):
             else:
                 # Check if the destination directory exists
                 dest = self.path + "/" + dest_file
-                if not os.path.exists(os.path.dirname(dest)):
+                if not csys.exists(os.path.dirname(dest)):
                     rel_dest_dir = os.path.relpath(os.path.dirname(dest),
                                                  self.project_path())
                     message.add(f"Error: Destination directory '@/{rel_dest_dir}' "

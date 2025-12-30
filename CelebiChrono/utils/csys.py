@@ -93,40 +93,101 @@ def refine_path(path: str, home: str) -> str:
         path = os.path.abspath(path)
     return path
 
-
-def exists(path: str) -> bool:
-    """ Check if the path exists
+def exists_case_sensitive(path: str) -> bool:
+    """
+    Checks if a path exists with strict case sensitivity,
+    even on case-insensitive file systems.
     """
     if not os.path.exists(path):
         return False
 
-    # Normalize the path
     path = os.path.abspath(path)
-    # Split into components
-    parts = path.split(os.sep)
-
-    # Handle root (e.g., '' or '/')
-    if not parts[0]:
-        current_path = os.sep
-        parts = parts[1:]
-    else:
-        current_path = parts[0]
+    current = os.path.abspath(os.sep)
+    parts = path.split(os.sep)[1:] # Skip the root for Unix
 
     for part in parts:
-        try:
-            entries = os.listdir(current_path)
-        except Exception:
+        if not part: continue # Handle double slashes
+        if part not in os.listdir(current):
             return False
-        if part not in entries:
-            return False
-        current_path = os.path.join(current_path, part)
+        current = os.path.join(current, part)
+
     return True
+
+def exists_case_insensitive(path: str) -> bool:
+    """
+    Checks if a path exists, ignoring case.
+    Works on both case-sensitive (Linux) and case-insensitive (Windows) systems.
+    """
+    path = os.path.normpath(path)
+    parts = path.split(os.sep)
+
+    # Handle the starting point (Root on Unix, Drive on Windows, or Current Dir)
+    if path.startswith(os.sep):
+        current = os.sep
+        parts = parts[1:]
+    elif len(parts[0]) > 1 and parts[0][1] == ':': # Windows Drive (e.g., C:)
+        current = parts[0] + os.sep
+        parts = parts[1:]
+    else:
+        current = '.'
+
+    for part in parts:
+        if not part: continue  # Skip empty parts from double slashes
+
+        try:
+            # List all items in the current directory
+            entries = os.listdir(current)
+        except OSError:
+            # Folder might not exist or permission denied
+            return False
+
+        # Look for a case-insensitive match
+        match = next((e for e in entries if e.lower() == part.lower()), None)
+
+        if match is None:
+            return False
+
+        # Move deeper into the path using the ACTUAL casing found on disk
+        current = os.path.join(current, match)
+
+    return True
+
+def exists(path: str) -> bool:
+    return exists_case_sensitive(path)
+
+# def exists(path: str) -> bool:
+#     """ Check if the path exists
+#     """
+#     if not os.path.exists(path):
+#         return False
+#
+#     # Normalize the path
+#     path = os.path.abspath(path)
+#     # Split into components
+#     parts = path.split(os.sep)
+#
+#     # Handle root (e.g., '' or '/')
+#     if not parts[0]:
+#         current_path = os.sep
+#         parts = parts[1:]
+#     else:
+#         current_path = parts[0]
+#
+#     for part in parts:
+#         try:
+#             entries = os.listdir(current_path)
+#         except Exception:
+#             return False
+#         if part not in entries:
+#             return False
+#         current_path = os.path.join(current_path, part)
+#     return True
 
 
 def mkdir(directory):
     """ Safely make directory
     """
-    if not os.path.exists(directory):
+    if not exists_case_insensitive(directory):
         os.makedirs(directory)
 
 
@@ -135,7 +196,7 @@ def symlink(src, dst):
     """
     directory = os.path.dirname(dst)
     mkdir(directory)
-    if os.path.exists(dst):
+    if exists(dst):
         os.remove(dst)
     os.symlink(src, dst)
 
@@ -201,7 +262,7 @@ def project_path(path=None):
     """
     if path is None:
         path = os.getcwd()
-    if not os.path.exists(path):
+    if not exists(path):
         return None
     while path != "/":
         if exists(path+"/.celebi/project.json"):
@@ -296,9 +357,9 @@ def remove_cache(file_path):
             or  somename.py
     """
     file_path = strip_path_string(file_path)
-    if os.path.exists(file_path+"c"):
+    if exists(file_path+"c"):
         os.remove(file_path+"c")
-    if os.path.exists(file_path+"o"):
+    if exists(file_path+"o"):
         os.remove(file_path+"o")
     index = file_path.rfind("/")
     if index == -1:

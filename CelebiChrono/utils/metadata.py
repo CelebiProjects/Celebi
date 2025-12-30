@@ -5,6 +5,7 @@ import os
 import fcntl  # For Unix-based systems
 from typing import Any, Optional
 import yaml
+from . import csys
 
 
 class ConfigFile():
@@ -33,7 +34,7 @@ class ConfigFile():
         Returns:
             The value of the variable or the default value.
         """
-        if not os.path.exists(self.file_path):
+        if not csys.exists(self.file_path):
             return default
         with open(self.file_path, encoding='utf-8') as f:
             contents = f.read()
@@ -50,7 +51,7 @@ class ConfigFile():
             value: The value to write.
         """
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-        if not os.path.exists(self.file_path):
+        if not csys.exists(self.file_path):
             with open(self.file_path, "w", encoding='utf-8') as f:
                 json.dump({}, f)
 
@@ -88,7 +89,7 @@ class YamlFile():
         Returns:
             The value of the variable or the default value.
         """
-        if not os.path.exists(self.file_path):
+        if not csys.exists(self.file_path):
             return default
         with open(self.file_path, encoding='utf-8') as f:
             contents = f.read()
@@ -108,7 +109,7 @@ class YamlFile():
             value: The value to write.
         """
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-        if not os.path.exists(self.file_path):
+        if not csys.exists(self.file_path):
             with open(self.file_path, "w", encoding='utf-8') as f:
                 yaml.dump({}, f)
 
