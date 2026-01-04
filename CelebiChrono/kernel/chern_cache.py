@@ -20,6 +20,7 @@ class ChernCache:  # pylint: disable=too-many-instance-attributes
         self.job_status_consult_table = {}
         self.project_modification_time = (None, -1)
         self.update_table = {}
+        self.project_path = ""
 
     @classmethod
     def instance(cls): # UnitTest: DONE
@@ -27,3 +28,9 @@ class ChernCache:  # pylint: disable=too-many-instance-attributes
         if cls.ins is None:
             cls.ins = ChernCache()
         return cls.ins
+
+    def use_and_cache_project_path(self, path):
+        """Gets and caches the project path."""
+        if self.project_path == "":
+            self.project_path = path
+        return self.project_path

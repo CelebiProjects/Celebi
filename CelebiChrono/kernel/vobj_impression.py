@@ -58,6 +58,7 @@ class ImpressionManagement(Core):
     def is_impressed(self): # pylint: disable=too-many-return-statements # UnitTest: DONE
         """ Judge whether the file is impressed
         """
+        start_time = time.time()
         logger.debug("VObject is_impressed in %s", self.path)
         # Check whether there is an impression already
         impression = self.impression()
@@ -66,12 +67,16 @@ class ImpressionManagement(Core):
             # print("No impression or impression is zombie")
             return False
 
+        # print(f"Checking impression {impression.uuid}...")
+        # print(f"Time used for getting impression: {time.time() - start_time:.6f} seconds")
+
         logger.debug("Check the predecessors is impressed or not")
         # Fast check whether it is impressed
         for pred in self.predecessors():
             if not pred.is_impressed_fast():
                 # print("Predecessor not impressed:", pred.path)
                 return False
+        # print(f"Fast check done: {time.time() - start_time:.6f} seconds")
 
         self_pred_impressions_uuid = [x.uuid for x in self.pred_impressions()]
         impr_pred_impressions_uuid = [
@@ -85,6 +90,7 @@ class ImpressionManagement(Core):
             # print("Impression preds:", impr_pred_impressions_uuid)
             return False
 
+        # print(f"Time used for checking predecessors: {time.time() - start_time:.6f} seconds")
         logger.debug("Check the file change")
         # Check the file change: first to check the tree
         file_list = csys.tree_excluded(self.path)
@@ -109,6 +115,7 @@ class ImpressionManagement(Core):
             # print("Current tree:", csys.sorted_tree(file_list))
             # print("Impression tree:", csys.sorted_tree(impression_tree))
             return False
+        # print(f"Time used for checking tree: {time.time() - start_time:.6f} seconds")
 
         # FIXME Add the Unit Test for this part
         alias_to_path = self.config_file.read_variable("alias_to_path", {})
@@ -124,6 +131,7 @@ class ImpressionManagement(Core):
             if uuid1 != uuid2:
                 # print("Alias uuid mismatch:", alias, uuid1, uuid2)
                 return False
+        # print(f"Time used for checking aliases: {time.time() - start_time:.6f} seconds")
 
         for dirpath, dirnames, filenames in file_list: # pylint: disable=unused-variable
             for f in filenames:
@@ -134,6 +142,7 @@ class ImpressionManagement(Core):
                     #       f"{self.path}/{dirpath}/{f} ",
                     #       )
                     return False
+        # print(f"Time used for checking file contents: {time.time() - start_time:.6f} seconds")
         return True
 
     def clean_impressions(self): # UnitTest: DONE

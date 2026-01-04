@@ -116,7 +116,10 @@ class ArcManagement(Core):
         """
         succ_str = self.config_file.read_variable("successors", [])
         successors = []
-        project_path = self.project_path()
+        # project_path = self.project_path()
+        project_path = CHERN_CACHE.project_path \
+                if CHERN_CACHE.project_path \
+                else CHERN_CACHE.use_and_cache_project_path(csys.project_path())
         for path in succ_str:
             successors.append(self.get_vobject(f"{project_path}/{path}"))
         return successors
@@ -127,7 +130,10 @@ class ArcManagement(Core):
         """
         pred_str = self.config_file.read_variable("predecessors", [])
         predecessors = []
-        project_path = self.project_path()
+        # project_path = self.project_path()
+        project_path = CHERN_CACHE.project_path \
+                if CHERN_CACHE.project_path \
+                else CHERN_CACHE.use_and_cache_project_path(csys.project_path())
         for path in pred_str:
             predecessors.append(self.get_vobject(f"{project_path}/{path}"))
         return predecessors
@@ -144,36 +150,64 @@ class ArcManagement(Core):
         pred_str = self.config_file.read_variable("predecessors", [])
         return obj.invariant_path() in pred_str
 
-    def has_predecessor_recursively(self, obj): # UnitTest: DONE
+    def has_predecessor_recursively(self, obj, consult_id = None): # UnitTest: DONE
         """ Judge whether the object has the specific predecessor recursively
         """
+        # start_time = time()
+        # print(f">>> Checking if {self} has {obj} as predecessor recursively...")
         # The object itself is the predecessor of itself
         if self.invariant_path() == obj.invariant_path():
             return True
 
+        # print(f"Time stamp 1: {time() - start_time:.2f} seconds.")
         pred_str = self.config_file.read_variable("predecessors", [])
         if obj.invariant_path() in pred_str:
             return True
         # Use cache to avoid infinite loop
+        # print(f"Time stamp 2: {time() - start_time:.2f} seconds.")
         consult_table = CHERN_CACHE.predecessor_consult_table
         (last_consult_time, has_predecessor) = consult_table.get(
             self.path, (-1, False)
         )
+
         now = time()
+        if consult_id is not None:
+            now = consult_id
+        else:
+            consult_id = now
+
         if now - last_consult_time < 1:
             return has_predecessor
+        # print(f"Time stamp 3: {time() - start_time:.2f} seconds.")
 
-        modification_time = csys.dir_mtime(self.project_path())
+        # project_path = self.project_path()
+        project_path = CHERN_CACHE.project_path \
+                if CHERN_CACHE.project_path \
+                else CHERN_CACHE.use_and_cache_project_path(csys.project_path())
+
+        modification_time_from_cache, modification_consult_time = \
+                CHERN_CACHE.project_modification_time
+        if modification_time_from_cache is None or now - modification_consult_time > 0.001:
+            modification_time = csys.dir_mtime(project_path)
+            CHERN_CACHE.project_modification_time = modification_time, now
+        else:
+            modification_time = modification_time_from_cache
+
+        # modification_time = csys.dir_mtime(project_path)
         if modification_time < last_consult_time:
             return has_predecessor
+        # print(f"Time stamp 4: {time() - start_time:.2f} seconds.")
 
+        # print(f"Checking {len(pred_str)} predecessors...")
+        # print(f"time taken so far: {time() - start_time:.2f} seconds.")
         for pred_path in pred_str:
-            project_path = self.project_path()
             pred_obj = self.get_vobject(f"{project_path}/{pred_path}")
-            if pred_obj.has_predecessor_recursively(obj):
+            if pred_obj.has_predecessor_recursively(obj, consult_id):
                 consult_table[self.path] = (time(), True)
                 return True
+        # print(f"No predecessor found for {obj}. time: {time() - start_time:.2f} seconds.")
         consult_table[self.path] = (time(), False)
+        # print(f"<<< Finished checking in {time() - start_time:.2f} seconds.")
         return False
 
     def doctor(self):
@@ -240,8 +274,11 @@ class ArcManagement(Core):
         """ Doctor the alias of the object recursively
         """
         path_to_alias = obj.config_file.read_variable("path_to_alias", {})
+        # project_path = self.project_path()
+        project_path = CHERN_CACHE.project_path \
+                if CHERN_CACHE.project_path \
+                else CHERN_CACHE.use_and_cache_project_path(csys.project_path())
         for path in path_to_alias.keys():
-            project_path = self.project_path()
             pred_obj = self.get_vobject(f"{project_path}/{path}")
             if not obj.has_predecessor(pred_obj):
                 print("There seems to be a zombie alias to")
@@ -253,6 +290,8 @@ class ArcManagement(Core):
     def add_input(self, path, alias):
         """ add input
         """
+        # print(f"Add input for {path} as {alias}")
+        start_time = time()
         if not self.is_task_or_algorithm():
             print(f"You are adding input to {self.object_type()} type object. "
                   "The input is required to be a task or an algorithm.")
@@ -269,23 +308,33 @@ class ArcManagement(Core):
                   "the ``input'', which will cause a loop.")
             return
 
+        # print(f"Time taken to validate input: {time() - start_time:.2f} seconds.")
+
         # if the obj is already an input, reject to add it
         if self.has_predecessor(obj):
             print("The input already exists.")
             return
 
+        # project_path = self.project_path()
+        project_path = CHERN_CACHE.project_path \
+                if CHERN_CACHE.project_path \
+                else CHERN_CACHE.use_and_cache_project_path(csys.project_path())
         if self.has_alias(alias):
             print("The alias already exists. "
                   "The original input and alias will be replaced.")
-            project_path = self.project_path()
             original_object = self.get_vobject(
                 join(project_path, self.alias_to_path(alias))
             )
             self.remove_arc_from(original_object)
             self.remove_alias(alias)
 
+        # print(f"Time taken before adding arc: {time() - start_time:.2f} seconds.")
+
         self.add_arc_from(obj)
         self.set_alias(alias, obj.invariant_path())
+
+        # print(f"Input added successfully. "
+        #       f"Total time taken: {time() - start_time:.2f} seconds.")
 
     def remove_input(self, alias):
         """ Remove the input """
@@ -293,7 +342,10 @@ class ArcManagement(Core):
         if path == "":
             print("Alias not found")
             return
-        project_path = self.project_path()
+        # project_path = self.project_path()
+        project_path = CHERN_CACHE.project_path \
+                if CHERN_CACHE.project_path \
+                else CHERN_CACHE.use_and_cache_project_path(csys.project_path())
         obj = self.get_vobject(join(project_path, path))
         self.remove_arc_from(obj)
         self.remove_alias(alias)
