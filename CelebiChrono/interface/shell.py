@@ -440,7 +440,7 @@ def add_parameter_subtask(dirname: str, par: str, value: str) -> None:
         return
     obj = MANAGER.sub_object(dirname)
     if not obj.is_task():
-        print("Unable to call add_input if you are not in a task.")
+        print("Unable to call add_parameter if you are not in a task.")
         return
     obj.add_parameter(par, value)
 
@@ -481,7 +481,7 @@ def set_memory_limit(limit: str) -> None:
 def rm_parameter(par: str) -> None:
     """Remove a parameter from current task."""
     if MANAGER.current_object().object_type() != "task":
-        print("Unable to call add_input if you are not in a task.")
+        print("Unable to call remove_parameter if you are not in a task.")
         return
     MANAGER.current_object().remove_parameter(par)
 
