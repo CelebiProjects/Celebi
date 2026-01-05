@@ -21,6 +21,9 @@ class ChernCache:  # pylint: disable=too-many-instance-attributes
         self.project_modification_time = (None, -1)
         self.update_table = {}
         self.project_path = ""
+        self.deposit_consult_table = {}
+        self.count = 0
+        self.impression_check_count = {}
 
     @classmethod
     def instance(cls): # UnitTest: DONE

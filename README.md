@@ -37,13 +37,13 @@ pip install .
 Initialize a new project:
 
 ```sh
-chern init
+celebi init
 ```
 
 Start the interactive shell:
 
 ```sh
-chern
+celebi
 ```
 
 ## Common Commands

@@ -123,22 +123,47 @@ class ExecutionManagement(Core):
         """ Resubmit the impression to the runner. """
         # FIXME: incomplete
 
-    def deposit(self) -> None:
+    def deposit(self, consult_id=None) -> None:
         """ Deposit the impression to the dite. """
+        now = time.time()
+        if consult_id is not None:
+            now = consult_id
+
+        print("Time: ", now)
+
         if not self.is_task_or_algorithm():
             sub_objects = self.sub_objects()
             for sub_object in sub_objects:
-                sub_object.deposit()
+                sub_object.deposit(now)
             return
 
+        self.deposit_with_dependencies(now)
+        # cherncc = ChernCommunicator.instance()
+        # if self.is_deposited():
+        #     return
+        # if not self.is_impressed_fast():
+        #     self.impress()
+        # for obj in self.predecessors():
+        #     obj.deposit()
+        # cherncc.deposit(self.impression())
+
+    def deposit_with_dependencies(self, consult_id) -> None:
+        """ Deposit the impression and its dependencies to the dite. """
+        consult_table = CHERN_CACHE.deposit_consult_table
+        cid, deposited = consult_table.get(self.path, (-1, False))
+        print(consult_id, cid, deposited)
+        if cid == consult_id and deposited:
+            return
         cherncc = ChernCommunicator.instance()
         if self.is_deposited():
+            consult_table[self.path] = (consult_id, True)
             return
         if not self.is_impressed_fast():
             self.impress()
         for obj in self.predecessors():
-            obj.deposit()
+            obj.deposit_with_dependencies(consult_id)
         cherncc.deposit(self.impression())
+        consult_table[self.path] = (consult_id, True)
 
     def is_deposited(self) -> bool:
         """ Judge whether deposited or not. Return a True or False. """
@@ -183,3 +208,27 @@ class ExecutionManagement(Core):
         job_status = cherncc.job_status(self.impression(), runner)
         consult_table[self.path] = (consult_id, job_status)
         return job_status
+
+    def set_use_eos(self, use_eos: bool) -> None:
+        """ Set whether to use EOS for this task. """
+        if not self.is_task_or_algorithm():
+            sub_objects = self.sub_objects()
+            for sub_object in sub_objects:
+                sub_object.set_use_eos(use_eos)
+            return
+        if not self.is_task():
+            return
+        self.config_file.write_variable("use_eos", use_eos)
+
+    def set_default_runner(self, runner):
+        """ Set the default runner for this object """
+        if not self.is_task_or_algorithm():
+            sub_objects = self.sub_objects()
+            for sub_object in sub_objects:
+                sub_object.set_default_runner(runner)
+            return
+        if not self.is_task():
+            return
+        self.config_file.write_variable("default_runner", runner)
+
+

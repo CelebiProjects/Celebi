@@ -21,7 +21,7 @@ logger = getLogger("ChernLogger")
 class ImpressionManagement(Core):
     """ Class for impression management
     """
-    def impress(self): # UnitTest: DONE
+    def impress(self, consult_id = None): # UnitTest: DONE
         """ Create an impression.
         The impressions are store in a directory .celebi/impressions/[uuid]
         It is organized as following:
@@ -33,39 +33,66 @@ class ImpressionManagement(Core):
         The object_type is also saved in the json file.
         The tree and the dependencies are sorted via name.
         """
+        # start_time = time()
+        now = time.time()
+        if consult_id is None:
+            consult_id = now
+        else:
+            now = consult_id
         logger.debug("VObject impress: %s", self.path)
         object_type = self.object_type()
         if object_type not in ("task", "algorithm"):
             sub_objects = self.sub_objects()
             for sub_object in sub_objects:
-                sub_object.impress()
+                sub_object.impress(now)
             return
         logger.debug("Check whether it is impressed with is_impressed_fast")
-        if self.is_impressed_fast():
+
+        if self.is_impressed_fast(now):
             logger.warning("Already impressed: %s", self.path)
             return
         for pred in self.predecessors():
-            if not pred.is_impressed_fast():
-                pred.impress()
+            if not pred.is_impressed_fast(now):
+                pred.impress(now)
+        # print(f"Time used for impressing predecessors: {time() - start_time:.6f} seconds")
         impression = VImpression()
         impression.update_uuid(self)
+        # print(f"Time used for update_uuid: {time() - start_time:.6f} seconds")
         impression.create(self)
+        # print(f"Time used for creating impression: {time() - start_time:.6f} seconds")
         self.config_file.write_variable("impression", impression.uuid)
         # update the impression_consult_table, since the impression is changed
         consult_table = CHERN_CACHE.impression_consult_table
-        consult_table[self.path] = (-1, -1)
+        consult_table[self.path] = (now, True)
 
-    def is_impressed(self): # pylint: disable=too-many-return-statements # UnitTest: DONE
+    def is_impressed(self, consult_id = None): # pylint: disable=too-many-return-statements # UnitTest: DONE
         """ Judge whether the file is impressed
         """
-        start_time = time.time()
+        now = time.time()
+        print(consult_id)
+        if consult_id is None:
+            consult_id = now
+        else:
+            now = consult_id
+        count = CHERN_CACHE.count
+        print("Impression check count: ", count, " Time: ", now)
+        CHERN_CACHE.count = count + 1
         logger.debug("VObject is_impressed in %s", self.path)
         # Check whether there is an impression already
         impression = self.impression()
+
         logger.debug("Impression: %s", impression)
         if impression is None or impression.is_zombie():
             # print("No impression or impression is zombie")
             return False
+
+        impression_count = CHERN_CACHE.impression_check_count.get(
+            impression.uuid, 0
+            )
+        CHERN_CACHE.impression_check_count[impression.uuid] = \
+            impression_count + 1
+        print("Impression UUID check count:", impression.uuid,
+              CHERN_CACHE.impression_check_count[impression.uuid])
 
         # print(f"Checking impression {impression.uuid}...")
         # print(f"Time used for getting impression: {time.time() - start_time:.6f} seconds")
@@ -73,7 +100,7 @@ class ImpressionManagement(Core):
         logger.debug("Check the predecessors is impressed or not")
         # Fast check whether it is impressed
         for pred in self.predecessors():
-            if not pred.is_impressed_fast():
+            if not pred.is_impressed_fast(now):
                 # print("Predecessor not impressed:", pred.path)
                 return False
         # print(f"Fast check done: {time.time() - start_time:.6f} seconds")
@@ -92,6 +119,7 @@ class ImpressionManagement(Core):
 
         # print(f"Time used for checking predecessors: {time.time() - start_time:.6f} seconds")
         logger.debug("Check the file change")
+        start_time = time.time()
         # Check the file change: first to check the tree
         file_list = csys.tree_excluded(self.path)
         impression_tree = impression.tree()
@@ -101,6 +129,7 @@ class ImpressionManagement(Core):
         #     return False
         # FIXME back-compatible patch
         # all the chern.yaml -> celebi.yaml in the impression tree
+        """
         for i in range(len(impression_tree)):
             dirpath, dirnames, filenames = impression_tree[i]
             new_filenames = []
@@ -110,12 +139,13 @@ class ImpressionManagement(Core):
                 else:
                     new_filenames.append(f)
             impression_tree[i] = [dirpath, dirnames, new_filenames]
+        """
         if csys.sorted_tree(file_list) != csys.sorted_tree(impression_tree):
             # print("Tree mismatch:")
             # print("Current tree:", csys.sorted_tree(file_list))
             # print("Impression tree:", csys.sorted_tree(impression_tree))
             return False
-        # print(f"Time used for checking tree: {time.time() - start_time:.6f} seconds")
+        print(f"Time used for checking tree: {time.time() - start_time:.6f} seconds")
 
         # FIXME Add the Unit Test for this part
         alias_to_path = self.config_file.read_variable("alias_to_path", {})
@@ -131,7 +161,7 @@ class ImpressionManagement(Core):
             if uuid1 != uuid2:
                 # print("Alias uuid mismatch:", alias, uuid1, uuid2)
                 return False
-        # print(f"Time used for checking aliases: {time.time() - start_time:.6f} seconds")
+        print(f"Time used for checking aliases: {time.time() - start_time:.6f} seconds")
 
         for dirpath, dirnames, filenames in file_list: # pylint: disable=unused-variable
             for f in filenames:
@@ -142,7 +172,7 @@ class ImpressionManagement(Core):
                     #       f"{self.path}/{dirpath}/{f} ",
                     #       )
                     return False
-        # print(f"Time used for checking file contents: {time.time() - start_time:.6f} seconds")
+        print(f"Time used for checking file contents: {time.time() - start_time:.6f} seconds")
         return True
 
     def clean_impressions(self): # UnitTest: DONE
@@ -170,7 +200,7 @@ class ImpressionManagement(Core):
         self.config_file.write_variable("predecessors", [])
         self.config_file.write_variable("successors", [])
 
-    def is_impressed_fast(self): # UnitTest: DONE
+    def is_impressed_fast(self, consult_id = None): # UnitTest: DONE
         """ Judge whether the file is impressed, with timestamp
         """
         logger.debug("VObject is_impressed_fast")
@@ -181,6 +211,10 @@ class ImpressionManagement(Core):
             self.path, (-1, -1)
         )
         now = time.time()
+        if consult_id is not None:
+            now = consult_id
+        else:
+            consult_id = now
         if now - last_consult_time < 1:
             # If the last consult time is less than 1 second ago,
             # we can use the cache
@@ -197,8 +231,9 @@ class ImpressionManagement(Core):
             modification_time = modification_time_from_cache
         if modification_time < last_consult_time:
             return is_impressed
-        is_impressed = self.is_impressed()
-        consult_table[self.path] = (time.time(), is_impressed)
+        is_impressed = self.is_impressed(now)
+        # consult_table[self.path] = (time.time(), is_impressed)
+        consult_table[self.path] = (now, is_impressed)
         return is_impressed
 
     def pred_impressions(self): # UnitTest: DONE
