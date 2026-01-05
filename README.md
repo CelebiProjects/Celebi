@@ -63,8 +63,7 @@ celebi
 
 ## Documentation
 
-- User Guide: `doc/source/UserGuide.md`
-- Online Docs: http://chern.readthedocs.io/en/latest/
+- Online Docs: http://celebi.readthedocs.io/en/latest/
 - Ask DeepWiki: https://deepwiki.com/CelebiProjects/Celebi
 
 ---
