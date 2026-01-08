@@ -1,0 +1,1 @@
+{"object_type": "task", "predecessors": ["Fit", "GenTask"], "alias_to_path": {"gen": "GenTask"}, "path_to_alias": {"GenTask": "gen"}, "successors": [], "impression": "", "impressions": [], "output_md5s": {}, "output_md5": ""}

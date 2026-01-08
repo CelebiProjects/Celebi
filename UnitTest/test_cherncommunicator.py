@@ -27,6 +27,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
 
         # Connect successfully
         mock_get.reset_mock()
@@ -61,6 +62,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
 
         # Mock the response for Dite info
         mock_get.reset_mock()
@@ -96,6 +98,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
         # Mock the response for output files
 
         mock_get.reset_mock()
@@ -108,7 +111,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         expected_calls = [
             unittest.mock.call("http://localhost:8080/machine-id/local", timeout=10),
-            unittest.mock.call("http://localhost:8080/outputs/xyz/machineABC", timeout=10),
+            unittest.mock.call("http://localhost:8080/outputs/projectuuid/xyz/machineABC", timeout=10),
         ]
         mock_get.assert_has_calls(expected_calls)
         self.assertEqual(result, ["output1.out", "output2.out"])
@@ -129,6 +132,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
 
         # Mock the response for get_file
         mock_get.reset_mock()
@@ -181,6 +185,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
         self.comm.timeout = 5
 
         self.comm.deposit_with_data(impression, path="/some/raw/data")
@@ -201,15 +206,15 @@ class TestChernCommunicator(unittest.TestCase):
         mock_post.assert_called_once()
         args, kwargs = mock_post.call_args
         self.assertIn("http://localhost:8080/upload", args[0])
-        self.assertEqual(kwargs["timeout"], 5)
+        self.assertEqual(kwargs["timeout"], 5*1000)
         self.assertIn("files", kwargs)
         self.assertEqual(
-            sorted(kwargs["data"].keys()), ["config", "tarname"]
+            sorted(kwargs["data"].keys()), ["config", "project_uuid", "tarname"]
         )
 
         # Check HTTP get
         mock_get.assert_called_once_with(
-            "http://localhost:8080/set-job-status/abc123/archived",
+            "http://localhost:8080/set-job-status/projectuuid/abc123/archived",
             timeout=5
         )
         os.chdir("..")
@@ -228,6 +233,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
 
         # Setup mock impression
         class FakeImpression:
@@ -247,7 +253,7 @@ class TestChernCommunicator(unittest.TestCase):
         self.comm.export(impression, "file.txt", "output.txt")
 
         mock_get.assert_called_once_with(
-            "http://localhost:8080/export/abc123/file.txt", timeout=10
+            "http://localhost:8080/export/projectuuid/abc123/file.txt", timeout=10000
         )
 
         # Check if the output file was created correctly
@@ -272,6 +278,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
 
         # Setup mock impression
         class FakeImpression:
@@ -321,6 +328,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
 
         # Setup mock impression
         class FakeImpression:
@@ -370,6 +378,8 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
+
 
         # Setup mock impression
         class FakeImpression:
@@ -389,7 +399,7 @@ class TestChernCommunicator(unittest.TestCase):
         result = self.comm.collect(impression)
 
         mock_get.assert_called_once_with(
-            "http://localhost:8080/collect/abc123", timeout=10000
+            "http://localhost:8080/collect/projectuuid/abc123", timeout=10000
         )
         self.assertEqual(result, "collected")
 
@@ -416,6 +426,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
 
         # Mock responses
         mock_get.return_value = MagicMock(text="machine123")
@@ -430,7 +441,7 @@ class TestChernCommunicator(unittest.TestCase):
         )
         # Verify get call for run
         mock_get.assert_any_call(
-            "http://localhost:8080/run/abc123/machine123", timeout=10
+            "http://localhost:8080/run/projectuuid/abc123/machine123", timeout=10
         )
 
         # Verify post call for upload
@@ -460,6 +471,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
 
         # Call deposit method
         self.comm.deposit(impression)
@@ -487,6 +499,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
 
         # Test successful case
         mock_get.reset_mock()
@@ -494,7 +507,7 @@ class TestChernCommunicator(unittest.TestCase):
         result = self.comm.is_deposited(impression)
 
         mock_get.assert_called_once_with(
-            "http://localhost:8080/deposited/abc123", timeout=10
+            "http://localhost:8080/deposited/projectuuid/abc123", timeout=10
         )
         self.assertEqual(result, "TRUE")
 
@@ -522,6 +535,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
 
         # Test successful case
         mock_get.reset_mock()
@@ -529,7 +543,7 @@ class TestChernCommunicator(unittest.TestCase):
         result = self.comm.kill(impression)
 
         mock_get.assert_called_once_with(
-            "http://localhost:8080/kill/abc123", timeout=10
+            "http://localhost:8080/kill/projectuuid/abc123", timeout=10
         )
         self.assertEqual(result, "killed")
 
@@ -551,6 +565,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
 
         # Test successful case
         mock_get.reset_mock()
@@ -580,16 +595,17 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
 
         # Call register_runner method
         self.comm.register_runner("new_runner", "http://runner.url",
-                                  "token123")
+                                  "token123", "reana")
 
         # Verify post call
         mock_post.assert_called_once_with(
             "http://localhost:8080/register-runner",
             data={'runner': 'new_runner', 'url': 'http://runner.url',
-                  'token': 'token123'},
+                  'token': 'token123', 'backend_type': 'reana'},
             timeout=10
         )
 
@@ -611,6 +627,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
 
         # Test successful case
         mock_get.reset_mock()
@@ -646,6 +663,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
 
         # Call display method
         self.comm.display(impression, "output.html")
@@ -653,7 +671,7 @@ class TestChernCommunicator(unittest.TestCase):
         # Verify subprocess call
         mock_subprocess.assert_called_once_with([
             "open",
-            "http://localhost:8080/export/abc123/output.html"
+            "http://localhost:8080/export/projectuuid/abc123/output.html"
         ])
 
         os.chdir("..")
@@ -697,6 +715,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         # Get the current serverurl (might be from config)
         current_url = self.comm.serverurl()
+        self.comm.project_uuid = "projectuuid"
         self.assertIsInstance(current_url, str)
         self.assertIn(":", current_url)  # Should contain port
 
@@ -706,6 +725,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         # Verify the URL was updated
         updated_url = self.comm.serverurl()
+        self.comm.project_uuid = "projectuuid"
         self.assertEqual(updated_url, new_url)
 
         os.chdir("..")
@@ -720,6 +740,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
 
         # Mock the response for get_file
         mock_get.reset_mock()

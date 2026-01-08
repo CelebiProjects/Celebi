@@ -106,11 +106,11 @@ def exists_case_sensitive(path: str) -> bool:
     current = os.path.abspath(os.sep)
     parts = path.split(os.sep)[1:] # Skip the root for Unix
 
+    # print("parts is ", parts)
+    # print("current is", current)
     for part in parts:
         if not part: continue # Handle double slashes
         if part not in os.listdir(current):
-            # print(f"Path: {path} does not exist.")
-            # print(f"Part: {part} not found in {current} with exact case.")
             return False
         current = os.path.join(current, part)
 

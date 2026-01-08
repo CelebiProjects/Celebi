@@ -54,8 +54,14 @@ class TestChernUtils(unittest.TestCase):
                 csys.project_path("demo_genfit/Fit"),
                 os.path.join(pwd, "demo_genfit")
             )
-            self.assertIsNone(csys.project_path("demo_genfit/Dummy"))
-            self.assertIsNone(csys.project_path("."))
+            self.assertEqual(
+                csys.project_path("demo_genfit/Dummy"),
+                ""
+            )
+            self.assertEqual(
+                csys.project_path("."),
+                ""
+            )
         finally:
             prepare.remove_chern_project("demo_genfit")
 
@@ -91,14 +97,14 @@ class TestChernUtils(unittest.TestCase):
         """Test local config path"""
         print(Fore.BLUE + "Testing local_config_path..." + Style.RESET)
         home = os.environ['HOME']
-        expected_path = os.path.join(home, ".Chern", "config.json")
+        expected_path = os.path.join(home, ".celebi", "config.json")
         self.assertEqual(csys.local_config_path(), expected_path)
 
     def test_local_config_dir(self):
         """Test local config directory"""
         print(Fore.BLUE + "Testing local_config_dir..." + Style.RESET)
         home = os.environ['HOME']
-        expected_dir = os.path.join(home, ".Chern")
+        expected_dir = os.path.join(home, ".celebi")
         self.assertEqual(csys.local_config_dir(), expected_dir)
 
     def test_mkdir(self):
@@ -129,7 +135,7 @@ class TestChernUtils(unittest.TestCase):
         print(Fore.BLUE + "Testing list_dir..." + Style.RESET)
         prepare.create_chern_project("demo_genfit")
         try:
-            expected_files = ["gendata.C", ".chern", "chern.yaml"]
+            expected_files = ["gendata.C", ".celebi", "celebi.yaml", "README.md"]
             actual_files = csys.list_dir("demo_genfit/Gen")
             self.assertEqual(sorted(actual_files), sorted(expected_files))
         finally:

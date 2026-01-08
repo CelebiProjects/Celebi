@@ -37,8 +37,8 @@ class TestChernProject(unittest.TestCase):
         self.assertEqual(obj_fit.status(), "impressed")
         self.assertEqual(obj_fitTask.status(), "new")
 
-        self.assertEqual(str(obj_fit.impression()), "7d70b48cea88412791a48e8996cf365e")
-        self.assertEqual(str(obj_gen.impression()), "8927389570404d57a9efb6a202b4c065")
+        self.assertEqual(str(obj_fit.impression()), "b9317045ab8ada5356d457803196b581")
+        self.assertEqual(str(obj_gen.impression()), "3490657eb3256fe5e227d25af825fd0a")
 
 
         os.chdir("..")
@@ -88,6 +88,8 @@ class TestChernProject(unittest.TestCase):
         obj_fitTask.impress()
 
         obj_fitTask.clean_impressions()
+        CHERN_CACHE.__init__()
+
         self.assertEqual(obj_gen.status(), "impressed")
         self.assertEqual(obj_genTask.status(), "impressed")
         self.assertEqual(obj_fit.status(), "impressed")
@@ -105,12 +107,12 @@ class TestChernProject(unittest.TestCase):
         obj_genTask = vobj.VObject("GenTask")
         obj_fit = vobj.VObject("Fit")
         obj_fitTask = vobj.VObject("FitTask")
-        # obj_fitTask.impress()
+        obj_fitTask.impress()
 
         self.assertEqual([x for x in obj_fitTask.get_alias_list()], ['gen'])
         self.assertEqual(obj_fitTask.alias_to_path("gen"), "GenTask")
         self.assertEqual(obj_fitTask.path_to_alias("GenTask"), "gen")
-        self.assertEqual(str(obj_fitTask.alias_to_impression("gen")), "539d17968ab344e5ade4638c232bd29f")
+        self.assertEqual(str(obj_fitTask.alias_to_impression("gen")), "a7b794cfffdcdf3e5f4fdb2fbd517d06")
         self.assertTrue(obj_fitTask.has_alias("gen"))
         self.assertFalse(obj_fitTask.has_alias("non_existing_alias"))
 
@@ -241,7 +243,7 @@ class TestChernProject(unittest.TestCase):
         self.assertNotIn("tasksMoved", [obj.invariant_path() for obj in obj_top.sub_objects()])
         self.assertTrue(vobj.VObject("tasksMoved").is_zombie())
         self.assertTrue(vobj.VObject("tasksMoved/taskAna1").is_zombie())
-        self.assertTrue(os.path.exists(f".chern/impressions/{imp_taskAna1}"))
+        self.assertTrue(os.path.exists(f".celebi/impressions/{imp_taskAna1}"))
         self.assertEqual(vobj.VObject("code/ana1").successors(), [])
 
         os.chdir("..")

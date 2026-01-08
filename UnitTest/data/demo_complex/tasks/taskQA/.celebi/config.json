@@ -1,0 +1,1 @@
+{"object_type": "task", "auto_download": true, "default_runner": "local", "predecessors": ["code/qa1"], "path_to_alias": {}, "alias_to_path": {}, "impression": "e4968fa3f6daaf924e768af6e746d343", "successors": [], "impressions": [], "output_md5s": {}, "output_md5": ""}

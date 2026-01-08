@@ -215,6 +215,7 @@ class ImpressionManagement(Core):
             now = consult_id
         else:
             consult_id = now
+        # print("Cache: ", consult_table)
         if now - last_consult_time < 1:
             # If the last consult time is less than 1 second ago,
             # we can use the cache
@@ -290,6 +291,8 @@ class ImpressionManagement(Core):
             if consult_id:
                 consult_table[self.path] = (consult_id, "new")
             return "new"
+
+        # print("Fast impression check passed.")
 
         status = "impressed"
         if consult_id:

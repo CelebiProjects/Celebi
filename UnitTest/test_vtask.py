@@ -358,26 +358,61 @@ class TestChernVTask(unittest.TestCase):
                 "config.txt",
                 ".hidden",
                 "README.md",
-                "chern.yaml",
+                "celebi.yaml",
                 "data_processor.py"
             ]
             mock_terminal_size.return_value.columns = 80
 
+
+        with patch.object(obj_tsk, 'algorithm', return_value=mock_algorithm), \
+             patch('os.get_terminal_size') as mock_terminal_size:
             # Add parameters for command substitution
+            mock_terminal_size.return_value.columns = 80
+
             obj_tsk.add_parameter("test_param", "test_value")
             obj_tsk.add_parameter("input_file", "input.dat")
+
+        real_listdir = os.listdir
+
+        def listdir_side_effect(path):
+            if path == mock_algorithm.path:
+                return [
+                    "script.py",
+                    "config.txt",
+                    ".hidden",
+                    "README.md",
+                    "celebi.yaml",
+                    "data_processor.py"
+                ]
+            # fallback to real filesystem for everything else
+            return real_listdir(path)
+
+        with patch('os.listdir', side_effect=listdir_side_effect), \
+             patch.object(obj_tsk, 'algorithm', return_value=mock_algorithm), \
+             patch('os.get_terminal_size') as mock_terminal_size:
+
+            # mock_listdir.return_value = [
+            #     "script.py",
+            #     "config.txt",
+            #     ".hidden",
+            #     "README.md",
+            #     "celebi.yaml",
+            #     "data_processor.py"
+            # ]
+            mock_terminal_size.return_value.columns = 80
 
             algorithm_msg = obj_tsk.show_algorithm()
             self.assertIsNotNone(algorithm_msg)
 
             msg_str = str(algorithm_msg)
+            print(msg_str)
             # Should contain algorithm files
-            # (excluding hidden, README.md, chern.yaml)
+            # (excluding hidden, README.md, celebi.yaml)
             self.assertIn("script.py", msg_str)
             self.assertIn("data_processor.py", msg_str)
             self.assertNotIn(".hidden", msg_str)
             self.assertNotIn("README.md", msg_str)
-            self.assertNotIn("chern.yaml", msg_str)
+            self.assertNotIn("celebi.yaml", msg_str)
 
             # Should contain commands with parameter substitution
             self.assertIn("Commands", msg_str)
@@ -387,7 +422,7 @@ class TestChernVTask(unittest.TestCase):
 
         # Test with empty algorithm directory
         with patch('os.listdir') as mock_listdir, \
-             patch.object(obj_tsk, 'algorithm', return_value=mock_algorithm):
+            patch.object(obj_tsk, 'algorithm', return_value=mock_algorithm):
 
             mock_listdir.return_value = []
             algorithm_msg = obj_tsk.show_algorithm()
@@ -399,7 +434,7 @@ class TestChernVTask(unittest.TestCase):
             self.assertIsNotNone(ls_result)
 
         os.chdir("..")
-        prepare.remove_chern_project("demo_complex")
+        # prepare.remove_chern_project("demo_complex")
         CHERN_CACHE.__init__()
 
     def test_file_manager_methods(self):
@@ -431,7 +466,7 @@ class TestChernVTask(unittest.TestCase):
             # Verify the method calls
             mock_dir_md5.assert_called_once_with(test_path)
             mock_yaml_file.assert_called_once_with(
-                os.path.join(obj_tsk.path, "chern.yaml")
+                os.path.join(obj_tsk.path, "celebi.yaml")
             )
             mock_yaml_instance.write_variable.assert_called_once_with(
                 "uuid", test_md5
@@ -513,7 +548,7 @@ class TestChernVTask(unittest.TestCase):
 
             # Verify correct file path and variable name
             mock_yaml_file.assert_called_once_with(
-                os.path.join(obj_tsk.path, "chern.yaml")
+                os.path.join(obj_tsk.path, "celebi.yaml")
             )
             mock_yaml_instance.read_variable.assert_called_once_with(
                 "uuid", ""
@@ -989,7 +1024,7 @@ class TestChernVTask(unittest.TestCase):
 
             # Verify method calls
             mock_yaml.assert_called_once_with(
-                os.path.join(obj_tsk.path, "chern.yaml")
+                os.path.join(obj_tsk.path, "celebi.yaml")
             )
             mock_yaml_instance.read_variable.assert_called_once_with(
                 "environment", ""
@@ -1006,7 +1041,7 @@ class TestChernVTask(unittest.TestCase):
 
             # Verify method calls
             mock_yaml.assert_called_once_with(
-                os.path.join(obj_tsk.path, "chern.yaml")
+                os.path.join(obj_tsk.path, "celebi.yaml")
             )
             mock_yaml_instance.read_variable.assert_called_once_with(
                 "memory_limit", ""
@@ -1024,7 +1059,7 @@ class TestChernVTask(unittest.TestCase):
 
             # Verify method calls
             mock_yaml.assert_called_once_with(
-                os.path.join(obj_tsk.path, "chern.yaml")
+                os.path.join(obj_tsk.path, "celebi.yaml")
             )
             mock_yaml_instance.read_variable.assert_called_once_with(
                 "parameters", {}
@@ -1184,7 +1219,7 @@ class TestChernVTask(unittest.TestCase):
 
             # Verify method calls
             mock_yaml.assert_called_once_with(
-                os.path.join(obj_tsk.path, "chern.yaml")
+                os.path.join(obj_tsk.path, "celebi.yaml")
             )
             mock_yaml_instance.write_variable.assert_called_once_with(
                 "environment", "python:3.9"
@@ -1199,7 +1234,7 @@ class TestChernVTask(unittest.TestCase):
 
             # Verify method calls
             mock_yaml.assert_called_once_with(
-                os.path.join(obj_tsk.path, "chern.yaml")
+                os.path.join(obj_tsk.path, "celebi.yaml")
             )
             mock_yaml_instance.write_variable.assert_called_once_with(
                 "memory_limit", "2Gi"

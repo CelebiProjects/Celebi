@@ -138,7 +138,7 @@ class TestVAlgorithm(unittest.TestCase):
                               return_value='ready'), \
                  patch('os.listdir',
                        return_value=['script.py', 'config.txt',
-                                     '.chern', 'chern.yaml']), \
+                                     '.celebi', 'celebi.yaml']), \
                  patch('shutil.get_terminal_size') as mock_terminal, \
                  patch('CelebiChrono.kernel.vobject.VObject.ls') as mock_super_ls:
 
@@ -177,13 +177,13 @@ class TestVAlgorithm(unittest.TestCase):
             # Test with files
             with patch('os.listdir',
                        return_value=['script.py', 'config.txt',
-                                     '.hidden', 'chern.yaml']), \
+                                     '.hidden', 'celebi.yaml']), \
                  patch('shutil.get_terminal_size') as mock_terminal:
 
                 mock_terminal.return_value.columns = 80
 
                 result = algorithm.print_files(
-                    test_path, excluded=('chern.yaml',)
+                    test_path, excluded=('celebi.yaml',)
                 )
                 self.assertIsInstance(result, Message)
 
@@ -192,7 +192,7 @@ class TestVAlgorithm(unittest.TestCase):
                 self.assertIn("script.py", result_str)
                 self.assertIn("config.txt", result_str)
                 self.assertNotIn(".hidden", result_str)
-                self.assertNotIn("chern.yaml", result_str)
+                self.assertNotIn("celebi.yaml", result_str)
 
             # Test with no files
             with patch('os.listdir', return_value=[]):
@@ -388,7 +388,7 @@ class TestVAlgorithm(unittest.TestCase):
 
             # Verify directories were created
             mock_mkdir.assert_any_call(test_path)
-            mock_mkdir.assert_any_call(f"{test_path}/.chern")
+            mock_mkdir.assert_any_call(f"{test_path}/.celebi")
 
             # Verify config file was created
             mock_config.assert_called_once()
@@ -398,7 +398,7 @@ class TestVAlgorithm(unittest.TestCase):
 
             # Verify README file was created
             mock_file.assert_called_with(
-                f"{test_path}/.chern/README.md", "w", encoding="utf-8"
+                f"{test_path}/README.md", "w", encoding="utf-8"
             )
 
     @patch('subprocess.call')
@@ -422,7 +422,7 @@ class TestVAlgorithm(unittest.TestCase):
 
             # Verify directories were created
             mock_mkdir.assert_any_call(test_path)
-            mock_mkdir.assert_any_call(f"{test_path}/.chern")
+            mock_mkdir.assert_any_call(f"{test_path}/.celebi")
 
             # Verify template-related prints were called
             mock_print.assert_any_call("Creating template, but ...")
