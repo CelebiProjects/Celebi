@@ -99,6 +99,7 @@ def exists_case_sensitive(path: str) -> bool:
     even on case-insensitive file systems.
     """
     if not os.path.exists(path):
+        # print(f"Path: {path} does not exist at all.")
         return False
 
     path = os.path.abspath(path)
@@ -108,6 +109,8 @@ def exists_case_sensitive(path: str) -> bool:
     for part in parts:
         if not part: continue # Handle double slashes
         if part not in os.listdir(current):
+            # print(f"Path: {path} does not exist.")
+            # print(f"Part: {part} not found in {current} with exact case.")
             return False
         current = os.path.join(current, part)
 
@@ -260,15 +263,15 @@ def sorted_tree(tree):
 def project_path(path=None):
     """ Get the project path by searching for project.json
     """
-    if path is None:
+    if not path:
         path = os.getcwd()
     if not exists(path):
-        return None
+        return ""
     while path != "/":
         if exists(path+"/.celebi/project.json"):
             return abspath(path)
         path = abspath(path+"/..")
-    return None
+    return ""
 
 
 def dir_mtime(path):
