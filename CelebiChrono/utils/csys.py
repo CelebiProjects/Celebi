@@ -5,6 +5,7 @@ define some classes and functions used throughout the project
 # pylint: disable=broad-exception-caught
 # Load module
 import os
+import time
 import shutil
 import uuid
 import hashlib
