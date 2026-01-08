@@ -456,7 +456,30 @@ def colorize_diff(diff_lines):
 
     return "\n".join(out)
 
+def update_time(consult_id):
+    now = time.time()
+    if consult_id:
+        now = consult_id
+    else:
+        consult_id = now
+    return now, consult_id
 
+def get_files_in_directory(root, exclude=[]):
+    files = []
+    for dirpath, _, files in os.walk(root):
+        for f in files:
+            file_excluded = False
+            for excl in exclude:
+                if normpath(os.path.join(dirpath, f)).startswith(
+                    normpath(os.path.join(root, excl))
+                ):
+                    file_excluded = True
+                    break
+            if file_excluded:
+                continue
+            rel = os.path.relpath(os.path.join(dirpath, f), root)
+            files.append(rel)
+    return files
 
 @contextmanager
 def open_subprocess(command):

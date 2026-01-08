@@ -166,3 +166,7 @@ class VObject(ArcManagement, FileManagement, AliasManagement,
 
     def get_vobject(self, path: str, project_path: str = "") -> 'VObject':
         return VObject(path, project_path)
+
+    def get_vtask(self, path: str, project_path: str="") -> 'VTask':
+        from .vtask import VTask # pylint: disable=cyclic-import, import-outside-toplevel
+        return VTask(path, project_path)

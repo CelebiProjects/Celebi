@@ -48,7 +48,7 @@ class VDirectory(VObject):
         message.add(helpme.directory_helpme.get(command, "No such command, try ``helpme'' alone."))
         return message
 
-    def deposit(self):
+    def deposit(self, consult_id=None) -> None:
         """ Deposit the contents of the directory
             (apply deposit to the tasks/algorithms/subdirectories)
         """

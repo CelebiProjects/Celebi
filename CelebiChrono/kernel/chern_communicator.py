@@ -50,19 +50,21 @@ Method Usage Status:
 ✗ UNUSED methods: resubmit, runners_url
 """
 
-from os.path import join
 import json
-from logging import getLogger
 import subprocess
 import tarfile
-import requests
 import time
+from logging import getLogger
+from os.path import join
+
+import requests
 
 from ..utils import csys
 from ..utils import metadata
 from ..utils.pretty import colorize
-logger = getLogger("ChernLogger")
 from .chern_cache import ChernCache
+
+logger = getLogger("ChernLogger")
 CHERN_CACHE = ChernCache.instance()
 
 
@@ -480,7 +482,9 @@ class ChernCommunicator():
         # Open the browser to display the file
         url = self.serverurl()
         # The browser is 'open'
-        subprocess.call(["open", f"http://{url}/export/{self.project_uuid}/{impression.uuid}/{filename}"
+        subprocess.call([
+            "open",
+            f"http://{url}/export/{self.project_uuid}/{impression.uuid}/{filename}"
             ])
 
     def impview(self, impression):

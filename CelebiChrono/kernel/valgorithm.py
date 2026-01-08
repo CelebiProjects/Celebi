@@ -70,7 +70,12 @@ class VAlgorithm(VObject):
             message.add(status_str)
             message.add("\n")
 
-        message.append(self.print_files(self.path, excluded=(".celebi", "celebi.yaml", "README.md")))
+        message.append(
+                self.print_files(
+                    self.path,
+                    excluded=(".celebi", "celebi.yaml", "README.md")
+                    )
+                )
 
         environment = self.environment()
         message.add(f"---- Environment: {environment}\n", "title0")

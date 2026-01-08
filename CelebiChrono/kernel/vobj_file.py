@@ -8,6 +8,7 @@ import shutil
 from dataclasses import dataclass
 from logging import getLogger
 from typing import TYPE_CHECKING, Tuple, List
+import difflib
 
 from ..utils import csys
 from ..utils.message import Message
@@ -16,7 +17,6 @@ from ..utils import metadata
 from .vobj_core import Core
 from .chern_cache import ChernCache
 from .chern_communicator import ChernCommunicator
-import difflib
 
 if TYPE_CHECKING:
     from .vobject import VObject
@@ -44,7 +44,7 @@ class LsParameters:
     status: bool = False
     successors: bool = False
 
-class FileManagement(Core):
+class FileManagement(Core): # pylint: disable=too-many-public-methods
     """ This class is used to manage the file system of the VObject
     """
     def ls(self, show_info: 'LsParameters' = LsParameters()) -> Message:
@@ -209,7 +209,9 @@ class FileManagement(Core):
         message.add("\n")
         return message
 
-    def show_sub_objects(self, sub_objects: List['VObject'], show_info: LsParameters) -> Message:
+    def show_sub_objects(self, #pylint: disable=too-many-locals
+                         sub_objects: List['VObject'],
+                         show_info: LsParameters) -> Message:
         """ Show the sub_objects with dynamic alignment """
         message = Message()
         # sub_objects = self.sub_objects()
@@ -238,12 +240,8 @@ class FileManagement(Core):
 
         # 2. Iterate and build the message using calculated widths
         for index, (obj_type, sub_path) in enumerate(processed_objects):
-            # Format the base string with dynamic padding
-            # index: right-aligned based on total count
-            # type: left-aligned
-            # path: left-aligned (usually better for readability than right-aligned)
             order_index = f"{[index]}"
-            base_str = f"{order_index:>{max_idx_w+2}} {obj_type:<{max_type_w + 2}} {sub_path:<{max_path_w}} "
+            base_str = f"{order_index:>{max_idx_w+2}} {obj_type:<{max_type_w + 2}} {sub_path:<{max_path_w}}" # pylint: disable=line-too-long
             message.add(base_str)
 
             if show_info.status:
@@ -256,7 +254,7 @@ class FileManagement(Core):
 
         return message
 
-    def show_predecessors(self, predecessors: List['VObject'], total: int) -> Message:
+    def show_predecessors(self, predecessors: List['VObject'], total: int) -> Message: #pylint: disable=too-many-locals
         """ Show the predecessors of the object with dynamic alignment """
         message = Message()
         message.add("o--> Predecessors:\n", "title0")
@@ -295,10 +293,6 @@ class FileManagement(Core):
 
         # 3. Emit each predecessor with dynamic padding
         for order, obj_type, alias, pred_path in processed_data:
-            # order: right-aligned
-            # type: left-aligned
-            # alias: left-aligned
-            # path: left-aligned
             line = (
                 f"{order:>{max_order_w}} "
                 f"{obj_type:<{max_type_w + 1}} "
@@ -770,7 +764,7 @@ class FileManagement(Core):
         return message
 
 
-    def changes(self):
+    def changes(self): # pylint: disable=too-many-locals
         """
         Get the changes with respect to the latest impression
         """
@@ -797,23 +791,8 @@ class FileManagement(Core):
         # --------------------------------------------------------
         #  Compare file lists (sorted, relative paths)
         # --------------------------------------------------------
-        old_files = []
-        new_files = []
-
-        for dirpath, _, files in os.walk(old_root):
-            for f in files:
-                rel = os.path.relpath(os.path.join(dirpath, f), old_root)
-                old_files.append(rel)
-
-        for dirpath, _, files in os.walk(new_root):
-            for f in files:
-                # Exclude all the .celebi/*
-                if normpath(os.path.join(dirpath, f)).startswith(
-                    normpath(os.path.join(new_root, ".celebi"))
-                ):
-                    continue
-                rel = os.path.relpath(os.path.join(dirpath, f), new_root)
-                new_files.append(rel)
+        old_files = csys.get_files_in_directory(old_root)
+        new_files = csys.get_files_in_directory(new_root, exclude=[".celebi"])
 
         old_files_set = set(old_files)
         new_files_set = set(new_files)
@@ -823,9 +802,9 @@ class FileManagement(Core):
         added_files   = sorted(new_files_set - old_files_set)
 
         if added_files != removed_files:
-            message.add(f"Added files: ", "title0")
+            message.add("Added files: ", "title0")
             message.add(f"{added_files}\n", "info")
-            message.add(f"Removed files: ", "title0")
+            message.add("Removed files: ", "title0")
             message.add(f"{removed_files}\n", "info")
 
         # --------------------------------------------------------
@@ -840,7 +819,7 @@ class FileManagement(Core):
                     old_txt = f1.readlines()
                 with open(new_f, "r", encoding="utf-8", errors="ignore") as f2:
                     new_txt = f2.readlines()
-            except Exception as e:
+            except (IOError, ValueError) as e:  # Be specific
                 message.add(f"Failed to read file {rel}: {e}", "warning")
                 continue
 

@@ -65,7 +65,7 @@ class ImpressionManagement(Core):
         consult_table = CHERN_CACHE.impression_consult_table
         consult_table[self.path] = (now, True)
 
-    def is_impressed(self, consult_id = None): # pylint: disable=too-many-return-statements # UnitTest: DONE
+    def is_impressed(self, consult_id = None): # pylint: disable=too-many-return-statements, too-many-locals, too-many-branches # UnitTest: DONE
         """ Judge whether the file is impressed
         """
         now = time.time()
@@ -129,17 +129,17 @@ class ImpressionManagement(Core):
         #     return False
         # FIXME back-compatible patch
         # all the chern.yaml -> celebi.yaml in the impression tree
-        """
-        for i in range(len(impression_tree)):
-            dirpath, dirnames, filenames = impression_tree[i]
-            new_filenames = []
-            for f in filenames:
-                if f == "chern.yaml":
-                    new_filenames.append("celebi.yaml")
-                else:
-                    new_filenames.append(f)
-            impression_tree[i] = [dirpath, dirnames, new_filenames]
-        """
+
+        # for i in range(len(impression_tree)):
+        #     dirpath, dirnames, filenames = impression_tree[i]
+        #     new_filenames = []
+        #     for f in filenames:
+        #         if f == "chern.yaml":
+        #             new_filenames.append("celebi.yaml")
+        #         else:
+        #             new_filenames.append(f)
+        #     impression_tree[i] = [dirpath, dirnames, new_filenames]
+
         if csys.sorted_tree(file_list) != csys.sorted_tree(impression_tree):
             # print("Tree mismatch:")
             # print("Current tree:", csys.sorted_tree(file_list))
@@ -210,11 +210,7 @@ class ImpressionManagement(Core):
         (last_consult_time, is_impressed) = consult_table.get(
             self.path, (-1, -1)
         )
-        now = time.time()
-        if consult_id is not None:
-            now = consult_id
-        else:
-            consult_id = now
+        now, consult_id = csys.update_time(consult_id)
         # print("Cache: ", consult_table)
         if now - last_consult_time < 1:
             # If the last consult time is less than 1 second ago,
@@ -415,18 +411,8 @@ class ImpressionManagement(Core):
                     new_root = new_impr.path + "/contents"
 
                     # Compare file lists (sorted, relative paths)
-                    old_files = []
-                    new_files = []
-
-                    for dirpath, _, files in os.walk(old_root):
-                        for f in files:
-                            rel = os.path.relpath(os.path.join(dirpath, f), old_root)
-                            old_files.append(rel)
-
-                    for dirpath, _, files in os.walk(new_root):
-                        for f in files:
-                            rel = os.path.relpath(os.path.join(dirpath, f), new_root)
-                            new_files.append(rel)
+                    old_files = csys.get_files_in_directory(old_root)
+                    new_files = csys.get_files_in_directory(new_root)
 
                     old_files_set = set(old_files)
                     new_files_set = set(new_files)
@@ -477,7 +463,10 @@ class ImpressionManagement(Core):
         """Print all the parents of the current impression.
         """
         message = Message()
-        message.add(f"History of impression {self.impression().short_uuid()}:(latest->oldest)\n", "title0")
+        message.add(
+            f"History of impression {self.impression().short_uuid()}:(latest->oldest)\n",
+            "title0"
+            )
         parents = self.impression().parents()
         # reverse the order
         parents.reverse()

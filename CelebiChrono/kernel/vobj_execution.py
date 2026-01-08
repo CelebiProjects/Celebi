@@ -59,27 +59,34 @@ class ExecutionManagement(Core):
         self.deposit()
         if not self.is_task_or_algorithm():
             sub_objects = self.sub_objects_recursively()
-            from .vtask import VTask
             for sub_object in sub_objects:
                 if not sub_object.is_task():
                     continue
-                default_runner = VTask(sub_object.path).default_runner()
+                default_runner = self.get_vtask(sub_object.path).default_runner()
                 if default_runner != runner:
                     msg = Message()
-                    msg.add(f"Runner mismatch: some object target runner is {default_runner}, but submit to {runner}.", "warning")
+                    msg.add(
+                            f"Runner mismatch: some object target runner is"
+                            f" {default_runner}, but submit to {runner}.",
+                            "warning"
+                            )
                     return msg
         else:
-            if self.default_runner() != runner:
+            if self.is_task() and self.get_vtask(self.path).default_runner() != runner:
+                default_runner = self.get_vtask(self.path).default_runner()
                 msg = Message()
-                msg.add(f"Runner mismatch: object target runner is {self.default_runner()}, but submit to {runner}.", "warning")
+                msg.add(
+                        f"Runner mismatch: object target runner is"
+                        f" {default_runner}, but submit to {runner}.",
+                        "warning"
+                        )
                 return msg
         use_eos = {}
         sub_objects = self.sub_objects_recursively()
         for sub_object in sub_objects:
-            from .vtask import VTask
             if not sub_object.is_task():
                 continue
-            task = VTask(sub_object.path)
+            task = self.get_vtask(sub_object.path)
             use_eos[task.impression().uuid] = task.use_eos()
         impressions = self.get_impressions()
         cherncc.execute(impressions, use_eos, runner)
@@ -87,7 +94,7 @@ class ExecutionManagement(Core):
         msg.add(f"Impressions {impressions} submitted to {runner}.", "info")
         return msg
 
-    def purge(self, runner: str = "local") -> Message:
+    def purge(self, _: str = "local") -> Message:
         """ Submit the impression to the runner. """
         cherncc = ChernCommunicator.instance()
         # Check the connection
@@ -129,7 +136,7 @@ class ExecutionManagement(Core):
         if consult_id is not None:
             now = consult_id
 
-        print("Time: ", now)
+        # print("Time: ", now)
 
         if not self.is_task_or_algorithm():
             sub_objects = self.sub_objects()
@@ -229,6 +236,4 @@ class ExecutionManagement(Core):
             return
         if not self.is_task():
             return
-        self.config_file.write_variable("default_runner", runner)
-
-
+        self.get_vtask(self.path).set_default_runner(runner)

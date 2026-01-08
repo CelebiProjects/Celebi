@@ -170,11 +170,7 @@ class ArcManagement(Core):
             self.path, (-1, False)
         )
 
-        now = time()
-        if consult_id is not None:
-            now = consult_id
-        else:
-            consult_id = now
+        now, consult_id = csys.update_time(consult_id)
 
         if now - last_consult_time < 1:
             return has_predecessor
@@ -297,7 +293,7 @@ class ArcManagement(Core):
     def add_input(self, path, alias):
         """ add input
         """
-        start_time = time()
+        # start_time = time()
         if not self.is_task_or_algorithm():
             print(f"You are adding input to {self.object_type()} type object. "
                   "The input is required to be a task or an algorithm.")

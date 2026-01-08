@@ -172,7 +172,11 @@ class VImpression():
         self.tarfile = self.path + "/packed" + self.uuid + ".tar.gz"
         return new_uuid
 
-    def generate_imp_uuid(self, project_uuid: str, directory_path: str, dependency_uuids: List[str]) -> str:
+    def generate_imp_uuid(self,
+                          project_uuid: str,
+                          directory_path: str,
+                          dependency_uuids: List[str]
+        ) -> str:
         """
         Generates a unique, deterministic hash based on:
         1. A list of preceding impression UUIDs.

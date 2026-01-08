@@ -138,6 +138,11 @@ class Core(ABC):
         """
 
     @abstractmethod
+    def get_vtask(self, path: str, project_path: str = "") -> 'VTask':
+        """ To avoid circular import
+        """
+
+    @abstractmethod
     def status(self, consult_id: Optional[int] = None) -> str:
         """ Abstract method for future implementation"""
 
@@ -152,6 +157,10 @@ class Core(ABC):
     # Abstract methods, for file operations
     @abstractmethod
     def sub_objects_recursively(self):
+        """ Abstract method for future implementation"""
+
+    @abstractmethod
+    def sub_objects_recursively_parents(self):
         """ Abstract method for future implementation"""
 
     @abstractmethod

@@ -172,6 +172,10 @@ class Core(VObject):
         """ Abstract method for future implementation"""
 
     @abstractmethod
+    def use_eos(self) -> str:
+        """ Abstract method for future implementation"""
+
+    @abstractmethod
     def send_data(self, path):
         """ Abstract method for future implementation"""
 
