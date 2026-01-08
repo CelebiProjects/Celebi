@@ -110,7 +110,8 @@ def exists_case_sensitive(path: str) -> bool:
     # print("parts is ", parts)
     # print("current is", current)
     for part in parts:
-        if not part: continue # Handle double slashes
+        if not part:
+            continue # Handle double slashes
         if part not in os.listdir(current):
             return False
         current = os.path.join(current, part)
@@ -136,7 +137,8 @@ def exists_case_insensitive(path: str) -> bool:
         current = '.'
 
     for part in parts:
-        if not part: continue  # Skip empty parts from double slashes
+        if not part:
+            continue  # Skip empty parts from double slashes
 
         try:
             # List all items in the current directory
@@ -157,6 +159,8 @@ def exists_case_insensitive(path: str) -> bool:
     return True
 
 def exists(path: str) -> bool:
+    """ Check the exists of path
+    """
     return exists_case_sensitive(path)
 
 # def exists(path: str) -> bool:
@@ -435,6 +439,8 @@ def dir_md5(directory_path):
     return md5_hash.hexdigest()
 
 def colorize_diff(diff_lines):
+    """ Get the diff with color
+    """
     # ANSI color codes for terminal output
     _red = "\033[31m"
     _green = "\033[32m"
@@ -458,6 +464,8 @@ def colorize_diff(diff_lines):
     return "\n".join(out)
 
 def update_time(consult_id):
+    """ update the time and consult_id
+    """
     now = time.time()
     if consult_id:
         now = consult_id
@@ -465,14 +473,16 @@ def update_time(consult_id):
         consult_id = now
     return now, consult_id
 
-def get_files_in_directory(root, exclude=[]):
+def get_files_in_directory(root, exclude=()):
+    """ Get all files in the directory recursively, excluding specified paths
+    """
     files = []
     for dirpath, _, files in os.walk(root):
         for f in files:
             file_excluded = False
             for excl in exclude:
-                if normpath(os.path.join(dirpath, f)).startswith(
-                    normpath(os.path.join(root, excl))
+                if os.path.normpath(os.path.join(dirpath, f)).startswith(
+                    os.path.normpath(os.path.join(root, excl))
                 ):
                     file_excluded = True
                     break
