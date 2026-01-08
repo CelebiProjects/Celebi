@@ -119,3 +119,10 @@ class AdvancedCommands:
             pass
 
         print("\nReturned to Chern Shell.")
+
+    def do_doctor(self, _arg):
+        """Run system diagnostics."""
+        try:
+            shell.doctor()
+        except Exception as e:
+            print(f"Error running diagnostics: {e}")
