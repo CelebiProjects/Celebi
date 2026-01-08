@@ -118,7 +118,7 @@ class VObject(ArcManagement, FileManagement, AliasManagement,
         begin with empty characters.
         """
         logger.debug("VObject init: %s", path)
-        super().__init__(path)
+        super().__init__(path, project_path)
         logger.debug("VObject init done: %s", path)
 
     def color_tag(self, status: str) -> str:
