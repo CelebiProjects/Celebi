@@ -686,3 +686,6 @@ def watermark() -> Message:
 def changes() -> Message:
     """Print the changes of a task or algorithm."""
     return MANAGER.current_object().changes()
+
+def doctor() -> Message:
+    return MANAGER.current_object().doctor()
