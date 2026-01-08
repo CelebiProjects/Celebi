@@ -69,14 +69,14 @@ class ImpressionManagement(Core):
         """ Judge whether the file is impressed
         """
         now = time.time()
-        print(consult_id)
+        # print(consult_id)
         if consult_id is None:
             consult_id = now
         else:
             now = consult_id
-        count = CHERN_CACHE.count
-        print("Impression check count: ", count, " Time: ", now)
-        CHERN_CACHE.count = count + 1
+        # count = CHERN_CACHE.count
+        # print("Impression check count: ", count, " Time: ", now)
+        # CHERN_CACHE.count = count + 1
         logger.debug("VObject is_impressed in %s", self.path)
         # Check whether there is an impression already
         impression = self.impression()
@@ -86,13 +86,13 @@ class ImpressionManagement(Core):
             # print("No impression or impression is zombie")
             return False
 
-        impression_count = CHERN_CACHE.impression_check_count.get(
-            impression.uuid, 0
-            )
-        CHERN_CACHE.impression_check_count[impression.uuid] = \
-            impression_count + 1
-        print("Impression UUID check count:", impression.uuid,
-              CHERN_CACHE.impression_check_count[impression.uuid])
+        # impression_count = CHERN_CACHE.impression_check_count.get(
+        #     impression.uuid, 0
+        #     )
+        # CHERN_CACHE.impression_check_count[impression.uuid] = \
+        #     impression_count + 1
+        # print("Impression UUID check count:", impression.uuid,
+        #       CHERN_CACHE.impression_check_count[impression.uuid])
 
         # print(f"Checking impression {impression.uuid}...")
         # print(f"Time used for getting impression: {time.time() - start_time:.6f} seconds")
@@ -119,7 +119,7 @@ class ImpressionManagement(Core):
 
         # print(f"Time used for checking predecessors: {time.time() - start_time:.6f} seconds")
         logger.debug("Check the file change")
-        start_time = time.time()
+        # start_time = time.time()
         # Check the file change: first to check the tree
         file_list = csys.tree_excluded(self.path)
         impression_tree = impression.tree()
@@ -145,7 +145,7 @@ class ImpressionManagement(Core):
             # print("Current tree:", csys.sorted_tree(file_list))
             # print("Impression tree:", csys.sorted_tree(impression_tree))
             return False
-        print(f"Time used for checking tree: {time.time() - start_time:.6f} seconds")
+        # print(f"Time used for checking tree: {time.time() - start_time:.6f} seconds")
 
         # FIXME Add the Unit Test for this part
         alias_to_path = self.config_file.read_variable("alias_to_path", {})
@@ -161,7 +161,7 @@ class ImpressionManagement(Core):
             if uuid1 != uuid2:
                 # print("Alias uuid mismatch:", alias, uuid1, uuid2)
                 return False
-        print(f"Time used for checking aliases: {time.time() - start_time:.6f} seconds")
+        # print(f"Time used for checking aliases: {time.time() - start_time:.6f} seconds")
 
         for dirpath, dirnames, filenames in file_list: # pylint: disable=unused-variable
             for f in filenames:
@@ -172,7 +172,7 @@ class ImpressionManagement(Core):
                     #       f"{self.path}/{dirpath}/{f} ",
                     #       )
                     return False
-        print(f"Time used for checking file contents: {time.time() - start_time:.6f} seconds")
+        # print(f"Time used for checking file contents: {time.time() - start_time:.6f} seconds")
         return True
 
     def clean_impressions(self): # UnitTest: DONE
