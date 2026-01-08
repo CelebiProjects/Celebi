@@ -31,6 +31,8 @@ class Core(ABC):
         self.path = csys.strip_path_string(path)
         self.config_file = metadata.ConfigFile(self.path+"/.celebi/config.json")
         self._project_path = project_path
+        self._project_uuid = ""
+        # self._project_uuid = ""
         logger.debug("VObject::Core.__init__ done")
 
     def __str__(self) -> str: # Unittest: DONE
@@ -48,9 +50,10 @@ class Core(ABC):
         """
         if not self._project_path:
             self._project_path = csys.project_path(self.path)
+        if not self._project_uuid and self._project_path:
             self._project_uuid = metadata.ConfigFile(
-                    os.path.join(self._project_path, ".celebi/config.json")
-                    ).read_variable("project_uuid", "")
+                os.path.join(self._project_path, ".celebi/config.json")
+                ).read_variable("project_uuid", "")
         return self._project_path
 
     def project_uuid(self) -> str:
