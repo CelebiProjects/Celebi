@@ -107,7 +107,7 @@ class EnvironmentCommands:
         """Purge impressions current object."""
         try:
             # Ask for confirmation
-            answer = input("Are you sure you want to purge impressions? This action cannot be undone. (N/y): ")
+            answer = input("Are you sure you want to purge impressions? This action cannot be undone. (N/y): ") # pylint: disable=line-too-long
             if answer.lower() != 'y':
                 print("Purge impressions cancelled.")
                 return
@@ -119,7 +119,7 @@ class EnvironmentCommands:
         """Purge old impressions of current object."""
         try:
             # Ask for confirmation
-            answer = input("Are you sure you want to purge old impressions? This action cannot be undone. (N/y): ")
+            answer = input("Are you sure you want to purge old impressions? This action cannot be undone. (N/y): ") # pylint: disable=line-too-long
             if answer.lower() != 'y':
                 print("Purge old impressions cancelled.")
                 return
@@ -156,10 +156,14 @@ class EnvironmentCommands:
 
         try:
             # Prompt user: if they press Enter without typing, it uses the default
-            runner = input(f"Enter runner name [{defaults['runner']}]: ").strip() or defaults['runner']
-            url = input(f"Enter URL [{defaults['url']}]: ").strip() or defaults['url']
-            secret = input(f"Enter secret [{defaults['secret']}]: ").strip() or defaults['secret']
-            backend_type = input("Enter backend type [optional]: ").strip() or defaults['backend_type']
+            runner = input(f"Enter runner name [{defaults['runner']}]: ").strip() \
+                        or defaults['runner']
+            url = input(f"Enter URL [{defaults['url']}]: ").strip() \
+                    or defaults['url']
+            secret = input(f"Enter secret [{defaults['secret']}]: ").strip() \
+                    or defaults['secret']
+            backend_type = input("Enter backend type [optional]: ").strip() \
+                    or defaults['backend_type']
 
             shell.register_runner(runner, url, secret, backend_type)
             print(f"--> Registered {runner} to {url}")

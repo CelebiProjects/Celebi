@@ -572,6 +572,7 @@ def remove_runner(runner: str) -> None:
     cherncc.remove_runner(runner)
 
 def request_runner(runner: str) -> None:
+    """Set the requested runner"""
     MANAGER.current_object().set_default_runner(runner)
 
 def search_impression(partial_uuid: str) -> Message:
@@ -688,4 +689,5 @@ def changes() -> Message:
     return MANAGER.current_object().changes()
 
 def doctor() -> Message:
+    """Doctor the impression"""
     return MANAGER.current_object().doctor()

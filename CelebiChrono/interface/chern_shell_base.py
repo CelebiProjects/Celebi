@@ -142,34 +142,34 @@ class ChernShellBase(cmd.Cmd):
         )
         return True
 
-    def get_completions(
-        self, current_path: str, filepath: str, _line: str
-    ) -> list:
-        """Get command completions for file paths."""
-        # Calculate the full path to look in
-        full_search_path = os.path.join(current_path, filepath)
+    # def get_completions(
+    #     self, current_path: str, filepath: str, _line: str
+    # ) -> list:
+    #     """Get command completions for file paths."""
+    #     # Calculate the full path to look in
+    #     full_search_path = os.path.join(current_path, filepath)
 
-        # Separate the directory user typed from the file prefix
-        user_dir = os.path.dirname(filepath)
-        dirname = os.path.dirname(full_search_path)
-        basename = os.path.basename(full_search_path)
+    #     # Separate the directory user typed from the file prefix
+    #     user_dir = os.path.dirname(filepath)
+    #     dirname = os.path.dirname(full_search_path)
+    #     basename = os.path.basename(full_search_path)
 
-        if csys.exists(dirname):
-            # Get all files in that directory
-            candidates = [
-                f for f in os.listdir(dirname) if not f.startswith(".celebi")
-            ]
+    #     if csys.exists(dirname):
+    #         # Get all files in that directory
+    #         candidates = [
+    #             f for f in os.listdir(dirname) if not f.startswith(".celebi")
+    #         ]
 
-            # Filter for matches
-            matches = [f for f in candidates if f.startswith(basename)]
+    #         # Filter for matches
+    #         matches = [f for f in candidates if f.startswith(basename)]
 
-            # If the user typed a directory, prepend it to results
-            if user_dir:
-                return [os.path.join(user_dir, m) for m in matches]
+    #         # If the user typed a directory, prepend it to results
+    #         if user_dir:
+    #             return [os.path.join(user_dir, m) for m in matches]
 
-            return matches
+    #         return matches
 
-        return []
+    #     return []
 
     def get_completions(
         self, current_path: str, filepath: str, _line: str

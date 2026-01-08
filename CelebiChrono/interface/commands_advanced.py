@@ -102,7 +102,7 @@ class AdvancedCommands:
         except Exception as e:
             print(f"Error printing changes: {e}")
 
-    def do_watermark(self, arg):
+    def do_watermark(self, _arg):
         """Set the watermark"""
         try:
             shell.watermark()
