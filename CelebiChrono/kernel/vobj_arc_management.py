@@ -121,7 +121,7 @@ class ArcManagement(Core):
                 if CHERN_CACHE.project_path \
                 else CHERN_CACHE.use_and_cache_project_path(csys.project_path())
         for path in succ_str:
-            successors.append(self.get_vobject(f"{project_path}/{path}"))
+            successors.append(self.get_vobject(f"{project_path}/{path}", project_path))
         return successors
 
     def predecessors(self):
@@ -135,7 +135,7 @@ class ArcManagement(Core):
                 if CHERN_CACHE.project_path \
                 else CHERN_CACHE.use_and_cache_project_path(csys.project_path())
         for path in pred_str:
-            predecessors.append(self.get_vobject(f"{project_path}/{path}"))
+            predecessors.append(self.get_vobject(f"{project_path}/{path}", project_path))
         return predecessors
 
     def has_successor(self, obj): # UnitTest: DONE
@@ -201,7 +201,7 @@ class ArcManagement(Core):
         # print(f"Checking {len(pred_str)} predecessors...")
         # print(f"time taken so far: {time() - start_time:.2f} seconds.")
         for pred_path in pred_str:
-            pred_obj = self.get_vobject(f"{project_path}/{pred_path}")
+            pred_obj = self.get_vobject(f"{project_path}/{pred_path}", project_path)
             if pred_obj.has_predecessor_recursively(obj, consult_id):
                 consult_table[self.path] = (time(), True)
                 return True
@@ -237,15 +237,22 @@ class ArcManagement(Core):
                     "[Y/N]: "
                 )
                 if choice.upper() == "Y":
+                    print("Removing arc and alias...")
+                    print(f"Removing arc from {pred_object} to {obj}")
+                    print(f"Removing alias {obj.path_to_alias(pred_object.path)}")
                     obj.remove_arc_from(pred_object, single=True)
+                    print("Remove finished")
                     obj.remove_alias(obj.path_to_alias(pred_object.path))
-                    obj.impress()
+                    # obj.impress()
 
 
     def doctor_successor(self, obj):
         """ Doctor the successors of the object
         """
         for succ_object in obj.successors():
+            print(f"Checking successor {succ_object} of {obj}")
+            print(f"Is zombie: {succ_object.is_zombie()}")
+            print(f"Has predecessor: {succ_object.has_predecessor(obj)}")
             if succ_object.is_zombie() or \
                     not succ_object.has_predecessor(obj):
                 print("The successor")
@@ -268,7 +275,7 @@ class ArcManagement(Core):
                     )
                 if choice.upper() == "Y":
                     obj.remove_arc_from(pred_object)
-                    obj.impress()
+                    # obj.impress()
 
     def doctor_path_to_alias(self, obj):
         """ Doctor the alias of the object recursively
@@ -279,7 +286,7 @@ class ArcManagement(Core):
                 if CHERN_CACHE.project_path \
                 else CHERN_CACHE.use_and_cache_project_path(csys.project_path())
         for path in path_to_alias.keys():
-            pred_obj = self.get_vobject(f"{project_path}/{path}")
+            pred_obj = self.get_vobject(f"{project_path}/{path}", project_path)
             if not obj.has_predecessor(pred_obj):
                 print("There seems to be a zombie alias to")
                 print(f"{pred_obj} in {obj}")
@@ -290,14 +297,16 @@ class ArcManagement(Core):
     def add_input(self, path, alias):
         """ add input
         """
-        # print(f"Add input for {path} as {alias}")
         start_time = time()
         if not self.is_task_or_algorithm():
             print(f"You are adding input to {self.object_type()} type object. "
                   "The input is required to be a task or an algorithm.")
             return
 
-        obj = self.get_vobject(path)
+        project_path = CHERN_CACHE.project_path \
+                if CHERN_CACHE.project_path \
+                else CHERN_CACHE.use_and_cache_project_path(csys.project_path())
+        obj = self.get_vobject(path, project_path)
         if obj.object_type() != self.object_type():
             print(f"You are adding {obj.object_type()} type object as"
                    " input. The input is required to be a {self.object_type()}.")
@@ -323,7 +332,8 @@ class ArcManagement(Core):
             print("The alias already exists. "
                   "The original input and alias will be replaced.")
             original_object = self.get_vobject(
-                join(project_path, self.alias_to_path(alias))
+                join(project_path, self.alias_to_path(alias)),
+                project_path
             )
             self.remove_arc_from(original_object)
             self.remove_alias(alias)
@@ -346,7 +356,7 @@ class ArcManagement(Core):
         project_path = CHERN_CACHE.project_path \
                 if CHERN_CACHE.project_path \
                 else CHERN_CACHE.use_and_cache_project_path(csys.project_path())
-        obj = self.get_vobject(join(project_path, path))
+        obj = self.get_vobject(join(project_path, path), project_path)
         self.remove_arc_from(obj)
         self.remove_alias(alias)
 
