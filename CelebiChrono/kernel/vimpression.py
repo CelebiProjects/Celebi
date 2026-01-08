@@ -161,6 +161,10 @@ class VImpression():
         """
         dependencies = obj.pred_impressions()
         dependencies_uuid = [dep.uuid for dep in dependencies]
+        # print("Generate new uuid with")
+        # print(obj.project_uuid())
+        # print(obj.path)
+        # print(dependencies_uuid)
         new_uuid = self.generate_imp_uuid(obj.project_uuid(), obj.path, dependencies_uuid)
         self.uuid = new_uuid
         self.path = csys.project_path() + "/.celebi/impressions/" + self.uuid
@@ -190,6 +194,7 @@ class VImpression():
             # Sort directories and files to ensure deterministic traversal order
             dirs.sort()
             files.sort()
+            # print("Get impression with", dirs, files)
 
             # Filter out directories starting with . or __ to prevent traversing them
             # modifying 'dirs' in-place affects os.walk recursion
@@ -210,6 +215,7 @@ class VImpression():
                 rel_path = os.path.relpath(file_path, directory_path)
 
                 # Update hash with the relative file path (detects renames/moves)
+                # print("Update uuid with name", rel_path)
                 hasher.update(rel_path.encode('utf-8'))
 
                 # Update hash with file content
