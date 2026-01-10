@@ -12,6 +12,7 @@ import hashlib
 import tarfile
 import subprocess
 from typing import Any
+from pathlib import Path
 
 from contextlib import contextmanager
 from colored import fg, attr
@@ -336,11 +337,26 @@ def copy_tree(src, dst):
     """
     shutil.copytree(src, dst)
 
+def move_case_sensitive(src, dst):
+    """Move a directory, handling case-only renames on macOS."""
+    src = Path(src)
+    dst = Path(dst)
+
+    if not src.exists():
+        raise FileNotFoundError(src)
+
+    # Case-only rename on case-insensitive filesystem
+    if src.resolve().parent == dst.resolve().parent and src.name.lower() == dst.name.lower():
+        tmp = src.with_name(f".{src.name}.{uuid.uuid4().hex}.tmp")
+        src.rename(tmp)
+        tmp.rename(dst)
+    else:
+        shutil.move(str(src), str(dst))
 
 def move(src, dst):
     """ Move the directory
     """
-    shutil.move(src, dst)
+    move_case_sensitive(src, dst)
 
 
 def make_archive(filename, dir_name):
