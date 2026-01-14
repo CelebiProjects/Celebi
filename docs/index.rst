@@ -11,24 +11,24 @@ tracking, provenance, and re-execution are critical.
 Key Features and Benefits
 -------------------------
 
-* **Structured Organization**
+* **Structured Organization**  
   Clear separation of projects, data, algorithms, and tasks with a well-defined hierarchy.
 
-* **Dependency Tracking**
+* **Dependency Tracking**  
   Automatic tracking of relationships between data, algorithms, and tasks, forming a
   directed acyclic graph (DAG).
 
-* **Impressions (Versioning)**
+* **Impressions (Versioning)**  
   Built-in *impressions* system to snapshot important results, configurations, and object
   states over time.
 
-* **Reproducibility**
+* **Reproducibility**  
   Complete capture of workflow structure, parameters, inputs, and execution environments.
 
-* **Adaptability**
+* **Adaptability**  
   Modify algorithms or parameters and re-run only affected downstream tasks.
 
-* **Collaboration**
+* **Collaboration**  
   Share projects and workflows consistently across users and environments.
 
 Core Concepts
@@ -41,40 +41,37 @@ Core Concepts
 * **Runner** – An execution backend (local, batch system, remote, etc.).
 * **Impression** – A recorded snapshot of key outputs or analysis states.
 
-Installation
-------------
-
-.. toctree::
-   :maxdepth: 1
-
-   installation
-
 Getting Started
 ---------------
+
+To initialize a Celebi project and start the CLI:
 
 .. code-block:: bash
 
    celebi init
-   celebi
+   celebi <command>
 
+Documentation
+-------------
 
-Commands
----------
+For detailed usage, see the following pages:
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
+   :caption: Contents
 
+   installation
    navigation
    algorithms_tasks
    execution
    runners_environment
    visualization_provenance
 
-Documentation
--------------
+Additional Resources
+--------------------
 
-* **Online Docs:** http://celebi.readthedocs.io/en/latest/
-* **Ask DeepWiki:** https://deepwiki.com/CelebiProjects/Celebi
+* **Online Docs:** `Celebi Documentation <http://celebi.readthedocs.io/en/latest/>`_
+* **Ask DeepWiki:** `DeepWiki Celebi Page <https://deepwiki.com/CelebiProjects/Celebi>`_
 
 License
 -------
@@ -90,4 +87,3 @@ Author
 * 2017–2025 — Department of Nuclear Physics, China Institute of Atomic Energy
 * 2020–2025 — Niels Bohr Institute, University of Copenhagen
 * 2025–now — Peking University
-
