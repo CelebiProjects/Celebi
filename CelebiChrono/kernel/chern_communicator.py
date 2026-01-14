@@ -284,14 +284,14 @@ class ChernCommunicator():
         """ Check if the impression is deposited on the server """
         url = self.serverurl()
         try:
-            start_time = time.time()
-            count = CHERN_CACHE.count
-            CHERN_CACHE.count += 1
+            # start_time = time.time()
+            # count = CHERN_CACHE.count
+            # CHERN_CACHE.count += 1
             r = requests.get(
                 f"http://{url}/deposited/{self.project_uuid}/{impression.uuid}",
                 timeout=self.timeout
             )
-            print(f"{count}: Request time: {time.time() - start_time} seconds")
+            # print(f"{count}: Request time: {time.time() - start_time} seconds")
         except Exception as e:
             print(f"An error occurred: {e}")
             return "FALSE"
