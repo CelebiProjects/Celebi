@@ -44,11 +44,10 @@ Core Concepts
 Installation
 ------------
 
-.. code-block:: bash
+.. toctree::
+   :maxdepth: 1
 
-   git clone https://github.com/CelebiProjects/Celebi.git
-   cd Celebi
-   pip install .
+    installation
 
 Getting Started
 ---------------
@@ -57,6 +56,19 @@ Getting Started
 
    celebi init
    celebi
+
+
+Commands
+---------
+
+.. toctree::
+   :maxdepth: 1
+
+   navigation
+   algorithms_tasks
+   execution
+   runners_environment
+   visualization_provenance
 
 Documentation
 -------------
@@ -78,16 +90,4 @@ Author
 * 2017–2025 — Department of Nuclear Physics, China Institute of Atomic Energy
 * 2020–2025 — Niels Bohr Institute, University of Copenhagen
 * 2025–now — Peking University
-
-Commands
-========
-
-.. toctree::
-   :maxdepth: 1
-
-   navigation
-   algorithms_tasks
-   execution
-   runners_environment
-   visualization_provenance
 
