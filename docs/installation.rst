@@ -15,6 +15,7 @@ To use Celebi, the following three components need to be installed or set up:
 Installation of Celebi Package
 ----------------------------
 The Celebi package can be installed via pip. Run the following command:
+
 .. code-block:: bash
 
    pip install celebichrono
@@ -24,6 +25,7 @@ Setting Up Yuki Middleware
 ----------------------------
 Yuki middleware can be set up using the docker image provided by the Yuki project.
 Run the following command to start the Yuki middleware:
+
 .. code-block:: bash
 
     docker run -d -p 3315:3315 celebi/yuki:latest
