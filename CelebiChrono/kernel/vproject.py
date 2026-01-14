@@ -104,10 +104,10 @@ def use_project(path):
     path = os.path.abspath(path)
     print(path)
     project_name = path[path.rfind("/")+1:]
-    print("The project name is ``{project_name}'', would you like to change it? [y/n]")
+    print(f"The project name is ``{project_name}'', would you like to change it? [y/n]")
     change = input()
     if change == "y":
-        project_name = input("Please input the project name")
+        project_name = input("Please input the project name ")
 
     # Check the forbidden name
     forbidden_names = ["config", "new", "projects", "start", "", "."]
