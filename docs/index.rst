@@ -47,7 +47,7 @@ Installation
 .. toctree::
    :maxdepth: 1
 
-    installation
+   installation
 
 Getting Started
 ---------------
