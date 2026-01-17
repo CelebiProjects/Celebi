@@ -691,3 +691,15 @@ def changes() -> Message:
 def doctor() -> Message:
     """Doctor the impression"""
     return MANAGER.current_object().doctor()
+
+def collect() -> Message:
+    """Collect the outputs and logs"""
+    return MANAGER.current_object().collect("all")
+
+def collect_outputs() -> Message:
+    """Collect the outputs"""
+    return MANAGER.current_object().collect("outputs")
+
+def collect_logs() -> Message:
+    """Collect the logs"""
+    return MANAGER.current_object().collect("logs")

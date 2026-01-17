@@ -32,10 +32,15 @@ class JobManager(Core):
         return cherncc.status(self.impression())
 
     # Communicator Interaction Methods
-    def collect(self):
+    def collect(self, contents="all"):
         """ Collect the results of the job"""
         cherncc = ChernCommunicator.instance()
-        cherncc.collect(self.impression())
+        if contents == "all":
+            cherncc.collect(self.impression())
+        elif contents == "outputs":
+            cherncc.collect_outputs(self.impression())
+        elif contents == "logs":
+            cherncc.collect_logs(self.impression())
 
     def watermark(self):
         """ Set the watermark to png files """

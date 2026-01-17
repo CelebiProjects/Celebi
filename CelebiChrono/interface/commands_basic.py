@@ -29,10 +29,19 @@ class BasicCommands:
         except Exception as e:
             print(f"Error showing status: {e}")
 
-    def do_collect(self, _: str) -> None:
+    def do_collect(self, arg: str) -> None:
         """Collect data for current object."""
         try:
-            MANAGER.current_object().collect()
+            if len(arg) == 0:
+                shell.collect()
+            elif arg == "all":
+                shell.collect()
+            elif arg == "outputs":
+                shell.collect_outputs()
+            elif arg == "logs":
+                shell.collect_logs()
+            else:
+                print("Error: Invalid argument for collect command.")
         except Exception as e:
             print(f"Error collecting data: {e}")
 

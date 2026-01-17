@@ -358,6 +358,24 @@ class ChernCommunicator():
         )
         return r.text
 
+    def collect_outputs(self, impression): # UnitTest: DONE
+        """ Collect the impression from the server """
+        url = self.serverurl()
+        r = requests.get(
+                f"http://{url}/collect-outputs/{self.project_uuid}/{impression.uuid}",
+                timeout=self.timeout * 1000
+        )
+        return r.text
+
+    def collect_logs(self, impression): # UnitTest: DONE
+        """ Collect the impression from the server """
+        url = self.serverurl()
+        r = requests.get(
+                f"http://{url}/collect-logs/{self.project_uuid}/{impression.uuid}",
+                timeout=self.timeout * 1000
+        )
+        return r.text
+
     def watermark(self, impression):
         """ Set the water mark to the png files"""
         url = self.serverurl()
