@@ -6,6 +6,7 @@ projects, tasks, algorithms, and directories within the Chern system.
 """
 import os
 import subprocess
+from typing import Tuple
 
 from ..utils import csys
 from ..utils.message import Message
@@ -616,13 +617,20 @@ def impress():
     message = MANAGER.current_object().impress()
     return message
 
-
-def edit_script(obj: str) -> None:
-    """Edit a script object using configured editor."""
-    path = os.path.join(os.environ["HOME"], ".celebi", "config.yaml")
-    yaml_file = metadata.YamlFile(path)
-    editor = yaml_file.read_variable("editor", "vi")
-    subprocess.call([editor, f"{MANAGER.current_object().path}/{obj}"])
+def get_script_path(filename: str) -> Tuple[bool, str]:
+    """Get the script path for a algorithm or a task object."""
+    if not MANAGER.current_object().is_task_or_algorithm():
+        return False, "Not able to get script path if you are not in a task or algorithm."
+    if MANAGER.current_object().object_type() == "task":
+        if filename.startswith("code/"):
+            algorithm = MANAGER.current_object().algorithm()
+            return True, f"{algorithm.path}/{filename[5:]}"
+        elif filename.startswith("code:"):
+            algorithm = MANAGER.current_object().algorithm()
+            return True, f"{algorithm.path}/{filename[5:]}"
+        return True, f"{MANAGER.current_object().path}/{filename}"
+    else:
+        return True, f"{MANAGER.current_object().path}/{filename}"
 
 
 def config() -> None:

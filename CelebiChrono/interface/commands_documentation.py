@@ -5,6 +5,10 @@ This module contains command handlers for documentation, help,
 and impression management.
 """
 # pylint: disable=broad-exception-caught
+import os
+from importlib.resources import path
+from ..utils import metadata
+import subprocess
 from ..interface import shell
 from ..interface.ChernManager import get_manager
 
@@ -33,7 +37,15 @@ class DocumentationCommands:
         """Edit a script file."""
         try:
             obj = arg.split()[0]
-            shell.edit_script(obj)
+            success, file_path = shell.get_script_path(obj)  # Validate script existence
+            config_path = os.path.join(os.environ["HOME"], ".celebi", "config.yaml")
+            if not success:
+                print(file_path)  # file_path contains the error message here
+                return
+            else:
+                yaml_file = metadata.YamlFile(config_path)
+                editor = yaml_file.read_variable("editor", "vi")
+                subprocess.call([editor, f"{file_path}"])
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide a script name. {e}")
         except Exception as e:

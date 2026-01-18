@@ -158,7 +158,7 @@ class ExecutionManagement(Core):
         """ Deposit the impression and its dependencies to the dite. """
         consult_table = CHERN_CACHE.deposit_consult_table
         cid, deposited = consult_table.get(self.path, (-1, False))
-        print(consult_id, cid, deposited)
+        # print(consult_id, cid, deposited)
         if cid == consult_id and deposited:
             return
         cherncc = ChernCommunicator.instance()
