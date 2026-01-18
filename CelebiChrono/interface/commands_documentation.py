@@ -6,9 +6,8 @@ and impression management.
 """
 # pylint: disable=broad-exception-caught
 import os
-from importlib.resources import path
-from ..utils import metadata
 import subprocess
+from ..utils import metadata
 from ..interface import shell
 from ..interface.ChernManager import get_manager
 
@@ -41,7 +40,6 @@ class DocumentationCommands:
             config_path = os.path.join(os.environ["HOME"], ".celebi", "config.yaml")
             if not success:
                 print(file_path)  # file_path contains the error message here
-                return
             else:
                 yaml_file = metadata.YamlFile(config_path)
                 editor = yaml_file.read_variable("editor", "vi")

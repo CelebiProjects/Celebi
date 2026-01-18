@@ -625,12 +625,11 @@ def get_script_path(filename: str) -> Tuple[bool, str]:
         if filename.startswith("code/"):
             algorithm = MANAGER.current_object().algorithm()
             return True, f"{algorithm.path}/{filename[5:]}"
-        elif filename.startswith("code:"):
+        if filename.startswith("code:"):
             algorithm = MANAGER.current_object().algorithm()
             return True, f"{algorithm.path}/{filename[5:]}"
         return True, f"{MANAGER.current_object().path}/{filename}"
-    else:
-        return True, f"{MANAGER.current_object().path}/{filename}"
+    return True, f"{MANAGER.current_object().path}/{filename}"
 
 
 def config() -> None:
