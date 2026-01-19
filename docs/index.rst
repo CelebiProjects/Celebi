@@ -66,6 +66,7 @@ For detailed usage, see the following pages:
    execution
    runners_environment
    visualization_provenance
+   examples
 
 Additional Resources
 --------------------
