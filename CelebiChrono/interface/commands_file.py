@@ -4,6 +4,8 @@ File Management Command Handlers for Chern Shell.
 This module contains command handlers for file and directory operations.
 """
 # pylint: disable=broad-exception-caught
+import re
+import os
 from ..interface import shell
 from ..interface.ChernManager import get_manager
 
@@ -24,15 +26,42 @@ class FileCommands:
         except Exception as e:
             print(f"Error creating directory: {e}")
 
+
     def do_mv(self, arg: str) -> None:
         """Move directory or object."""
         try:
             args = arg.split()
             source = args[0]
             destination = args[1]
-            shell.mv(source, destination)
+
+            # detect wildcard / regex-like pattern
+            if any(ch in source for ch in ["*", "?", "[", "]"]):
+                # convert shell-style wildcard to regex
+                pattern = re.compile(
+                    "^" + source
+                    .replace(".", r"\.")
+                    .replace("*", ".*")
+                    .replace("?", ".") + "$"
+                )
+
+                dirname = os.path.dirname(source) or "."
+                basename = os.path.basename(source)
+
+                sources = [
+                    os.path.join(dirname, f)
+                    for f in os.listdir(dirname)
+                    if pattern.match(f)
+                ]
+
+                for src in sources:
+                    print(f"Moving {src} to {destination}")
+                    shell.mv(src, destination)
+            else:
+                shell.mv(source, destination)
+
         except Exception as e:
             print(f"Error moving object: {e}")
+
 
     def do_cp(self, arg: str) -> None:
         """Copy directory or object."""
