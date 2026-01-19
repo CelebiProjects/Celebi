@@ -45,7 +45,7 @@ class FileCommands:
                 )
 
                 dirname = os.path.dirname(source) or "."
-                basename = os.path.basename(source)
+                # basename = os.path.basename(source)
 
                 sources = [
                     os.path.join(dirname, f)
