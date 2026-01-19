@@ -17,7 +17,14 @@ class AdvancedCommands:
     """Mixin class providing advanced and developer command handlers."""
 
     def do_send(self, arg: str) -> None:
-        """Send a file or path."""
+        """
+        Send a file or path.
+
+        Parameters
+        ----------
+        arg : str
+            Path to the file or directory to send.
+        """
         try:
             obj = arg.split()[0]
             shell.send(obj)
@@ -27,14 +34,23 @@ class AdvancedCommands:
             print(f"Error sending: {e}")
 
     def do_dite(self, _: str) -> None:
-        """Show DITE information."""
+        """
+        Show DITE information.
+        """
         try:
             shell.dite()
         except Exception as e:
             print(f"Error accessing DITE: {e}")
 
     def do_set_dite(self, arg: str) -> None:
-        """Set DITE url."""
+        """
+        Set DITE url.
+
+        Parameters
+        ----------
+        arg : str
+            The DITE URL to set.
+        """
         try:
             url = arg.split()[0]
             shell.set_dite(url)
@@ -44,7 +60,14 @@ class AdvancedCommands:
             print(f"Error setting DITE URL: {e}")
 
     def do_danger_call(self, arg: str) -> None:
-        """Dangerous call to execute a command directly."""
+        """
+        Dangerous call to execute a command directly.
+
+        Parameters
+        ----------
+        arg : str
+            The command to execute.
+        """
         try:
             cmd = arg
             shell.danger_call(cmd)
@@ -54,7 +77,14 @@ class AdvancedCommands:
             print(f"Error executing command: {e}")
 
     def do_workaround(self, arg):
-        """Workaround to test/debug the task."""
+        """
+        Workaround to test/debug the task.
+
+        Parameters
+        ----------
+        arg : str
+            Optional argument. If 'docker', runs task in Docker container.
+        """
         try:
             status, info = shell.workaround_preshell()
             if not status:
@@ -81,7 +111,14 @@ class AdvancedCommands:
             print(f"Error executing command: {e}")
 
     def do_trace(self, arg):
-        """Trace the execution of the current task."""
+        """
+        Trace the execution of the current task.
+
+        Parameters
+        ----------
+        arg : str
+            Optional object name to trace.
+        """
         try:
             obj = arg.split()[0] if arg else None
             shell.trace(obj)
@@ -89,28 +126,36 @@ class AdvancedCommands:
             print(f"Error tracing execution: {e}")
 
     def do_history(self, _arg):
-        """Print the history of the current object."""
+        """
+        Print the history of the current object.
+        """
         try:
             print(shell.history().colored())
         except Exception as e:
             print(f"Error printing history: {e}")
 
     def do_changes(self, _arg):
-        """Print the changes"""
+        """
+        Print the changes.
+        """
         try:
             print(shell.changes().colored())
         except Exception as e:
             print(f"Error printing changes: {e}")
 
     def do_watermark(self, _arg):
-        """Set the watermark"""
+        """
+        Set the watermark.
+        """
         try:
             shell.watermark()
         except Exception as e:
             print(f"Error handling watermark: {e}")
 
     def do_system_shell(self, _arg):
-        """Enter a system shell (bash). Type 'exit' or Ctrl-D to return."""
+        """
+        Enter a system shell (bash). Type 'exit' or Ctrl-D to return.
+        """
         print("Entering system shell. Type 'exit' to return.\n")
 
         try:
@@ -121,7 +166,9 @@ class AdvancedCommands:
         print("\nReturned to Chern Shell.")
 
     def do_doctor(self, _arg):
-        """Run system diagnostics."""
+        """
+        Run system diagnostics.
+        """
         try:
             shell.doctor()
         except Exception as e:
