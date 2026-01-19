@@ -61,11 +61,7 @@ For detailed usage, see the following pages:
    :caption: Contents
 
    installation
-   navigation
-   algorithms_tasks
-   execution
-   runners_environment
-   visualization_provenance
+   commands
    examples
 
 Additional Resources
