@@ -1,7 +1,3 @@
-==================
-Basic Example: 01
-==================
-
 This repository is a demonstration project that includes two main components:
 
 * **Generation (Gen)**: Initial data production.
