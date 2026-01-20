@@ -53,11 +53,11 @@ To check the DITE setting, use:
 
    dite
 
-*Note: If this is your first time, configure the DITE endpoint:*
+*Note: If this is your first time, configure the DITE endpoint:*, for example:
 
 .. code-block:: bash
 
-   set-dite https://dite.reana.io/
+   set-dite localhost:3315
 
 4. Check Available Runners
 --------------------------
