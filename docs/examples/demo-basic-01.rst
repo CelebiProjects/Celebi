@@ -1,87 +1,85 @@
-Basic example: 01
-====================
+==================
+Basic Example: 01
+==================
 
 This repository is a demonstration project that includes two main components:
 
-* **Generation (Gen)**
-* **Fitting (Fit)**
+* **Generation (Gen)**: Initial data production.
+* **Fitting (Fit)**: Statistical analysis and modeling.
 
-The workflow is executed using **REANA** as the runner backend.
+The workflow is executed using **REANA** as the runner backend. For a deeper dive,
+an introduction to this example is also available on `Read the Docs <https://docs.readthedocs.io/>`_.
 
-An introduction to this example is also available on **Read the Docs**.
+Running the Example
+====================
 
-# Steps to Run the Example
+Follow these steps to clone the repository and execute the workflow within the Celebi environment.
 
 1. Clone the Repository
-
----
+-----------------------
 
 .. code-block:: bash
 
-git clone https://github.com/CelebiProjects/demo-basic-01.git
-cd demo-basic-01
+   git clone https://github.com/CelebiProjects/demo-basic-01.git
+   cd demo-basic-01
 
 2. Enter the Celebi Environment
+-------------------------------
 
----
+Initialize and enter the **Celebi shell**:
 
 .. code-block:: bash
 
-celebi use .   # Use this legacy project
-celebi
-
-You are now inside the **Celebi shell**.
+   celebi use .   # Use this legacy project
+   celebi
 
 3. Verify DITE Connection
+-------------------------
 
----
-
-List the current status:
+Check the current status to ensure the DITE connection is active:
 
 .. code-block:: bash
 
-ls
+   ls
 
-If DITE is connected, you should see:
+If DITE is connected, the output should display:
 
 .. code-block:: text
 
-> > > > DITE: [connected]
+   > > > > DITE: [connected]
 
-To check or activate DITE:
-
-.. code-block:: bash
-
-dite
-
-Configure the DITE endpoint (only required once):
+To check or manually activate DITE, use:
 
 .. code-block:: bash
 
-set-dite [https://dite.reana.io/](https://dite.reana.io/)
+   dite
+
+*Note: If this is your first time, configure the DITE endpoint:*
+
+.. code-block:: bash
+
+   set-dite https://dite.reana.io/
 
 4. Check Available Runners
+--------------------------
 
----
-
-List registered runners:
-
-.. code-block:: bash
-
-runners
-
-If no runner is registered, register one:
+List the registered runners to confirm availability:
 
 .. code-block:: bash
 
-register-runner
+   runners
+
+If no runner is registered, you can add one by running:
+
+.. code-block:: bash
+
+   register-runner
 
 5. Submit the Workflow
+----------------------
 
----
-
-Submit the workflow to the runner:
+Finally, submit the workflow to the runner for execution:
 
 .. code-block:: bash
 
-submit
+   submit
