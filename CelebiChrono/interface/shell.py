@@ -612,6 +612,15 @@ def view(browser: str = "open") -> None:
     url = MANAGER.current_object().impview()
     subprocess.call([browser, url])
 
+def viewurl() -> str:
+    """Get the impression path for view"""
+    is_task = MANAGER.current_object().is_task()
+    if not is_task:
+        print("Not able to get view url")
+        return
+    url = MANAGER.current_object().impview()
+    return url
+
 def impress():
     """Create impression for current task or algorithm."""
     message = MANAGER.current_object().impress()

@@ -88,6 +88,14 @@ class DocumentationCommands:
         except Exception as e:
             print(f"Error viewing impressions: {e}")
 
+    def do_viewurl(self, _: str) -> None:
+        """View impression URL."""
+        try:
+            url = shell.viewurl()
+            print(url)
+        except Exception as e:
+            print(f"Error getting impression URL: {e}")
+
     def do_clean_impressions(self, _: str) -> None:
         """Clean impressions (developer only)."""
         try:
