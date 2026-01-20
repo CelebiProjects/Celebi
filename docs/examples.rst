@@ -8,7 +8,7 @@ step in a real working directory.
 
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 0
 
    examples/demo-basic-01 : A simple generate and fit example using Celebi.
    examples/data_processing : An example demonstrating data processing with Celebi.
