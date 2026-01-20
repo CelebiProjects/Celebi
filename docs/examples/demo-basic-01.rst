@@ -7,8 +7,7 @@ This repository is a demonstration project that includes two main components:
 * **Generation (Gen)**: Initial data production.
 * **Fitting (Fit)**: Statistical analysis and modeling.
 
-The workflow is executed using **REANA** as the runner backend. For a deeper dive,
-an introduction to this example is also available on `Read the Docs <https://docs.readthedocs.io/>`_.
+The workflow is executed using **REANA** as the runner backend.
 
 Running the Example
 ====================
