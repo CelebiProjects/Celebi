@@ -617,7 +617,7 @@ def viewurl() -> str:
     is_task = MANAGER.current_object().is_task()
     if not is_task:
         print("Not able to get view url")
-        return
+        return ""
     url = MANAGER.current_object().impview()
     return url
 
