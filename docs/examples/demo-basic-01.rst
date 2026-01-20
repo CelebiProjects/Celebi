@@ -8,10 +8,6 @@ This repository is a demonstration project that includes two main components:
 * **Fitting (Fit)**: Statistical analysis and modeling.
 
 The workflow is executed using **REANA** as the runner backend.
-
-Running the Example
-====================
-
 Follow these steps to clone the repository and execute the workflow within the Celebi environment.
 
 1. Clone the Repository
