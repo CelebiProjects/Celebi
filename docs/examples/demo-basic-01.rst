@@ -45,9 +45,9 @@ If DITE is connected, the output should display:
 
 .. code-block:: text
 
-   > > > > DITE: [connected]
+   >>>> DITE: [connected]
 
-To check or manually activate DITE, use:
+To check the DITE setting, use:
 
 .. code-block:: bash
 
