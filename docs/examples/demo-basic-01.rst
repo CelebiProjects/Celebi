@@ -70,6 +70,12 @@ If no runner is registered, you can add one by running:
 
    register-runner
 
+And you should also help change the requested runner for running the workflow:
+
+.. code-block:: bash
+
+   set-runner [runner_name]
+
 5. Submit the Workflow
 ----------------------
 
@@ -77,7 +83,7 @@ Finally, submit the workflow to the runner for execution:
 
 .. code-block:: bash
 
-   submit
+   submit [runner_name]
 
 This command will make the objects impressed, and then submit the workflow to the selected runner (REANA in this case).
 
@@ -105,7 +111,11 @@ You can now view the output files.
 
    view
 
-This will display the results of the workflow execution.
+This will display the results in your browser like this:
+.. image:: ../images/demo-basic-01-output.png
+   :alt: demo-basic-01 output
+   :width: 600px
+   :align: center
 
 Congratulations!
 You have now successfully executed the basic workflow using Celebi and REANA!
