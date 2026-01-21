@@ -121,7 +121,7 @@ This will display the results in your browser like this:
    :align: center
 
 Congratulations!
-You have now successfully executed the basic workflow using Celebi and REANA!
+You have now successfully executed the basic workflow using Celebi!
 
 
 .. note::
