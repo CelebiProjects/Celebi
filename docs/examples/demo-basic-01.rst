@@ -119,3 +119,8 @@ This will display the results in your browser like this:
 
 Congratulations!
 You have now successfully executed the basic workflow using Celebi and REANA!
+
+
+.. note::
+
+   The example is adapted from the REANA demo example.
