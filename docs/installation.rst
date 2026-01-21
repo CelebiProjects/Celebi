@@ -28,6 +28,6 @@ Run the following command to start the Yuki middleware:
 
 .. code-block:: bash
 
-    docker run -d -p 3315:3315 celebi/yuki:latest
+    docker run -it -d -v [YUKI_DIR]:/root/.Yuki -p [PORT]:3315 celebi/yuki:latest
 
 Consider configuring environment variables to point Celebi to the Yuki middleware instance.
