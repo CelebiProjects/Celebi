@@ -114,6 +114,7 @@ You can now view the output files.
    view
 
 This will display the results in your browser like this:
+
 .. image:: ../images/demo-basic-01-output.png
    :alt: demo-basic-01 output
    :width: 600px
