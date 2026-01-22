@@ -120,6 +120,11 @@ class ChernProjectManager:
         """Switch the current object to the one at the given path."""
         self.c = create_object_instance(path)
 
+    def root_object(self) -> 'VObject':
+        """Get the root object instance from the current working directory."""
+        path = csys.project_path(os.getcwd())
+        return create_object_instance(path)
+
     def current_object(self) -> 'VObject':
         """Get the current object instance from the current working directory."""
         path = os.getcwd()

@@ -508,3 +508,28 @@ class ChernCommunicator():
         """ View the impression in the browser """
         url = self.serverurl()
         return f"http://{url}/imp-view/{self.project_uuid}/{impression.uuid}"
+
+    def send_to_bookkeeping(self, manifest, files):
+        """
+        Sends the manifest and the actual file binaries via HTTPS.
+        """
+        url = f"http://{self.serverurl()}/bookkeeping"
+
+        # We send the manifest as a JSON string in the 'data' portion
+        # and the binary files in the 'files' portion.
+        data = {
+            "manifest": json.dumps(manifest),
+            "project_uuid": getattr(self, "project_uuid", "default-uuid")
+        }
+
+        response = requests.post(
+            url,
+            data=data,
+            files=files,
+            timeout=60  # Longer timeout for file uploads
+        )
+
+        response.raise_for_status()
+        print(response.json())
+        return
+        return response.json()

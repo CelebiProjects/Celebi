@@ -96,6 +96,13 @@ class DocumentationCommands:
         except Exception as e:
             print(f"Error getting impression URL: {e}")
 
+    def do_bookkeep(self, _: str) -> None:
+        """Bookkeep impressions (developer only)."""
+        try:
+            shell.bookkeep()
+        except Exception as e:
+            print(f"Error bookkeeping impressions: {e}")
+
     def do_clean_impressions(self, _: str) -> None:
         """Clean impressions (developer only)."""
         try:
@@ -104,3 +111,4 @@ class DocumentationCommands:
             MANAGER.current_object().clean_impressions()
         except Exception as e:
             print(f"Error cleaning impressions: {e}")
+

@@ -3,12 +3,14 @@
     The core part may move to c language in the future
 """
 import os
+from typing import Dict, Any
 from ..utils import metadata
 from ..utils import csys
 from ..utils.message import Message
 from .vdirectory import VDirectory
 from .vobject import VObject
 from . import helpme
+from .chern_communicator import ChernCommunicator
 
 
 class VProject(VDirectory):
@@ -30,6 +32,43 @@ class VProject(VDirectory):
         for sub_object in sub_objects:
             VObject(sub_object.path).clean_impressions()
         csys.rm_tree(self.path+"/.celebi/impressions")
+
+    def bookkeep(self):
+        """
+        Bookkeep files to the server
+        Organizes the project structure and collects README.md
+        and .celebi/config.json files for transmission.
+        """
+        all_objs = self.sub_objects_recursively()
+        manifest = {"project_path": self.path, "objects": []}
+        file_payload = {}
+
+        for obj in all_objs:
+            rel_path = os.path.relpath(obj.path, self.path)
+            obj_record = {"path": rel_path, "files": []}
+
+            # Paths to the specific files we want to pack
+            target_files = {
+                "readme": os.path.join(obj.path, "README.md"),
+                "config": os.path.join(obj.path, ".celebi", "config.json")
+            }
+
+            for file_key, full_path in target_files.items():
+                if os.path.exists(full_path):
+                    # Create a unique key
+                    storage_key = os.path.join(rel_path, os.path.basename(full_path))
+
+                    # FIX: Use a context manager to read and CLOSE the file immediately
+                    with open(full_path, "rb") as f:
+                        file_payload[storage_key] = f.read()  # Store content, not the file object
+
+                    obj_record["files"].append(storage_key)
+
+            manifest["objects"].append(obj_record)
+
+        # No need for the 'finally' loop to close files anymore
+        cherncc = ChernCommunicator.instance()
+        return cherncc.send_to_bookkeeping(manifest, file_payload)
 
 ######################################
 # Helper functions

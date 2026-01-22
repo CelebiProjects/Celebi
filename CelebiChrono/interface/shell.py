@@ -719,3 +719,7 @@ def collect_outputs() -> Message:
 def collect_logs() -> Message:
     """Collect the logs"""
     return MANAGER.current_object().collect("logs")
+
+def bookkeep() -> Message:
+    """Bookkeep the impression"""
+    return MANAGER.root_object().bookkeep()
