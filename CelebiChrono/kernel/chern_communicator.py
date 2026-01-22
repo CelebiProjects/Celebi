@@ -510,8 +510,7 @@ class ChernCommunicator():
         return f"http://{url}/imp-view/{self.project_uuid}/{impression.uuid}"
 
     def send_to_bookkeeping(self, manifest, files):
-        """
-        Sends the manifest and the actual file binaries via HTTPS.
+        """ Sends the manifest and the actual file binaries via HTTPS.
         """
         url = f"http://{self.serverurl()}/bookkeeping"
 
@@ -531,5 +530,4 @@ class ChernCommunicator():
 
         response.raise_for_status()
         print(response.json())
-        return
         return response.json()

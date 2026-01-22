@@ -3,7 +3,6 @@
     The core part may move to c language in the future
 """
 import os
-from typing import Dict, Any
 from ..utils import metadata
 from ..utils import csys
 from ..utils.message import Message
@@ -53,7 +52,7 @@ class VProject(VDirectory):
                 "config": os.path.join(obj.path, ".celebi", "config.json")
             }
 
-            for file_key, full_path in target_files.items():
+            for _, full_path in target_files.items():
                 if os.path.exists(full_path):
                     # Create a unique key
                     storage_key = os.path.join(rel_path, os.path.basename(full_path))

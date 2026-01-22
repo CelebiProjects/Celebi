@@ -111,4 +111,3 @@ class DocumentationCommands:
             MANAGER.current_object().clean_impressions()
         except Exception as e:
             print(f"Error cleaning impressions: {e}")
-
