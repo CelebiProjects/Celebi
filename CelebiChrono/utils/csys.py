@@ -401,8 +401,7 @@ def temp_dir(name = "", prefix="chern_tmp_"):
     """ Get the temporary directory
     """
     if name:
-        temp_dir = os.path.join("/tmp", prefix + name)
-        return temp_dir
+        return os.path.join("/tmp", prefix + name)
     temp_dir = os.path.join("/tmp", prefix + generate_uuid())
     return temp_dir
 
@@ -413,9 +412,9 @@ def create_temp_dir(name = "", prefix="chern_tmp_"):
         temp_dir = os.path.join("/tmp", prefix + name)
         os.makedirs(temp_dir, exist_ok=True)
         return temp_dir
-    temp_dir = os.path.join("/tmp", prefix + generate_uuid())
-    os.makedirs(temp_dir, exist_ok=True)
-    return temp_dir
+    temp_dir_uuid = os.path.join("/tmp", prefix + generate_uuid())
+    os.makedirs(temp_dir_uuid, exist_ok=True)
+    return temp_dir_uuid
 
 
 # Checksum Functions
