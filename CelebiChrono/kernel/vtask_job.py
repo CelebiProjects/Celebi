@@ -109,19 +109,22 @@ class JobManager(Core):
         print("Linking preceding jobs...")
         # Create the temporal directory and copy the data there
         for pre in self.inputs():
-            pre_temp_dir = csys.create_temp_dir(prefix="chernimp_")
-            outputs = cherncc.output_files(pre.impression())
-            print(pre_temp_dir)
-            if pre.environment() == "rawdata":
-                csys.mkdir(os.path.join(pre_temp_dir, "stageout"))
-                for f in outputs:
-                    output_path = os.path.join(pre_temp_dir, "stageout", f)
-                    cherncc.export(pre.impression(), f"{f}", output_path)
+            if not os.path.exists(csys.temp_dir(name=pre.impression().uuid, prefix="chernimp_")):
+                pre_temp_dir = csys.create_temp_dir(name=pre.impression().uuid, prefix="chernimp_")
+                outputs = cherncc.output_files(pre.impression())
+                if pre.environment() == "rawdata":
+                    csys.mkdir(os.path.join(pre_temp_dir, "stageout"))
+                    for f in outputs:
+                        output_path = os.path.join(pre_temp_dir, "stageout", f)
+                        cherncc.export(pre.impression(), f"{f}", output_path)
+                else:
+                    csys.mkdir(os.path.join(pre_temp_dir, "stageout"))
+                    for f in outputs:
+                        output_path = os.path.join(pre_temp_dir, "stageout", f)
+                        cherncc.export(pre.impression(), f"{f}", output_path)
+                        print(f"Exported {f} to {output_path}")
             else:
-                csys.mkdir(os.path.join(pre_temp_dir, "stageout"))
-                for f in outputs:
-                    output_path = os.path.join(pre_temp_dir, "stageout", f)
-                    cherncc.export(pre.impression(), f"{f}", output_path)
+                pre_temp_dir = csys.temp_dir(name=pre.impression().uuid, prefix="chernimp_")
             alias = self.path_to_alias(pre.invariant_path())
             print(f"Linking preceding job {pre} to {alias}")
             # Make a symlink
@@ -154,18 +157,21 @@ class JobManager(Core):
                 lambda x: (x.object_type() == "algorithm"), algorithm.predecessors()
                 )
             for alg_in in list(map(lambda x: self.get_task(x.path), alg_inputs)):
-                alg_in_temp_dir = csys.create_temp_dir(prefix="chernimp_")
-                alg_in_file_list = csys.tree_excluded(alg_in.path)
-                for dirpath, _, filenames in alg_in_file_list:
-                    for f in filenames:
-                        full_path = os.path.join(
-                                self.project_path(),
-                                alg_in.invariant_path(),
-                                dirpath, f
-                        )
-                        rel_path = os.path.relpath(full_path, alg_in.path)
-                        dest_path = os.path.join(alg_in_temp_dir, rel_path)
-                        csys.copy(full_path, dest_path)
+                if not os.path.exists(csys.temp_dir(name=alg_in.impression().uuid, prefix="chernimp_")):
+                    alg_in_temp_dir = csys.create_temp_dir(name=alg_in.impression().uuid, prefix="chernimp_")
+                    alg_in_file_list = csys.tree_excluded(alg_in.path)
+                    for dirpath, _, filenames in alg_in_file_list:
+                        for f in filenames:
+                            full_path = os.path.join(
+                                    self.project_path(),
+                                    alg_in.invariant_path(),
+                                    dirpath, f
+                            )
+                            rel_path = os.path.relpath(full_path, alg_in.path)
+                            dest_path = os.path.join(alg_in_temp_dir, rel_path)
+                            csys.copy(full_path, dest_path)
+                else:
+                    alg_in_temp_dir = csys.temp_dir(name=alg_in.impression().uuid, prefix="chernimp_")
                 alias = algorithm.path_to_alias(alg_in.invariant_path())
                 # Link it under code
                 csys.symlink(

@@ -103,7 +103,11 @@ class AdvancedCommands:
                 os.system(os.environ.get("SHELL", "/bin/bash"))
             print("Before postshell")
             os.chdir(path)
-            shell.workaround_postshell(info)
+            # Ask whether to run postshell
+            # Apply the changes made to the code? (y/n):
+            answer = input("Apply the changes made to the code? (y/n): ").strip().lower()
+            if answer == "y":
+                shell.workaround_postshell(info)
             # Switch back to the original path
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide a command to execute. {e}")
