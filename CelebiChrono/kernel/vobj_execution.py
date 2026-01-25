@@ -237,3 +237,30 @@ class ExecutionManagement(Core):
         if not self.is_task():
             return
         self.get_vtask(self.path).set_default_runner(runner)
+
+    def collect(self, contents="all") -> Message:
+        """ Collect the results from the runner. """
+        cherncc = ChernCommunicator.instance()
+        # Check the connection
+        dite_status = cherncc.dite_status()
+        if dite_status != "connected":
+            msg = Message()
+            msg.add("DITE is not connected. Please check the connection.", "warning")
+            # logger.error(msg)
+            return msg
+        if not self.is_task_or_algorithm():
+            sub_objects = self.sub_objects_recursively()
+            for sub_object in sub_objects:
+                if not sub_object.is_task():
+                    continue
+                sub_object.collect(contents)
+            msg = Message()
+            msg.add("Results of sub-tasks collected.", "info")
+            return msg
+        if self.is_task():
+            task = self.get_vtask(self.path)
+            task.collect(contents)
+            msg = Message()
+            msg.add(f"Results of task {self.path} collected.", "info")
+
+        return msg
