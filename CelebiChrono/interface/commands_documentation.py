@@ -103,6 +103,22 @@ class DocumentationCommands:
         except Exception as e:
             print(f"Error bookkeeping impressions: {e}")
 
+    def do_bkkurl(self, _: str) -> None:
+        """Get bookkeeping URL."""
+        try:
+            url = shell.bookkeep_url()
+            print(url)
+        except Exception as e:
+            print(f"Error getting bookkeeping URL: {e}")
+
+    def do_viewbkk(self, _: str) -> None:
+        """View bookkeeping URL."""
+        try:
+            url = shell.bookkeep_url()
+            subprocess.call(["open", url])
+        except Exception as e:
+            print(f"Error viewing bookkeeping URL: {e}")
+
     def do_clean_impressions(self, _: str) -> None:
         """Clean impressions (developer only)."""
         try:

@@ -723,3 +723,7 @@ def collect_logs() -> Message:
 def bookkeep() -> Message:
     """Bookkeep the impression"""
     return MANAGER.root_object().bookkeep()
+
+def bookkeep_url() -> str:
+    """Get the bookkeep URL"""
+    return MANAGER.root_object().bookkeep_url()

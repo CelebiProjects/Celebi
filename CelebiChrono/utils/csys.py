@@ -402,16 +402,16 @@ def temp_dir(name = "", prefix="chern_tmp_"):
     """
     if name:
         return os.path.join("/tmp", prefix + name)
-    temp_dir = os.path.join("/tmp", prefix + generate_uuid())
-    return temp_dir
+    target_dir = os.path.join("/tmp", prefix + generate_uuid())
+    return target_dir
 
 def create_temp_dir(name = "", prefix="chern_tmp_"):
     """ Create a temporary directory
     """
     if name:
-        temp_dir = os.path.join("/tmp", prefix + name)
-        os.makedirs(temp_dir, exist_ok=True)
-        return temp_dir
+        target_dir = os.path.join("/tmp", prefix + name)
+        os.makedirs(target_dir, exist_ok=True)
+        return target_dir
     temp_dir_uuid = os.path.join("/tmp", prefix + generate_uuid())
     os.makedirs(temp_dir_uuid, exist_ok=True)
     return temp_dir_uuid
