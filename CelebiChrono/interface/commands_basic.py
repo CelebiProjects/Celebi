@@ -29,6 +29,14 @@ class BasicCommands:
         except Exception as e:
             print(f"Error showing status: {e}")
 
+    def do_successors(self, _: str) -> None:
+        """List successors of current object."""
+        try:
+            message = shell.successors()
+            print(message.colored())
+        except Exception as e:
+            print(f"Error listing successors: {e}")
+
     def do_collect(self, arg: str) -> None:
         """Collect data for current object."""
         try:

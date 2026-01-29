@@ -20,6 +20,7 @@ from ..utils.pretty import color_print
 from ..utils.pretty import colorize
 from ..utils import metadata
 from ..kernel.chern_communicator import ChernCommunicator
+from ..kernel.vobj_file import LsParameters
 
 MANAGER = get_manager()
 
@@ -207,6 +208,20 @@ def cp(source: str, destination: str) -> None:
 def ls(_: str):
     """List the contents of the current object."""
     return MANAGER.current_object().ls()
+
+
+def successors() -> Message:
+    """List the successors of the current object."""
+    return MANAGER.current_object().ls(
+        LsParameters(
+            readme=False,
+            successors=True,
+            predecessors=False,
+            status=False,
+            sub_objects=False,
+            task_info=False,
+        )
+    )
 
 
 def short_ls(_: str) -> None:

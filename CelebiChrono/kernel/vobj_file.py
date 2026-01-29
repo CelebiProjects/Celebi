@@ -43,6 +43,7 @@ class LsParameters:
     sub_objects: bool = True
     status: bool = False
     successors: bool = False
+    task_info: bool = True
 
 class FileManagement(Core): # pylint: disable=too-many-public-methods
     """ This class is used to manage the file system of the VObject

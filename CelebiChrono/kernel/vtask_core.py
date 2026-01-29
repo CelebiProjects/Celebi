@@ -35,13 +35,11 @@ class Core(VObject):
         """
         message = super().ls(show_info)
 
-        message.append(self.show_parameters())
+        if show_info.task_info:
+            message.append(self.show_parameters())
 
-        # if show_info.status:
-        #    message.append(self.show_status())
-
-        if self.algorithm() is not None:
-            message.append(self.show_algorithm())
+            if self.algorithm() is not None:
+                message.append(self.show_algorithm())
 
         return message
 

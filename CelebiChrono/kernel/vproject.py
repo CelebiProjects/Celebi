@@ -65,6 +65,10 @@ class VProject(VDirectory):
 
             manifest["objects"].append(obj_record)
 
+        # Check the size of file_payload
+        total_size = sum(len(content) for content in file_payload.values())
+        print(f"Total size of files to be sent: {total_size} bytes")
+
         # No need for the 'finally' loop to close files anymore
         cherncc = ChernCommunicator.instance()
         return cherncc.send_to_bookkeeping(manifest, file_payload)
