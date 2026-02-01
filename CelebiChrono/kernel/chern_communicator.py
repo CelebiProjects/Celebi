@@ -509,6 +509,11 @@ class ChernCommunicator():
         url = self.serverurl()
         return f"http://{url}/imp-view/{self.project_uuid}/{impression.uuid}"
 
+    def bkkview(self):
+        """ View the impression in the bookkeeping browser """
+        url = self.serverurl()
+        return f"http://{url}/test/{self.project_uuid}"
+
     def send_to_bookkeeping(self, manifest, files):
         """ Sends the manifest and the actual file binaries via HTTPS.
         """

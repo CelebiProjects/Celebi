@@ -397,13 +397,24 @@ def remove_cache(file_path):
         except OSError:
             pass
 
+def temp_dir(name = "", prefix="chern_tmp_"):
+    """ Get the temporary directory
+    """
+    if name:
+        return os.path.join("/tmp", prefix + name)
+    target_dir = os.path.join("/tmp", prefix + generate_uuid())
+    return target_dir
 
-def create_temp_dir(prefix="chern_tmp_"):
+def create_temp_dir(name = "", prefix="chern_tmp_"):
     """ Create a temporary directory
     """
-    temp_dir = os.path.join("/tmp", prefix + generate_uuid())
-    os.makedirs(temp_dir)
-    return temp_dir
+    if name:
+        target_dir = os.path.join("/tmp", prefix + name)
+        os.makedirs(target_dir, exist_ok=True)
+        return target_dir
+    temp_dir_uuid = os.path.join("/tmp", prefix + generate_uuid())
+    os.makedirs(temp_dir_uuid, exist_ok=True)
+    return temp_dir_uuid
 
 
 # Checksum Functions

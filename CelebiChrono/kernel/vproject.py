@@ -73,6 +73,11 @@ class VProject(VDirectory):
         cherncc = ChernCommunicator.instance()
         return cherncc.send_to_bookkeeping(manifest, file_payload)
 
+    def bookkeep_url(self):
+        """ Get the bookkeeping url"""
+        cherncc = ChernCommunicator.instance()
+        return cherncc.bkkview()
+
 ######################################
 # Helper functions
 def create_readme(project_path):
