@@ -237,3 +237,29 @@ class ExecutionManagement(Core):
         if not self.is_task():
             return
         self.get_vtask(self.path).set_default_runner(runner)
+
+    def add_parameter(self, parameter, value):
+        """
+        Add a parameter to the parameter file
+        """
+        if not self.is_task_or_algorithm():
+            sub_objects = self.sub_objects()
+            for sub_object in sub_objects:
+                sub_object.add_parameter(parameter, value)
+            return
+        if not self.is_task():
+            return
+        self.get_vtask(self.path).add_parameter(parameter, value)
+
+    def remove_parameter(self, parameter):
+        """
+        Remove a parameter from the parameter file
+        """
+        if not self.is_task_or_algorithm():
+            sub_objects = self.sub_objects()
+            for sub_object in sub_objects:
+                sub_object.remove_parameter(parameter)
+            return
+        if not self.is_task():
+            return
+        self.get_vtask(self.path).remove_parameter(parameter)
