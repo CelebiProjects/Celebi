@@ -52,7 +52,7 @@ def cd(line: str) -> None:
 def _cd_by_index(index: int) -> None:
     """Change directory by numeric index."""
     sub_objects = MANAGER.current_object().sub_objects()
-    successors = MANAGER.current_object().successors()
+    successors_list = MANAGER.current_object().successors()
     predecessors = MANAGER.current_object().predecessors()
     total = len(sub_objects)
 
@@ -68,9 +68,9 @@ def _cd_by_index(index: int) -> None:
         return
 
     index -= total
-    total = len(successors)
+    total = len(successors_list)
     if index < total:
-        cd(MANAGER.current_object().relative_path(successors[index].path))
+        cd(MANAGER.current_object().relative_path(successors_list[index].path))
         return
 
     color_print("Out of index", "remind")
