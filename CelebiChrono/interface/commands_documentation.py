@@ -127,3 +127,10 @@ class DocumentationCommands:
             MANAGER.current_object().clean_impressions()
         except Exception as e:
             print(f"Error cleaning impressions: {e}")
+
+    def do_homekeep(self, _: str) -> None:
+        try:
+            MANAGER.current_object().homekeep()
+        except Exception as e:
+            print(f"Error during homekeep: {e}")
+
