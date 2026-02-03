@@ -129,8 +129,8 @@ class DocumentationCommands:
             print(f"Error cleaning impressions: {e}")
 
     def do_homekeep(self, _: str) -> None:
+        """Clean the runner workflow"""
         try:
             MANAGER.current_object().homekeep()
         except Exception as e:
             print(f"Error during homekeep: {e}")
-

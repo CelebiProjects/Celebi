@@ -292,6 +292,7 @@ class ExecutionManagement(Core):
         return msg
 
     def homekeep(self) -> Message:
+        """Clean the runner workflow"""
         cherncc = ChernCommunicator.instance()
         dite_status = cherncc.dite_status()
         if dite_status != "connected":
@@ -302,4 +303,3 @@ class ExecutionManagement(Core):
         msg = Message()
         msg.add("Homekeep operation completed.", "info")
         return msg
-
