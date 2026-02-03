@@ -536,3 +536,16 @@ class ChernCommunicator():
         response.raise_for_status()
         print(response.json())
         return response.json()
+
+    def homekeep(self, project_uuid):
+        """ Trigger homekeep on the server for a given project UUID """
+        url = self.serverurl()
+        try:
+            r = requests.get(
+                    f"http://{url}/homekeep/{project_uuid}",
+                    timeout=self.timeout
+            )
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return "unconnected to DITE"
+        return r.text
