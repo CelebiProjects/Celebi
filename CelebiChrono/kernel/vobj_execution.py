@@ -290,3 +290,16 @@ class ExecutionManagement(Core):
             msg.add(f"Results of task {self.path} collected.", "info")
 
         return msg
+
+    def homekeep(self) -> Message:
+        cherncc = ChernCommunicator.instance()
+        dite_status = cherncc.dite_status()
+        if dite_status != "connected":
+            msg = Message()
+            msg.add("DITE is not connected. Please check the connection.", "warning")
+            return msg
+        cherncc.homekeep(self.project_uuid())
+        msg = Message()
+        msg.add("Homekeep operation completed.", "info")
+        return msg
+
