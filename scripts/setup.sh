@@ -331,38 +331,38 @@ EOF
 sys-cp() {
 cp "$@"
 }
-alias cp='celebi-cp'
-sys-mv() {
-mv "$@"
-}
-alias mv='celebi-mv'
-sys-mkdir() {
-mkdir "$@"
-}
-alias mkdir='celebi-mkdir'
+# alias cp='celebi-cp'
+# sys-mv() {
+# mv "$@"
+# }
+# alias mv='celebi-mv'
+# sys-mkdir() {
+# mkdir "$@"
+# }
 
-alias status='celebi-status'
-alias navigate='celebi-navigate'
-alias history='celebi-history'
-alias changes='celebi-changes'
-alias jobs='celebi-jobs'
-alias cdproject='celebi-cdproject'
-alias create-algorithm='celebi-create-algorithm'
-alias create-task='celebi-create-task'
-alias create-data='celebi-create-data'
-alias rm='celebi-rm'
-alias rmfile='celebi-rmfile'
-alias mvfile='celebi-mvfile'
-alias import='celebi-import'
-alias add-input='celebi-add-input'
-alias remove-input='celebi-remove-input'
-alias add-algorithm='celebi-add-algorithm'
-alias add-parameter='celebi-add-parameter'
-alias rm-parameter='celebi-rm-parameter'
-alias add-parameter-subtask='celebi-add-parameter-subtask'
-alias set-environment='celebi-set-env'
-alias set-memory-limit='celebi-set-mem'
-alias hosts='celebi-hosts'
+# alias mkdir='celebi-mkdir'
+# alias status='celebi-status'
+# alias navigate='celebi-navigate'
+# alias history='celebi-history'
+# alias changes='celebi-changes'
+# alias jobs='celebi-jobs'
+# alias cdproject='celebi-cdproject'
+# alias create-algorithm='celebi-create-algorithm'
+# alias create-task='celebi-create-task'
+# alias create-data='celebi-create-data'
+# alias rm='celebi-rm'
+# alias rmfile='celebi-rmfile'
+# alias mvfile='celebi-mvfile'
+# alias import='celebi-import'
+# alias add-input='celebi-add-input'
+# alias remove-input='celebi-remove-input'
+# alias add-algorithm='celebi-add-algorithm'
+# alias add-parameter='celebi-add-parameter'
+# alias rm-parameter='celebi-rm-parameter'
+# alias add-parameter-subtask='celebi-add-parameter-subtask'
+# alias set-environment='celebi-set-env'
+# alias set-memory-limit='celebi-set-mem'
+# alias hosts='celebi-hosts'
 
 celebi-dry-snakemake-run() {
 echo "WARNING: It is not recommanded to use dry run since the environment may not be properly set up."
