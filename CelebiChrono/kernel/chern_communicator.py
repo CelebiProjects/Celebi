@@ -63,6 +63,7 @@ from ..utils import metadata
 from ..utils.pretty import colorize
 from .chern_cache import ChernCache
 
+
 logger = getLogger("ChernLogger")
 CHERN_CACHE = ChernCache.instance()
 
