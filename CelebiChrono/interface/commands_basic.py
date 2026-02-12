@@ -69,3 +69,6 @@ class BasicCommands:
             MANAGER.current_object().cat(arg)
         except Exception as e:
             print(f"Error displaying file: {e}")
+
+    def do_tree(self, arg: str) ->None:
+        print(shell.tree().colored())

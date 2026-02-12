@@ -549,3 +549,16 @@ class ChernCommunicator():
             print(f"An error occurred: {e}")
             return "unconnected to DITE"
         return r.text
+
+    def error_log(self, impression, index):
+        """ Get the index_th error"""
+        url = self.serverurl()
+        try:
+            r = requests.get(
+                f"http://{url}/error-log/{self.project_uuid}/{impression.uuid}/{index}",
+                timeout=self.timeout
+            )
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return "unconnected to DITE"
+        return r.text

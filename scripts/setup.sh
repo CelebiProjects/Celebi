@@ -23,6 +23,14 @@ print(impress().colored())
 EOF
 }
 
+celebi-tree() {
+python - <<'EOF'
+from CelebiChrono.interface.shell import tree
+print(tree().colored())
+EOF
+}
+
+
 celebi-status() {
 python - <<'EOF'
 from CelebiChrono.interface.shell import status
@@ -255,7 +263,17 @@ python - "$1" <<'EOF'
 from CelebiChrono.interface.shell import submit
 import sys
 runner = sys.argv[1] if len(sys.argv) > 1 else "local"
+if not runner: runner = "local"
 submit(runner)
+EOF
+}
+
+celebi-error-log() {
+python - "$1" <<'EOF'
+from CelebiChrono.interface.shell import error_log
+import sys
+index = int(sys.argv[1]) if len(sys.argv) > 1 else 0
+print(error_log(index).colored())
 EOF
 }
 

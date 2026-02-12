@@ -604,6 +604,8 @@ def send(path: str) -> None:
 
 def submit(runner: str = "local") -> None:
     """Submit to the runner."""
+    print(MANAGER.current_object())
+    print(runner)
     message = MANAGER.current_object().submit(runner)
     return message
 
@@ -636,7 +638,7 @@ def viewurl() -> str:
     url = MANAGER.current_object().impview()
     return url
 
-def impress():
+def impress() -> Message:
     """Create impression for current task or algorithm."""
     message = MANAGER.current_object().impress()
     return message
@@ -742,3 +744,14 @@ def bookkeep() -> Message:
 def bookkeep_url() -> str:
     """Get the bookkeep URL"""
     return MANAGER.root_object().bookkeep_url()
+
+def tree(depth = -1) -> Message:
+    """ Get the directory tree
+    """
+    return MANAGER.current_object().tree()
+
+def error_log(index) -> Message:
+    """ Get the error log
+    """
+    return MANAGER.current_object().error_log(index)
+

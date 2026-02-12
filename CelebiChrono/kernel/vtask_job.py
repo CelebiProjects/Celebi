@@ -5,6 +5,7 @@ from logging import getLogger
 
 from .chern_communicator import ChernCommunicator
 from ..utils import csys
+from ..utils.message import Message
 from .vtask_core import Core
 
 logger = getLogger("ChernLogger")
@@ -41,6 +42,14 @@ class JobManager(Core):
             cherncc.collect_outputs(self.impression())
         elif contents == "logs":
             cherncc.collect_logs(self.impression())
+
+    def error_log(self, error_index=0):
+        """ Collect the error logs of the job"""
+        self.collect("logs")
+        cherncc = ChernCommunicator.instance()
+        msg = Message()
+        msg.add(cherncc.error_log(self.impression(), error_index))
+        return msg
 
     def watermark(self):
         """ Set the watermark to png files """
