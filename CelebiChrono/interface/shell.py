@@ -1225,8 +1225,6 @@ def submit(runner: str = "local") -> Message:
         - The task must have a valid algorithm and inputs configured
         - Runner must be available and configured
     """
-    print(MANAGER.current_object())
-    print(runner)
     message = MANAGER.current_object().submit(runner)
     return message
 
@@ -1395,7 +1393,16 @@ def collect(contents: str = "all") -> Message:
         - The current object must be a task
         - Task must have been submitted and completed
         - Collection may download files from remote runners
+        - Convenience functions: `collect_outputs()` for only outputs, `collect_logs()` for only logs
     """
+    # Validate contents parameter
+    valid_contents = {"all", "outputs", "logs"}
+    if contents not in valid_contents:
+        print(f"Error: contents must be one of {sorted(valid_contents)}, got '{contents}'")
+        # Return an error message instead of raising exception to maintain API consistency
+        from CelebiChrono.message import Message
+        return Message(f"Invalid contents parameter: '{contents}'", is_error=True)
+
     return MANAGER.current_object().collect(contents)
 
 def collect_outputs() -> Message:
@@ -1415,6 +1422,7 @@ def collect_outputs() -> Message:
         - The current object must be a task
         - Task must have been submitted and completed
         - Output files are downloaded from the runner to local storage
+        - Related functions: `collect()` for both outputs and logs, `collect_logs()` for only logs
     """
     return MANAGER.current_object().collect("outputs")
 
@@ -1435,6 +1443,7 @@ def collect_logs() -> Message:
         - The current object must be a task
         - Task must have been submitted and completed
         - Log files are downloaded from the runner to local storage
+        - Related functions: `collect()` for both outputs and logs, `collect_outputs()` for only outputs
     """
     return MANAGER.current_object().collect("logs")
 
