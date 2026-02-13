@@ -17,8 +17,20 @@ import ast
 import csv
 import os
 import re
+import sys
 from pathlib import Path
 from typing import Dict, List, Tuple, Set, Optional
+
+
+# Constants
+BASE_DIR = "/Users/zhaomr/workdir/Chern/Celebi"
+OUTPUT_CSV = "/Users/zhaomr/workdir/Chern/Celebi/analysis/shell_documentation_analysis.csv"
+MAX_OTHER_FUNCTIONS_TO_SHOW = 20
+QUALITY_THRESHOLDS = {
+    'Good': 3,
+    'Partial': 1,
+    'Basic': 0
+}
 
 
 # Category mapping from design document
@@ -60,8 +72,6 @@ CATEGORY_MAPPING = {
     "remove_input": "task_configuration",
 
     # Execution Management
-    "jobs": "execution_management",
-    "status": "execution_management",
     "submit": "execution_management",
     "collect": "execution_management",
     "collect_outputs": "execution_management",
@@ -199,9 +209,9 @@ class FunctionAnalyzer(ast.NodeVisitor):
         # Count how many sections are present
         section_count = sum(sections)
 
-        if section_count >= 3:
+        if section_count >= QUALITY_THRESHOLDS['Good']:
             return "Good"
-        elif section_count >= 1:
+        elif section_count >= QUALITY_THRESHOLDS['Partial']:
             return "Partial"
         else:
             return "Basic"  # Has docstring but no formal sections
@@ -244,7 +254,7 @@ def find_shell_files(base_dir: str) -> List[str]:
     return sorted(set(shell_files))
 
 
-def generate_csv_report(functions: List[Dict], output_path: str):
+def generate_csv_report(functions: List[Dict], output_path: str, base_dir: str = None):
     """Generate CSV report from function analysis."""
     if not functions:
         print("No functions found to analyze.")
@@ -253,10 +263,16 @@ def generate_csv_report(functions: List[Dict], output_path: str):
     # Prepare CSV data
     csv_data = []
     for func in functions:
+        # Calculate relative file path
+        if base_dir and os.path.commonpath([base_dir, func['file']]) == base_dir:
+            file_rel_path = os.path.relpath(func['file'], base_dir)
+        else:
+            file_rel_path = os.path.relpath(func['file'], os.path.dirname(output_path))
+
         csv_data.append({
             'Function Name': func['name'],
             'Line Number': func['line'],
-            'File': os.path.relpath(func['file'], os.path.dirname(output_path)),
+            'File': file_rel_path,
             'Category': func['category'],
             'Has Docstring': 'Y' if func['docstring'] else 'N',
             'Has Args Section': 'Y' if func['has_args_section'] else 'N',
@@ -355,23 +371,70 @@ def generate_summary_report(functions: List[Dict]):
 
 def main():
     """Main analysis function."""
-    base_dir = "/Users/zhaomr/workdir/Chern/Celebi"
-    output_csv = "/Users/zhaomr/workdir/Chern/Celebi/analysis/shell_documentation_analysis.csv"
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Analyze shell functions in Celebi codebase"
+    )
+    parser.add_argument(
+        "--base-dir",
+        default=BASE_DIR,
+        help=f"Base directory to analyze (default: {BASE_DIR})"
+    )
+    parser.add_argument(
+        "--output-csv",
+        default=OUTPUT_CSV,
+        help=f"Output CSV file path (default: {OUTPUT_CSV})"
+    )
+    parser.add_argument(
+        "--show-all",
+        action="store_true",
+        help="Show all functions found, not just shell functions"
+    )
+
+    args = parser.parse_args()
 
     print("Analyzing shell functions in Celebi codebase...")
-    print(f"Base directory: {base_dir}")
+    print(f"Base directory: {args.base_dir}")
+
+    # Validate base directory exists
+    if not os.path.isdir(args.base_dir):
+        print(f"Error: Base directory does not exist: {args.base_dir}")
+        sys.exit(1)
+
+    # Ensure output directory exists
+    output_dir = os.path.dirname(args.output_csv)
+    if output_dir and not os.path.exists(output_dir):
+        try:
+            os.makedirs(output_dir, exist_ok=True)
+            print(f"Created output directory: {output_dir}")
+        except OSError as e:
+            print(f"Error: Could not create output directory {output_dir}: {e}")
+            sys.exit(1)
 
     # Find shell files
-    shell_files = find_shell_files(base_dir)
+    shell_files = find_shell_files(args.base_dir)
+    if not shell_files:
+        print("Warning: No shell-related files found.")
+        return
+
     print(f"\nFound {len(shell_files)} shell-related files:")
     for file in shell_files:
-        print(f"  {os.path.relpath(file, base_dir)}")
+        print(f"  {os.path.relpath(file, args.base_dir)}")
 
     # Analyze all files
     all_functions = []
     for filepath in shell_files:
-        functions = analyze_file(filepath)
-        all_functions.extend(functions)
+        try:
+            functions = analyze_file(filepath)
+            all_functions.extend(functions)
+        except Exception as e:
+            print(f"Error analyzing file {filepath}: {e}")
+            continue
+
+    if not all_functions:
+        print("Error: No functions found in any shell files.")
+        return
 
     # Filter for functions in our category mapping (shell functions)
     shell_functions = [f for f in all_functions if f['name'] in CATEGORY_MAPPING]
@@ -379,8 +442,15 @@ def main():
     print(f"\nFound {len(shell_functions)} shell functions (from category mapping)")
 
     # Generate reports
-    generate_csv_report(shell_functions, output_csv)
-    generate_summary_report(shell_functions)
+    try:
+        generate_csv_report(shell_functions, args.output_csv, args.base_dir)
+        generate_summary_report(shell_functions)
+    except IOError as e:
+        print(f"Error writing output files: {e}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Unexpected error generating reports: {e}")
+        sys.exit(1)
 
     # Also show all functions found for comparison
     print(f"\nTotal functions found in files: {len(all_functions)}")
@@ -388,12 +458,12 @@ def main():
         other_functions = [f for f in all_functions if f['name'] not in CATEGORY_MAPPING]
         print(f"Other functions (not in shell mapping): {len(other_functions)}")
 
-        # Show top 20 other functions
-        print("\nTop 20 other functions found:")
-        for i, func in enumerate(other_functions[:20]):
+        # Show top N other functions
+        print(f"\nTop {MAX_OTHER_FUNCTIONS_TO_SHOW} other functions found:")
+        for i, func in enumerate(other_functions[:MAX_OTHER_FUNCTIONS_TO_SHOW]):
             print(f"  {i+1:2}. {func['name']:30} (line {func['line']} in {os.path.basename(func['file'])})")
-        if len(other_functions) > 20:
-            print(f"  ... and {len(other_functions) - 20} more")
+        if len(other_functions) > MAX_OTHER_FUNCTIONS_TO_SHOW:
+            print(f"  ... and {len(other_functions) - MAX_OTHER_FUNCTIONS_TO_SHOW} more")
 
 
 if __name__ == "__main__":
