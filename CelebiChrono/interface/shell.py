@@ -209,6 +209,9 @@ def mv(source: str, destination: str) -> None:
             is an existing directory, the source object is moved into it with
             its original name.
 
+    Returns:
+        None: Prints error messages to console for invalid operations
+
     Examples:
         mv old_name new_name          # Rename object in current directory
         mv file.txt subdir/           # Move file into subdirectory
@@ -249,6 +252,9 @@ def cp(source: str, destination: str) -> None:
         destination (str): New path or destination directory. If destination
             is an existing directory, the source object is copied into it with
             its original name.
+
+    Returns:
+        None: Prints error messages to console for invalid operations
 
     Examples:
         cp file.txt file_copy.txt        # Copy file with new name
@@ -291,16 +297,24 @@ def ls(*args):
     algorithms, data objects). Shows README, sub-objects, and task information
     by default.
 
-    Arguments:
+    Args:
         *args: Variable length argument list. Accepts 0 or 1 argument:
             - If no arguments: lists the current object
             - If one argument: treats it as a path to list (must be within
               the current project)
 
+    Returns:
+        Message: Formatted listing output or None if path is invalid
+
     Examples:
         ls                    # List current object
         ls /path/to/object    # List specific object within project
         ls @/subdir           # List object using project-relative path
+
+    Note:
+        - Only lists objects within the current project boundary
+        - Returns None for invalid paths or objects outside project
+        - Uses object-specific ls() method for formatted output
     """
     if len(args) == 0:
         # No path provided, list current object
@@ -344,7 +358,23 @@ def ls(*args):
 
 
 def successors() -> Message:
-    """List the successors of the current object."""
+    """List the successors of the current object.
+
+    Displays objects that depend on or follow from the current object in the
+    project workflow. Shows only successor relationships, excluding other
+    object details.
+
+    Returns:
+        Message: Formatted listing of successor objects
+
+    Examples:
+        successors()  # List all successors of current object
+
+    Note:
+        - Only shows successors, not predecessors or other relationships
+        - Returns empty message if no successors exist
+        - Uses specialized ls parameters to filter for successors only
+    """
     return MANAGER.current_object().ls(
         LsParameters(
             readme=False,
@@ -358,7 +388,25 @@ def successors() -> Message:
 
 
 def short_ls(_: str) -> None:
-    """Show short listing of the current object."""
+    """Show short listing of the current object.
+
+    Displays a concise summary of the current object's contents, showing only
+    essential information without detailed metadata or relationship data.
+
+    Args:
+        _ (str): Unused parameter (maintains command interface consistency)
+
+    Returns:
+        None: Output is printed directly to console
+
+    Examples:
+        short_ls("")  # Show short listing of current object
+
+    Note:
+        - Shows minimal information compared to full ls() output
+        - Ignores the input parameter for interface compatibility
+        - Useful for quick overviews in interactive sessions
+    """
     MANAGER.current_object().short_ls()
 
 
@@ -471,6 +519,9 @@ def rm(line: str) -> None:
     Args:
         line (str): Path to the object to remove.
 
+    Returns:
+        None: Prints error messages to console for invalid operations
+
     Examples:
         rm file.txt              # Remove file
         rm directory/            # Remove directory
@@ -480,6 +531,7 @@ def rm(line: str) -> None:
         - Cannot remove the current project root
         - Cannot remove objects outside the project boundary
         - Some objects may be protected from deletion
+        - Prints error messages instead of raising exceptions
     """
     line = os.path.abspath(line)
     # Deal with the illegal operation
@@ -498,7 +550,27 @@ def rm(line: str) -> None:
 
 
 def rm_file(file_name: str) -> None:
-    """Remove a file from current task or algorithm."""
+    """Remove a file from current task or algorithm.
+
+    Deletes files within the context of a task or algorithm object. Supports
+    wildcard removal with '*' to delete all non-protected files.
+
+    Args:
+        file_name (str): Name of file to remove, or '*' for all files
+
+    Returns:
+        None: Prints error messages to console for invalid operations
+
+    Examples:
+        rm_file("data.txt")      # Remove specific file
+        rm_file("*")             # Remove all non-protected files
+
+    Note:
+        - Only works within task or algorithm contexts
+        - Protects system files (.celebi, celebi.yaml) from deletion
+        - Wildcard '*' removes all files except protected system files
+        - Prints colored error messages for failed operations
+    """
     if MANAGER.current_object().object_type() not in ("task", "algorithm"):
         print("Unable to call rm_file if you are not in a task or algorithm.")
         return
@@ -519,7 +591,28 @@ def rm_file(file_name: str) -> None:
 
 
 def mv_file(file_name: str, dest_file: str) -> None:
-    """Move a file within current task or algorithm."""
+    """Move a file within current task or algorithm.
+
+    Relocates or renames files within the context of a task or algorithm object.
+    Maintains file relationships and metadata during the move operation.
+
+    Args:
+        file_name (str): Name of the file to move
+        dest_file (str): Destination file name or path
+
+    Returns:
+        None: Prints error messages to console for invalid operations
+
+    Examples:
+        mv_file("old.txt", "new.txt")      # Rename file
+        mv_file("data.txt", "subdir/data.txt")  # Move to subdirectory
+
+    Note:
+        - Only works within task or algorithm contexts
+        - Preserves file metadata and relationships
+        - Prints colored error messages for failed operations
+        - Uses object-specific move_file() method
+    """
     if MANAGER.current_object().object_type() not in ("task", "algorithm"):
         print("Unable to call mv_file if you are not in a task or algorithm.")
         return
@@ -547,7 +640,28 @@ def status():
     return MANAGER.current_object().printed_status()
 
 def import_file(filename: str) -> None:
-    """Import a file into current task or algorithm."""
+    """Import a file into current task or algorithm.
+
+    Copies external files into the current task or algorithm context. Supports
+    wildcard imports with '/*' to import all files from a directory.
+
+    Args:
+        filename (str): Path to file to import, or directory path ending with '/*'
+
+    Returns:
+        None: Prints error messages to console for invalid operations
+
+    Examples:
+        import_file("/external/data.txt")      # Import specific file
+        import_file("/external/dir/*")         # Import all files from directory
+
+    Note:
+        - Only works within task or algorithm contexts
+        - Supports directory wildcard imports with '/*' suffix
+        - Validates that source paths exist and are accessible
+        - Prints colored error messages for failed operations
+        - Shows import progress messages for each file
+    """
     if MANAGER.current_object().object_type() not in ("task", "algorithm"):
         print("Unable to call importfile if you are not in a task or algorithm.")
         return
