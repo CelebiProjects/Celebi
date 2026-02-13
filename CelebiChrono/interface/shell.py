@@ -26,21 +26,69 @@ MANAGER = get_manager()
 
 
 def cd_project(line: str) -> None:
-    """Switch to a different project and change directory to its path."""
+    """Switch to a different project and change directory to its path.
+
+    Changes the current working project and navigates to its root directory.
+    This function updates both the Celebi project manager and the system
+    working directory.
+
+    Args:
+        line (str): Name of the project to switch to.
+
+    Examples:
+        cd_project my_project      # Switch to project named 'my_project'
+        cd_project analysis        # Switch to 'analysis' project
+
+    Note:
+        The project must exist in the Celebi project registry.
+        Current working directory will change to the project's root path.
+    """
     MANAGER.switch_project(line)
     os.chdir(MANAGER.current_object().path)
 
 
 def shell_cd_project(line: str) -> None:
-    """Switch to a different project and print the new path."""
+    """Switch to a different project and print the new path.
+
+    Changes the current working project and prints the absolute path
+    to the project's root directory. This is the shell-version that
+    outputs the path for shell integration.
+
+    Args:
+        line (str): Name of the project to switch to.
+
+    Examples:
+        shell_cd_project my_project  # Switch and print path to 'my_project'
+
+    Note:
+        Prints the absolute path to stdout for shell capture.
+        Uses the same project validation as cd_project.
+    """
     cd_project(line)
     print(MANAGER.current_object().path)
 
 
 def cd(line: str) -> None:
-    """
-    Change the directory.
-    The standalone Chern.cd command is protected.
+    """Change directory within the current project.
+
+    Changes the current working directory to a specified path or object within
+    the current project. Supports both path-based navigation and numeric indices
+    for quick access to recently viewed objects.
+
+    Args:
+        line (str): Either a path string or numeric index. If a numeric string,
+            changes to the object at that index in the current directory listing.
+            If a path, changes to the specified object or directory.
+
+    Examples:
+        cd subdirectory       # Change to subdirectory
+        cd ../parent          # Change to parent directory
+        cd 2                  # Change to object at index 2 in ls output
+        cd @/project/path     # Change using project-relative path
+
+    Note:
+        The standalone Chern.cd command is protected and maintains project
+        boundary safety.
     """
     line = line.rstrip("\n")
     if line.isdigit():
@@ -149,13 +197,28 @@ def _adjust_destination_path(source: str, destination: str) -> str:
 
 
 def mv(source: str, destination: str) -> None:
-    """
-    Move or rename file. Will keep the link relationship.
-    mv SOURCE DEST
-    or
-    mv SOURCE DIRECTORY
-    BECAREFULL!!
-    mv SOURCE1 SOURCE2 SOURCE3 ... DIRECTORY is not supported
+    """Move or rename objects within the current project.
+
+    Moves or renames Celebi objects (files, directories, tasks, algorithms, etc.)
+    while preserving their relationships and metadata. Supports moving a single
+    object to a new location or renaming it within the same directory.
+
+    Args:
+        source (str): Path to the object to move or rename.
+        destination (str): New path or destination directory. If destination
+            is an existing directory, the source object is moved into it with
+            its original name.
+
+    Examples:
+        mv old_name new_name          # Rename object in current directory
+        mv file.txt subdir/           # Move file into subdirectory
+        mv @/old_path @/new_path      # Move using project-relative paths
+
+    Note:
+        - Preserves link relationships and object metadata
+        - Only supports moving single objects (not multiple sources)
+        - Validates that both source and destination are within project bounds
+        - BECAREFUL: Moving critical objects may break dependencies
     """
     source, destination = _normalize_paths(source, destination)
     # Initial validation
@@ -175,11 +238,27 @@ def mv(source: str, destination: str) -> None:
 
 
 def cp(source: str, destination: str) -> None:
-    """
-    Copy file or directory. Will handle Chern object relationships.
-    cp SOURCE DEST
-    or
-    cp SOURCE DIRECTORY
+    """Copy objects within the current project.
+
+    Copies Celebi objects (files, directories, tasks, algorithms, etc.)
+    while preserving their relationships and metadata. Supports copying
+    a single object to a new location or into an existing directory.
+
+    Args:
+        source (str): Path to the object to copy.
+        destination (str): New path or destination directory. If destination
+            is an existing directory, the source object is copied into it with
+            its original name.
+
+    Examples:
+        cp file.txt file_copy.txt        # Copy file with new name
+        cp dir/ newdir/                  # Copy directory
+        cp @/source @/dest               # Copy using project-relative paths
+
+    Note:
+        - Preserves link relationships and object metadata
+        - Within tasks or algorithms, uses object-specific copy logic
+        - Validates that both source and destination are within project bounds
     """
     # Within a task or algorithm, use object-specific copy
     if MANAGER.current_object().object_type() in ("task", "algorithm"):
@@ -284,7 +363,27 @@ def short_ls(_: str) -> None:
 
 
 def mkalgorithm(obj: str, use_template: bool = False) -> None:
-    """Create a new algorithm."""
+    """Create a new algorithm object.
+
+    Creates a new algorithm within the current project. Algorithms define
+    computational procedures that can be executed on tasks. They include
+    scripts, configuration, and metadata for reproducible analysis.
+
+    Args:
+        obj (str): Path where the algorithm should be created. Must be within
+            a valid directory or project location.
+        use_template (bool, optional): If True, initializes the algorithm with
+            a template structure. Defaults to False.
+
+    Examples:
+        create-algorithm my_algo           # Create algorithm at my_algo/
+        create-algorithm path/to/algo      # Create at specific path
+        create-algorithm @/algorithms/new  # Use project-relative path
+
+    Note:
+        Algorithms can only be created within directories or projects,
+        not within other object types like tasks or data objects.
+    """
     line = csys.refine_path(obj, MANAGER.current_object().path)
     parent_path = os.path.abspath(line+"/..")
     object_type = VObject(parent_path).object_type()
@@ -295,7 +394,25 @@ def mkalgorithm(obj: str, use_template: bool = False) -> None:
 
 
 def mktask(line: str) -> None:
-    """Create a new task."""
+    """Create a new task object.
+
+    Creates a new task within the current project. Tasks are executable units
+    that combine inputs, algorithms, and parameters to produce outputs.
+    Tasks can be submitted for execution and tracked through their lifecycle.
+
+    Args:
+        line (str): Path where the task should be created. Must be within
+            a valid directory or project location.
+
+    Examples:
+        create-task my_task           # Create task at my_task/
+        create-task path/to/task      # Create at specific path
+        create-task @/tasks/new       # Use project-relative path
+
+    Note:
+        Tasks can only be created within directories or projects,
+        not within other object types like algorithms or data objects.
+    """
     line = csys.refine_path(line, MANAGER.current_object().path)
     parent_path = os.path.abspath(line+"/..")
     object_type = VObject(parent_path).object_type()
@@ -317,7 +434,24 @@ def mkdata(line: str) -> None:
 
 
 def mkdir(line: str) -> None:
-    """Create a new directory."""
+    """Create a new directory within the current project.
+
+    Creates an empty directory for organizing projects, tasks, algorithms,
+    and data objects. Directories provide hierarchical organization within
+    the Celebi project structure.
+
+    Args:
+        line (str): Path where the directory should be created.
+
+    Examples:
+        mkdir new_folder          # Create directory in current location
+        mkdir path/to/newdir      # Create with full path
+        mkdir @/subdirs/new       # Use project-relative path
+
+    Note:
+        Directories can only be created within existing directories or
+        projects, not within other object types like tasks or algorithms.
+    """
     line = csys.refine_path(line, MANAGER.current_object().path)
     parent_path = os.path.abspath(line+"/..")
     object_type = VObject(parent_path).object_type()
@@ -328,7 +462,25 @@ def mkdir(line: str) -> None:
 
 
 def rm(line: str) -> None:
-    """Remove a file or directory."""
+    """Remove objects (files, directories, tasks, algorithms) from the project.
+
+    Deletes Celebi objects from the current project. The operation is validated
+    to ensure project integrity and prevent accidental deletion of critical
+    components.
+
+    Args:
+        line (str): Path to the object to remove.
+
+    Examples:
+        rm file.txt              # Remove file
+        rm directory/            # Remove directory
+        rm @/path/to/object      # Remove using project-relative path
+
+    Note:
+        - Cannot remove the current project root
+        - Cannot remove objects outside the project boundary
+        - Some objects may be protected from deletion
+    """
     line = os.path.abspath(line)
     # Deal with the illegal operation
     if line == csys.project_path():
@@ -420,7 +572,25 @@ def import_file(filename: str) -> None:
 
 # pylint: disable=too-many-branches
 def add_input(path: str, alias: str) -> None:
-    """Add an input to current task or algorithm."""
+    """Add an input to the current task or algorithm.
+
+    Links an existing object (data, task output, or algorithm) as an input
+    to the current task or algorithm. Inputs are referenced by alias within
+    the execution context.
+
+    Args:
+        path (str): Path to the object to add as input.
+        alias (str): Name to reference this input within the task/algorithm.
+
+    Examples:
+        add-input data/file.txt input_data  # Add file as input with alias
+        add-input @/tasks/prev/output result  # Add task output as input
+
+    Note:
+        - The current object must be a task or algorithm
+        - Input objects must exist within the project
+        - Aliases must be unique within the task/algorithm
+    """
     if MANAGER.current_object().object_type() == "directory":
         destination_path = MANAGER.current_object().relative_path(path)
         dest_obj = VObject(os.path.join(MANAGER.current_object().path, destination_path))
@@ -657,19 +827,59 @@ def send(path: str) -> None:
 
 
 def submit(runner: str = "local") -> None:
-    """Submit to the runner."""
+    """Submit current task for execution.
+
+    Sends the current task to a runner for processing. The runner executes
+    the task's algorithm with the specified inputs and parameters, producing
+    outputs and logs.
+
+    Args:
+        runner (str, optional): Name of the runner to use for execution.
+            Defaults to "local" for local execution.
+
+    Examples:
+        submit              # Submit to local runner
+        submit my_runner    # Submit to specific runner
+        submit cluster-01   # Submit to cluster runner
+
+    Returns:
+        Message object with submission status and details.
+
+    Note:
+        - The current object must be a task
+        - The task must have a valid algorithm and inputs configured
+        - Runner must be available and configured
+    """
     print(MANAGER.current_object())
     print(runner)
     message = MANAGER.current_object().submit(runner)
     return message
 
 def purge():
-    """Purge"""
+    """Purge temporary files and cleanup current object.
+
+    Removes temporary files, cache data, and other non-essential artifacts
+    associated with the current object. This helps free up disk space and
+    resolve potential consistency issues.
+
+    Note:
+        The exact behavior depends on the object type. Some objects may
+        have protected data that cannot be purged.
+    """
     message = MANAGER.current_object().purge()
     print(message.colored())
 
 def purge_old_impressions():
-    """Purge"""
+    """Purge old impression data from current object.
+
+    Removes historical impression data that is no longer needed, preserving
+    only recent or essential impressions. Impressions are visualization
+    or snapshot data generated during task execution.
+
+    Note:
+        The age threshold for 'old' impressions is configurable.
+        Some impression data may be protected from deletion.
+    """
     message = MANAGER.current_object().purge_old_impressions()
     print(message.colored())
 
@@ -780,15 +990,58 @@ def doctor() -> Message:
     return MANAGER.current_object().doctor()
 
 def collect(contents: str = "all") -> Message:
-    """Collect the outputs and logs (contents: all, outputs, or logs)"""
+    """Collect task execution results.
+
+    Retrieves outputs, logs, or both from a completed task execution.
+    Results are gathered from the runner and made available locally.
+
+    Args:
+        contents (str, optional): What to collect: "all", "outputs", or "logs".
+            Defaults to "all".
+
+    Examples:
+        collect              # Collect both outputs and logs
+        collect outputs      # Collect only outputs
+        collect logs         # Collect only logs
+
+    Returns:
+        Message object with collection status and results.
+
+    Note:
+        - The current object must be a task
+        - Task must have been submitted and completed
+        - Collection may download files from remote runners
+    """
     return MANAGER.current_object().collect(contents)
 
 def collect_outputs() -> Message:
-    """Collect the outputs"""
+    """Collect only task outputs.
+
+    Retrieves output files and data from a completed task execution,
+    excluding logs.
+
+    Returns:
+        Message object with outputs collection status.
+
+    See Also:
+        collect: Collect both outputs and logs
+        collect_logs: Collect only logs
+    """
     return MANAGER.current_object().collect("outputs")
 
 def collect_logs() -> Message:
-    """Collect the logs"""
+    """Collect only task logs.
+
+    Retrieves log files from a completed task execution,
+    excluding output data.
+
+    Returns:
+        Message object with logs collection status.
+
+    See Also:
+        collect: Collect both outputs and logs
+        collect_outputs: Collect only outputs
+    """
     return MANAGER.current_object().collect("logs")
 
 def bookkeep() -> Message:
@@ -811,7 +1064,23 @@ def error_log(index) -> Message:
 
 
 def navigate() -> str:
-    """Return the path of the current project."""
+    """Return the path of the current project.
+
+    Retrieves the absolute filesystem path of the currently active
+    Celebi project. This is useful for shell scripts and external
+    tools that need to know the project location.
+
+    Returns:
+        Absolute path to the current project's root directory.
+
+    Examples:
+        project_path = navigate()  # Get current project path
+        cd $(navigate)/subdir     # Use in shell command
+
+    Note:
+        Returns empty string if no project is currently active.
+        Requires the ChernProjectManager to be initialized.
+    """
     from ..interface.ChernManager import ChernProjectManager
     manager = ChernProjectManager().get_manager()
     project_name = manager.get_current_project()
