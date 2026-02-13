@@ -6,7 +6,7 @@ projects, tasks, algorithms, and directories within the Chern system.
 """
 import os
 import subprocess
-from typing import Tuple
+from typing import Tuple, Optional
 
 from ..utils import csys
 from ..utils.message import Message
@@ -221,7 +221,7 @@ def mv(source: str, destination: str) -> None:
         - Preserves link relationships and object metadata
         - Only supports moving single objects (not multiple sources)
         - Validates that both source and destination are within project bounds
-        - BECAREFUL: Moving critical objects may break dependencies
+        - BE CAREFUL: Moving critical objects may break dependencies
     """
     source, destination = _normalize_paths(source, destination)
     # Initial validation
@@ -290,7 +290,7 @@ def cp(source: str, destination: str) -> None:
         print(result.colored())
 
 
-def ls(*args):
+def ls(*args) -> Optional[Message]:
     """List the contents of a Celebi object.
 
     Displays the object's structure including sub-objects (projects, tasks,
@@ -304,7 +304,9 @@ def ls(*args):
               the current project)
 
     Returns:
-        Message: Formatted listing output or None if path is invalid
+        Message | None: Message containing formatted directory listing with object names,
+        types, and metadata, colored for display, or None if the specified path is
+        invalid or outside project bounds.
 
     Examples:
         ls                    # List current object
@@ -365,7 +367,9 @@ def successors() -> Message:
     object details.
 
     Returns:
-        Message: Formatted listing of successor objects
+        Message: Message containing formatted listing of successor objects with their
+        names, paths, and relationship information, colored for display. Returns
+        empty message if no successors exist.
 
     Examples:
         successors()  # List all successors of current object
@@ -394,13 +398,13 @@ def short_ls(_: str) -> None:
     essential information without detailed metadata or relationship data.
 
     Args:
-        _ (str): Unused parameter (maintains command interface consistency)
+        _ (str): Parameter is ignored (maintains command interface consistency)
 
     Returns:
         None: Output is printed directly to console
 
     Examples:
-        short_ls("")  # Show short listing of current object
+        short_ls("")  # Show short listing of current object (parameter is ignored)
 
     Note:
         - Shows minimal information compared to full ls() output
@@ -427,6 +431,9 @@ def mkalgorithm(obj: str, use_template: bool = False) -> None:
         create-algorithm my_algo           # Create algorithm at my_algo/
         create-algorithm path/to/algo      # Create at specific path
         create-algorithm @/algorithms/new  # Use project-relative path
+
+    Returns:
+        None: Function creates algorithm but returns no value
 
     Note:
         Algorithms can only be created within directories or projects,
@@ -457,6 +464,9 @@ def mktask(line: str) -> None:
         create-task path/to/task      # Create at specific path
         create-task @/tasks/new       # Use project-relative path
 
+    Returns:
+        None: Function creates task but returns no value
+
     Note:
         Tasks can only be created within directories or projects,
         not within other object types like algorithms or data objects.
@@ -471,12 +481,34 @@ def mktask(line: str) -> None:
 
 
 def mkdata(line: str) -> None:
-    """Create a new data task."""
+    """Create a new data object.
+
+    Creates a new data object within the current project. Data objects store
+    input files, output results, or intermediate data used by tasks and
+    algorithms. They provide structured storage for project data with metadata
+    tracking.
+
+    Args:
+        line (str): Path where the data object should be created. Must be within
+            a valid directory or project location.
+
+    Returns:
+        None: Function creates data object but returns no value
+
+    Examples:
+        create-data my_data           # Create data object at my_data/
+        create-data path/to/data      # Create at specific path
+        create-data @/data/new        # Use project-relative path
+
+    Note:
+        Data objects can only be created within directories or projects,
+        not within other object types like tasks or algorithms.
+    """
     line = csys.refine_path(line, MANAGER.current_object().path)
     parent_path = os.path.abspath(line+"/..")
     object_type = VObject(parent_path).object_type()
     if object_type not in ("directory", "project"):
-        print("Not allowed to create task here")
+        print("Not allowed to create data here")
         return
     create_data(line)
 
@@ -495,6 +527,9 @@ def mkdir(line: str) -> None:
         mkdir new_folder          # Create directory in current location
         mkdir path/to/newdir      # Create with full path
         mkdir @/subdirs/new       # Use project-relative path
+
+    Returns:
+        None: Function creates directory but returns no value
 
     Note:
         Directories can only be created within existing directories or
@@ -578,7 +613,7 @@ def rm_file(file_name: str) -> None:
     if file_name == "*":
         path = MANAGER.current_object().path
         for current_file in os.listdir(path):
-            # protect .chern and celebi.yaml
+            # protect .celebi and celebi.yaml
             if current_file in (".celebi", "celebi.yaml"):
                 continue
             result = MANAGER.current_object().rm_file(current_file)
