@@ -1400,7 +1400,6 @@ def collect(contents: str = "all") -> Message:
     if contents not in valid_contents:
         print(f"Error: contents must be one of {sorted(valid_contents)}, got '{contents}'")
         # Return an error message instead of raising exception to maintain API consistency
-        from CelebiChrono.message import Message
         return Message(f"Invalid contents parameter: '{contents}'", is_error=True)
 
     return MANAGER.current_object().collect(contents)
