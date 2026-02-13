@@ -1118,13 +1118,54 @@ def remove_input(alias: str) -> None:
 
 
 def add_host(host: str, url: str) -> None:
-    """Add a host to the communicator."""
+    """Add a host to the communicator.
+
+    Registers a new host with the Chern communicator system, enabling
+    communication with remote services and runners. Hosts are used for
+    distributed task execution and data transfer.
+
+    Args:
+        host (str): Unique identifier name for the host.
+        url (str): Network address or URL where the host is accessible.
+
+    Examples:
+        add_host localhost http://127.0.0.1:8080
+        add_host cluster-01 https://cluster.example.com/api
+
+    Returns:
+        None: Function executes side effect of adding host configuration.
+
+    Note:
+        - Host names must be unique within the communicator
+        - URL should be accessible from the current network
+        - Host configuration is persisted in project settings
+    """
     cherncc = ChernCommunicator.instance()
     cherncc.add_host(host, url)
 
 
 def hosts() -> None:
-    """Show all hosts and their status."""
+    """Show all hosts and their status.
+
+    Displays a formatted table of all configured hosts with their current
+    connection status. Host status indicates whether the communicator can
+    successfully connect to each host.
+
+    Args:
+        None: Function takes no parameters.
+
+    Examples:
+        hosts()  # Display all hosts and their status
+
+    Returns:
+        None: Output is printed to console in formatted table.
+
+    Note:
+        - Status "ok" indicates successful connection
+        - Status "unconnected" indicates connection failure
+        - Colors are used to visually distinguish statuses
+        - Host list is retrieved from Chern communicator
+    """
     cherncc = ChernCommunicator.instance()
     host_list = cherncc.hosts()
     print(f"{'HOSTS':<20}{'STATUS':20}")
@@ -1135,13 +1176,54 @@ def hosts() -> None:
 
 
 def dite() -> None:
-    """Show DITE information."""
+    """Show DITE information.
+
+    Displays information about the Distributed Task Execution (DITE) system,
+    including connection status, configuration details, and available services.
+    DITE manages distributed task execution across multiple runners.
+
+    Args:
+        None: Function takes no parameters.
+
+    Examples:
+        dite()  # Display DITE system information
+
+    Returns:
+        None: Output is printed to console with DITE details.
+
+    Note:
+        - DITE must be properly configured for distributed execution
+        - Information includes connection URLs and service status
+        - Requires Chern communicator to be initialized
+    """
     cherncc = ChernCommunicator.instance()
     dite_info = cherncc.dite_info()
     print(dite_info)
 
 def set_dite(url: str = "") -> None:
-    """Set DITE connection."""
+    """Set DITE connection.
+
+    Configures or updates the Distributed Task Execution (DITE) server URL
+    for the current project. The URL is persisted in project configuration
+    and used for all subsequent distributed task operations.
+
+    Args:
+        url (str, optional): DITE server URL to connect to. If empty string,
+            function displays current configuration without changes.
+
+    Examples:
+        set_dite https://dite.example.com/api
+        set_dite()  # Show current DITE configuration
+
+    Returns:
+        None: Function updates configuration or displays current settings.
+
+    Note:
+        - URL is saved to project's .celebi/hosts.json file
+        - Empty URL parameter displays current configuration
+        - Changes affect all distributed operations in the project
+        - Requires project to be initialized
+    """
     project_path = csys.project_path()
     config_path = os.path.join(project_path, ".celebi", "hosts.json")
     config_file = metadata.ConfigFile(config_path)
@@ -1151,7 +1233,29 @@ def set_dite(url: str = "") -> None:
 
 
 def runners() -> Message:
-    """Display all available runners."""
+    """Display all available runners.
+
+    Retrieves and displays information about all task execution runners
+    available through the DITE system. Shows runner names, connection URLs,
+    and current status (Connected/Disconnected).
+
+    Args:
+        None: Function takes no parameters.
+
+    Examples:
+        runners()  # List all available runners with status
+
+    Returns:
+        Message: Formatted message object containing runner information table,
+        status indicators, and connection details. Includes warning if DITE
+        is not connected.
+
+    Note:
+        - Requires DITE connection to be established
+        - Runner status indicates current connectivity
+        - Information is retrieved from Chern communicator
+        - Message uses color coding for status display
+    """
     message = Message()
     cherncc = ChernCommunicator.instance()
     dite_status = cherncc.dite_status()
@@ -1176,27 +1280,135 @@ def runners() -> Message:
 
 
 def register_runner(runner: str, url: str, secret: str, backend_type: str) -> None:
-    """Register a runner with DITE."""
+    """Register a runner with DITE.
+
+    Registers a new task execution runner with the Distributed Task Execution
+    (DITE) system. Runners execute tasks and must be registered before they
+    can be used for distributed computation.
+
+    Args:
+        runner (str): Unique identifier name for the runner.
+        url (str): Network address where the runner service is accessible.
+        secret (str): Authentication secret or token for runner access.
+        backend_type (str): Type of execution backend (e.g., "docker", "slurm").
+
+    Examples:
+        register_runner local-runner http://localhost:8080 secret123 docker
+        register_runner gpu-cluster https://cluster.example.com token456 slurm
+
+    Returns:
+        None: Function executes side effect of registering runner with DITE.
+
+    Note:
+        - Runner names must be unique within DITE
+        - URL must be accessible from DITE server
+        - Secret is used for secure communication
+        - Backend type determines execution environment
+    """
     cherncc = ChernCommunicator.instance()
     cherncc.register_runner(runner, url, secret, backend_type)
 
 def remove_runner(runner: str) -> None:
-    """Remove a runner from DITE."""
+    """Remove a runner from DITE.
+
+    Unregisters a task execution runner from the Distributed Task Execution
+    (DITE) system. Removed runners will no longer be available for task
+    execution.
+
+    Args:
+        runner (str): Name of the runner to remove.
+
+    Examples:
+        remove_runner old-runner
+        remove_runner deprecated-cluster
+
+    Returns:
+        None: Function executes side effect of removing runner from DITE.
+
+    Note:
+        - Runner must be registered to be removed
+        - Removal affects future task submissions
+        - Currently executing tasks may be affected
+        - Requires appropriate permissions in DITE
+    """
     cherncc = ChernCommunicator.instance()
     cherncc.remove_runner(runner)
 
 def request_runner(runner: str) -> None:
-    """Set the requested runner"""
+    """Set the requested runner for current task.
+
+    Specifies which runner should be used for executing the current task.
+    The runner must be available through DITE and properly configured.
+
+    Args:
+        runner (str): Name of the runner to use for task execution.
+
+    Examples:
+        request_runner local
+        request_runner gpu-cluster-01
+
+    Returns:
+        None: Function sets runner preference on current task object.
+
+    Note:
+        - Runner must be registered with DITE
+        - Current object must be a task
+        - Runner preference is saved with task configuration
+        - Default runner can be overridden at submission time
+    """
     MANAGER.current_object().set_default_runner(runner)
 
 def search_impression(partial_uuid: str) -> Message:
-    """Search impressions by partial UUID."""
+    """Search impressions by partial UUID.
+
+    Searches for task execution impressions using a partial UUID match.
+    Impressions are visualization snapshots or execution records that can
+    be retrieved for analysis or debugging.
+
+    Args:
+        partial_uuid (str): Partial UUID string to search for impressions.
+
+    Examples:
+        search_impression abc123
+        search_impression 2024-01
+
+    Returns:
+        Message: Search results containing matching impressions, including
+        UUIDs, creation times, and associated task information.
+
+    Note:
+        - Partial UUID can match any part of the full UUID
+        - Search is case-insensitive
+        - Current object context affects search scope
+        - Results may include impressions from related tasks
+    """
     print("Search partial uuid", partial_uuid)
     message = MANAGER.current_object().search_impression(partial_uuid)
     return message
 
 def send(path: str) -> None:
-    """Send a path to current object."""
+    """Send a path to current object.
+
+    Transfers a file or directory path to the current object for processing.
+    The object receives the path and may use it for various operations
+    depending on the object type and context.
+
+    Args:
+        path (str): Filesystem path to send to the current object.
+
+    Examples:
+        send data/input.txt
+        send results/output.csv
+
+    Returns:
+        None: Function executes path transfer operation.
+
+    Note:
+        - Path must be accessible from current working directory
+        - Object type determines how path is processed
+        - Some objects may have specific path requirements
+        - Operation may involve file copying or linking
+    """
     MANAGER.current_object().send(path)
 
 
@@ -1235,8 +1447,14 @@ def purge() -> None:
     associated with the current object. This helps free up disk space and
     resolve potential consistency issues.
 
+    Args:
+        None: Function takes no parameters.
+
     Examples:
         purge()  # Clean up temporary files for current object
+
+    Returns:
+        None: Function executes cleanup and prints confirmation message.
 
     Note:
         The exact behavior depends on the object type.
@@ -1253,8 +1471,14 @@ def purge_old_impressions() -> None:
     only recent or essential impressions. Impressions are visualization
     or snapshot data generated during task execution.
 
+    Args:
+        None: Function takes no parameters.
+
     Examples:
         purge_old_impressions()  # Remove outdated impressions
+
+    Returns:
+        None: Function executes cleanup and prints confirmation message.
 
     Note:
         The age threshold for 'old' impressions is configurable.
@@ -1266,7 +1490,30 @@ def purge_old_impressions() -> None:
 
 
 def view(browser: str = "open") -> None:
-    """View impressions for current task."""
+    """View impressions for current task.
+
+    Opens task execution impressions in a web browser for visualization.
+    Impressions are graphical representations of task execution results,
+    including plots, charts, and interactive visualizations.
+
+    Args:
+        browser (str, optional): Browser command to use for opening URL.
+            Defaults to "open" (system default browser).
+
+    Examples:
+        view()           # Open impressions in default browser
+        view firefox     # Open impressions in Firefox
+        view chrome      # Open impressions in Chrome
+
+    Returns:
+        None: Function opens browser with impression visualization.
+
+    Note:
+        - Current object must be a task
+        - Task must have generated impressions
+        - Browser command must be available in system PATH
+        - Uses system's subprocess to launch browser
+    """
     is_task = MANAGER.current_object().is_task()
     if not is_task:
         print("Not able to view")
@@ -1275,7 +1522,29 @@ def view(browser: str = "open") -> None:
     subprocess.call([browser, url])
 
 def viewurl() -> str:
-    """Get the impression path for view"""
+    """Get the impression URL for current task.
+
+    Retrieves the URL where task execution impressions can be viewed.
+    Returns empty string if current object is not a task or if no
+    impressions are available.
+
+    Args:
+        None: Function takes no parameters.
+
+    Examples:
+        url = viewurl()  # Get impression URL
+        print(f"View at: {viewurl()}")  # Display URL
+
+    Returns:
+        str: URL for viewing task impressions, or empty string if
+        not available.
+
+    Note:
+        - Current object must be a task
+        - Task must have generated impressions
+        - URL may be local file path or web address
+        - Empty return indicates no impressions available
+    """
     is_task = MANAGER.current_object().is_task()
     if not is_task:
         print("Not able to get view url")
@@ -1284,12 +1553,57 @@ def viewurl() -> str:
     return url
 
 def impress() -> Message:
-    """Create impression for current task or algorithm."""
+    """Create impression for current task or algorithm.
+
+    Generates a visualization snapshot (impression) of the current object's
+    state. Impressions capture execution results, data visualizations, or
+    configuration states for later review or sharing.
+
+    Args:
+        None: Function takes no parameters.
+
+    Examples:
+        impress()  # Create impression for current object
+
+    Returns:
+        Message: Confirmation message containing impression creation status,
+        UUID of created impression, and any generation details.
+
+    Note:
+        - Current object must be a task or algorithm
+        - Impression content depends on object type and state
+        - Generated impressions can be viewed with `view()` or `viewurl()`
+        - Each impression has a unique UUID for identification
+    """
     message = MANAGER.current_object().impress()
     return message
 
 def get_script_path(filename: str) -> Tuple[bool, str]:
-    """Get the script path for a algorithm or a task object."""
+    """Get the script path for a algorithm or a task object.
+
+    Resolves a filename to its full filesystem path within the context of
+    the current algorithm or task. Handles special prefixes like "code/"
+    to reference algorithm code from within tasks.
+
+    Args:
+        filename (str): Filename to resolve, optionally with "code/" or
+            "code:" prefix to reference algorithm code.
+
+    Examples:
+        get_script_path("script.py")  # Path in current object
+        get_script_path("code/main.py")  # Path in associated algorithm
+        get_script_path("code:utils.py")  # Alternative prefix syntax
+
+    Returns:
+        Tuple[bool, str]: Success flag and resolved path. Returns (False, error_message)
+        if current object is not a task or algorithm.
+
+    Note:
+        - Current object must be a task or algorithm
+        - "code/" prefix resolves to associated algorithm's path
+        - Returns absolute filesystem path
+        - Useful for script execution or file operations
+    """
     if not MANAGER.current_object().is_task_or_algorithm():
         return False, "Not able to get script path if you are not in a task or algorithm."
     if MANAGER.current_object().object_type() == "task":
@@ -1304,7 +1618,27 @@ def get_script_path(filename: str) -> Tuple[bool, str]:
 
 
 def config() -> None:
-    """Edit configuration for current task or algorithm."""
+    """Edit configuration for current task or algorithm.
+
+    Opens the configuration file (celebi.yaml) for the current task or
+    algorithm in the system's default text editor. Creates a template
+    configuration file if one doesn't exist.
+
+    Args:
+        None: Function takes no parameters.
+
+    Examples:
+        config()  # Edit configuration for current object
+
+    Returns:
+        None: Function opens editor with configuration file.
+
+    Note:
+        - Current object must be a task or algorithm
+        - Uses editor from ~/.celebi/config.yaml or defaults to "vi"
+        - Creates template with appropriate defaults for object type
+        - Configuration changes affect object behavior and execution
+    """
     if not MANAGER.current_object().is_task_or_algorithm():
         print("Not able to config")
         return
@@ -1327,20 +1661,85 @@ commands:
     subprocess.call([editor, f"{MANAGER.current_object().path}/celebi.yaml"])
 
 def danger_call(cmd: str) -> None:
-    """Execute a dangerous command and print the result."""
+    """Execute a dangerous command and print the result.
+
+    Executes a shell command within the context of the current object,
+    typically for debugging or advanced operations. Called "dangerous"
+    because commands execute with object permissions and can affect
+    system state.
+
+    Args:
+        cmd (str): Shell command to execute.
+
+    Examples:
+        danger_call "ls -la"  # List directory contents
+        danger_call "pwd"     # Print working directory
+
+    Returns:
+        None: Command output is printed to console with coloring.
+
+    Note:
+        - Commands execute in object's context with its permissions
+        - Use with caution as commands can modify system state
+        - Output is captured and displayed with color coding
+        - Intended for debugging and advanced operations only
+    """
     message = MANAGER.current_object().danger_call(cmd)
     print(message.colored())
 
 
 def workaround_preshell() -> tuple[bool, str]:
-    """Execute pre-shell workaround for the current task."""
+    """Execute pre-shell workaround for the current task.
+
+    Runs pre-execution workaround code for task preparation. Workarounds
+    are custom scripts or operations that run before task shell execution
+    to handle special cases or environment setup.
+
+    Args:
+        None: Function takes no parameters.
+
+    Examples:
+        workaround_preshell()  # Execute pre-shell workaround
+
+    Returns:
+        tuple[bool, str]: Success flag and message. Returns (False, error_message)
+        if current object is not a task.
+
+    Note:
+        - Current object must be a task
+        - Workaround code is defined in task configuration
+        - Runs before task's main shell execution
+        - Useful for environment preparation or data staging
+    """
     if not MANAGER.current_object().is_task():
         return (False, "Not able to call workaround if you are not in a task.")
     return MANAGER.current_object().workaround_preshell()
 
 
 def workaround_postshell(path: str) -> None:
-    """Execute post-shell workaround for the current task."""
+    """Execute post-shell workaround for the current task.
+
+    Runs post-execution workaround code for task cleanup or result
+    processing. Workarounds are custom scripts that run after task
+    shell execution to handle special cases or output processing.
+
+    Args:
+        path (str): Path parameter for workaround execution, typically
+            indicating output location or result data.
+
+    Examples:
+        workaround_postshell results/  # Process results directory
+        workaround_postshell output.csv  # Process output file
+
+    Returns:
+        None: Function executes workaround operations.
+
+    Note:
+        - Current object must be a task
+        - Workaround code is defined in task configuration
+        - Runs after task's main shell execution
+        - Useful for result processing or cleanup operations
+    """
     print("Working on postshell")
     if not MANAGER.current_object().is_task():
         print("Not able to call workaround if you are not in a task.")
@@ -1350,24 +1749,129 @@ def workaround_postshell(path: str) -> None:
 
 
 def trace(impression: str) -> None:
-    """Trace back to the task or algorithm that generated the impression."""
+    """Trace back to the task or algorithm that generated the impression.
+
+    Navigates to the original task or algorithm that created a specific
+    impression. Useful for understanding the provenance of visualization
+    data or debugging execution pipelines.
+
+    Args:
+        impression (str): UUID or identifier of the impression to trace.
+
+    Examples:
+        trace abc123-def456-ghi789
+        trace impression_2024_01_15
+
+    Returns:
+        None: Function navigates to source object of impression.
+
+    Note:
+        - Impression must exist in current project
+        - Source object must still be accessible
+        - Changes current working context to source object
+        - Useful for debugging complex execution chains
+    """
     MANAGER.current_object().trace(impression)
 
 
 def history() -> Message:
-    """Print the history of a task or algorithm."""
+    """Print the history of a task or algorithm.
+
+    Retrieves and displays the execution history of the current object,
+    including past runs, modifications, and state changes. History
+    provides audit trail and debugging information.
+
+    Args:
+        None: Function takes no parameters.
+
+    Examples:
+        history()  # Display object history
+
+    Returns:
+        Message: Formatted message containing chronological history entries,
+        timestamps, and change descriptions.
+
+    Note:
+        - History entries are automatically recorded
+        - Includes both execution and configuration changes
+        - Useful for debugging and understanding object evolution
+        - History depth may be limited by configuration
+    """
     return MANAGER.current_object().history()
 
 def watermark() -> Message:
-    """Print the watermark of a task or algorithm."""
+    """Print the watermark of a task or algorithm.
+
+    Displays watermark information for the current object, which typically
+    includes creation metadata, version information, and signature data.
+    Watermarks help verify object authenticity and provenance.
+
+    Args:
+        None: Function takes no parameters.
+
+    Examples:
+        watermark()  # Display object watermark
+
+    Returns:
+        Message: Formatted message containing watermark details such as
+        creation time, author, version, and cryptographic signatures.
+
+    Note:
+        - Watermarks are automatically generated
+        - Includes both metadata and verification data
+        - Useful for auditing and provenance tracking
+        - May include digital signatures for verification
+    """
     return MANAGER.current_object().watermark()
 
 def changes() -> Message:
-    """Print the changes of a task or algorithm."""
+    """Print the changes of a task or algorithm.
+
+    Displays recent changes made to the current object, including
+    configuration modifications, input/output updates, and state
+    transitions. Changes are tracked automatically by the system.
+
+    Args:
+        None: Function takes no parameters.
+
+    Examples:
+        changes()  # Display recent object changes
+
+    Returns:
+        Message: Formatted message containing change log with timestamps,
+        change types, and detailed descriptions of modifications.
+
+    Note:
+        - Changes are automatically tracked
+        - Includes both manual edits and system-generated changes
+        - Useful for understanding recent modifications
+        - Change history may be limited by retention settings
+    """
     return MANAGER.current_object().changes()
 
 def doctor() -> Message:
-    """Doctor the impression"""
+    """Doctor the impression.
+
+    Performs diagnostic checks and repairs on impression data for the
+    current object. Validates impression integrity, fixes inconsistencies,
+    and reports any issues found.
+
+    Args:
+        None: Function takes no parameters.
+
+    Examples:
+        doctor()  # Diagnose and repair impressions
+
+    Returns:
+        Message: Diagnostic report containing validation results,
+        issues found, repair actions taken, and overall health status.
+
+    Note:
+        - Checks impression data integrity and consistency
+        - May attempt automatic repairs for fixable issues
+        - Reports but cannot fix some serious data corruption
+        - Useful for troubleshooting visualization problems
+    """
     return MANAGER.current_object().doctor()
 
 def collect(contents: str = "all") -> Message:
@@ -1447,20 +1951,109 @@ def collect_logs() -> Message:
     return MANAGER.current_object().collect("logs")
 
 def bookkeep() -> Message:
-    """Bookkeep the impression"""
+    """Bookkeep the impression.
+
+    Performs bookkeeping operations on impression data at the project
+    root level. Manages impression storage, indexing, and cleanup
+    across the entire project.
+
+    Args:
+        None: Function takes no parameters.
+
+    Examples:
+        bookkeep()  # Perform project-wide impression bookkeeping
+
+    Returns:
+        Message: Bookkeeping report containing operations performed,
+        storage statistics, and any issues encountered.
+
+    Note:
+        - Operates at project root level, not current object
+        - Manages impression storage and organization
+        - May include cleanup of orphaned or outdated impressions
+        - Helps maintain project performance and organization
+    """
     return MANAGER.root_object().bookkeep()
 
 def bookkeep_url() -> str:
-    """Get the bookkeep URL"""
+    """Get the bookkeep URL.
+
+    Retrieves the URL or path where bookkeeping information and reports
+    can be accessed for the current project. This may be a local file
+    path or web address depending on configuration.
+
+    Args:
+        None: Function takes no parameters.
+
+    Examples:
+        url = bookkeep_url()  # Get bookkeeping URL
+        print(f"Bookkeeping at: {bookkeep_url()}")  # Display URL
+
+    Returns:
+        str: URL or file path for accessing bookkeeping information.
+
+    Note:
+        - Returns project-level bookkeeping location
+        - May be local file path or remote URL
+        - Location depends on project configuration
+        - Used for accessing detailed bookkeeping reports
+    """
     return MANAGER.root_object().bookkeep_url()
 
-def tree(depth = -1) -> Message:
-    """ Get the directory tree
+def tree(depth: int = -1) -> Message:
+    """Get the directory tree.
+
+    Displays the filesystem tree structure of the current object's
+    directory, showing files and subdirectories with optional depth
+    limitation.
+
+    Args:
+        depth (int, optional): Maximum depth to display. -1 shows
+            unlimited depth (entire tree). Defaults to -1.
+
+    Examples:
+        tree()      # Show complete directory tree
+        tree(2)     # Show tree up to depth 2
+        tree(0)     # Show only current directory
+
+    Returns:
+        Message: Formatted tree structure showing directory hierarchy,
+        file names, and optionally file metadata.
+
+    Note:
+        - Depth -1 shows unlimited recursion
+        - Tree includes both files and directories
+        - Output is formatted for readability
+        - Useful for understanding object directory structure
     """
     return MANAGER.current_object().tree()
 
-def error_log(index) -> Message:
-    """ Get the error log
+def error_log(index: int) -> Message:
+    """Get the error log.
+
+    Retrieves error log entries for the current object. Error logs
+    capture execution failures, warnings, and diagnostic information
+    for debugging purposes.
+
+    Args:
+        index (int): Log entry index to retrieve. Specific indexing
+            depends on implementation (may be sequential, timestamp-based,
+            or other scheme).
+
+    Examples:
+        error_log(0)    # Get most recent error log
+        error_log(-1)   # Get oldest error log (if supported)
+        error_log(5)    # Get specific log entry
+
+    Returns:
+        Message: Error log entry containing timestamp, error type,
+        message, and stack trace or diagnostic details.
+
+    Note:
+        - Indexing scheme depends on implementation
+        - Logs may be rotated or limited in retention
+        - Includes both fatal errors and warnings
+        - Useful for debugging execution problems
     """
     return MANAGER.current_object().error_log(index)
 
