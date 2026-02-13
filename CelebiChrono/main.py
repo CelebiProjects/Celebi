@@ -463,7 +463,7 @@ for cmd_name, func_name, arg_count, description in _shell_commands:
             command_func = click.argument('arg3', type=str)(command_func)
             command_func = click.argument('arg2', type=str)(command_func)
             command_func = click.argument('arg1', type=str)(command_func)
-            command_func = cli_sh.command(name=cname, help=desc)(command_func)
+            command_func = cli_sh.command(name=cname, short_help=desc, help=full_doc)(command_func)
         elif expected_args == 4:
             # Define function first
             def command_func(arg1, arg2, arg3, arg4):
@@ -495,7 +495,7 @@ for cmd_name, func_name, arg_count, description in _shell_commands:
             command_func = click.argument('arg3', type=str)(command_func)
             command_func = click.argument('arg2', type=str)(command_func)
             command_func = click.argument('arg1', type=str)(command_func)
-            command_func = cli_sh.command(name=cname, help=desc)(command_func)
+            command_func = cli_sh.command(name=cname, short_help=desc, help=full_doc)(command_func)
         else:
             # Fallback: use variable arguments
             # Define function first
@@ -525,7 +525,7 @@ for cmd_name, func_name, arg_count, description in _shell_commands:
 
             # Apply argument decorator, then command decorator
             command_func = click.argument('args', nargs=-1, type=str)(command_func)
-            command_func = cli_sh.command(name=cname, help=desc)(command_func)
+            command_func = cli_sh.command(name=cname, short_help=desc, help=full_doc)(command_func)
         # Rename function to avoid duplication
         command_func.__name__ = f'{cname}_command'
         return command_func
