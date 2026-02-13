@@ -1,0 +1,62 @@
+Function Name,Line Number,File,Category,Has Docstring,Has Args Section,Has Returns Section,Has Examples Section,Has Note Section,Documentation Quality,Number of Arguments,Arguments
+cd_project,28,../CelebiChrono/interface/shell.py,navigation,Y,N,N,N,N,Basic,1,line
+shell_cd_project,34,../CelebiChrono/interface/shell.py,navigation,Y,N,N,N,N,Basic,1,line
+cd,40,../CelebiChrono/interface/shell.py,navigation,Y,Y,N,Y,Y,Good,1,line
+mv,168,../CelebiChrono/interface/shell.py,file_operations,Y,Y,N,Y,Y,Good,2,"source, destination"
+cp,209,../CelebiChrono/interface/shell.py,file_operations,Y,Y,N,Y,Y,Good,2,"source, destination"
+ls,256,../CelebiChrono/interface/shell.py,file_operations,Y,Y,N,Y,N,Partial,1,*args
+successors,315,../CelebiChrono/interface/shell.py,file_operations,Y,N,N,N,N,Basic,0,None
+short_ls,329,../CelebiChrono/interface/shell.py,file_operations,Y,N,N,N,N,Basic,1,_
+mkalgorithm,334,../CelebiChrono/interface/shell.py,object_creation,Y,Y,N,Y,Y,Good,2,"obj, use_template"
+mktask,365,../CelebiChrono/interface/shell.py,object_creation,Y,Y,N,Y,Y,Good,1,line
+mkdata,394,../CelebiChrono/interface/shell.py,object_creation,Y,N,N,N,N,Basic,1,line
+mkdir,405,../CelebiChrono/interface/shell.py,object_creation,Y,Y,N,Y,Y,Good,1,line
+rm,433,../CelebiChrono/interface/shell.py,file_operations,Y,Y,N,Y,Y,Good,1,line
+rm_file,469,../CelebiChrono/interface/shell.py,file_operations,Y,N,N,N,N,Basic,1,file_name
+mv_file,490,../CelebiChrono/interface/shell.py,file_operations,Y,N,N,N,N,Basic,2,"file_name, dest_file"
+add_source,500,../CelebiChrono/interface/shell.py,task_configuration,Y,N,N,N,N,Basic,1,line
+jobs,505,../CelebiChrono/interface/shell.py,execution_management,Y,N,N,N,N,Basic,1,_
+status,514,../CelebiChrono/interface/shell.py,execution_management,Y,N,N,N,N,Basic,0,None
+import_file,518,../CelebiChrono/interface/shell.py,file_operations,Y,N,N,N,N,Basic,1,filename
+add_input,543,../CelebiChrono/interface/shell.py,task_configuration,Y,Y,N,Y,Y,Good,2,"path, alias"
+add_algorithm,612,../CelebiChrono/interface/shell.py,task_configuration,Y,N,N,N,N,Basic,1,path
+add_parameter,629,../CelebiChrono/interface/shell.py,task_configuration,Y,N,N,N,N,Basic,2,"par, value"
+add_parameter_subtask,645,../CelebiChrono/interface/shell.py,task_configuration,Y,N,N,N,N,Basic,3,"dirname, par, value"
+set_environment,656,../CelebiChrono/interface/shell.py,task_configuration,Y,N,N,N,N,Basic,1,env
+set_memory_limit,673,../CelebiChrono/interface/shell.py,task_configuration,Y,N,N,N,N,Basic,1,limit
+rm_parameter,690,../CelebiChrono/interface/shell.py,task_configuration,Y,N,N,N,N,Basic,1,par
+remove_input,698,../CelebiChrono/interface/shell.py,task_configuration,Y,N,N,N,N,Basic,1,alias
+add_host,715,../CelebiChrono/interface/shell.py,communication,Y,N,N,N,N,Basic,2,"host, url"
+hosts,721,../CelebiChrono/interface/shell.py,communication,Y,N,N,N,N,Basic,0,None
+dite,732,../CelebiChrono/interface/shell.py,communication,Y,N,N,N,N,Basic,0,None
+set_dite,738,../CelebiChrono/interface/shell.py,communication,Y,N,N,N,N,Basic,1,url
+runners,748,../CelebiChrono/interface/shell.py,communication,Y,N,N,N,N,Basic,0,None
+register_runner,773,../CelebiChrono/interface/shell.py,communication,Y,N,N,N,N,Basic,4,"runner, url, secret, backend_type"
+remove_runner,778,../CelebiChrono/interface/shell.py,communication,Y,N,N,N,N,Basic,1,runner
+request_runner,783,../CelebiChrono/interface/shell.py,communication,Y,N,N,N,N,Basic,1,runner
+search_impression,787,../CelebiChrono/interface/shell.py,communication,Y,N,N,N,N,Basic,1,partial_uuid
+send,793,../CelebiChrono/interface/shell.py,communication,Y,N,N,N,N,Basic,1,path
+submit,798,../CelebiChrono/interface/shell.py,execution_management,Y,Y,Y,Y,Y,Good,1,runner
+purge,827,../CelebiChrono/interface/shell.py,execution_management,Y,N,N,N,Y,Partial,0,None
+purge_old_impressions,841,../CelebiChrono/interface/shell.py,execution_management,Y,N,N,N,Y,Partial,0,None
+view,856,../CelebiChrono/interface/shell.py,visualization,Y,N,N,N,N,Basic,1,browser
+viewurl,865,../CelebiChrono/interface/shell.py,visualization,Y,N,N,N,N,Basic,0,None
+impress,874,../CelebiChrono/interface/shell.py,visualization,Y,N,N,N,N,Basic,0,None
+get_script_path,879,../CelebiChrono/interface/shell.py,utilities,Y,N,N,N,N,Basic,1,filename
+config,894,../CelebiChrono/interface/shell.py,utilities,Y,N,N,N,N,Basic,0,None
+danger_call,917,../CelebiChrono/interface/shell.py,utilities,Y,N,N,N,N,Basic,1,cmd
+workaround_preshell,923,../CelebiChrono/interface/shell.py,utilities,Y,N,N,N,N,Basic,0,None
+workaround_postshell,930,../CelebiChrono/interface/shell.py,utilities,Y,N,N,N,N,Basic,1,path
+trace,940,../CelebiChrono/interface/shell.py,visualization,Y,N,N,N,N,Basic,1,impression
+history,945,../CelebiChrono/interface/shell.py,utilities,Y,N,N,N,N,Basic,0,None
+watermark,949,../CelebiChrono/interface/shell.py,utilities,Y,N,N,N,N,Basic,0,None
+changes,953,../CelebiChrono/interface/shell.py,utilities,Y,N,N,N,N,Basic,0,None
+doctor,957,../CelebiChrono/interface/shell.py,utilities,Y,N,N,N,N,Basic,0,None
+collect,961,../CelebiChrono/interface/shell.py,execution_management,Y,Y,Y,Y,Y,Good,1,contents
+collect_outputs,986,../CelebiChrono/interface/shell.py,execution_management,Y,N,Y,N,N,Partial,0,None
+collect_logs,1001,../CelebiChrono/interface/shell.py,execution_management,Y,N,Y,N,N,Partial,0,None
+bookkeep,1016,../CelebiChrono/interface/shell.py,utilities,Y,N,N,N,N,Basic,0,None
+bookkeep_url,1020,../CelebiChrono/interface/shell.py,utilities,Y,N,N,N,N,Basic,0,None
+tree,1024,../CelebiChrono/interface/shell.py,utilities,Y,N,N,N,N,Basic,1,depth
+error_log,1029,../CelebiChrono/interface/shell.py,utilities,Y,N,N,N,N,Basic,1,index
+navigate,1035,../CelebiChrono/interface/shell.py,navigation,Y,N,N,N,N,Basic,0,None
