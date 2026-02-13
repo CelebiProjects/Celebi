@@ -217,74 +217,16 @@ def cli_sh():
     """ celebi command line command
     """
 
-# Dynamic shell command registration
-
-def _get_command_description(func_name: str, fallback_desc: str) -> str:
-    """Extract short command description from function docstring.
-
-    Attempts to import the shell module and extract the docstring from the
-    given function name. Returns a cleaned version of the docstring (first
-    sentence or paragraph), or the fallback description if extraction fails
-    or produces an unsatisfactory result.
-
-    Args:
-        func_name: Name of the function in the shell module
-        fallback_desc: Fallback description to use if extraction fails
-
-    Returns:
-        Extracted short description or fallback
-    """
-    try:
-        from .interface import shell
-        func = getattr(shell, func_name, None)
-        if func is None:
-            return fallback_desc
-
-        docstring = func.__doc__
-        if not docstring:
-            return fallback_desc
-
-        # Clean the docstring: get first paragraph
-        lines = docstring.strip().split('\n')
-        # Remove leading/trailing whitespace from each line
-        lines = [line.strip() for line in lines]
-        # Join and get first sentence (up to period or end of first paragraph)
-        clean_doc = ' '.join(lines)
-        # Split into sentences, take first
-        sentences = clean_doc.split('. ')
-        if sentences:
-            first_sentence = sentences[0]
-            # Add period if not present
-            if not first_sentence.endswith('.'):
-                first_sentence += '.'
-            # Ensure it's not too short (minimum 10 chars) and not just a single word
-            if len(first_sentence) > 20 and ' ' in first_sentence:
-                return first_sentence
-
-        # If first sentence extraction failed, use the whole cleaned docstring
-        # but limit length for Click help
-        if len(clean_doc) > 20 and ' ' in clean_doc:
-            # Truncate if too long for Click help
-            if len(clean_doc) > 200:
-                return clean_doc[:197] + '...'
-            return clean_doc
-
-    except Exception:
-        # Catch any exception during import or processing
-        # Fall back to the hardcoded description
-        pass
-
-    return fallback_desc
 
 
 def _get_command_docstring(func_name: str) -> str:
-    """Get full docstring from shell function.
+    """Get long description from shell function (docstring without first line).
 
     Args:
         func_name: Name of the function in the shell module
 
     Returns:
-        Full docstring or empty string if not available
+        Docstring without first line, or empty string if not available
     """
     import sys
     try:
@@ -296,31 +238,19 @@ def _get_command_docstring(func_name: str) -> str:
 
         docstring = func.__doc__
         if not docstring:
-            return ""
+            result = ""
+            # print(f"DEBUG: No docstring for {func_name}", file=sys.stderr)
+            return result
 
-        # Split docstring into lines and skip the first line
-        lines = docstring.splitlines()
-        if len(lines) <= 1:
-            # Single line or empty after first line
-            return ""
-
-        # Skip the first line
-        remaining_lines = lines[1:]
-
-        # Remove leading empty lines
-        while remaining_lines and not remaining_lines[0].strip():
-            remaining_lines.pop(0)
-
-        # If nothing left after removing empty lines, return empty string
-        if not remaining_lines:
-            return ""
-
-        # Rejoin the remaining lines
-        result = "\n".join(remaining_lines)
-
-        # Dedent the result to remove common leading whitespace
-        import textwrap
-        result = textwrap.dedent(result)
+        # Split docstring by lines
+        lines = docstring.strip().split('\n')
+        # Skip the first line (short description)
+        if len(lines) > 1:
+            # Rejoin remaining lines, preserving original formatting
+            result = '\n'.join(lines[1:]).strip()
+        else:
+            # Single-line docstring - return empty string
+            result = ""
 
         # print(f"DEBUG: Retrieved docstring for {func_name}, length: {len(result)}", file=sys.stderr)
         # if result: print(f"DEBUG: First 100 chars: {result[:100]}", file=sys.stderr)
@@ -599,9 +529,7 @@ for cmd_name, func_name, arg_count, description in _shell_commands:
         # Rename function to avoid duplication
         command_func.__name__ = f'{cname}_command'
         return command_func
-    # Get description from docstring or use fallback
-    extracted_desc = _get_command_description(func_name, description)
-    command = make_command(cmd_name, func_name, arg_count, extracted_desc)
+    command = make_command(cmd_name, func_name, arg_count, description)
     # Keep reference to avoid garbage collection
     globals()[f'{cmd_name}_command'] = command
 
