@@ -218,6 +218,120 @@ def cli_sh():
     """
 
 # Dynamic shell command registration
+
+def _get_command_description(func_name: str, fallback_desc: str) -> str:
+    """Extract short command description from function docstring.
+
+    Attempts to import the shell module and extract the docstring from the
+    given function name. Returns a cleaned version of the docstring (first
+    sentence or paragraph), or the fallback description if extraction fails
+    or produces an unsatisfactory result.
+
+    Args:
+        func_name: Name of the function in the shell module
+        fallback_desc: Fallback description to use if extraction fails
+
+    Returns:
+        Extracted short description or fallback
+    """
+    try:
+        from .interface import shell
+        func = getattr(shell, func_name, None)
+        if func is None:
+            return fallback_desc
+
+        docstring = func.__doc__
+        if not docstring:
+            return fallback_desc
+
+        # Clean the docstring: get first paragraph
+        lines = docstring.strip().split('\n')
+        # Remove leading/trailing whitespace from each line
+        lines = [line.strip() for line in lines]
+        # Join and get first sentence (up to period or end of first paragraph)
+        clean_doc = ' '.join(lines)
+        # Split into sentences, take first
+        sentences = clean_doc.split('. ')
+        if sentences:
+            first_sentence = sentences[0]
+            # Add period if not present
+            if not first_sentence.endswith('.'):
+                first_sentence += '.'
+            # Ensure it's not too short (minimum 10 chars) and not just a single word
+            if len(first_sentence) > 20 and ' ' in first_sentence:
+                return first_sentence
+
+        # If first sentence extraction failed, use the whole cleaned docstring
+        # but limit length for Click help
+        if len(clean_doc) > 20 and ' ' in clean_doc:
+            # Truncate if too long for Click help
+            if len(clean_doc) > 200:
+                return clean_doc[:197] + '...'
+            return clean_doc
+
+    except Exception:
+        # Catch any exception during import or processing
+        # Fall back to the hardcoded description
+        pass
+
+    return fallback_desc
+
+
+def _get_command_docstring(func_name: str) -> str:
+    """Get full docstring from shell function.
+
+    Args:
+        func_name: Name of the function in the shell module
+
+    Returns:
+        Full docstring or empty string if not available
+    """
+    import sys
+    try:
+        from .interface import shell
+        func = getattr(shell, func_name, None)
+        if func is None:
+            # print(f"DEBUG: Function {func_name} not found in shell module", file=sys.stderr)
+            return ""
+
+        docstring = func.__doc__
+        if not docstring:
+            return ""
+
+        # Split docstring into lines and skip the first line
+        lines = docstring.splitlines()
+        if len(lines) <= 1:
+            # Single line or empty after first line
+            return ""
+
+        # Skip the first line
+        remaining_lines = lines[1:]
+
+        # Remove leading empty lines
+        while remaining_lines and not remaining_lines[0].strip():
+            remaining_lines.pop(0)
+
+        # If nothing left after removing empty lines, return empty string
+        if not remaining_lines:
+            return ""
+
+        # Rejoin the remaining lines
+        result = "\n".join(remaining_lines)
+
+        # Dedent the result to remove common leading whitespace
+        import textwrap
+        result = textwrap.dedent(result)
+
+        # print(f"DEBUG: Retrieved docstring for {func_name}, length: {len(result)}", file=sys.stderr)
+        # if result: print(f"DEBUG: First 100 chars: {result[:100]}", file=sys.stderr)
+        return result
+    except Exception as e:
+        # print(f"DEBUG: Error getting docstring for {func_name}: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        return ""
+
+
 _shell_commands = [
     ('ls', 'ls', 999, 'List the contents of a Celebi object. Without a path, lists the current object; with a path, lists the specified object within the current project.'),
     ('tree', 'tree', 0, 'Show tree view'),
@@ -271,7 +385,7 @@ for cmd_name, func_name, arg_count, description in _shell_commands:
     def make_command(cname, fname, expected_args, desc=''):
         # Define the command function dynamically with error handling
         if expected_args == -1:
-            @cli_sh.command(name=cname, help=desc)
+            # Define function first
             def command_func():
                 import sys
                 try:
@@ -290,8 +404,16 @@ for cmd_name, func_name, arg_count, description in _shell_commands:
                 except Exception as e:
                     print(f'Error executing Celebi command: {e}', file=sys.stderr)
                     sys.exit(1)
+
+            # Get full docstring for detailed help
+            full_doc = _get_command_docstring(fname)
+            if not full_doc:
+                full_doc = desc  # Fallback to short description
+
+            # Apply command decorator with both short and full help
+            command_func = cli_sh.command(name=cname, short_help=desc, help=full_doc)(command_func)
         elif expected_args == 0:
-            @cli_sh.command(name=cname, help=desc)
+            # Define function first
             def command_func():
                 import sys
                 try:
@@ -310,9 +432,16 @@ for cmd_name, func_name, arg_count, description in _shell_commands:
                 except Exception as e:
                     print(f'Error executing Celebi command: {e}', file=sys.stderr)
                     sys.exit(1)
+
+            # Get full docstring for detailed help
+            full_doc = _get_command_docstring(fname)
+            if not full_doc:
+                full_doc = desc  # Fallback to short description
+
+            # Apply command decorator with both short and full help
+            command_func = cli_sh.command(name=cname, short_help=desc, help=full_doc)(command_func)
         elif expected_args == 1:
-            @cli_sh.command(name=cname, help=desc)
-            @click.argument('arg1', type=str)
+            # Define function first
             def command_func(arg1):
                 import sys
                 try:
@@ -331,10 +460,19 @@ for cmd_name, func_name, arg_count, description in _shell_commands:
                 except Exception as e:
                     print(f'Error executing Celebi command: {e}', file=sys.stderr)
                     sys.exit(1)
+
+            # Apply argument decorator first
+            command_func = click.argument('arg1', type=str)(command_func)
+
+            # Get full docstring for detailed help
+            full_doc = _get_command_docstring(fname)
+            if not full_doc:
+                full_doc = desc  # Fallback to short description
+
+            # Apply command decorator with both short and full help
+            command_func = cli_sh.command(name=cname, short_help=desc, help=full_doc)(command_func)
         elif expected_args == 2:
-            @cli_sh.command(name=cname, help=desc)
-            @click.argument('arg1', type=str)
-            @click.argument('arg2', type=str)
+            # Define function first
             def command_func(arg1, arg2):
                 import sys
                 try:
@@ -353,11 +491,20 @@ for cmd_name, func_name, arg_count, description in _shell_commands:
                 except Exception as e:
                     print(f'Error executing Celebi command: {e}', file=sys.stderr)
                     sys.exit(1)
+
+            # Get full docstring for detailed help
+            full_doc = _get_command_docstring(fname)
+            if not full_doc:
+                full_doc = desc  # Fallback to short description
+
+            # Apply argument decorators
+            command_func = click.argument('arg2', type=str)(command_func)
+            command_func = click.argument('arg1', type=str)(command_func)
+
+            # Apply command decorator with both short and full help
+            command_func = cli_sh.command(name=cname, short_help=desc, help=full_doc)(command_func)
         elif expected_args == 3:
-            @cli_sh.command(name=cname, help=desc)
-            @click.argument('arg1', type=str)
-            @click.argument('arg2', type=str)
-            @click.argument('arg3', type=str)
+            # Define function first
             def command_func(arg1, arg2, arg3):
                 import sys
                 try:
@@ -376,12 +523,19 @@ for cmd_name, func_name, arg_count, description in _shell_commands:
                 except Exception as e:
                     print(f'Error executing Celebi command: {e}', file=sys.stderr)
                     sys.exit(1)
+
+            # Set docstring from shell function
+            full_doc = _get_command_docstring(fname)
+            if full_doc:
+                command_func.__doc__ = full_doc
+
+            # Apply argument decorators, then command decorator
+            command_func = click.argument('arg3', type=str)(command_func)
+            command_func = click.argument('arg2', type=str)(command_func)
+            command_func = click.argument('arg1', type=str)(command_func)
+            command_func = cli_sh.command(name=cname, help=desc)(command_func)
         elif expected_args == 4:
-            @cli_sh.command(name=cname, help=desc)
-            @click.argument('arg1', type=str)
-            @click.argument('arg2', type=str)
-            @click.argument('arg3', type=str)
-            @click.argument('arg4', type=str)
+            # Define function first
             def command_func(arg1, arg2, arg3, arg4):
                 import sys
                 try:
@@ -400,10 +554,21 @@ for cmd_name, func_name, arg_count, description in _shell_commands:
                 except Exception as e:
                     print(f'Error executing Celebi command: {e}', file=sys.stderr)
                     sys.exit(1)
+
+            # Set docstring from shell function
+            full_doc = _get_command_docstring(fname)
+            if full_doc:
+                command_func.__doc__ = full_doc
+
+            # Apply argument decorators, then command decorator
+            command_func = click.argument('arg4', type=str)(command_func)
+            command_func = click.argument('arg3', type=str)(command_func)
+            command_func = click.argument('arg2', type=str)(command_func)
+            command_func = click.argument('arg1', type=str)(command_func)
+            command_func = cli_sh.command(name=cname, help=desc)(command_func)
         else:
             # Fallback: use variable arguments
-            @cli_sh.command(name=cname, help=desc)
-            @click.argument('args', nargs=-1, type=str)
+            # Define function first
             def command_func(args):
                 import sys
                 try:
@@ -422,10 +587,21 @@ for cmd_name, func_name, arg_count, description in _shell_commands:
                 except Exception as e:
                     print(f'Error executing Celebi command: {e}', file=sys.stderr)
                     sys.exit(1)
+
+            # Set docstring from shell function
+            full_doc = _get_command_docstring(fname)
+            if full_doc:
+                command_func.__doc__ = full_doc
+
+            # Apply argument decorator, then command decorator
+            command_func = click.argument('args', nargs=-1, type=str)(command_func)
+            command_func = cli_sh.command(name=cname, help=desc)(command_func)
         # Rename function to avoid duplication
         command_func.__name__ = f'{cname}_command'
         return command_func
-    command = make_command(cmd_name, func_name, arg_count, description)
+    # Get description from docstring or use fallback
+    extracted_desc = _get_command_description(func_name, description)
+    command = make_command(cmd_name, func_name, arg_count, extracted_desc)
     # Keep reference to avoid garbage collection
     globals()[f'{cmd_name}_command'] = command
 
