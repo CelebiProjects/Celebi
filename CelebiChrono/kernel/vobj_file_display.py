@@ -222,21 +222,20 @@ class FileManagementDisplay(Core):  # pylint: disable=too-many-public-methods
             path = self.relative_path(obj.path)
             obj_type = f"({obj.object_type()})"
 
-            processed_objects.append((obj_type, path))
+            processed_objects.append((obj_type, path, obj))
 
             # Track maximum lengths
             max_type_w = max(max_type_w, len(obj_type))
             max_path_w = max(max_path_w, len(path))
 
         # 2. Iterate and build the message using calculated widths
-        for index, (obj_type, sub_path) in enumerate(processed_objects):
+        for index, (obj_type, sub_path, obj) in enumerate(processed_objects):
             order_index = f"{[index]}"
             base_str = f"{order_index:>{max_idx_w+2}} {obj_type:<{max_type_w + 2}} {sub_path:<{max_path_w}}"  # pylint: disable=line-too-long
             message.add(base_str)
 
             if show_info.status:
-                # FIXME logic
-                status = "[FIXME]"
+                status = obj.status()
                 color_tag = self.color_tag(status)
                 message.add(f"({status})", color_tag)
 

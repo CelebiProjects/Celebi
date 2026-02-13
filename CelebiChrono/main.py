@@ -217,6 +217,218 @@ def cli_sh():
     """ celebi command line command
     """
 
+# Dynamic shell command registration
+_shell_commands = [
+    ('ls', 'ls', 999, 'List the contents of a Celebi object. Without a path, lists the current object; with a path, lists the specified object within the current project.'),
+    ('tree', 'tree', 0, 'Show tree view'),
+    ('status', 'status', 0, 'Show status'),
+    ('cd', 'cd', 1, 'Change directory within project'),
+    ('mv', 'mv', 2, 'Move object'),
+    ('cp', 'cp', 2, 'Copy object'),
+    ('rm', 'rm', 1, 'Remove object'),
+    ('short-ls', 'short_ls', -1, 'Short listing'),
+    ('jobs', 'jobs', -1, 'Show jobs'),
+    ('create-algorithm', 'mkalgorithm', 1, 'Create algorithm'),
+    ('create-task', 'mktask', 1, 'Create task'),
+    ('create-data', 'mkdata', 1, 'Create data object'),
+    ('mkdir', 'mkdir', 1, 'Create directory'),
+    ('rmfile', 'rm_file', 1, 'Remove file'),
+    ('mvfile', 'mv_file', 2, 'Move file'),
+    ('import', 'import_file', 1, 'Import file'),
+    ('add-input', 'add_input', 2, 'Add input to task'),
+    ('remove-input', 'remove_input', 1, 'Remove input'),
+    ('add-algorithm', 'add_algorithm', 1, 'Add algorithm to task'),
+    ('add-parameter', 'add_parameter', 2, 'Add parameter'),
+    ('rm-parameter', 'rm_parameter', 1, 'Remove parameter'),
+    ('add-parameter-subtask', 'add_parameter_subtask', 3, 'Add parameter subtask'),
+    ('set-env', 'set_environment', 1, 'Set environment'),
+    ('set-mem', 'set_memory_limit', 1, 'Set memory limit'),
+    ('hosts', 'hosts', 0, 'List hosts'),
+    ('add-host', 'add_host', 2, 'Add host'),
+    ('runners', 'runners', 0, 'List runners'),
+    ('register-runner', 'register_runner', 4, 'Register runner'),
+    ('remove-runner', 'remove_runner', 1, 'Remove runner'),
+    ('send', 'send', 1, 'Send data'),
+    ('submit', 'submit', 1, 'Submit task'),
+    ('collect', 'collect', 1, 'Collect task outputs (all, outputs, logs)'),
+    ('error-log', 'error_log', 1, 'Show error log'),
+    ('view', 'view', 1, 'View in browser'),
+    ('edit', 'edit_script', 1, 'Edit script'),
+    ('config', 'config', 0, 'Show configuration'),
+    ('danger', 'danger_call', 1, 'Dangerous operation'),
+    ('trace', 'trace', 1, 'Trace dependencies'),
+    ('history', 'history', 0, 'Show history'),
+    ('changes', 'changes', 0, 'Show changes'),
+    ('preshell', 'workaround_preshell', 0, 'Pre-shell workaround'),
+    ('postshell', 'workaround_postshell', 1, 'Post-shell workaround'),
+    ('impress', 'impress', 0, 'Create impression'),
+    ('navigate', 'navigate', 0, 'Change to current project directory'),
+    ('cdproject', 'shell_cd_project', 1, 'Change to project directory'),
+]
+
+for cmd_name, func_name, arg_count, description in _shell_commands:
+    # Create a closure to capture variables
+    def make_command(cname, fname, expected_args, desc=''):
+        # Define the command function dynamically with error handling
+        if expected_args == -1:
+            @cli_sh.command(name=cname, help=desc)
+            def command_func():
+                import sys
+                try:
+                    from CelebiChrono.interface import shell
+                    func = getattr(shell, fname)
+                    result = func("")
+                    if result is not None:
+                        if hasattr(result, 'colored'):
+                            print(result.colored())
+                        else:
+                            print(result)
+                except ImportError as e:
+                    print(f'Error importing CelebiChrono module: {e}', file=sys.stderr)
+                    print('Make sure CelebiChrono is installed and in PYTHONPATH', file=sys.stderr)
+                    sys.exit(1)
+                except Exception as e:
+                    print(f'Error executing Celebi command: {e}', file=sys.stderr)
+                    sys.exit(1)
+        elif expected_args == 0:
+            @cli_sh.command(name=cname, help=desc)
+            def command_func():
+                import sys
+                try:
+                    from CelebiChrono.interface import shell
+                    func = getattr(shell, fname)
+                    result = func()
+                    if result is not None:
+                        if hasattr(result, 'colored'):
+                            print(result.colored())
+                        else:
+                            print(result)
+                except ImportError as e:
+                    print(f'Error importing CelebiChrono module: {e}', file=sys.stderr)
+                    print('Make sure CelebiChrono is installed and in PYTHONPATH', file=sys.stderr)
+                    sys.exit(1)
+                except Exception as e:
+                    print(f'Error executing Celebi command: {e}', file=sys.stderr)
+                    sys.exit(1)
+        elif expected_args == 1:
+            @cli_sh.command(name=cname, help=desc)
+            @click.argument('arg1', type=str)
+            def command_func(arg1):
+                import sys
+                try:
+                    from CelebiChrono.interface import shell
+                    func = getattr(shell, fname)
+                    result = func(arg1)
+                    if result is not None:
+                        if hasattr(result, 'colored'):
+                            print(result.colored())
+                        else:
+                            print(result)
+                except ImportError as e:
+                    print(f'Error importing CelebiChrono module: {e}', file=sys.stderr)
+                    print('Make sure CelebiChrono is installed and in PYTHONPATH', file=sys.stderr)
+                    sys.exit(1)
+                except Exception as e:
+                    print(f'Error executing Celebi command: {e}', file=sys.stderr)
+                    sys.exit(1)
+        elif expected_args == 2:
+            @cli_sh.command(name=cname, help=desc)
+            @click.argument('arg1', type=str)
+            @click.argument('arg2', type=str)
+            def command_func(arg1, arg2):
+                import sys
+                try:
+                    from CelebiChrono.interface import shell
+                    func = getattr(shell, fname)
+                    result = func(arg1, arg2)
+                    if result is not None:
+                        if hasattr(result, 'colored'):
+                            print(result.colored())
+                        else:
+                            print(result)
+                except ImportError as e:
+                    print(f'Error importing CelebiChrono module: {e}', file=sys.stderr)
+                    print('Make sure CelebiChrono is installed and in PYTHONPATH', file=sys.stderr)
+                    sys.exit(1)
+                except Exception as e:
+                    print(f'Error executing Celebi command: {e}', file=sys.stderr)
+                    sys.exit(1)
+        elif expected_args == 3:
+            @cli_sh.command(name=cname, help=desc)
+            @click.argument('arg1', type=str)
+            @click.argument('arg2', type=str)
+            @click.argument('arg3', type=str)
+            def command_func(arg1, arg2, arg3):
+                import sys
+                try:
+                    from CelebiChrono.interface import shell
+                    func = getattr(shell, fname)
+                    result = func(arg1, arg2, arg3)
+                    if result is not None:
+                        if hasattr(result, 'colored'):
+                            print(result.colored())
+                        else:
+                            print(result)
+                except ImportError as e:
+                    print(f'Error importing CelebiChrono module: {e}', file=sys.stderr)
+                    print('Make sure CelebiChrono is installed and in PYTHONPATH', file=sys.stderr)
+                    sys.exit(1)
+                except Exception as e:
+                    print(f'Error executing Celebi command: {e}', file=sys.stderr)
+                    sys.exit(1)
+        elif expected_args == 4:
+            @cli_sh.command(name=cname, help=desc)
+            @click.argument('arg1', type=str)
+            @click.argument('arg2', type=str)
+            @click.argument('arg3', type=str)
+            @click.argument('arg4', type=str)
+            def command_func(arg1, arg2, arg3, arg4):
+                import sys
+                try:
+                    from CelebiChrono.interface import shell
+                    func = getattr(shell, fname)
+                    result = func(arg1, arg2, arg3, arg4)
+                    if result is not None:
+                        if hasattr(result, 'colored'):
+                            print(result.colored())
+                        else:
+                            print(result)
+                except ImportError as e:
+                    print(f'Error importing CelebiChrono module: {e}', file=sys.stderr)
+                    print('Make sure CelebiChrono is installed and in PYTHONPATH', file=sys.stderr)
+                    sys.exit(1)
+                except Exception as e:
+                    print(f'Error executing Celebi command: {e}', file=sys.stderr)
+                    sys.exit(1)
+        else:
+            # Fallback: use variable arguments
+            @cli_sh.command(name=cname, help=desc)
+            @click.argument('args', nargs=-1, type=str)
+            def command_func(args):
+                import sys
+                try:
+                    from CelebiChrono.interface import shell
+                    func = getattr(shell, fname)
+                    result = func(*args)
+                    if result is not None:
+                        if hasattr(result, 'colored'):
+                            print(result.colored())
+                        else:
+                            print(result)
+                except ImportError as e:
+                    print(f'Error importing CelebiChrono module: {e}', file=sys.stderr)
+                    print('Make sure CelebiChrono is installed and in PYTHONPATH', file=sys.stderr)
+                    sys.exit(1)
+                except Exception as e:
+                    print(f'Error executing Celebi command: {e}', file=sys.stderr)
+                    sys.exit(1)
+        # Rename function to avoid duplication
+        command_func.__name__ = f'{cname}_command'
+        return command_func
+    command = make_command(cmd_name, func_name, arg_count, description)
+    # Keep reference to avoid garbage collection
+    globals()[f'{cmd_name}_command'] = command
+
 @cli_sh.command()
 @click.argument("project", type=str)
 def cd_project(project):

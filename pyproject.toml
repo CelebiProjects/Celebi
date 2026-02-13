@@ -45,3 +45,4 @@ include-package-data = true
 
 [project.scripts]
 celebi = "CelebiChrono.main:main"
+celebi-sh = "CelebiChrono.main:sh"

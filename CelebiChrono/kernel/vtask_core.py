@@ -5,6 +5,7 @@
 """
 
 import os
+import shutil
 from abc import abstractmethod
 from logging import getLogger
 from typing import Tuple, List, Optional, TYPE_CHECKING
@@ -40,6 +41,7 @@ class Core(VObject):
 
             if self.algorithm() is not None:
                 message.append(self.show_algorithm())
+            return message
 
         return message
 
@@ -103,7 +105,8 @@ class Core(VObject):
             return message
 
         max_len = max(len(f) for f in files)
-        columns = os.get_terminal_size().columns
+        columns = shutil.get_terminal_size((80, 20)).columns
+        # columns = 80
         nfiles = max(1, columns // (max_len + 4 + 11))  # Avoid division by zero
         line = ""
 

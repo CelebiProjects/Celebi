@@ -288,8 +288,12 @@ class ExecutionManagement(Core):
             task.collect(contents)
             msg = Message()
             msg.add(f"Results of task {self.path} collected.", "info")
-
-        return msg
+            return msg
+        else:
+            # It's an algorithm
+            msg = Message()
+            msg.add(f"Algorithm {self.path} doesn't have results to collect.", "info")
+            return msg
 
     def homekeep(self) -> Message:
         """Clean the runner workflow"""

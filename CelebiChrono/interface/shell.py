@@ -11,7 +11,7 @@ from typing import Tuple
 from ..utils import csys
 from ..utils.message import Message
 from ..kernel.vobject import VObject
-from ..interface.ChernManager import get_manager
+from ..interface.ChernManager import get_manager, create_object_instance
 from ..kernel.vtask import create_task
 from ..kernel.vtask import create_data
 from ..kernel.valgorithm import create_algorithm
@@ -205,9 +205,63 @@ def cp(source: str, destination: str) -> None:
         print(result.colored())
 
 
-def ls(_: str):
-    """List the contents of the current object."""
-    return MANAGER.current_object().ls()
+def ls(*args):
+    """List the contents of a Celebi object.
+
+    Displays the object's structure including sub-objects (projects, tasks,
+    algorithms, data objects). Shows README, sub-objects, and task information
+    by default.
+
+    Arguments:
+        *args: Variable length argument list. Accepts 0 or 1 argument:
+            - If no arguments: lists the current object
+            - If one argument: treats it as a path to list (must be within
+              the current project)
+
+    Examples:
+        ls                    # List current object
+        ls /path/to/object    # List specific object within project
+        ls @/subdir           # List object using project-relative path
+    """
+    if len(args) == 0:
+        # No path provided, list current object
+        return MANAGER.current_object().ls()
+    elif len(args) == 1:
+        path = args[0]
+        # Resolve and validate the path
+        path = csys.special_path_string(path)
+        if path.startswith("@/") or path == "@":
+            path = os.path.normpath(csys.project_path() + path.strip("@"))
+        else:
+            path = os.path.abspath(path)
+
+        # Check if path is within current project
+        try:
+            if os.path.relpath(path, csys.project_path()).startswith(".."):
+                # print("[ERROR] Unable to list object outside the current project.")
+                return None
+        except Exception as e:
+            # print(f"[ERROR] Failed to validate path: {e}")
+            return None
+
+        # Check if object exists
+        if not csys.exists(path):
+            # print(f"[ERROR] Object not found: {path}")
+            return None
+
+        # Get the object and list it
+        try:
+            return create_object_instance(path).ls()
+        except Exception as e:
+            # print(f"[ERROR] Failed to list object: {e}")
+            msg = Message()
+            msg.add(f"Failed to list object: {e}", "error")
+            return msg
+    else:
+        # print("[ERROR] ls takes at most one argument (path)")
+        msg = Message()
+        msg.add("ls takes at most one argument (path)", "error")
+        return msg
 
 
 def successors() -> Message:
@@ -725,9 +779,9 @@ def doctor() -> Message:
     """Doctor the impression"""
     return MANAGER.current_object().doctor()
 
-def collect() -> Message:
-    """Collect the outputs and logs"""
-    return MANAGER.current_object().collect("all")
+def collect(contents: str = "all") -> Message:
+    """Collect the outputs and logs (contents: all, outputs, or logs)"""
+    return MANAGER.current_object().collect(contents)
 
 def collect_outputs() -> Message:
     """Collect the outputs"""
@@ -755,3 +809,10 @@ def error_log(index) -> Message:
     """
     return MANAGER.current_object().error_log(index)
 
+
+def navigate() -> str:
+    """Return the path of the current project."""
+    from ..interface.ChernManager import ChernProjectManager
+    manager = ChernProjectManager().get_manager()
+    project_name = manager.get_current_project()
+    return manager.get_project_path(project_name)

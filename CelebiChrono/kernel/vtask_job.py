@@ -35,6 +35,9 @@ class JobManager(Core):
     # Communicator Interaction Methods
     def collect(self, contents="all"):
         """ Collect the results of the job"""
+        msg = Message()
+        if contents not in ("all", "outputs", "logs"):
+            raise ValueError(f"Invalid contents parameter: {contents}")
         cherncc = ChernCommunicator.instance()
         if contents == "all":
             cherncc.collect(self.impression())
@@ -42,11 +45,13 @@ class JobManager(Core):
             cherncc.collect_outputs(self.impression())
         elif contents == "logs":
             cherncc.collect_logs(self.impression())
+        msg.add(f"Collected {contents} of impression {self.impression()}")
+        return msg
 
     def error_log(self, error_index=0):
         """ Collect the error logs of the job"""
-        self.collect("logs")
         cherncc = ChernCommunicator.instance()
+        cherncc.collect_logs(self.impression())
         msg = Message()
         msg.add(cherncc.error_log(self.impression(), error_index))
         return msg
