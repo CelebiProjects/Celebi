@@ -1200,7 +1200,7 @@ def send(path: str) -> None:
     MANAGER.current_object().send(path)
 
 
-def submit(runner: str = "local") -> None:
+def submit(runner: str = "local") -> Message:
     """Submit current task for execution.
 
     Sends the current task to a runner for processing. The runner executes
@@ -1217,7 +1217,8 @@ def submit(runner: str = "local") -> None:
         submit cluster-01   # Submit to cluster runner
 
     Returns:
-        Message object with submission status and details.
+        Message containing submission confirmation, runner assignment details,
+        and task execution status information.
 
     Note:
         - The current object must be a task
@@ -1236,9 +1237,16 @@ def purge():
     associated with the current object. This helps free up disk space and
     resolve potential consistency issues.
 
+    Returns:
+        Message with purge results and cleanup statistics.
+
+    Examples:
+        purge()  # Clean up temporary files for current object
+
     Note:
-        The exact behavior depends on the object type. Some objects may
-        have protected data that cannot be purged.
+        The exact behavior depends on the object type.
+        Some objects may have protected data that cannot be purged.
+        Use with caution as purged data cannot be recovered.
     """
     message = MANAGER.current_object().purge()
     print(message.colored())
@@ -1250,9 +1258,16 @@ def purge_old_impressions():
     only recent or essential impressions. Impressions are visualization
     or snapshot data generated during task execution.
 
+    Returns:
+        Message with purge statistics and removed impression details.
+
+    Examples:
+        purge_old_impressions()  # Remove outdated impressions
+
     Note:
         The age threshold for 'old' impressions is configurable.
         Some impression data may be protected from deletion.
+        Helps manage storage usage for long-running projects.
     """
     message = MANAGER.current_object().purge_old_impressions()
     print(message.colored())
@@ -1379,7 +1394,8 @@ def collect(contents: str = "all") -> Message:
         collect logs         # Collect only logs
 
     Returns:
-        Message object with collection status and results.
+        Message containing collection success/failure status, list of retrieved
+        files, and any download or transfer statistics.
 
     Note:
         - The current object must be a task
@@ -1392,10 +1408,19 @@ def collect_outputs() -> Message:
     """Collect only task outputs.
 
     Retrieves output files and data from a completed task execution,
-    excluding logs.
+    excluding logs. This is a convenience wrapper for `collect("outputs")`.
 
     Returns:
-        Message object with outputs collection status.
+        Message containing outputs collection success/failure status,
+        list of retrieved output files, and any download statistics.
+
+    Examples:
+        collect_outputs()  # Retrieve only output files from completed task
+
+    Note:
+        - The current object must be a task
+        - Task must have been submitted and completed
+        - Output files are downloaded from the runner to local storage
 
     See Also:
         collect: Collect both outputs and logs
@@ -1407,10 +1432,19 @@ def collect_logs() -> Message:
     """Collect only task logs.
 
     Retrieves log files from a completed task execution,
-    excluding output data.
+    excluding output data. This is a convenience wrapper for `collect("logs")`.
 
     Returns:
-        Message object with logs collection status.
+        Message containing logs collection success/failure status,
+        list of retrieved log files, and any download statistics.
+
+    Examples:
+        collect_logs()  # Retrieve only log files from completed task
+
+    Note:
+        - The current object must be a task
+        - Task must have been submitted and completed
+        - Log files are downloaded from the runner to local storage
 
     See Also:
         collect: Collect both outputs and logs
