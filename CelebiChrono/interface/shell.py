@@ -414,7 +414,7 @@ def short_ls(_: str) -> None:
     MANAGER.current_object().short_ls()
 
 
-def mkalgorithm(obj: str, use_template: bool = False) -> None:
+def mkalgorithm(line: str, use_template: bool = False) -> None:
     """Create a new algorithm object.
 
     Creates a new algorithm within the current project. Algorithms define
@@ -422,24 +422,24 @@ def mkalgorithm(obj: str, use_template: bool = False) -> None:
     scripts, configuration, and metadata for reproducible analysis.
 
     Args:
-        obj (str): Path where the algorithm should be created. Must be within
+        line (str): Path where the algorithm should be created. Must be within
             a valid directory or project location.
         use_template (bool, optional): If True, initializes the algorithm with
             a template structure. Defaults to False.
 
     Examples:
-        create-algorithm my_algo           # Create algorithm at my_algo/
-        create-algorithm path/to/algo      # Create at specific path
-        create-algorithm @/algorithms/new  # Use project-relative path
+        mkalgorithm my_algo           # Create algorithm at my_algo/
+        mkalgorithm path/to/algo      # Create at specific path
+        mkalgorithm @/algorithms/new  # Use project-relative path
 
     Returns:
-        None: Function creates algorithm but returns no value
+        None: Algorithm is created at specified path, or error message printed to console
 
     Note:
         Algorithms can only be created within directories or projects,
         not within other object types like tasks or data objects.
     """
-    line = csys.refine_path(obj, MANAGER.current_object().path)
+    line = csys.refine_path(line, MANAGER.current_object().path)
     parent_path = os.path.abspath(line+"/..")
     object_type = VObject(parent_path).object_type()
     if object_type not in ("directory", "project"):
@@ -460,12 +460,12 @@ def mktask(line: str) -> None:
             a valid directory or project location.
 
     Examples:
-        create-task my_task           # Create task at my_task/
-        create-task path/to/task      # Create at specific path
-        create-task @/tasks/new       # Use project-relative path
+        mktask my_task           # Create task at my_task/
+        mktask path/to/task      # Create at specific path
+        mktask @/tasks/new       # Use project-relative path
 
     Returns:
-        None: Function creates task but returns no value
+        None: Task is created at specified path, or error message printed to console
 
     Note:
         Tasks can only be created within directories or projects,
@@ -493,12 +493,12 @@ def mkdata(line: str) -> None:
             a valid directory or project location.
 
     Returns:
-        None: Function creates data object but returns no value
+        None: Data object is created at specified path, or error message printed to console
 
     Examples:
-        create-data my_data           # Create data object at my_data/
-        create-data path/to/data      # Create at specific path
-        create-data @/data/new        # Use project-relative path
+        mkdata my_data           # Create data object at my_data/
+        mkdata path/to/data      # Create at specific path
+        mkdata @/data/new        # Use project-relative path
 
     Note:
         Data objects can only be created within directories or projects,
@@ -529,7 +529,7 @@ def mkdir(line: str) -> None:
         mkdir @/subdirs/new       # Use project-relative path
 
     Returns:
-        None: Function creates directory but returns no value
+        None: Directory is created at specified path, or error message printed to console
 
     Note:
         Directories can only be created within existing directories or
@@ -657,12 +657,57 @@ def mv_file(file_name: str, dest_file: str) -> None:
 
 
 def add_source(line: str) -> None:
-    """Add a source to the current object."""
+    """Add a source file or directory to the current object.
+
+    Links external source files or directories to the current Celebi object.
+    Sources are tracked for dependency management and can be referenced
+    during execution. This is commonly used for adding code libraries,
+    configuration files, or data sources to tasks and algorithms.
+
+    Args:
+        line (str): Path to the source file or directory to add.
+
+    Returns:
+        None: Source is added to current object, or error message printed to console
+
+    Examples:
+        add_source /path/to/library.py      # Add Python library
+        add_source ../configs/               # Add configuration directory
+        add_source @/data/source.csv         # Add project-relative source
+
+    Note:
+        - Source paths must exist and be accessible
+        - Sources are tracked for version control and dependency resolution
+        - Multiple sources can be added to a single object
+        - Sources can be files or directories
+    """
     MANAGER.current_object().add_source(line)
 
 
 def jobs(_: str) -> None:
-    """Show jobs for current algorithm or task."""
+    """Display job information for current algorithm or task.
+
+    Shows execution jobs associated with the current algorithm or task object.
+    Jobs represent individual executions with their status, parameters, and
+    results. This command provides visibility into the execution history
+    and current state of computational workflows.
+
+    Args:
+        _ (str): Unused parameter (maintained for interface consistency).
+
+    Returns:
+        None: Job information is printed to console, or error message displayed
+
+    Examples:
+        jobs          # Show jobs for current algorithm/task
+        jobs          # No arguments needed, parameter is unused
+
+    Note:
+        - Only works within algorithm or task contexts
+        - Shows job ID, status, creation time, and parameters
+        - Jobs can be in states: pending, running, completed, failed
+        - Use this command to monitor execution progress
+    """
     object_type = MANAGER.current_object().object_type()
     if object_type not in ("algorithm", "task"):
         print("Not able to found job")
@@ -671,7 +716,26 @@ def jobs(_: str) -> None:
 
 
 def status():
-    """Show status of current object."""
+    """Display status information for the current Celebi object.
+
+    Shows comprehensive status information including object type, metadata,
+    configuration, and execution state. The status provides a snapshot of
+    the object's current condition and readiness for operations.
+
+    Returns:
+        str: Formatted status information as a string
+
+    Examples:
+        status()      # Show status of current object
+        print(status())  # Display status in scripts
+
+    Note:
+        - Works with all Celebi object types (project, task, algorithm, data, directory)
+        - Status includes: object type, path, creation time, modification time
+        - For tasks/algorithms: shows input/output configuration, parameters
+        - For data objects: shows size, format, metadata
+        - For directories: shows contents and structure
+    """
     return MANAGER.current_object().printed_status()
 
 def import_file(filename: str) -> None:
@@ -790,7 +854,28 @@ def add_input(path: str, alias: str) -> None:
 
 
 def add_algorithm(path: str) -> None:
-    """Add an algorithm to current task."""
+    """Add an algorithm to the current task.
+
+    Links an existing algorithm object to the current task for execution.
+    Algorithms define computational procedures that tasks can execute.
+    Multiple algorithms can be added to a single task for complex workflows.
+
+    Args:
+        path (str): Path to the algorithm object to add.
+
+    Returns:
+        None: Algorithm is added to current task, or error message printed to console
+
+    Examples:
+        add_algorithm @/algorithms/process_data  # Add algorithm from project path
+        add_algorithm ../other_project/algo      # Add algorithm from relative path
+
+    Note:
+        - Only works within task contexts
+        - Algorithm must exist within the project
+        - Tasks can have multiple algorithms for sequential execution
+        - Algorithms are referenced by their object path within the task
+    """
     if MANAGER.current_object().object_type() == "directory":
         sub_objects = MANAGER.current_object().sub_objects()
         for obj in sub_objects:
@@ -807,7 +892,32 @@ def add_algorithm(path: str) -> None:
 
 
 def add_parameter(par: str, value: str) -> None:
-    """Add a parameter to current task."""
+    """Add a parameter to the current task.
+
+    Defines execution parameters for the current task. Parameters are
+    key-value pairs that configure algorithm behavior and control
+    execution flow. Parameters can be referenced within algorithm code
+    and affect computational results.
+
+    Args:
+        par (str): Parameter name (key).
+        value (str): Parameter value.
+
+    Returns:
+        None: Parameter is added to current task, or error message printed to console
+
+    Examples:
+        add_parameter batch_size 32        # Add numeric parameter
+        add_parameter model_name "resnet"  # Add string parameter
+        add_parameter learning_rate 0.001  # Add float parameter
+
+    Note:
+        - Only works within task contexts
+        - Parameter names must be valid Python identifiers
+        - Values are stored as strings but can be interpreted as appropriate types
+        - Parameters are passed to algorithms during execution
+        - Use set_environment for environment variables instead
+    """
     if MANAGER.current_object().object_type() == "directory":
         sub_objects = MANAGER.current_object().sub_objects()
         for obj in sub_objects:
@@ -823,7 +933,31 @@ def add_parameter(par: str, value: str) -> None:
     MANAGER.current_object().add_parameter(par, value)
 
 def add_parameter_subtask(dirname: str, par: str, value: str) -> None:
-    """Add a parameter to current task."""
+    """Add a parameter to a specific subtask within a directory.
+
+    Defines execution parameters for a specific task within a directory
+    structure. This command allows bulk parameter configuration across
+    multiple tasks organized in directories with indexed naming conventions.
+
+    Args:
+        dirname (str): Directory name containing the target task.
+        par (str): Parameter name (key).
+        value (str): Parameter value.
+
+    Returns:
+        None: Parameter is added to specified task, or error message printed to console
+
+    Examples:
+        add_parameter_subtask task_1 batch_size 32        # Add to task_1
+        add_parameter_subtask @/tasks/model learning_rate 0.001  # Add to task in project path
+
+    Note:
+        - Only works within directory or project contexts
+        - Target directory must contain a valid task object
+        - Useful for configuring multiple tasks with similar parameters
+        - Directory tasks should follow indexed naming (task_1, task_2, etc.)
+        - Parameters are applied to the specific task, not all tasks in directory
+    """
     if MANAGER.current_object().object_type() not in ("directory", "project"):
         print("Unable to call add_parameter_subtask if you are not in a dir")
         return
@@ -834,7 +968,30 @@ def add_parameter_subtask(dirname: str, par: str, value: str) -> None:
     obj.add_parameter(par, value)
 
 def set_environment(env: str) -> None:
-    """Set environment for current task."""
+    """Set execution environment for the current task.
+
+    Configures the computational environment for task execution. Environment
+    settings control runtime behavior, resource allocation, and system
+    dependencies. This is essential for reproducible computational workflows.
+
+    Args:
+        env (str): Environment specification string.
+
+    Returns:
+        None: Environment is set for current task, or error message printed to console
+
+    Examples:
+        set_environment "python=3.8"          # Set Python version
+        set_environment "cuda=11.0"           # Set CUDA version
+        set_environment "conda_env=myenv"     # Set Conda environment
+
+    Note:
+        - Only works within task contexts
+        - Environment specifications are parsed and validated
+        - Multiple environment variables can be set in a single string
+        - Environment affects algorithm execution and resource availability
+        - Use add_parameter for task-specific parameters instead
+    """
     if MANAGER.current_object().object_type() == "directory":
         sub_objects = MANAGER.current_object().sub_objects()
         for obj in sub_objects:
@@ -851,7 +1008,30 @@ def set_environment(env: str) -> None:
 
 
 def set_memory_limit(limit: str) -> None:
-    """Set memory limit for current task."""
+    """Set memory allocation limit for the current task.
+
+    Configures the maximum memory (RAM) that can be used by task execution.
+    Memory limits prevent resource exhaustion and enable fair sharing of
+    computational resources across multiple tasks.
+
+    Args:
+        limit (str): Memory limit specification (e.g., "4G", "512M", "2GB").
+
+    Returns:
+        None: Memory limit is set for current task, or error message printed to console
+
+    Examples:
+        set_memory_limit "4G"        # Set 4 gigabyte limit
+        set_memory_limit "512M"      # Set 512 megabyte limit
+        set_memory_limit "2GB"       # Set 2 gigabyte limit
+
+    Note:
+        - Only works within task contexts
+        - Limit format: number followed by unit (M, MB, G, GB, etc.)
+        - Memory limits are enforced during algorithm execution
+        - Exceeding the limit may cause task termination
+        - Default limits may be configured at project or system level
+    """
     if MANAGER.current_object().object_type() == "directory":
         sub_objects = MANAGER.current_object().sub_objects()
         for obj in sub_objects:
@@ -868,7 +1048,29 @@ def set_memory_limit(limit: str) -> None:
 
 
 def rm_parameter(par: str) -> None:
-    """Remove a parameter from current task."""
+    """Remove a parameter from the current task.
+
+    Deletes a previously defined parameter from the task configuration.
+    This command removes the parameter key-value pair, making it unavailable
+    for algorithm execution.
+
+    Args:
+        par (str): Parameter name to remove.
+
+    Returns:
+        None: Parameter is removed from current task, or error message printed to console
+
+    Examples:
+        rm_parameter batch_size        # Remove batch_size parameter
+        rm_parameter learning_rate     # Remove learning_rate parameter
+
+    Note:
+        - Only works within task contexts
+        - Parameter must exist to be removed
+        - Removing non-existent parameters has no effect
+        - Use add_parameter to define new parameters
+        - Parameter removal affects future executions, not running jobs
+    """
     if MANAGER.current_object().object_type() != "task":
         print("Unable to call remove_parameter if you are not in a task.")
         return
@@ -876,7 +1078,30 @@ def rm_parameter(par: str) -> None:
 
 
 def remove_input(alias: str) -> None:
-    """Remove an input from current task or algorithm."""
+    """Remove an input from the current task or algorithm.
+
+    Deletes a previously defined input reference from the task or algorithm
+    configuration. This command removes the input alias, making the associated
+    data or object unavailable for execution.
+
+    Args:
+        alias (str): Input alias to remove.
+
+    Returns:
+        None: Input is removed from current object, or error message printed to console
+
+    Examples:
+        remove_input data_file        # Remove input with alias 'data_file'
+        remove_input model_weights    # Remove input with alias 'model_weights'
+
+    Note:
+        - Works within task or algorithm contexts
+        - Input alias must exist to be removed
+        - Removing non-existent inputs has no effect
+        - Use add_input to define new inputs
+        - Input removal affects future executions, not running jobs
+        - The underlying data object is not deleted, only the reference
+    """
     if MANAGER.current_object().object_type() == "directory":
         sub_objects = MANAGER.current_object().sub_objects()
         for obj in sub_objects:
