@@ -27,10 +27,21 @@ def validate_function_docstring(func_node, docstring):
     # Check for required sections - using logic from plan
     required_sections = ['Args', 'Returns', 'Examples', 'Note']
     for section in required_sections:
-        if section == 'Returns' and func_node.returns is None:
-            continue  # Skip Returns for functions returning None
-        if section == 'Args' and not func_node.args.args:
-            continue  # Skip Args for functions without parameters
+        # Check if function returns None (no Returns section needed)
+        if section == 'Returns':
+            if func_node.returns is None:
+                continue  # No return annotation
+            # Check if return annotation is None
+            if hasattr(func_node.returns, 'value') and func_node.returns.value is None:
+                continue  # Returns None
+            if isinstance(func_node.returns, ast.Constant) and func_node.returns.value is None:
+                continue  # Returns None
+        # Check if function has no parameters (no Args section needed)
+        if section == 'Args':
+            has_params = (func_node.args.args or func_node.args.vararg or
+                         func_node.args.kwonlyargs or func_node.args.kwarg)
+            if not has_params:
+                continue  # Skip Args for functions without parameters
         if not re.search(f'{section}:', docstring):
             errors.append(f'Missing {section} section')
 

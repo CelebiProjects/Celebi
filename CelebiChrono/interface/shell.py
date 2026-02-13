@@ -1230,15 +1230,12 @@ def submit(runner: str = "local") -> Message:
     message = MANAGER.current_object().submit(runner)
     return message
 
-def purge():
+def purge() -> None:
     """Purge temporary files and cleanup current object.
 
     Removes temporary files, cache data, and other non-essential artifacts
     associated with the current object. This helps free up disk space and
     resolve potential consistency issues.
-
-    Returns:
-        Message with purge results and cleanup statistics.
 
     Examples:
         purge()  # Clean up temporary files for current object
@@ -1251,15 +1248,12 @@ def purge():
     message = MANAGER.current_object().purge()
     print(message.colored())
 
-def purge_old_impressions():
+def purge_old_impressions() -> None:
     """Purge old impression data from current object.
 
     Removes historical impression data that is no longer needed, preserving
     only recent or essential impressions. Impressions are visualization
     or snapshot data generated during task execution.
-
-    Returns:
-        Message with purge statistics and removed impression details.
 
     Examples:
         purge_old_impressions()  # Remove outdated impressions
@@ -1421,10 +1415,6 @@ def collect_outputs() -> Message:
         - The current object must be a task
         - Task must have been submitted and completed
         - Output files are downloaded from the runner to local storage
-
-    See Also:
-        collect: Collect both outputs and logs
-        collect_logs: Collect only logs
     """
     return MANAGER.current_object().collect("outputs")
 
@@ -1445,10 +1435,6 @@ def collect_logs() -> Message:
         - The current object must be a task
         - Task must have been submitted and completed
         - Log files are downloaded from the runner to local storage
-
-    See Also:
-        collect: Collect both outputs and logs
-        collect_outputs: Collect only outputs
     """
     return MANAGER.current_object().collect("logs")
 
