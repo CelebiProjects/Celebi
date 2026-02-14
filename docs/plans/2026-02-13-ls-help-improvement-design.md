@@ -1,4 +1,4 @@
-# Design: Improved Help Text for `celebi-sh ls` Command
+# Design: Improved Help Text for `celebi-cli ls` Command
 
 ## Date
 2026-02-13
@@ -7,12 +7,12 @@
 Claude Code (via Claude Code CLI)
 
 ## Overview
-This document outlines the improvements made to the help text for the `celebi-sh ls` command in the Celebi data analysis management toolkit.
+This document outlines the improvements made to the help text for the `celebi-cli ls` command in the Celebi data analysis management toolkit.
 
 ## Problem Statement
-The current help output for `celebi-sh ls --help` is minimal and lacks detail:
+The current help output for `celebi-cli ls --help` is minimal and lacks detail:
 ```
-Usage: celebi-sh ls [OPTIONS]
+Usage: celebi-cli ls [OPTIONS]
 
   List contents
 
@@ -46,7 +46,7 @@ Users need more comprehensive documentation to understand:
 
 ### New Help Text Output
 ```
-Usage: celebi-sh ls [OPTIONS] [ARGS]...
+Usage: celebi-cli ls [OPTIONS] [ARGS]...
 
   List the contents of a Celebi object. Without a path, lists the current
   object; with a path, lists the specified object within the current project.
@@ -91,7 +91,7 @@ Options:
 The updated functionality was verified using test scripts that:
 
 1. **Help Text Verification**:
-   - Invokes `celebi-sh ls --help` programmatically
+   - Invokes `celebi-cli ls --help` programmatically
    - Confirms updated description and `[ARGS]...` parameter indication
    - Verifies backward compatibility of other commands (`short-ls`, `jobs`)
 

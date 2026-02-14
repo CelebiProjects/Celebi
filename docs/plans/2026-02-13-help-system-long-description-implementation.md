@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Modify the help system to show only long descriptions (docstring without first line) for all `celebi-sh` commands.
+**Goal:** Modify the help system to show only long descriptions (docstring without first line) for all `celebi-cli` commands.
 
 **Architecture:** Update `_get_command_docstring()` function to skip first line of docstrings, and fix inconsistent command registration to use `help=full_doc` for all commands.
 
@@ -223,10 +223,10 @@ import subprocess
 import sys
 
 def test_mv_help_shows_only_long_description():
-    """Test that celebi-sh mv --help shows only long description."""
+    """Test that celebi-cli mv --help shows only long description."""
     try:
         result = subprocess.run(
-            ['celebi-sh', 'mv', '--help'],
+            ['celebi-cli', 'mv', '--help'],
             capture_output=True,
             text=True,
             timeout=5
@@ -260,7 +260,7 @@ def test_mv_help_shows_only_long_description():
         print(f"stderr: {e.stderr}")
         raise
     except FileNotFoundError:
-        print("celebi-sh command not found. Make sure Celebi is installed.")
+        print("celebi-cli command not found. Make sure Celebi is installed.")
         raise
 
 if __name__ == "__main__":
@@ -286,10 +286,10 @@ Add test for ls command:
 ```python
 # tests/test_help_output.py
 def test_ls_help_shows_long_description():
-    """Test that celebi-sh ls --help shows long description."""
+    """Test that celebi-cli ls --help shows long description."""
     try:
         result = subprocess.run(
-            ['celebi-sh', 'ls', '--help'],
+            ['celebi-cli', 'ls', '--help'],
             capture_output=True,
             text=True,
             timeout=5
@@ -318,7 +318,7 @@ def test_ls_help_shows_long_description():
         print(f"stderr: {e.stderr}")
         raise
     except FileNotFoundError:
-        print("celebi-sh command not found. Make sure Celebi is installed.")
+        print("celebi-cli command not found. Make sure Celebi is installed.")
         raise
 
 if __name__ == "__main__":
@@ -508,7 +508,7 @@ def test_command_help(command_name):
     """Test that a command's help shows only long description."""
     try:
         result = subprocess.run(
-            ['celebi-sh', command_name, '--help'],
+            ['celebi-cli', command_name, '--help'],
             capture_output=True,
             text=True,
             timeout=5
@@ -537,7 +537,7 @@ def test_command_help(command_name):
         print(f"✗ {command_name}: Command failed: {e}")
         return False
     except FileNotFoundError:
-        print("✗ celebi-sh command not found")
+        print("✗ celebi-cli command not found")
         return False
     except Exception as e:
         print(f"✗ {command_name}: Unexpected error: {e}")
@@ -581,7 +581,7 @@ Expected: Most commands PASS, some may fail if they have minimal docstrings
 
 If any commands fail, check their docstrings in `shell.py` and update if needed. For example, check `tree` command:
 
-Run: `cd /Users/zhaomr/workdir/Chern/Celebi && celebi-sh tree --help`
+Run: `cd /Users/zhaomr/workdir/Chern/Celebi && celebi-cli tree --help`
 Check output. If it's minimal, the docstring may need updating.
 
 **Step 4: Update minimal docstrings if necessary**
@@ -621,10 +621,10 @@ Manually test a few commands:
 
 ```bash
 cd /Users/zhaomr/workdir/Chern/Celebi
-celebi-sh mv --help
-celebi-sh ls --help
-celebi-sh cp --help
-celebi-sh cd --help
+celebi-cli mv --help
+celebi-cli ls --help
+celebi-cli cp --help
+celebi-cli cd --help
 ```
 
 Verify that:
@@ -651,7 +651,7 @@ git commit -m "feat: standardize help system to show only long descriptions
 - Modified _get_command_docstring() to skip first line of docstrings
 - Fixed command registration to use help=full_doc for all commands
 - Added comprehensive tests for help output verification
-- All celebi-sh commands now show consistent long description format"
+- All celebi-cli commands now show consistent long description format"
 ```
 
 **Step 5: Summary**

@@ -7,14 +7,14 @@
 Claude Code (via Claude Code CLI)
 
 ## Overview
-This document outlines the modifications to standardize help text output for all `celebi-sh` commands to show only the long description (docstring without first line) instead of both short and long descriptions.
+This document outlines the modifications to standardize help text output for all `celebi-cli` commands to show only the long description (docstring without first line) instead of both short and long descriptions.
 
 ## Problem Statement
-The current help system for `celebi-sh` commands has inconsistent behavior:
+The current help system for `celebi-cli` commands has inconsistent behavior:
 
 1. **Most commands** (`mv`, `cp`, `cd`, etc.) show both short and long descriptions:
    ```
-   Usage: celebi-sh mv [OPTIONS] ARG1 ARG2
+   Usage: celebi-cli mv [OPTIONS] ARG1 ARG2
 
      Move or rename objects within the current project.
 
@@ -24,7 +24,7 @@ The current help system for `celebi-sh` commands has inconsistent behavior:
 
 2. **Some commands** (`ls`, `tree`, etc.) show only the short description:
    ```
-   Usage: celebi-sh ls [OPTIONS] [ARGS]...
+   Usage: celebi-cli ls [OPTIONS] [ARGS]...
 
      List the contents of a Celebi object.
 
@@ -116,7 +116,7 @@ command_func = cli_sh.command(name=cname, short_help=desc, help=full_doc)(comman
 
 **Before** (`mv` command):
 ```
-Usage: celebi-sh mv [OPTIONS] ARG1 ARG2
+Usage: celebi-cli mv [OPTIONS] ARG1 ARG2
 
   Move or rename objects within the current project.
 
@@ -126,7 +126,7 @@ Usage: celebi-sh mv [OPTIONS] ARG1 ARG2
 
 **After** (`mv` command):
 ```
-Usage: celebi-sh mv [OPTIONS] ARG1 ARG2
+Usage: celebi-cli mv [OPTIONS] ARG1 ARG2
 
   Moves or renames Celebi objects (files, directories, tasks, algorithms, etc.)
   while preserving their relationships and metadata...
@@ -134,7 +134,7 @@ Usage: celebi-sh mv [OPTIONS] ARG1 ARG2
 
 **Before** (`ls` command):
 ```
-Usage: celebi-sh ls [OPTIONS] [ARGS]...
+Usage: celebi-cli ls [OPTIONS] [ARGS]...
 
   List the contents of a Celebi object.
 
@@ -144,7 +144,7 @@ Options:
 
 **After** (`ls` command):
 ```
-Usage: celebi-sh ls [OPTIONS] [ARGS]...
+Usage: celebi-cli ls [OPTIONS] [ARGS]...
 
   Displays the object's structure including sub-objects (projects, tasks,
   algorithms, data objects). Shows README, sub-objects, and task information
@@ -191,4 +191,4 @@ Options:
    - Or make it command-line switch for `--help` vs `--help-long`
 
 ## Conclusion
-Standardizing the help output to show only long descriptions improves consistency across all `celebi-sh` commands. The implementation modifies the docstring extraction logic and fixes inconsistent command registration, ensuring all commands use the same help text generation approach.
+Standardizing the help output to show only long descriptions improves consistency across all `celebi-cli` commands. The implementation modifies the docstring extraction logic and fixes inconsistent command registration, ensuring all commands use the same help text generation approach.
