@@ -247,7 +247,7 @@ def _get_command_docstring(func_name: str) -> str:
         # Skip the first line (short description)
         if len(lines) > 1:
             # Rejoin remaining lines, preserving original formatting
-            result = '\n'.join(lines[1:]).strip()
+            result = "\n".join(lines[1:]).strip()
         else:
             # Single-line docstring - return empty string
             result = ""
