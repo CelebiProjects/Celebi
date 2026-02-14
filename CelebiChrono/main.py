@@ -191,7 +191,6 @@ def remove(project):
     except Exception:
         print("Fail to remove the project")
 
-
 @cli.command()
 def prologue():
     """ A prologue from the author """
@@ -210,18 +209,6 @@ def prologue():
 
 
     """)
-
-
-
-
-
-
-
-
-
-
-
-
 
 def main():
     """Main entry point for the Celebi CLI."""
