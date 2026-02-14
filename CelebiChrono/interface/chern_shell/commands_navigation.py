@@ -5,8 +5,8 @@ This module contains command handlers for navigation operations.
 """
 # pylint: disable=broad-exception-caught,no-member,import-outside-toplevel
 import os
-from ..interface import shell
-from ..interface.ChernManager import get_manager
+from ...interface import shell
+from ...interface.ChernManager import get_manager
 
 
 MANAGER = get_manager()
@@ -26,7 +26,7 @@ class NavigationCommands:
     def do_cd(self, arg: str) -> None:
         """Switch directory or object."""
         try:
-            from ..utils import csys
+            from ...utils import csys
             myobject = arg.split()[0]
             shell.cd(myobject)
             current_project_name = MANAGER.get_current_project()

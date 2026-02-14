@@ -5,8 +5,8 @@ This module contains command handlers for environment settings
 and job execution management.
 """
 # pylint: disable=broad-exception-caught
-from ..interface import shell
-from ..interface.ChernManager import get_manager
+from ...interface import shell
+from ...interface.ChernManager import get_manager
 
 
 MANAGER = get_manager()

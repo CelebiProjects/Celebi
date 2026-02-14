@@ -6,8 +6,8 @@ debugging, and system integration.
 """
 # pylint: disable=broad-exception-caught
 import os
-from ..interface import shell
-from ..interface.ChernManager import get_manager
+from ...interface import shell
+from ...interface.ChernManager import get_manager
 
 
 MANAGER = get_manager()

@@ -7,9 +7,9 @@ and impression management.
 # pylint: disable=broad-exception-caught
 import os
 import subprocess
-from ..utils import metadata
-from ..interface import shell
-from ..interface.ChernManager import get_manager
+from ...utils import metadata
+from ...interface import shell
+from ...interface.ChernManager import get_manager
 
 
 MANAGER = get_manager()

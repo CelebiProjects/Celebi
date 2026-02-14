@@ -4,8 +4,8 @@ Basic Operations Command Handlers for Chern Shell.
 This module contains command handlers for basic object operations.
 """
 # pylint: disable=broad-exception-caught
-from ..interface import shell
-from ..interface.ChernManager import get_manager
+from ...interface import shell
+from ...interface.ChernManager import get_manager
 
 
 MANAGER = get_manager()

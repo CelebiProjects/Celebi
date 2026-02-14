@@ -6,8 +6,8 @@ This module contains command handlers for file and directory operations.
 # pylint: disable=broad-exception-caught
 import re
 import os
-from ..interface import shell
-from ..interface.ChernManager import get_manager
+from ...interface import shell
+from ...interface.ChernManager import get_manager
 
 
 MANAGER = get_manager()

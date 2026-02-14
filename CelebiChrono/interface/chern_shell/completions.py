@@ -9,11 +9,10 @@ Note: This is a mixin class. Methods reference `self.get_completions`,
 by ChernShellBase when this mixin is combined with it in ChernShell.
 """
 # pylint: disable=broad-exception-caught,no-member
-from ..interface.ChernManager import get_manager
-from ..utils import csys
+from ._manager import MANAGER
+from ...utils import csys
 
 
-MANAGER = get_manager()
 
 
 # pylint: disable=too-many-public-methods

@@ -6,19 +6,19 @@ This module provides an interactive command-line shell interface for managing
 Chern projects, tasks, algorithms, and directories.
 
 The shell functionality is organized into separate modules for maintainability:
-- chern_shell_base: Core shell functionality and command parsing
-- chern_shell_commands: All command handlers (do_* methods)
-- chern_shell_completions: Tab completion handlers (complete_* methods)
-- chern_shell_visualization: DAG visualization methods
+- chern_shell.base: Core shell functionality and command parsing
+- chern_shell.commands: All command handlers (do_* methods)
+- chern_shell.completions: Tab completion handlers (complete_* methods)
+- chern_shell.visualization: DAG visualization methods
 
 Note: Broad exception handling is used throughout this module to ensure
 the shell remains stable and provides user-friendly error messages.
 This is a common pattern in interactive shells to prevent crashes.
 """
-from .chern_shell_base import ChernShellBase
-from .chern_shell_commands import ChernShellCommands
-from .chern_shell_completions import ChernShellCompletions
-from .chern_shell_visualization import ChernShellVisualization
+from .chern_shell.base import ChernShellBase
+from .chern_shell.commands import ChernShellCommands
+from .chern_shell.completions import ChernShellCompletions
+from .chern_shell.visualization import ChernShellVisualization
 from .ChernManager import get_manager
 
 

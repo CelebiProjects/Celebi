@@ -1,13 +1,8 @@
-def format_output(data, format_type='table'):
-    """
-    Format output data for CLI display.
-
-    Args:
-        data: Data to format (list of dicts or single dict)
-        format_type: Output format ('table', 'json', 'yaml', 'csv')
-
-    Returns:
-        Formatted string
-    """
-    # TODO: Implement formatting logic
-    return str(data)
+def format_output(result):
+    """Format shell function output for CLI display."""
+    if result is not None:
+        if hasattr(result, 'colored'):
+            return result.colored()
+        else:
+            return str(result)
+    return ""

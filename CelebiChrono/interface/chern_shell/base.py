@@ -7,8 +7,8 @@ including initialization, prompt management, command parsing, and completion.
 # pylint: disable=broad-exception-caught,import-outside-toplevel
 import cmd
 import os
-from ..utils import csys
-from ..utils.metadata import YamlFile
+from ...utils import csys
+from ...utils.metadata import YamlFile
 
 
 class ChernShellBase(cmd.Cmd):
@@ -27,7 +27,7 @@ class ChernShellBase(cmd.Cmd):
         """Initialize the shell with current project context."""
         current_project_name = manager.get_current_project()
         current_project_path = manager.get_project_path(current_project_name)
-        from ..kernel.vproject import VProject
+        from ...kernel.vproject import VProject
         manager.p = VProject(current_project_path)
         manager.c = manager.p
         os.chdir(current_project_path)
@@ -47,7 +47,7 @@ class ChernShellBase(cmd.Cmd):
             delims = delims.replace(char, '')
         readline.set_completer_delims(delims)
 
-        from .ChernManager import get_manager
+        from ..ChernManager import get_manager
         manager = get_manager()
         current_project_name = manager.get_current_project()
         current_path = os.path.relpath(
