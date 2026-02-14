@@ -2003,13 +2003,10 @@ def bookkeep_url() -> str:
 def tree(depth: int = -1) -> Message:
     """Get the directory tree.
 
-    Displays the filesystem tree structure of the current object's
-    directory, showing files and subdirectories with optional depth
-    limitation.
+    Displays the filesystem tree structure of the current object's directory, showing files and subdirectories with optional depth limitation.
 
     Args:
-        depth (int, optional): Maximum depth to display. -1 shows
-            unlimited depth (entire tree). Defaults to -1.
+        depth (int, optional): Maximum depth to display. -1 shows unlimited depth (entire tree). Defaults to -1.
 
     Examples:
         tree()      # Show complete directory tree
@@ -2017,8 +2014,7 @@ def tree(depth: int = -1) -> Message:
         tree(0)     # Show only current directory
 
     Returns:
-        Message: Formatted tree structure showing directory hierarchy,
-        file names, and optionally file metadata.
+        Message: Formatted tree structure showing directory hierarchy, file names, and optionally file metadata.
 
     Note:
         - Depth -1 shows unlimited recursion
