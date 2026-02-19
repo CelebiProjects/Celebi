@@ -16,6 +16,21 @@ def _handle_error(error):
     sys.exit(1)
 
 
+@click.command(name="test")
+def test_command():
+    """
+    Run a specified command inside a Docker container using the given image.
+    """
+    try:
+        from CelebiChrono.interface.shell import test
+        result = test()
+        print(result)
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
 @click.command(name="runners")
 def runners_command():
     """List available runners."""

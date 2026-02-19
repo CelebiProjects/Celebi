@@ -52,6 +52,7 @@ cli.add_command(execution_management.collect_command)
 cli.add_command(execution_management.error_log_command)
 cli.add_command(execution_management.view_command)
 cli.add_command(execution_management.edit_command)
+cli.add_command(execution_management.test_command)
 
 # Communication commands (7 commands)
 cli.add_command(communication.config_command)

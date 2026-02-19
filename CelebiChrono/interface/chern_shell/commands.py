@@ -19,6 +19,7 @@ from .commands_task import TaskCommands
 from .commands_environment import EnvironmentCommands
 from .commands_documentation import DocumentationCommands
 from .commands_advanced import AdvancedCommands
+from .commands_execution import CommandsExecution
 
 
 class ChernShellCommands(
@@ -28,7 +29,8 @@ class ChernShellCommands(
     TaskCommands,
     EnvironmentCommands,
     DocumentationCommands,
-    AdvancedCommands
+    AdvancedCommands,
+    CommandsExecution
 ):
     """
     Aggregated mixin class combining all command handlers.

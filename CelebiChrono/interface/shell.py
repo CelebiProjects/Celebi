@@ -31,7 +31,7 @@ __all__ = [
     # Execution management functions (from execution_management.py)
     'jobs', 'status', 'runners', 'register_runner', 'remove_runner',
     'request_runner', 'search_impression', 'submit', 'purge',
-    'purge_old_impressions',
+    'purge_old_impressions', 'test',
     # Communication functions (from communication.py)
     'view', 'viewurl', 'impress', 'get_script_path', 'config', 'danger_call',
     'workaround_preshell', 'workaround_postshell', 'trace', 'history',

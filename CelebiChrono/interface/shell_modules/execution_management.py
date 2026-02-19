@@ -163,3 +163,16 @@ def collect_logs() -> Message:
         - Related functions: `collect()` for both outputs and logs, `collect_outputs()` for only outputs
     """
     return MANAGER.current_object().collect("logs")
+
+def test() -> Message:
+    """Test execution management functions.
+
+    Run a specified command inside a Docker container using the given Docker image.
+
+    Returns:
+        Message containing test results, including any errors or failures encountered.
+
+    Note:
+        This is a placeholder function for testing purposes and may not be fully implemented.
+    """
+    return MANAGER.current_object().docker_test()

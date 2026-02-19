@@ -32,6 +32,7 @@ dependencies = [
     "networkx",
     "graphviz",
     "plotly",
+    "docker",
 ]
 
 [project.urls]

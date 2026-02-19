@@ -264,6 +264,17 @@ class ExecutionManagement(Core):
             return
         self.get_vtask(self.path).remove_parameter(parameter)
 
+    def docker_test(self) -> Message:
+        print("Running docker test... in object")
+        if not self.is_task():
+            msg = Message()
+            msg.add("Docker test can only be run on a task.", "warning")
+            return msg
+        self.get_vtask(self.path).docker_test()
+        msg = Message()
+        msg.add("Docker test executed for task.", "info")
+        return msg
+
     def collect(self, contents="all") -> Message:
         """ Collect the results from the runner. """
         cherncc = ChernCommunicator.instance()

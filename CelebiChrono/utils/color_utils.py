@@ -35,7 +35,7 @@ def colorize(string: str, color: str = "") -> str:
     if color == "":
         # Automatic detection from pretty.py
         possible_status = {
-            "success": ["success", "done", "pass", "connected", "ok", "good",
+            "success": ["success", "done", "pass", "connected", "ok", "good", "ready",
                         "succeed", "validated", "archived", "finished",
                         "true"],
             "normal": ["normal", "info", "new", "raw", "empty"],
