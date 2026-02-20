@@ -13,6 +13,12 @@ class Message:
 
     def __init__(self) -> None:
         self.messages: List[Tuple[str, str]] = []
+        self.data: dict = {}
+
+    @property
+    def success(self) -> bool:
+        """True if no error messages were added."""
+        return not any(msg_type == "error" for _, msg_type in self.messages)
 
     def __str__(self) -> str:
         """ String representation of the messages

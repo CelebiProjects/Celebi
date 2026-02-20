@@ -2,14 +2,11 @@
 """
 import os
 import time
-from os.path import join
 from dataclasses import dataclass
 from logging import getLogger
 from typing import TYPE_CHECKING, List
 
-from ..utils import csys
 from ..utils.message import Message
-from ..utils.csys import colorize_diff
 from ..utils import metadata
 from .vobj_core import Core
 from .chern_cache import ChernCache
@@ -34,7 +31,7 @@ class LsParameters:
     task_info: bool = True
 
 
-class FileManagementDisplay(Core):  # pylint: disable=too-many-public-methods
+class FileManagementDisplay(Core):
     """ Display-related methods for file management.
     """
     def ls(self, show_info: 'LsParameters' = LsParameters()) -> Message:
@@ -307,6 +304,7 @@ class FileManagementDisplay(Core):  # pylint: disable=too-many-public-methods
         return message
 
     def tree(self, max_depth=999, current_depth=0):
+        """Generate tree structure representation of the object."""
         message = Message()
         index = "--" * current_depth
         message.add(f"{index}{os.path.basename(self.path)}({self.object_type()})\n")

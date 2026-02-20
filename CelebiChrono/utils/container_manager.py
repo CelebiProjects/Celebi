@@ -1,6 +1,8 @@
+"""Utility functions for Celebi."""
 import docker  # Using the Docker SDK for Python
 
 class ContainerManager:
+    """Manage Docker containers for task execution."""
     def __init__(self, image: str, volumes: dict, memory_limit: str = "256Mi", name: str = None):
         """
         Initialize and configure the container manager.
@@ -32,7 +34,7 @@ class ContainerManager:
             )
             print(f"Container started with ID: {self.container.id}")
         except Exception as e:
-            raise RuntimeError(f"Failed to start container: {e}")
+            raise RuntimeError(f"Failed to start container: {e}") from e
 
     def logs(self):
         """Stream logs from the running container."""

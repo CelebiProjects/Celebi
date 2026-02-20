@@ -9,7 +9,7 @@ from ...utils.message import Message
 from ._manager import MANAGER
 
 
-def view(browser: str = "open") -> None:
+def view(browser: str = "open") -> Message:
     """View impressions for current task.
 
     Opens task execution impressions in a web browser for visualization.
@@ -26,7 +26,7 @@ def view(browser: str = "open") -> None:
         view chrome      # Open impressions in Chrome
 
     Returns:
-        None: Function opens browser with impression visualization.
+        Message: Status message indicating success or error.
 
     Note:
         - Current object must be a task
@@ -34,15 +34,18 @@ def view(browser: str = "open") -> None:
         - Browser command must be available in system PATH
         - Uses system's subprocess to launch browser
     """
+    message = Message()
     is_task = MANAGER.current_object().is_task()
     if not is_task:
-        print("Not able to view")
-        return
+        message.add("Not able to view", "error")
+        return message
     url = MANAGER.current_object().impview()
     subprocess.call([browser, url])
+    message.add("Opened view in browser", "success")
+    return message
 
 
-def viewurl() -> str:
+def viewurl() -> Message:
     """Get the impression URL for current task.
 
     Retrieves the URL where task execution impressions can be viewed.
@@ -57,8 +60,7 @@ def viewurl() -> str:
         print(f"View at: {viewurl()}")  # Display URL
 
     Returns:
-        str: URL for viewing task impressions, or empty string if
-        not available.
+        Message: Message containing the URL, or error if not available.
 
     Note:
         - Current object must be a task
@@ -66,12 +68,15 @@ def viewurl() -> str:
         - URL may be local file path or web address
         - Empty return indicates no impressions available
     """
+    message = Message()
     is_task = MANAGER.current_object().is_task()
     if not is_task:
-        print("Not able to get view url")
-        return ""
+        message.add("Not able to get view url", "error")
+        return message
     url = MANAGER.current_object().impview()
-    return url
+    message.add(url, "normal")
+    message.data["url"] = url
+    return message
 
 
 def impress() -> Message:
@@ -101,7 +106,7 @@ def impress() -> Message:
     return message
 
 
-def trace(impression: str) -> None:
+def trace(impression: str) -> Message:
     """Trace back to the task or algorithm that generated the impression.
 
     Navigates to the original task or algorithm that created a specific
@@ -116,7 +121,7 @@ def trace(impression: str) -> None:
         trace impression_2024_01_15
 
     Returns:
-        None: Function navigates to source object of impression.
+        Message: Status message indicating trace completion.
 
     Note:
         - Impression must exist in current project
@@ -124,4 +129,7 @@ def trace(impression: str) -> None:
         - Changes current working context to source object
         - Useful for debugging complex execution chains
     """
+    message = Message()
     MANAGER.current_object().trace(impression)
+    message.add("Trace complete", "success")
+    return message

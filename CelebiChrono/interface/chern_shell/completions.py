@@ -85,7 +85,7 @@ class ChernShellCompletions:
         if not MANAGER.c.is_task_or_algorithm():
             return []
         alias = MANAGER.c.get_alias_list()
-        if text == "":
+        if not text:
             return list(alias)
         return [f for f in alias if f.startswith(text)]
 

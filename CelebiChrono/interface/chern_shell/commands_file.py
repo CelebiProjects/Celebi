@@ -20,7 +20,9 @@ class FileCommands:
         """Create a new directory."""
         try:
             obj = arg.split()[0]
-            shell.mkdir(obj)
+            result = shell.mkdir(obj)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide a directory name. {e}")
         except Exception as e:
@@ -55,9 +57,13 @@ class FileCommands:
 
                 for src in sources:
                     print(f"Moving {src} to {destination}")
-                    shell.mv(src, destination)
+                    result = shell.mv(src, destination)
+                    if result.messages:
+                        print(result.colored())
             else:
-                shell.mv(source, destination)
+                result = shell.mv(source, destination)
+                if result.messages:
+                    print(result.colored())
 
         except Exception as e:
             print(f"Error moving object: {e}")
@@ -69,7 +75,9 @@ class FileCommands:
             args = arg.split()
             source = args[0]
             destination = args[1]
-            shell.cp(source, destination)
+            result = shell.cp(source, destination)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide source and destination. {e}")
         except Exception as e:
@@ -79,7 +87,9 @@ class FileCommands:
         """Remove an object."""
         try:
             obj = arg.split()[0]
-            shell.rm(obj)
+            result = shell.rm(obj)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide an object to remove. {e}")
         except Exception as e:
@@ -89,7 +99,9 @@ class FileCommands:
         """Import a file into current object."""
         try:
             obj = arg.split()[0]
-            shell.import_file(obj)
+            result = shell.import_file(obj)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide a file to import. {e}")
         except Exception as e:
@@ -99,7 +111,9 @@ class FileCommands:
         """Import a file into current object."""
         try:
             obj = arg.split()[0]
-            shell.import_file(obj)
+            result = shell.import_file(obj)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide a file to import. {e}")
         except Exception as e:
@@ -110,7 +124,9 @@ class FileCommands:
         try:
             objs = arg.split()
             for obj in objs:
-                shell.rm_file(obj)
+                result = shell.rm_file(obj)
+                if result.messages:
+                    print(result.colored())
         except Exception as e:
             print(f"Error removing files: {e}")
 
@@ -120,7 +136,9 @@ class FileCommands:
             args = arg.split()
             file1 = args[0]
             file2 = args[1]
-            shell.mv_file(file1, file2)
+            result = shell.mv_file(file1, file2)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide source and destination files. {e}")
         except Exception as e:

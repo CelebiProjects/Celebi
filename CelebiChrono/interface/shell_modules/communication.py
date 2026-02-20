@@ -7,13 +7,12 @@ import os
 
 from ...utils import csys
 from ...utils.message import Message
-from ...utils.pretty import colorize
 from ...utils import metadata
 from ...kernel.chern_communicator import ChernCommunicator
 from ._manager import MANAGER
 
 
-def add_host(host: str, url: str) -> None:
+def add_host(host: str, url: str) -> Message:
     """Add a host to the communicator.
 
     Registers a new host with the Chern communicator system, enabling
@@ -29,18 +28,21 @@ def add_host(host: str, url: str) -> None:
         add_host cluster-01 https://cluster.example.com/api
 
     Returns:
-        None: Function executes side effect of adding host configuration.
+        Message: Formatted message confirming host addition.
 
     Note:
         - Host names must be unique within the communicator
         - URL should be accessible from the current network
         - Host configuration is persisted in project settings
     """
+    message = Message()
     cherncc = ChernCommunicator.instance()
     cherncc.add_host(host, url)
+    message.add(f"Host '{host}' added with URL: {url}", "success")
+    return message
 
 
-def hosts() -> None:
+def hosts() -> Message:
     """Show all hosts and their status.
 
     Displays a formatted table of all configured hosts with their current
@@ -54,7 +56,7 @@ def hosts() -> None:
         hosts()  # Display all hosts and their status
 
     Returns:
-        None: Output is printed to console in formatted table.
+        Message: Formatted message containing host table with status indicators.
 
     Note:
         - Status "ok" indicates successful connection
@@ -62,16 +64,19 @@ def hosts() -> None:
         - Colors are used to visually distinguish statuses
         - Host list is retrieved from Chern communicator
     """
+    message = Message()
     cherncc = ChernCommunicator.instance()
     host_list = cherncc.hosts()
-    print(f"{'HOSTS':<20}{'STATUS':20}")
+    message.add(f"{'HOSTS':<20}{'STATUS':20}\n", "title0")
     for host in host_list:
         host_status = cherncc.host_status(host)
         color_tag = {"ok": "ok", "unconnected": "warning"}[host_status]
-        print(f"{host:<20}{colorize(host_status, color_tag):20}")
+        message.add(f"{host:<20}", "normal")
+        message.add(f"{host_status:20}\n", color_tag)
+    return message
 
 
-def dite() -> None:
+def dite() -> Message:
     """Show DITE information.
 
     Displays information about the Distributed Task Execution (DITE) system,
@@ -85,19 +90,21 @@ def dite() -> None:
         dite()  # Display DITE system information
 
     Returns:
-        None: Output is printed to console with DITE details.
+        Message: Formatted message containing DITE details.
 
     Note:
         - DITE must be properly configured for distributed execution
         - Information includes connection URLs and service status
         - Requires Chern communicator to be initialized
     """
+    message = Message()
     cherncc = ChernCommunicator.instance()
     dite_info = cherncc.dite_info()
-    print(dite_info)
+    message.add(str(dite_info), "normal")
+    return message
 
 
-def set_dite(url: str = "") -> None:
+def set_dite(url: str = "") -> Message:
     """Set DITE connection.
 
     Configures or updates the Distributed Task Execution (DITE) server URL
@@ -113,7 +120,7 @@ def set_dite(url: str = "") -> None:
         set_dite()  # Show current DITE configuration
 
     Returns:
-        None: Function updates configuration or displays current settings.
+        Message: Formatted message confirming DITE URL update.
 
     Note:
         - URL is saved to project's .celebi/hosts.json file
@@ -121,12 +128,14 @@ def set_dite(url: str = "") -> None:
         - Changes affect all distributed operations in the project
         - Requires project to be initialized
     """
+    message = Message()
     project_path = csys.project_path()
     config_path = os.path.join(project_path, ".celebi", "hosts.json")
     config_file = metadata.ConfigFile(config_path)
     if url:
         config_file.write_variable("serverurl", url)
-        print(f"DITE URL set to: {url}")
+        message.add(f"DITE URL set to: {url}", "success")
+    return message
 
 
 def runners() -> Message:
@@ -176,7 +185,7 @@ def runners() -> Message:
     return message
 
 
-def register_runner(runner: str, url: str, secret: str, backend_type: str) -> None:
+def register_runner(runner: str, url: str, secret: str, backend_type: str) -> Message:
     """Register a runner with DITE.
 
     Registers a new task execution runner with the Distributed Task Execution
@@ -194,7 +203,7 @@ def register_runner(runner: str, url: str, secret: str, backend_type: str) -> No
         register_runner gpu-cluster https://cluster.example.com token456 slurm
 
     Returns:
-        None: Function executes side effect of registering runner with DITE.
+        Message: Formatted message confirming runner registration.
 
     Note:
         - Runner names must be unique within DITE
@@ -202,11 +211,14 @@ def register_runner(runner: str, url: str, secret: str, backend_type: str) -> No
         - Secret is used for secure communication
         - Backend type determines execution environment
     """
+    message = Message()
     cherncc = ChernCommunicator.instance()
     cherncc.register_runner(runner, url, secret, backend_type)
+    message.add(f"Runner '{runner}' registered", "success")
+    return message
 
 
-def remove_runner(runner: str) -> None:
+def remove_runner(runner: str) -> Message:
     """Remove a runner from DITE.
 
     Unregisters a task execution runner from the Distributed Task Execution
@@ -221,7 +233,7 @@ def remove_runner(runner: str) -> None:
         remove_runner deprecated-cluster
 
     Returns:
-        None: Function executes side effect of removing runner from DITE.
+        Message: Formatted message confirming runner removal.
 
     Note:
         - Runner must be registered to be removed
@@ -229,11 +241,14 @@ def remove_runner(runner: str) -> None:
         - Currently executing tasks may be affected
         - Requires appropriate permissions in DITE
     """
+    message = Message()
     cherncc = ChernCommunicator.instance()
     cherncc.remove_runner(runner)
+    message.add(f"Runner '{runner}' removed", "success")
+    return message
 
 
-def request_runner(runner: str) -> None:
+def request_runner(runner: str) -> Message:
     """Set the requested runner for current task.
 
     Specifies which runner should be used for executing the current task.
@@ -247,7 +262,7 @@ def request_runner(runner: str) -> None:
         request_runner gpu-cluster-01
 
     Returns:
-        None: Function sets runner preference on current task object.
+        Message: Formatted message confirming runner request.
 
     Note:
         - Runner must be registered with DITE
@@ -255,7 +270,10 @@ def request_runner(runner: str) -> None:
         - Runner preference is saved with task configuration
         - Default runner can be overridden at submission time
     """
+    message = Message()
     MANAGER.current_object().set_default_runner(runner)
+    message.add(f"Runner '{runner}' requested", "success")
+    return message
 
 
 def search_impression(partial_uuid: str) -> Message:
@@ -282,6 +300,5 @@ def search_impression(partial_uuid: str) -> Message:
         - Current object context affects search scope
         - Results may include impressions from related tasks
     """
-    print("Search partial uuid", partial_uuid)
     message = MANAGER.current_object().search_impression(partial_uuid)
     return message

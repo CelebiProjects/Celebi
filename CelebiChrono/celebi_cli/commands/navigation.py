@@ -1,3 +1,4 @@
+"""Navigation commands for Celebi CLI."""
 import click
 from CelebiChrono.celebi_cli.utils import format_output
 
@@ -58,7 +59,7 @@ def cdproject_command(project):
 def short_ls_command():
     """Short listing."""
     from CelebiChrono.interface.shell import short_ls
-    result = short_ls()
+    result = short_ls("")
     output = format_output(result)
     if output:
         print(output)
@@ -68,7 +69,7 @@ def short_ls_command():
 def jobs_command():
     """Show jobs."""
     from CelebiChrono.interface.shell import jobs
-    result = jobs()
+    result = jobs("")
     output = format_output(result)
     if output:
         print(output)

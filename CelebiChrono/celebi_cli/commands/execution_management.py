@@ -1,38 +1,40 @@
-import click
+"""Execution management commands for Celebi CLI."""
 import sys
+from typing import Optional, Any
+import click
 from CelebiChrono.celebi_cli.utils import format_output
 
 
-def _handle_result(result):
+def _handle_result(result: Optional[Any]) -> None:
     """Handle result from shell function."""
     output = format_output(result)
     if output:
         print(output)
 
 
-def _handle_error(error):
+def _handle_error(error: str) -> None:
     """Handle error from shell function."""
     print(f"Error: {error}", file=sys.stderr)
     sys.exit(1)
 
 
 @click.command(name="test")
-def test_command():
+def test_command() -> None:
     """
     Run a specified command inside a Docker container using the given image.
     """
     try:
         from CelebiChrono.interface.shell import test
         result = test()
-        print(result)
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
 
+
 @click.command(name="runners")
-def runners_command():
+def runners_command() -> None:
     """List available runners."""
     try:
         from CelebiChrono.interface.shell import runners
@@ -49,12 +51,11 @@ def runners_command():
 @click.argument("arg2", type=str)
 @click.argument("arg3", type=str)
 @click.argument("arg4", type=str)
-def register_runner_command(arg1, arg2, arg3, arg4):
+def register_runner_command(arg1: str, arg2: str, arg3: str, arg4: str) -> None:
     """Register a new runner."""
     try:
         from CelebiChrono.interface.shell import register_runner
-        result = register_runner(arg1, arg2, arg3, arg4)
-        _handle_result(result)
+        _handle_result(register_runner(arg1, arg2, arg3, arg4))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
@@ -63,12 +64,11 @@ def register_runner_command(arg1, arg2, arg3, arg4):
 
 @click.command(name="remove-runner")
 @click.argument("runner", type=str)
-def remove_runner_command(runner):
+def remove_runner_command(runner: str) -> None:
     """Remove a runner."""
     try:
         from CelebiChrono.interface.shell import remove_runner
-        result = remove_runner(runner)
-        _handle_result(result)
+        _handle_result(remove_runner(runner))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
@@ -77,7 +77,7 @@ def remove_runner_command(runner):
 
 @click.command(name="submit")
 @click.argument("task", type=str)
-def submit_command(task):
+def submit_command(task: str) -> None:
     """Submit a task for execution."""
     try:
         from CelebiChrono.interface.shell import submit
@@ -91,7 +91,7 @@ def submit_command(task):
 
 @click.command(name="collect")
 @click.argument("task", type=str)
-def collect_command(task):
+def collect_command(task: str) -> None:
     """Collect results from a task."""
     try:
         from CelebiChrono.interface.shell import collect
@@ -105,7 +105,7 @@ def collect_command(task):
 
 @click.command(name="error-log")
 @click.argument("task", type=str)
-def error_log_command(task):
+def error_log_command(task: str) -> None:
     """View error log for a task."""
     try:
         from CelebiChrono.interface.shell import error_log
@@ -118,12 +118,12 @@ def error_log_command(task):
 
 
 @click.command(name="view")
-@click.argument("object", type=str)
-def view_command(object):
+@click.argument("obj", type=str)
+def view_command(obj: str) -> None:
     """View an object."""
     try:
         from CelebiChrono.interface.shell import view
-        result = view(object)
+        result = view(obj)
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
@@ -133,7 +133,7 @@ def view_command(object):
 
 @click.command(name="edit")
 @click.argument("script", type=str)
-def edit_command(script):
+def edit_command(script: str) -> None:
     """Edit a script."""
     try:
         from CelebiChrono.interface.shell import edit_script

@@ -1,8 +1,6 @@
 """ Input management methods for ArcManagement mixin.
 """
-import os
 from os.path import join
-from time import time
 from logging import getLogger
 from typing import TYPE_CHECKING
 
@@ -75,7 +73,7 @@ class ArcManagementInput(Core):
     def remove_input(self, alias):
         """ Remove the input """
         path = self.alias_to_path(alias)
-        if path == "":
+        if not path:
             print("Alias not found")
             return
         # project_path = self.project_path()

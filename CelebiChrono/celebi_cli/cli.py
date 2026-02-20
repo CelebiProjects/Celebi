@@ -1,10 +1,13 @@
+"""Celebi CLI main entry point for command grouping."""
 import click
-from .commands import navigation, file_operations, object_creation, task_configuration, execution_management, communication, visualization
+from .commands import (
+    navigation, file_operations, object_creation, task_configuration,
+    execution_management, communication, visualization
+)
 
 @click.group()
 def cli():
     """Celebi CLI commands for project management."""
-    pass
 
 # Commands will be registered here
 cli.add_command(navigation.cd_command)

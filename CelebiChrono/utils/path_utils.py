@@ -3,7 +3,6 @@ Path utilities for CelebiChrono
 """
 import os
 import uuid
-from typing import Any
 
 
 def generate_uuid() -> str:

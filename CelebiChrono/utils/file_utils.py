@@ -10,7 +10,7 @@ import uuid
 import time
 from pathlib import Path
 from contextlib import contextmanager
-from typing import Any, Tuple, Iterator, List
+from typing import Tuple, Iterator, List
 
 from .path_utils import mkdir, exists, generate_uuid, strip_path_string
 

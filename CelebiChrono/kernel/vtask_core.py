@@ -1,4 +1,3 @@
-# pylint: disable=too-many-public-methods
 """ Core class for vtasks.
     + helpme: Print help message for the command.
     + ls: List the information of the task.
@@ -112,7 +111,7 @@ class Core(VObject):
 
         for i, f in enumerate(files, start=1):
             line += f"code:{f:<{max_len+4}}"
-            if i % nfiles == 0:
+            if not i % nfiles:
                 message.add(line + "\n")
                 line = ""
         if line:

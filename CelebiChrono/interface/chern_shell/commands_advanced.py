@@ -27,7 +27,9 @@ class AdvancedCommands:
         """
         try:
             obj = arg.split()[0]
-            shell.send(obj)
+            result = shell.send(obj)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide a path to send. {e}")
         except Exception as e:
@@ -38,7 +40,7 @@ class AdvancedCommands:
         Show DITE information.
         """
         try:
-            shell.dite()
+            print(shell.dite().colored())
         except Exception as e:
             print(f"Error accessing DITE: {e}")
 
@@ -53,7 +55,9 @@ class AdvancedCommands:
         """
         try:
             url = arg.split()[0]
-            shell.set_dite(url)
+            result = shell.set_dite(url)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide a DITE URL. {e}")
         except Exception as e:
@@ -70,7 +74,9 @@ class AdvancedCommands:
         """
         try:
             cmd = arg
-            shell.danger_call(cmd)
+            result = shell.danger_call(cmd)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide a command to execute. {e}")
         except Exception as e:
@@ -86,10 +92,11 @@ class AdvancedCommands:
             Optional argument. If 'docker', runs task in Docker container.
         """
         try:
-            status, info = shell.workaround_preshell()
-            if not status:
-                print(info)
+            result = shell.workaround_preshell()
+            if not result.success:
+                print(result.colored())
                 return
+            info = result.data["path"]
             # Remember the current path
             path = os.getcwd()
             # Switch to the ~
@@ -125,7 +132,9 @@ class AdvancedCommands:
         """
         try:
             obj = arg.split()[0] if arg else None
-            shell.trace(obj)
+            result = shell.trace(obj)
+            if result.messages:
+                print(result.colored())
         except Exception as e:
             print(f"Error tracing execution: {e}")
 
@@ -152,7 +161,7 @@ class AdvancedCommands:
         Set the watermark.
         """
         try:
-            shell.watermark()
+            print(shell.watermark().colored())
         except Exception as e:
             print(f"Error handling watermark: {e}")
 
@@ -174,6 +183,6 @@ class AdvancedCommands:
         Run system diagnostics.
         """
         try:
-            shell.doctor()
+            print(shell.doctor().colored())
         except Exception as e:
             print(f"Error running diagnostics: {e}")

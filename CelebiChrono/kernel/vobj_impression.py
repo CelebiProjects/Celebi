@@ -248,7 +248,7 @@ class ImpressionManagement(Core):
         """ Get the impression of the current object
         """
         uuid = self.config_file.read_variable("impression", "")
-        if uuid == "":
+        if not uuid:
             return None
         return VImpression(uuid)
 

@@ -20,7 +20,9 @@ class TaskCommands:
         """Create a new task."""
         try:
             obj = arg.split()[0]
-            shell.mktask(obj)
+            result = shell.mktask(obj)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide a task name. {e}")
         except Exception as e:
@@ -47,8 +49,12 @@ class TaskCommands:
                 return
             for i in range(begin_number_of_tasks, end_number_of_tasks):
                 task_name = f"{base_name}_{i}"
-                shell.mktask(task_name)
-                shell.add_parameter_subtask(task_name, "index", str(i))
+                result = shell.mktask(task_name)
+                if not result.success:
+                    print(result.colored())
+                result = shell.add_parameter_subtask(task_name, "index", str(i))
+                if not result.success:
+                    print(result.colored())
         except Exception as e:
             print(f"Error creating task: {e}")
 
@@ -56,7 +62,9 @@ class TaskCommands:
         """Create a new algorithm."""
         try:
             obj = arg.split()[0]
-            shell.mkalgorithm(obj)
+            result = shell.mkalgorithm(obj)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide an algorithm name. {e}")
         except Exception as e:
@@ -66,7 +74,9 @@ class TaskCommands:
         """Create a new data object."""
         try:
             obj = arg.split()[0]
-            shell.mkdata(obj)
+            result = shell.mkdata(obj)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide a data name. {e}")
         except Exception as e:
@@ -87,7 +97,10 @@ class TaskCommands:
                     item_path = os.path.join(base_path, item)
                     if not os.path.isdir(item_path):
                         continue
-                    shell.mkdata(item)
+                    result = shell.mkdata(item)
+                    if not result.success:
+                        print(result.colored())
+                        continue
                     shell.cd(item)
                     shell.send(item_path)
                     shell.cd("..")
@@ -104,7 +117,9 @@ class TaskCommands:
         """Add an algorithm to current task."""
         try:
             obj = arg.split()[0]
-            shell.add_algorithm(obj)
+            result = shell.add_algorithm(obj)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide an algorithm path. {e}")
         except Exception as e:
@@ -126,7 +141,9 @@ class TaskCommands:
             args = arg.split()
             obj1 = args[0]
             obj2 = args[1]
-            shell.add_input(obj1, obj2)
+            result = shell.add_input(obj1, obj2)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide path and alias. {e}")
         except Exception as e:
@@ -156,7 +173,9 @@ class TaskCommands:
                 task_name = f"{base_name}_{i}"
                 alias_index = f"{alias}_{i}"
                 print(task_name, alias_index)
-                shell.add_input(task_name, alias_index)
+                result = shell.add_input(task_name, alias_index)
+                if not result.success:
+                    print(result.colored())
         except Exception as e:
             print(f"Error creating task: {e}")
 
@@ -181,7 +200,9 @@ class TaskCommands:
                 return
             for i in range(begin_number_of_tasks, end_number_of_tasks):
                 alias_index = f"{alias}_{i}"
-                shell.remove_input(alias_index)
+                result = shell.remove_input(alias_index)
+                if not result.success:
+                    print(result.colored())
         except Exception as e:
             print(f"Error remove task: {e}")
 
@@ -190,7 +211,9 @@ class TaskCommands:
         """Remove an input from current object."""
         try:
             obj = arg.split()[0]
-            shell.remove_input(obj)
+            result = shell.remove_input(obj)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide an input alias to remove. {e}")
         except Exception as e:
@@ -202,7 +225,9 @@ class TaskCommands:
             args = arg.split()
             obj1 = args[0]
             obj2 = args[1]
-            shell.add_parameter(obj1, obj2)
+            result = shell.add_parameter(obj1, obj2)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide parameter name and value. {e}")
         except Exception as e:
@@ -212,7 +237,9 @@ class TaskCommands:
         """Remove a parameter from current task."""
         try:
             obj = arg.split()[0]
-            shell.rm_parameter(obj)
+            result = shell.rm_parameter(obj)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide a parameter name to remove. {e}")
         except Exception as e:

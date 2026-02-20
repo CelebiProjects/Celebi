@@ -1,4 +1,3 @@
-# pylint: disable=too-few-public-methods
 """
 This module is responsible for saving the cache
 used by other parts of the application.
@@ -34,6 +33,6 @@ class ChernCache:  # pylint: disable=too-many-instance-attributes
 
     def use_and_cache_project_path(self, path):
         """Gets and caches the project path."""
-        if self.project_path == "":
+        if not self.project_path:
             self.project_path = path
         return self.project_path

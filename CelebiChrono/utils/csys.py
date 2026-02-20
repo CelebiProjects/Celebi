@@ -4,9 +4,23 @@ define some classes and functions used throughout the project
 
 This module is now a facade that re-exports functions from specialized submodules.
 """
-# pylint: disable=broad-exception-caught
 
-# Re-export all functions from specialized modules
+# Standard library imports
+import os
+import time
+import shutil
+import uuid
+import hashlib
+import tarfile
+import subprocess
+from typing import Any
+from pathlib import Path
+from contextlib import contextmanager
+
+# Third-party imports
+from colored import fg, attr
+
+# Local imports
 from .color_utils import (
     colorize,
     color_print,
@@ -54,20 +68,6 @@ from .file_utils import (
     open_subprocess,
 )
 
-# For backward compatibility, also import the original module-level imports
-# that might be used by external code
-import os
-import time
-import shutil
-import uuid
-import hashlib
-import tarfile
-import subprocess
-from typing import Any
-from pathlib import Path
-from contextlib import contextmanager
-from colored import fg, attr
-
 __all__ = [
     # color utilities
     'colorize',
@@ -110,4 +110,17 @@ __all__ = [
     'update_time',
     'get_files_in_directory',
     'open_subprocess',
+    # backward compatibility imports
+    'os',
+    'time',
+    'shutil',
+    'uuid',
+    'hashlib',
+    'tarfile',
+    'subprocess',
+    'Any',
+    'Path',
+    'contextmanager',
+    'fg',
+    'attr',
 ]

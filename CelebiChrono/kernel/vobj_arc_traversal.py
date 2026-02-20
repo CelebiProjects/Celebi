@@ -1,10 +1,8 @@
 """ Traversal and predecessor/successor methods for ArcManagement mixin.
 """
-import os
-from os.path import join
 from time import time
 from logging import getLogger
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from ..utils import csys
 from .vobj_core import Core

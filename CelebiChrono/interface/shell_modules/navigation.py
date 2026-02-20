@@ -6,7 +6,7 @@ Functions for changing directories, navigating projects, and path operations.
 import os
 
 from ...utils import csys
-from ...utils.pretty import color_print
+from ...utils.message import Message
 from ._manager import MANAGER
 
 __all__ = [
@@ -19,7 +19,7 @@ __all__ = [
 ]
 
 
-def cd_project(line: str) -> None:
+def cd_project(line: str) -> Message:
     """Switch to a different project and change directory to its path.
 
     Changes the current working project and navigates to its root directory.
@@ -29,6 +29,9 @@ def cd_project(line: str) -> None:
     Args:
         line (str): Name of the project to switch to.
 
+    Returns:
+        Message with success info about the project switch.
+
     Examples:
         cd_project my_project      # Switch to project named 'my_project'
         cd_project analysis        # Switch to 'analysis' project
@@ -37,11 +40,14 @@ def cd_project(line: str) -> None:
         The project must exist in the Celebi project registry.
         Current working directory will change to the project's root path.
     """
+    message = Message()
     MANAGER.switch_project(line)
     os.chdir(MANAGER.current_object().path)
+    message.add(f"Switched to project: {line}", "success")
+    return message
 
 
-def shell_cd_project(line: str) -> None:
+def shell_cd_project(line: str) -> Message:
     """Switch to a different project and print the new path.
 
     Changes the current working project and prints the absolute path
@@ -51,6 +57,9 @@ def shell_cd_project(line: str) -> None:
     Args:
         line (str): Name of the project to switch to.
 
+    Returns:
+        Message with project switch info and the new path.
+
     Examples:
         shell_cd_project my_project  # Switch and print path to 'my_project'
 
@@ -58,11 +67,12 @@ def shell_cd_project(line: str) -> None:
         Prints the absolute path to stdout for shell capture.
         Uses the same project validation as cd_project.
     """
-    cd_project(line)
-    print(MANAGER.current_object().path)
+    message = cd_project(line)
+    message.add(MANAGER.current_object().path, "normal")
+    return message
 
 
-def cd(line: str) -> None:
+def cd(line: str) -> Message:
     """Change directory within the current project.
 
     Changes the current working directory to a specified path or object within
@@ -73,6 +83,9 @@ def cd(line: str) -> None:
         line (str): Either a path string or numeric index. If a numeric string,
             changes to the object at that index in the current directory listing.
             If a path, changes to the specified object or directory.
+
+    Returns:
+        Message with navigation result or error info.
 
     Examples:
         cd subdirectory       # Change to subdirectory
@@ -86,13 +99,13 @@ def cd(line: str) -> None:
     """
     line = line.rstrip("\n")
     if line.isdigit():
-        _cd_by_index(int(line))
-    else:
-        _cd_by_path(line)
+        return _cd_by_index(int(line))
+    return _cd_by_path(line)
 
 
-def _cd_by_index(index: int) -> None:
+def _cd_by_index(index: int) -> Message:
     """Change directory by numeric index."""
+    message = Message()
     sub_objects = MANAGER.current_object().sub_objects()
     successors_list = MANAGER.current_object().successors()
     predecessors = MANAGER.current_object().predecessors()
@@ -100,26 +113,25 @@ def _cd_by_index(index: int) -> None:
 
     if index < total:
         sub_objects.sort(key=lambda x: (x.object_type(), x.path))
-        cd(MANAGER.current_object().relative_path(sub_objects[index].path))
-        return
+        return cd(MANAGER.current_object().relative_path(sub_objects[index].path))
 
     index -= total
     total = len(predecessors)
     if index < total:
-        cd(MANAGER.current_object().relative_path(predecessors[index].path))
-        return
+        return cd(MANAGER.current_object().relative_path(predecessors[index].path))
 
     index -= total
     total = len(successors_list)
     if index < total:
-        cd(MANAGER.current_object().relative_path(successors_list[index].path))
-        return
+        return cd(MANAGER.current_object().relative_path(successors_list[index].path))
 
-    color_print("Out of index", "remind")
+    message.add("Out of index", "warning")
+    return message
 
 
-def _cd_by_path(line: str) -> None:
+def _cd_by_path(line: str) -> Message:
     """Change directory by path string."""
+    message = Message()
     # cd can be used to change directory using absolute path
     line = csys.special_path_string(line)
     if line.startswith("@/") or line == "@":
@@ -129,16 +141,17 @@ def _cd_by_path(line: str) -> None:
 
     # Check available
     if os.path.relpath(line, csys.project_path()).startswith(".."):
-        print("[ERROR] Unable to navigate to a location that is not within the project.")
-        return
+        message.add("[ERROR] Unable to navigate to a location that is not within the project.", "error")
+        return message
     if not csys.exists(line):
-        print("Directory not exists")
-        return
+        message.add("Directory not exists", "error")
+        return message
     MANAGER.switch_current_object(line)
     os.chdir(MANAGER.c.path)
+    return message
 
 
-def navigate() -> str:
+def navigate() -> Message:
     """Return the path of the current project.
 
     Retrieves the absolute filesystem path of the currently active
@@ -146,7 +159,7 @@ def navigate() -> str:
     tools that need to know the project location.
 
     Returns:
-        Absolute path to the current project's root directory.
+        Message containing the absolute path to the current project's root directory.
 
     Examples:
         project_path = navigate()  # Get current project path
@@ -157,6 +170,10 @@ def navigate() -> str:
         Requires the ChernProjectManager to be initialized.
     """
     from ...interface.ChernManager import ChernProjectManager
+    message = Message()
     manager = ChernProjectManager().get_manager()
     project_name = manager.get_current_project()
-    return manager.get_project_path(project_name)
+    path = manager.get_project_path(project_name)
+    message.add(path, "normal")
+    message.data["path"] = path
+    return message

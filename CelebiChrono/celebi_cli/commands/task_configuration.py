@@ -1,7 +1,9 @@
-import click
-import sys
-from CelebiChrono.celebi_cli.utils import format_output
+"""Task Configuration commands for Celebi CLI."""
 
+import sys
+import click
+
+from CelebiChrono.celebi_cli.utils import format_output
 
 def _handle_result(result):
     """Handle result from shell function."""
@@ -9,26 +11,23 @@ def _handle_result(result):
     if output:
         print(output)
 
-
 def _handle_error(error):
     """Handle error from shell function."""
     print(f"Error: {error}", file=sys.stderr)
     sys.exit(1)
 
-
 @click.command(name="remove-input")
-@click.argument("input", type=str)
-def remove_input_command(input):
+@click.argument("input_file", type=str)
+def remove_input_command(input_file):
     """Remove input from task."""
     try:
         from CelebiChrono.interface.shell import remove_input
-        result = remove_input(input)
+        result = remove_input(input_file)
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
-
 
 @click.command(name="add-algorithm")
 @click.argument("algorithm", type=str)
@@ -42,7 +41,6 @@ def add_algorithm_command(algorithm):
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
-
 
 @click.command(name="add-parameter")
 @click.argument("task", type=str)
@@ -58,7 +56,6 @@ def add_parameter_command(task, parameter):
     except Exception as e:
         _handle_error(f"Command failed: {e}")
 
-
 @click.command(name="rm-parameter")
 @click.argument("parameter", type=str)
 def rm_parameter_command(parameter):
@@ -71,7 +68,6 @@ def rm_parameter_command(parameter):
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
-
 
 @click.command(name="add-parameter-subtask")
 @click.argument("task", type=str)
@@ -88,7 +84,6 @@ def add_parameter_subtask_command(task, parameter, subtask):
     except Exception as e:
         _handle_error(f"Command failed: {e}")
 
-
 @click.command(name="set-env")
 @click.argument("environment", type=str)
 def set_env_command(environment):
@@ -101,7 +96,6 @@ def set_env_command(environment):
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
-
 
 @click.command(name="set-mem")
 @click.argument("memory", type=str)
@@ -116,7 +110,6 @@ def set_mem_command(memory):
     except Exception as e:
         _handle_error(f"Command failed: {e}")
 
-
 @click.command(name="add-host")
 @click.argument("host", type=str)
 @click.argument("port", type=str)
@@ -130,7 +123,6 @@ def add_host_command(host, port):
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
-
 
 @click.command(name="hosts")
 def hosts_command():

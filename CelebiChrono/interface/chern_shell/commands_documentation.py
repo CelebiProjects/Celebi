@@ -36,11 +36,12 @@ class DocumentationCommands:
         """Edit a script file."""
         try:
             obj = arg.split()[0]
-            success, file_path = shell.get_script_path(obj)  # Validate script existence
+            result = shell.get_script_path(obj)  # Validate script existence
             config_path = os.path.join(os.environ["HOME"], ".celebi", "config.yaml")
-            if not success:
-                print(file_path)  # file_path contains the error message here
+            if not result.success:
+                print(result.colored())
             else:
+                file_path = result.data["path"]
                 yaml_file = metadata.YamlFile(config_path)
                 editor = yaml_file.read_variable("editor", "vi")
                 subprocess.call([editor, f"{file_path}"])
@@ -59,7 +60,9 @@ class DocumentationCommands:
     def do_impress(self, _: str) -> None:
         """Create impression of current object."""
         try:
-            shell.impress()
+            result = shell.impress()
+            if result.messages:
+                print(result.colored())
         except Exception as e:
             print(e)
 
@@ -74,48 +77,56 @@ class DocumentationCommands:
     def do_search_impression(self, arg: str) -> None:
         """Search impressions."""
         try:
-            print(shell.search_impression(arg))
+            print(shell.search_impression(arg).colored())
         except Exception as e:
             print(f"Error searching impressions: {e}")
 
     def do_view(self, arg: str) -> None:
         """View impressions."""
         try:
-            if arg != "":
-                shell.view(arg)
+            if arg:
+                result = shell.view(arg)
             else:
-                shell.view()
+                result = shell.view()
+            if result.messages:
+                print(result.colored())
         except Exception as e:
             print(f"Error viewing impressions: {e}")
 
     def do_viewurl(self, _: str) -> None:
         """View impression URL."""
         try:
-            url = shell.viewurl()
-            print(url)
+            result = shell.viewurl()
+            print(result.colored())
         except Exception as e:
             print(f"Error getting impression URL: {e}")
 
     def do_bookkeep(self, _: str) -> None:
         """Bookkeep impressions (developer only)."""
         try:
-            shell.bookkeep()
+            result = shell.bookkeep()
+            if result.messages:
+                print(result.colored())
         except Exception as e:
             print(f"Error bookkeeping impressions: {e}")
 
     def do_bkkurl(self, _: str) -> None:
         """Get bookkeeping URL."""
         try:
-            url = shell.bookkeep_url()
-            print(url)
+            result = shell.bookkeep_url()
+            print(result.colored())
         except Exception as e:
             print(f"Error getting bookkeeping URL: {e}")
 
     def do_viewbkk(self, _: str) -> None:
         """View bookkeeping URL."""
         try:
-            url = shell.bookkeep_url()
-            subprocess.call(["open", url])
+            result = shell.bookkeep_url()
+            url = result.data.get("url", "")
+            if url:
+                subprocess.call(["open", url])
+            else:
+                print(result.colored())
         except Exception as e:
             print(f"Error viewing bookkeeping URL: {e}")
 

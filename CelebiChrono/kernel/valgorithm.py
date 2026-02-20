@@ -112,7 +112,7 @@ class VAlgorithm(VObject):
         line = ""
         for i, f in enumerate(files):
             line += f.ljust(max_length)
-            if (i + 1) % num_columns == 0:
+            if not (i + 1) % num_columns:
                 message.add(line + "\n")
                 line = ""
         if line:

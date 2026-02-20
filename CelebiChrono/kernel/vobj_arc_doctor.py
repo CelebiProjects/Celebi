@@ -1,7 +1,5 @@
 """ Doctor methods for ArcManagement mixin.
 """
-import os
-from os.path import join
 from logging import getLogger
 from typing import TYPE_CHECKING
 
@@ -74,7 +72,7 @@ class ArcManagementDoctor(Core):
         """ Doctor the alias of the object
         """
         for pred_object in obj.predecessors():
-            if obj.path_to_alias(pred_object.invariant_path()) == "" and \
+            if not obj.path_to_alias(pred_object.invariant_path()) and \
                     not pred_object.is_algorithm():
                 print(f"The input {pred_object} of {obj} does not have an alias, "
                       f"it will be removed.")

@@ -1,7 +1,9 @@
-import click
-import sys
-from CelebiChrono.celebi_cli.utils import format_output
+"""Visualization commands for Celebi CLI."""
 
+import sys
+import click
+
+from CelebiChrono.celebi_cli.utils import format_output
 
 def _handle_result(result):
     """Handle result from shell function."""
@@ -9,12 +11,10 @@ def _handle_result(result):
     if output:
         print(output)
 
-
 def _handle_error(error):
     """Handle error from shell function."""
     print(f"Error: {error}", file=sys.stderr)
     sys.exit(1)
-
 
 @click.command(name="view")
 @click.argument("browser", type=str, required=False, default="open")
@@ -41,7 +41,6 @@ def view_command(browser):
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
-
 
 @click.command(name="viewurl")
 def viewurl_command():

@@ -11,11 +11,9 @@ Note: This module requires optional dependencies:
 Install with: pip install plotly graphviz pydot
 """
 # pylint: disable=broad-exception-caught,import-outside-toplevel
-# pylint: disable=too-many-locals,too-many-statements,import-error,no-member
+# pylint: disable=too-many-locals,too-many-statements,no-member
 import os
 from ._manager import MANAGER
-
-
 
 
 class ChernShellVisualization:

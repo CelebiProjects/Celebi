@@ -21,7 +21,7 @@
             print the prologue
 """
 
-# pylint: disable=broad-exception-caught,import-outside-toplevel
+# pylint: disable=broad-exception-caught
 import os
 import logging
 from os.path import join
@@ -80,7 +80,7 @@ def cli(ctx):
             current_project = config_file.read_variable("current_project", "")
             print("Current project: ", current_project)
             if (
-                current_project is None or current_project == "" or
+                not current_project or
                 current_project not in config_file.read_variable(
                     "projects_path"
                 ).keys()

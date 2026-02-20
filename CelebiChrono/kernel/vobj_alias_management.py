@@ -40,7 +40,7 @@ class AliasManagement(Core):
 
     def remove_alias(self, alias: str, ignore_yaml: bool = False) -> None: # UnitTest: DONE
         """ Remove the alias from the alias list."""
-        if alias == "":
+        if not alias:
             return
         alias_to_path = self.config_file.read_variable("alias_to_path", {})
         path_to_alias = self.config_file.read_variable("path_to_alias", {})
@@ -58,14 +58,14 @@ class AliasManagement(Core):
 
     def set_alias(self, alias: str, path: str, ignore_yaml: bool = False) -> None: # UnitTest: DONE
         """ Set the alias of the vobj by the path."""
-        if alias == "":
+        if not alias:
             return
         if self.has_alias(alias):
             logger.warning("Alias '%s' already exists. Will not overwrite.", alias)
             return
         path_to_alias = self.config_file.read_variable("path_to_alias", {})
         alias_to_path = self.config_file.read_variable("alias_to_path", {})
-        if path_to_alias.get(path, "") != "":
+        if path_to_alias.get(path, ""):
             logger.warning("Path '%s' already has an alias. Will not overwrite.", alias)
             return
         path_to_alias[path] = alias

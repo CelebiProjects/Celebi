@@ -2,17 +2,8 @@
 
 This is now a facade that combines functionality from specialized mixins.
 """
-import os
-import re
-from collections import defaultdict
-from itertools import combinations
 from logging import getLogger
-from os.path import join
-from time import time
 
-import networkx as nx
-
-from ..utils import csys
 from .vobj_core import Core
 from .chern_cache import ChernCache
 
@@ -46,4 +37,3 @@ class ArcManagement(
     """
     # The class body is empty because all methods are inherited.
     # This maintains backward compatibility while splitting implementation.
-    pass

@@ -103,7 +103,7 @@ class Core(ABC):
     def is_zombie(self) -> bool: # Unittest: DONE
         """ Judge whether it is actually an object
         """
-        return self.object_type() == ""
+        return not self.object_type()
 
     def danger_call(self, cmd: str) -> Message:
         """ A dangerous call that directly call the command
@@ -120,7 +120,7 @@ class Core(ABC):
                     message.add(f"STDOUT:\n{stdout}\n", "info")
                 if stderr:
                     message.add(f"STDERR:\n{stderr}\n", "error")
-                if process.returncode == 0:
+                if not process.returncode:
                     message.add("Command executed successfully.\n", "success")
                 else:
                     message.add(

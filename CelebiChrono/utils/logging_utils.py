@@ -2,6 +2,7 @@
 Centralized logging configuration for CelebiChrono.
 """
 import logging
+import logging as std_logging  # pylint: disable=reimported
 
 # Configure the root logger for Celebi
 # This ensures consistent logging across all modules
@@ -30,5 +31,4 @@ def get_chern_logger():
 
 # For convenience, also export the standard logging module
 # so modules can still import logging if needed
-import logging as std_logging
 __all__ = ['get_chern_logger', 'std_logging']

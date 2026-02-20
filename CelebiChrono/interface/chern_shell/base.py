@@ -4,7 +4,7 @@ Base Shell Module for Chern.
 This module provides the core functionality for the Chern interactive shell,
 including initialization, prompt management, command parsing, and completion.
 """
-# pylint: disable=broad-exception-caught,import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 import cmd
 import os
 from ...utils import csys

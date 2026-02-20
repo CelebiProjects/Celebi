@@ -1,16 +1,18 @@
-import click
+"""File operations commands for Celebi CLI."""
 import sys
+from typing import Optional, Any, Tuple
+import click
 from CelebiChrono.celebi_cli.utils import format_output
 
 
-def _handle_result(result):
+def _handle_result(result: Optional[Any]) -> None:
     """Handle result from shell function."""
     output = format_output(result)
     if output:
         print(output)
 
 
-def _handle_error(error):
+def _handle_error(error: str) -> None:
     """Handle error from shell function."""
     print(f"Error: {error}", file=sys.stderr)
     sys.exit(1)
@@ -18,7 +20,7 @@ def _handle_error(error):
 
 @click.command(name="ls")
 @click.argument("args", nargs=-1, type=str)
-def ls_command(args):
+def ls_command(args: Tuple[str, ...]) -> None:
     """List directory contents."""
     try:
         from CelebiChrono.interface.shell import ls
@@ -33,12 +35,11 @@ def ls_command(args):
 @click.command(name="mv")
 @click.argument("src", type=str)
 @click.argument("dst", type=str)
-def mv_command(src, dst):
+def mv_command(src: str, dst: str) -> None:
     """Move file or directory."""
     try:
         from CelebiChrono.interface.shell import mv
-        result = mv(src, dst)
-        _handle_result(result)
+        _handle_result(mv(src, dst))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
@@ -48,12 +49,11 @@ def mv_command(src, dst):
 @click.command(name="cp")
 @click.argument("src", type=str)
 @click.argument("dst", type=str)
-def cp_command(src, dst):
+def cp_command(src: str, dst: str) -> None:
     """Copy file or directory."""
     try:
         from CelebiChrono.interface.shell import cp
-        result = cp(src, dst)
-        _handle_result(result)
+        _handle_result(cp(src, dst))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
@@ -62,12 +62,11 @@ def cp_command(src, dst):
 
 @click.command(name="rm")
 @click.argument("path", type=str)
-def rm_command(path):
+def rm_command(path: str) -> None:
     """Remove file or directory."""
     try:
         from CelebiChrono.interface.shell import rm
-        result = rm(path)
-        _handle_result(result)
+        _handle_result(rm(path))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
@@ -76,12 +75,11 @@ def rm_command(path):
 
 @click.command(name="rmfile")
 @click.argument("path", type=str)
-def rmfile_command(path):
+def rmfile_command(path: str) -> None:
     """Remove file."""
     try:
         from CelebiChrono.interface.shell import rm_file
-        result = rm_file(path)
-        _handle_result(result)
+        _handle_result(rm_file(path))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
@@ -91,12 +89,11 @@ def rmfile_command(path):
 @click.command(name="mvfile")
 @click.argument("src", type=str)
 @click.argument("dst", type=str)
-def mvfile_command(src, dst):
+def mvfile_command(src: str, dst: str) -> None:
     """Move file."""
     try:
         from CelebiChrono.interface.shell import mv_file
-        result = mv_file(src, dst)
-        _handle_result(result)
+        _handle_result(mv_file(src, dst))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
@@ -105,12 +102,11 @@ def mvfile_command(src, dst):
 
 @click.command(name="import")
 @click.argument("path", type=str)
-def import_command(path):
+def import_command(path: str) -> None:
     """Import file."""
     try:
         from CelebiChrono.interface.shell import import_file
-        result = import_file(path)
-        _handle_result(result)
+        _handle_result(import_file(path))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
@@ -119,12 +115,11 @@ def import_command(path):
 
 @click.command(name="send")
 @click.argument("path", type=str)
-def send_command(path):
+def send_command(path: str) -> None:
     """Send file."""
     try:
         from CelebiChrono.interface.shell import send
-        result = send(path)
-        _handle_result(result)
+        _handle_result(send(path))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
@@ -133,13 +128,12 @@ def send_command(path):
 
 @click.command(name="add-input")
 @click.argument("task", type=str)
-@click.argument("input", type=str)
-def add_input_command(task, input):
+@click.argument("input_file", type=str)
+def add_input_command(task: str, input_file: str) -> None:
     """Add input to task."""
     try:
         from CelebiChrono.interface.shell import add_input
-        result = add_input(task, input)
-        _handle_result(result)
+        _handle_result(add_input(task, input_file))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:

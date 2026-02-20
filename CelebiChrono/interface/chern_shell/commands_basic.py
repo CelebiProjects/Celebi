@@ -40,16 +40,19 @@ class BasicCommands:
     def do_collect(self, arg: str) -> None:
         """Collect data for current object."""
         try:
-            if len(arg) == 0:
-                shell.collect()
+            if not arg:
+                result = shell.collect()
             elif arg == "all":
-                shell.collect()
+                result = shell.collect()
             elif arg == "outputs":
-                shell.collect_outputs()
+                result = shell.collect_outputs()
             elif arg == "logs":
-                shell.collect_logs()
+                result = shell.collect_logs()
             else:
                 print("Error: Invalid argument for collect command.")
+                return
+            if result.messages:
+                print(result.colored())
         except Exception as e:
             print(f"Error collecting data: {e}")
 
@@ -70,5 +73,6 @@ class BasicCommands:
         except Exception as e:
             print(f"Error displaying file: {e}")
 
-    def do_tree(self, arg: str) ->None:
+    def do_tree(self, _arg: str) ->None:
+        """Display directory tree structure."""
         print(shell.tree().colored())

@@ -3,13 +3,12 @@ Utility functions for shell interface.
 
 Miscellaneous utility functions for workarounds, history, diagnostics, etc.
 """
-from typing import Tuple
 
 from ...utils.message import Message
 from ._manager import MANAGER
 
 
-def workaround_preshell() -> tuple[bool, str]:
+def workaround_preshell() -> Message:
     """Execute pre-shell workaround for the current task.
 
     Runs pre-execution workaround code for task preparation. Workarounds
@@ -23,8 +22,7 @@ def workaround_preshell() -> tuple[bool, str]:
         workaround_preshell()  # Execute pre-shell workaround
 
     Returns:
-        tuple[bool, str]: Success flag and message. Returns (False, error_message)
-        if current object is not a task.
+        Message: Message with success/error status and path data.
 
     Note:
         - Current object must be a task
@@ -32,12 +30,20 @@ def workaround_preshell() -> tuple[bool, str]:
         - Runs before task's main shell execution
         - Useful for environment preparation or data staging
     """
+    message = Message()
     if not MANAGER.current_object().is_task():
-        return (False, "Not able to call workaround if you are not in a task.")
-    return MANAGER.current_object().workaround_preshell()
+        message.add("Not able to call workaround if you are not in a task.", "error")
+        return message
+    status, path = MANAGER.current_object().workaround_preshell()
+    if not status:
+        message.add(path, "error")
+        return message
+    message.add(path, "success")
+    message.data["path"] = path
+    return message
 
 
-def workaround_postshell(path: str) -> None:
+def workaround_postshell(path: str) -> Message:
     """Execute post-shell workaround for the current task.
 
     Runs post-execution workaround code for task cleanup or result
@@ -53,7 +59,7 @@ def workaround_postshell(path: str) -> None:
         workaround_postshell output.csv  # Process output file
 
     Returns:
-        None: Function executes workaround operations.
+        Message: Message with success/error status of the post-shell operation.
 
     Note:
         - Current object must be a task
@@ -61,12 +67,13 @@ def workaround_postshell(path: str) -> None:
         - Runs after task's main shell execution
         - Useful for result processing or cleanup operations
     """
-    print("Working on postshell")
+    message = Message()
     if not MANAGER.current_object().is_task():
-        print("Not able to call workaround if you are not in a task.")
-        return
-    print(MANAGER.current_object())
+        message.add("Not able to call workaround if you are not in a task.", "error")
+        return message
     MANAGER.current_object().workaround_postshell(path)
+    message.add("Post-shell workaround completed", "success")
+    return message
 
 
 def history() -> Message:
@@ -199,7 +206,7 @@ def bookkeep() -> Message:
     return MANAGER.root_object().bookkeep()
 
 
-def bookkeep_url() -> str:
+def bookkeep_url() -> Message:
     """Get the bookkeep URL.
 
     Retrieves the URL or path where bookkeeping information and reports
@@ -214,7 +221,7 @@ def bookkeep_url() -> str:
         print(f"Bookkeeping at: {bookkeep_url()}")  # Display URL
 
     Returns:
-        str: URL or file path for accessing bookkeeping information.
+        Message: Message containing the bookkeeping URL or file path.
 
     Note:
         - Returns project-level bookkeeping location
@@ -222,16 +229,22 @@ def bookkeep_url() -> str:
         - Location depends on project configuration
         - Used for accessing detailed bookkeeping reports
     """
-    return MANAGER.root_object().bookkeep_url()
+    message = Message()
+    url = MANAGER.root_object().bookkeep_url()
+    message.add(url, "normal")
+    message.data["url"] = url
+    return message
 
 
-def tree(depth: int = -1) -> Message:
+def tree(_depth: int = -1) -> Message:
     """Get the directory tree.
 
-    Displays the filesystem tree structure of the current object's directory, showing files and subdirectories with optional depth limitation.
+    Displays the filesystem tree structure of the current object's directory,
+    showing files and subdirectories with optional depth limitation.
 
     Args:
-        depth (int, optional): Maximum depth to display. -1 shows unlimited depth (entire tree). Defaults to -1.
+        depth (int, optional): Maximum depth to display. -1 shows unlimited
+            depth (entire tree). Defaults to -1.
 
     Examples:
         tree()      # Show complete directory tree
@@ -239,7 +252,8 @@ def tree(depth: int = -1) -> Message:
         tree(0)     # Show only current directory
 
     Returns:
-        Message: Formatted tree structure showing directory hierarchy, file names, and optionally file metadata.
+        Message: Formatted tree structure showing directory hierarchy,
+            file names, and optionally file metadata.
 
     Note:
         - Depth -1 shows unlimited recursion
@@ -280,7 +294,7 @@ def error_log(index: int) -> Message:
     return MANAGER.current_object().error_log(index)
 
 
-def danger_call(cmd: str) -> None:
+def danger_call(cmd: str) -> Message:
     """Execute a dangerous command and print the result.
 
     Executes a shell command within the context of the current object,
@@ -296,7 +310,7 @@ def danger_call(cmd: str) -> None:
         danger_call "pwd"     # Print working directory
 
     Returns:
-        None: Command output is printed to console with coloring.
+        Message: Command output message with color coding.
 
     Note:
         - Commands execute in object's context with its permissions
@@ -305,4 +319,4 @@ def danger_call(cmd: str) -> None:
         - Intended for debugging and advanced operations only
     """
     message = MANAGER.current_object().danger_call(cmd)
-    print(message.colored())
+    return message

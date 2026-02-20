@@ -19,7 +19,9 @@ class EnvironmentCommands:
         """Set environment for current object."""
         try:
             environment = arg.split()[0]
-            shell.set_environment(environment)
+            result = shell.set_environment(environment)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide an environment name. {e}")
         except Exception as e:
@@ -29,7 +31,9 @@ class EnvironmentCommands:
         """Set environment for current object (alias for set-environment)."""
         try:
             environment = arg.split()[0]
-            shell.set_environment(environment)
+            result = shell.set_environment(environment)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide an environment name. {e}")
         except Exception as e:
@@ -39,7 +43,9 @@ class EnvironmentCommands:
         """Set memory limit for current object."""
         try:
             memory_limit = arg.split()[0]
-            shell.set_memory_limit(memory_limit)
+            result = shell.set_memory_limit(memory_limit)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide a memory limit. {e}")
         except Exception as e:
@@ -79,7 +85,9 @@ class EnvironmentCommands:
         """Request a runner for current object."""
         try:
             runner = arg.split()[0]
-            shell.request_runner(runner)
+            result = shell.request_runner(runner)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide a runner name. {e}")
         except Exception as e:
@@ -88,18 +96,22 @@ class EnvironmentCommands:
     def do_config(self, _: str) -> None:
         """Edit configuration."""
         try:
-            shell.config()
+            result = shell.config()
+            if result.messages:
+                print(result.colored())
         except Exception as e:
             print(f"Error accessing config: {e}")
 
     def do_submit(self, arg: str) -> None:
         """Submit current object."""
         try:
-            if arg == "":
-                shell.submit()
+            if not arg:
+                result = shell.submit()
             else:
                 obj = arg.split()[0]
-                shell.submit(obj)
+                result = shell.submit(obj)
+            if result.messages:
+                print(result.colored())
         except Exception as e:
             print(f"Error submitting: {e}")
 
@@ -111,7 +123,9 @@ class EnvironmentCommands:
             if answer.lower() != 'y':
                 print("Purge impressions cancelled.")
                 return
-            shell.purge()
+            result = shell.purge()
+            if result.messages:
+                print(result.colored())
         except Exception as e:
             print(f"Error purge: {e}")
 
@@ -123,7 +137,9 @@ class EnvironmentCommands:
             if answer.lower() != 'y':
                 print("Purge old impressions cancelled.")
                 return
-            shell.purge_old_impressions()
+            result = shell.purge_old_impressions()
+            if result.messages:
+                print(result.colored())
         except Exception as e:
             print(f"Error purging old impressions: {e}")
 
@@ -165,8 +181,9 @@ class EnvironmentCommands:
             backend_type = input("Enter backend type [optional]: ").strip() \
                     or defaults['backend_type']
 
-            shell.register_runner(runner, url, secret, backend_type)
-            print(f"--> Registered {runner} to {url}")
+            result = shell.register_runner(runner, url, secret, backend_type)
+            if result.messages:
+                print(result.colored())
 
         except EOFError:
             print("\nOperation cancelled.")
@@ -177,7 +194,9 @@ class EnvironmentCommands:
         """Remove a runner."""
         try:
             obj = arg.split()[0]
-            shell.remove_runner(obj)
+            result = shell.remove_runner(obj)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide a runner name. {e}")
         except Exception as e:

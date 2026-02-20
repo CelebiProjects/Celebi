@@ -2,8 +2,8 @@
 Color utilities for CelebiChrono
 Combines color functionality from csys.py and pretty.py
 """
-from colored import fg, attr
 from typing import Any
+from colored import fg, attr
 
 
 def colorize(string: str, color: str = "") -> str:
@@ -32,7 +32,7 @@ def colorize(string: str, color: str = "") -> str:
         "title0": fg("red") + attr("bold") + string + attr("reset")
     }
 
-    if color == "":
+    if not color:
         # Automatic detection from pretty.py
         possible_status = {
             "success": ["success", "done", "pass", "connected", "ok", "good", "ready",

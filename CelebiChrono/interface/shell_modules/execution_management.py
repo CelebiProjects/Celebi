@@ -36,7 +36,7 @@ def submit(runner: str = "local") -> Message:
     return message
 
 
-def purge() -> None:
+def purge() -> Message:
     """Purge temporary files and cleanup current object.
 
     Removes temporary files, cache data, and other non-essential artifacts
@@ -50,7 +50,7 @@ def purge() -> None:
         purge()  # Clean up temporary files for current object
 
     Returns:
-        None: Function executes cleanup and prints confirmation message.
+        Message containing cleanup confirmation and details about purged data.
 
     Note:
         The exact behavior depends on the object type.
@@ -58,10 +58,10 @@ def purge() -> None:
         Use with caution as purged data cannot be recovered.
     """
     message = MANAGER.current_object().purge()
-    print(message.colored())
+    return message
 
 
-def purge_old_impressions() -> None:
+def purge_old_impressions() -> Message:
     """Purge old impression data from current object.
 
     Removes historical impression data that is no longer needed, preserving
@@ -75,7 +75,7 @@ def purge_old_impressions() -> None:
         purge_old_impressions()  # Remove outdated impressions
 
     Returns:
-        None: Function executes cleanup and prints confirmation message.
+        Message containing cleanup confirmation and details about purged impressions.
 
     Note:
         The age threshold for 'old' impressions is configurable.
@@ -83,7 +83,7 @@ def purge_old_impressions() -> None:
         Helps manage storage usage for long-running projects.
     """
     message = MANAGER.current_object().purge_old_impressions()
-    print(message.colored())
+    return message
 
 
 def collect(contents: str = "all") -> Message:
@@ -109,14 +109,17 @@ def collect(contents: str = "all") -> Message:
         - The current object must be a task
         - Task must have been submitted and completed
         - Collection may download files from remote runners
-        - Convenience functions: `collect_outputs()` for only outputs, `collect_logs()` for only logs
+        - Convenience functions: `collect_outputs()` for only outputs,
+          `collect_logs()` for only logs
     """
     # Validate contents parameter
     valid_contents = {"all", "outputs", "logs"}
     if contents not in valid_contents:
         print(f"Error: contents must be one of {sorted(valid_contents)}, got '{contents}'")
         # Return an error message instead of raising exception to maintain API consistency
-        return Message(f"Invalid contents parameter: '{contents}'", is_error=True)
+        msg = Message()
+        msg.add(f"Invalid contents parameter: '{contents}'", "error")
+        return msg
 
     return MANAGER.current_object().collect(contents)
 
@@ -160,7 +163,8 @@ def collect_logs() -> Message:
         - The current object must be a task
         - Task must have been submitted and completed
         - Log files are downloaded from the runner to local storage
-        - Related functions: `collect()` for both outputs and logs, `collect_outputs()` for only outputs
+        - Related functions: `collect()` for both outputs and logs,
+          `collect_outputs()` for only outputs
     """
     return MANAGER.current_object().collect("logs")
 

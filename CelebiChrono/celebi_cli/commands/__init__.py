@@ -1,0 +1,1 @@
+"""Celebi CLI commands package."""

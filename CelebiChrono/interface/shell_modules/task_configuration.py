@@ -5,15 +5,14 @@ Functions for configuring tasks and algorithms: inputs, parameters, environment,
 """
 import os
 import subprocess
-from typing import Tuple
 
-from ...utils import csys
 from ...kernel.vobject import VObject
 from ...utils import metadata
+from ...utils.message import Message
 from ._manager import MANAGER
 
 
-def jobs(_: str) -> None:
+def jobs(_: str) -> Message:
     """Display job information for current algorithm or task.
 
     Shows execution jobs associated with the current algorithm or task object.
@@ -25,7 +24,7 @@ def jobs(_: str) -> None:
         _ (str): Unused parameter (maintained for interface consistency).
 
     Returns:
-        None: Job information is printed to console, or error message displayed
+        Message: Message with job information or error message.
 
     Examples:
         jobs          # Show jobs for current algorithm/task
@@ -37,14 +36,16 @@ def jobs(_: str) -> None:
         - Jobs can be in states: pending, running, completed, failed
         - Use this command to monitor execution progress
     """
+    message = Message()
     object_type = MANAGER.current_object().object_type()
     if object_type not in ("algorithm", "task"):
-        print("Not able to found job")
-        return
+        message.add("Not able to found job", "error")
+        return message
     MANAGER.current_object().jobs()
+    return message
 
 
-def status():
+def status() -> Message:
     """Display status information for the current Celebi object.
 
     Shows comprehensive status information including object type, metadata,
@@ -52,7 +53,7 @@ def status():
     the object's current condition and readiness for operations.
 
     Returns:
-        str: Formatted status information as a string
+        Message: Message containing formatted status information.
 
     Examples:
         status()      # Show status of current object
@@ -65,10 +66,13 @@ def status():
         - For data objects: shows size, format, metadata
         - For directories: shows contents and structure
     """
-    return MANAGER.current_object().printed_status()
+    message = Message()
+    result = MANAGER.current_object().printed_status()
+    message.add(str(result), "normal")
+    return message
 
 
-def add_input(path: str, alias: str) -> None:
+def add_input(path: str, alias: str) -> Message:  # pylint: disable=too-many-branches
     """Add an input to the current task or algorithm.
 
     Links an existing object (data, task output, or algorithm) as an input
@@ -79,6 +83,9 @@ def add_input(path: str, alias: str) -> None:
         path (str): Path to the object to add as input.
         alias (str): Name to reference this input within the task/algorithm.
 
+    Returns:
+        Message: Message with status information or error messages.
+
     Examples:
         add-input data/file.txt input_data  # Add file as input with alias
         add-input @/tasks/prev/output result  # Add task output as input
@@ -88,6 +95,7 @@ def add_input(path: str, alias: str) -> None:
         - Input objects must exist within the project
         - Aliases must be unique within the task/algorithm
     """
+    message = Message()
     if MANAGER.current_object().object_type() == "directory":
         destination_path = MANAGER.current_object().relative_path(path)
         dest_obj = VObject(os.path.join(MANAGER.current_object().path, destination_path))
@@ -103,41 +111,42 @@ def add_input(path: str, alias: str) -> None:
             dest_sub_objects = dest_obj.sub_objects()
             sub_objects = MANAGER.current_object().sub_objects()
             if len(dest_sub_objects) != len(sub_objects):
-                print("The number of sub-objects does not match.")
-                return
+                message.add("The number of sub-objects does not match.", "error")
+                return message
             # Check whether the sub-objects name ends with _<index>
             # By getting the _<index> and check whether <index> is a digit
             for obj in sub_objects:
                 ending = obj.path.split("_")[-1]
                 if not ending.isdigit():
-                    print("The sub-objects are not in indexed format.")
-                    return
+                    message.add("The sub-objects are not in indexed format.", "error")
+                    return message
             for dest_obj in sub_objects:
                 ending = dest_obj.path.split("_")[-1]
                 if not ending.isdigit():
-                    print("The dest-sub-objects are not in indexed format.")
-                    return
+                    message.add("The dest-sub-objects are not in indexed format.", "error")
+                    return message
             # Sort both lists by the index
             sub_objects.sort(key=lambda x: int(x.path.split("_")[-1]))
             dest_sub_objects.sort(key=lambda x: int(x.path.split("_")[-1]))
             length = len(sub_objects)
             for obj, dest_obj in zip(sub_objects, dest_sub_objects):
                 if obj.path.split("_")[-1] != dest_obj.path.split("_")[-1]:
-                    print("The sub-objects are not aligned.")
-                    return
+                    message.add("The sub-objects are not aligned.", "error")
+                    return message
                 obj_path = MANAGER.current_object().relative_path(obj.path)
                 task = MANAGER.sub_object(obj_path)
                 task.add_input(dest_obj.path, alias)
-                if length > 100 and int(dest_obj.path.split("_")[-1]) % (length // 10) == 0:
-                    print(f"Progress: {int(dest_obj.path.split('_')[-1])}/{length}")
-        return
+                if length > 100 and not int(dest_obj.path.split("_")[-1]) % (length // 10):
+                    message.add(f"Progress: {int(dest_obj.path.split('_')[-1])}/{length}\n", "info")
+        return message
     if MANAGER.current_object().object_type() not in ("task", "algorithm"):
-        print("Unable to call add_input if you are not in a task or algorithm.")
-        return
+        message.add("Unable to call add_input if you are not in a task or algorithm.", "error")
+        return message
     MANAGER.current_object().add_input(path, alias)
+    return message
 
 
-def add_algorithm(path: str) -> None:
+def add_algorithm(path: str) -> Message:
     """Add an algorithm to the current task.
 
     Links an existing algorithm object to the current task for execution.
@@ -148,7 +157,7 @@ def add_algorithm(path: str) -> None:
         path (str): Path to the algorithm object to add.
 
     Returns:
-        None: Algorithm is added to current task, or error message printed to console
+        Message: Message with status information or error messages.
 
     Examples:
         add_algorithm @/algorithms/process_data  # Add algorithm from project path
@@ -160,6 +169,7 @@ def add_algorithm(path: str) -> None:
         - Tasks can have multiple algorithms for sequential execution
         - Algorithms are referenced by their object path within the task
     """
+    message = Message()
     if MANAGER.current_object().object_type() == "directory":
         sub_objects = MANAGER.current_object().sub_objects()
         for obj in sub_objects:
@@ -168,14 +178,15 @@ def add_algorithm(path: str) -> None:
             obj_path = MANAGER.current_object().relative_path(obj.path)
             task = MANAGER.sub_object(obj_path)
             task.add_algorithm(path)
-        return
+        return message
     if MANAGER.current_object().object_type() != "task":
-        print("Unable to call add_algorithm if you are not in a task.")
-        return
+        message.add("Unable to call add_algorithm if you are not in a task.", "error")
+        return message
     MANAGER.current_object().add_algorithm(path)
+    return message
 
 
-def add_parameter(par: str, value: str) -> None:
+def add_parameter(par: str, value: str) -> Message:
     """Add a parameter to the current task.
 
     Defines execution parameters for the current task. Parameters are
@@ -188,7 +199,7 @@ def add_parameter(par: str, value: str) -> None:
         value (str): Parameter value.
 
     Returns:
-        None: Parameter is added to current task, or error message printed to console
+        Message: Message with status information or error messages.
 
     Examples:
         add_parameter batch_size 32        # Add numeric parameter
@@ -202,6 +213,7 @@ def add_parameter(par: str, value: str) -> None:
         - Parameters are passed to algorithms during execution
         - Use set_environment for environment variables instead
     """
+    message = Message()
     if MANAGER.current_object().object_type() == "directory":
         sub_objects = MANAGER.current_object().sub_objects()
         for obj in sub_objects:
@@ -210,14 +222,15 @@ def add_parameter(par: str, value: str) -> None:
             obj_path = MANAGER.current_object().relative_path(obj.path)
             task = MANAGER.sub_object(obj_path)
             task.add_parameter(par, value)
-        return
+        return message
     if MANAGER.current_object().object_type() != "task":
-        print("Unable to call add_input if you are not in a task.")
-        return
+        message.add("Unable to call add_input if you are not in a task.", "error")
+        return message
     MANAGER.current_object().add_parameter(par, value)
+    return message
 
 
-def add_parameter_subtask(dirname: str, par: str, value: str) -> None:
+def add_parameter_subtask(dirname: str, par: str, value: str) -> Message:
     """Add a parameter to a specific subtask within a directory.
 
     Defines execution parameters for a specific task within a directory
@@ -230,7 +243,7 @@ def add_parameter_subtask(dirname: str, par: str, value: str) -> None:
         value (str): Parameter value.
 
     Returns:
-        None: Parameter is added to specified task, or error message printed to console
+        Message: Message with status information or error messages.
 
     Examples:
         add_parameter_subtask task_1 batch_size 32        # Add to task_1
@@ -243,17 +256,19 @@ def add_parameter_subtask(dirname: str, par: str, value: str) -> None:
         - Directory tasks should follow indexed naming (task_1, task_2, etc.)
         - Parameters are applied to the specific task, not all tasks in directory
     """
+    message = Message()
     if MANAGER.current_object().object_type() not in ("directory", "project"):
-        print("Unable to call add_parameter_subtask if you are not in a dir")
-        return
+        message.add("Unable to call add_parameter_subtask if you are not in a dir", "error")
+        return message
     obj = MANAGER.sub_object(dirname)
     if not obj.is_task():
-        print("Unable to call add_parameter if you are not in a task.")
-        return
+        message.add("Unable to call add_parameter if you are not in a task.", "error")
+        return message
     obj.add_parameter(par, value)
+    return message
 
 
-def set_environment(env: str) -> None:
+def set_environment(env: str) -> Message:
     """Set execution environment for the current task.
 
     Configures the computational environment for task execution. Environment
@@ -264,7 +279,7 @@ def set_environment(env: str) -> None:
         env (str): Environment specification string.
 
     Returns:
-        None: Environment is set for current task, or error message printed to console
+        Message: Message with status information or error messages.
 
     Examples:
         set_environment "python=3.8"          # Set Python version
@@ -278,6 +293,7 @@ def set_environment(env: str) -> None:
         - Environment affects algorithm execution and resource availability
         - Use add_parameter for task-specific parameters instead
     """
+    message = Message()
     if MANAGER.current_object().object_type() == "directory":
         sub_objects = MANAGER.current_object().sub_objects()
         for obj in sub_objects:
@@ -286,14 +302,15 @@ def set_environment(env: str) -> None:
             obj_path = MANAGER.current_object().relative_path(obj.path)
             task = MANAGER.sub_object(obj_path)
             task.set_environment(env)
-        return
+        return message
     if MANAGER.current_object().object_type() != "task":
-        print("Unable to call set_environment if you are not in a task.")
-        return
+        message.add("Unable to call set_environment if you are not in a task.", "error")
+        return message
     MANAGER.current_object().set_environment(env)
+    return message
 
 
-def set_memory_limit(limit: str) -> None:
+def set_memory_limit(limit: str) -> Message:
     """Set memory allocation limit for the current task.
 
     Configures the maximum memory (RAM) that can be used by task execution.
@@ -304,7 +321,7 @@ def set_memory_limit(limit: str) -> None:
         limit (str): Memory limit specification (e.g., "4G", "512M", "2GB").
 
     Returns:
-        None: Memory limit is set for current task, or error message printed to console
+        Message: Message with status information or error messages.
 
     Examples:
         set_memory_limit "4G"        # Set 4 gigabyte limit
@@ -318,6 +335,7 @@ def set_memory_limit(limit: str) -> None:
         - Exceeding the limit may cause task termination
         - Default limits may be configured at project or system level
     """
+    message = Message()
     if MANAGER.current_object().object_type() == "directory":
         sub_objects = MANAGER.current_object().sub_objects()
         for obj in sub_objects:
@@ -326,14 +344,15 @@ def set_memory_limit(limit: str) -> None:
             obj_path = MANAGER.current_object().relative_path(obj.path)
             task = MANAGER.sub_object(obj_path)
             task.set_memory_limit(limit)
-        return
+        return message
     if MANAGER.current_object().object_type() != "task":
-        print("Unable to call set_memory_limit if you are not in a task.")
-        return
+        message.add("Unable to call set_memory_limit if you are not in a task.", "error")
+        return message
     MANAGER.current_object().set_memory_limit(limit)
+    return message
 
 
-def rm_parameter(par: str) -> None:
+def rm_parameter(par: str) -> Message:
     """Remove a parameter from the current task.
 
     Deletes a previously defined parameter from the task configuration.
@@ -344,7 +363,7 @@ def rm_parameter(par: str) -> None:
         par (str): Parameter name to remove.
 
     Returns:
-        None: Parameter is removed from current task, or error message printed to console
+        Message: Message with status information or error messages.
 
     Examples:
         rm_parameter batch_size        # Remove batch_size parameter
@@ -357,13 +376,15 @@ def rm_parameter(par: str) -> None:
         - Use add_parameter to define new parameters
         - Parameter removal affects future executions, not running jobs
     """
+    message = Message()
     if MANAGER.current_object().object_type() != "task":
-        print("Unable to call remove_parameter if you are not in a task.")
-        return
+        message.add("Unable to call remove_parameter if you are not in a task.", "error")
+        return message
     MANAGER.current_object().remove_parameter(par)
+    return message
 
 
-def remove_input(alias: str) -> None:
+def remove_input(alias: str) -> Message:
     """Remove an input from the current task or algorithm.
 
     Deletes a previously defined input reference from the task or algorithm
@@ -374,7 +395,7 @@ def remove_input(alias: str) -> None:
         alias (str): Input alias to remove.
 
     Returns:
-        None: Input is removed from current object, or error message printed to console
+        Message: Message with status information or error messages.
 
     Examples:
         remove_input data_file        # Remove input with alias 'data_file'
@@ -388,6 +409,7 @@ def remove_input(alias: str) -> None:
         - Input removal affects future executions, not running jobs
         - The underlying data object is not deleted, only the reference
     """
+    message = Message()
     if MANAGER.current_object().object_type() == "directory":
         sub_objects = MANAGER.current_object().sub_objects()
         for obj in sub_objects:
@@ -396,14 +418,15 @@ def remove_input(alias: str) -> None:
             obj_path = MANAGER.current_object().relative_path(obj.path)
             task = MANAGER.sub_object(obj_path)
             task.remove_input(alias)
-        return
+        return message
     if not MANAGER.current_object().is_task_or_algorithm():
-        print("Unable to call remove_input if you are not in a task.")
-        return
+        message.add("Unable to call remove_input if you are not in a task.", "error")
+        return message
     MANAGER.current_object().remove_input(alias)
+    return message
 
 
-def get_script_path(filename: str) -> Tuple[bool, str]:
+def get_script_path(filename: str) -> Message:
     """Get the script path for a algorithm or a task object.
 
     Resolves a filename to its full filesystem path within the context of
@@ -420,8 +443,7 @@ def get_script_path(filename: str) -> Tuple[bool, str]:
         get_script_path("code:utils.py")  # Alternative prefix syntax
 
     Returns:
-        Tuple[bool, str]: Success flag and resolved path. Returns (False, error_message)
-        if current object is not a task or algorithm.
+        Message: Message containing resolved path in data["path"], or error message.
 
     Note:
         - Current object must be a task or algorithm
@@ -429,20 +451,34 @@ def get_script_path(filename: str) -> Tuple[bool, str]:
         - Returns absolute filesystem path
         - Useful for script execution or file operations
     """
+    message = Message()
     if not MANAGER.current_object().is_task_or_algorithm():
-        return False, "Not able to get script path if you are not in a task or algorithm."
+        message.add("Not able to get script path if you are not in a task or algorithm.", "error")
+        return message
     if MANAGER.current_object().object_type() == "task":
         if filename.startswith("code/"):
             algorithm = MANAGER.current_object().algorithm()
-            return True, f"{algorithm.path}/{filename[5:]}"
+            path = f"{algorithm.path}/{filename[5:]}"
+            message.add(path, "normal")
+            message.data["path"] = path
+            return message
         if filename.startswith("code:"):
             algorithm = MANAGER.current_object().algorithm()
-            return True, f"{algorithm.path}/{filename[5:]}"
-        return True, f"{MANAGER.current_object().path}/{filename}"
-    return True, f"{MANAGER.current_object().path}/{filename}"
+            path = f"{algorithm.path}/{filename[5:]}"
+            message.add(path, "normal")
+            message.data["path"] = path
+            return message
+        path = f"{MANAGER.current_object().path}/{filename}"
+        message.add(path, "normal")
+        message.data["path"] = path
+        return message
+    path = f"{MANAGER.current_object().path}/{filename}"
+    message.add(path, "normal")
+    message.data["path"] = path
+    return message
 
 
-def config() -> None:
+def config() -> Message:
     """Edit configuration for current task or algorithm.
 
     Opens the configuration file (celebi.yaml) for the current task or
@@ -456,7 +492,7 @@ def config() -> None:
         config()  # Edit configuration for current object
 
     Returns:
-        None: Function opens editor with configuration file.
+        Message: Message with status information or error message.
 
     Note:
         - Current object must be a task or algorithm
@@ -464,9 +500,10 @@ def config() -> None:
         - Creates template with appropriate defaults for object type
         - Configuration changes affect object behavior and execution
     """
+    message = Message()
     if not MANAGER.current_object().is_task_or_algorithm():
-        print("Not able to config")
-        return
+        message.add("Not able to config", "error")
+        return message
     path = os.path.join(os.environ["HOME"], ".celebi", "config.yaml")
     yaml_file = metadata.YamlFile(path)
     editor = yaml_file.read_variable("editor", "vi")
@@ -484,3 +521,4 @@ parameters: {{}}""")
 commands:
   - echo 'Hello, world!'""")
     subprocess.call([editor, f"{MANAGER.current_object().path}/celebi.yaml"])
+    return message

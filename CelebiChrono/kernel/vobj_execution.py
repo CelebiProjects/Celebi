@@ -265,6 +265,7 @@ class ExecutionManagement(Core):
         self.get_vtask(self.path).remove_parameter(parameter)
 
     def docker_test(self) -> Message:
+        """Run docker test for the object."""
         print("Running docker test... in object")
         if not self.is_task():
             msg = Message()
@@ -300,11 +301,10 @@ class ExecutionManagement(Core):
             msg = Message()
             msg.add(f"Results of task {self.path} collected.", "info")
             return msg
-        else:
-            # It's an algorithm
-            msg = Message()
-            msg.add(f"Algorithm {self.path} doesn't have results to collect.", "info")
-            return msg
+        # It's an algorithm
+        msg = Message()
+        msg.add(f"Algorithm {self.path} doesn't have results to collect.", "info")
+        return msg
 
     def homekeep(self) -> Message:
         """Clean the runner workflow"""

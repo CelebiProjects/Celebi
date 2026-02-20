@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Tuple, List
 from ..utils import csys
 from ..utils.message import Message
 from ..utils.csys import colorize_diff
-from ..utils import metadata
 from .vobj_core import Core
 from .chern_cache import ChernCache
 
@@ -21,7 +20,7 @@ CHERN_CACHE = ChernCache.instance()
 logger = getLogger("ChernLogger")
 
 
-class FileManagementOperations(Core):  # pylint: disable=too-many-public-methods
+class FileManagementOperations(Core):
     """ File operations methods for file management.
     """
     def copy_to_check(self, new_path: str) -> Tuple[bool, str]:  # UnitTest: DONE

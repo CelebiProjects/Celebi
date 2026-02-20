@@ -3,7 +3,7 @@ Navigation Command Handlers for Chern Shell.
 
 This module contains command handlers for navigation operations.
 """
-# pylint: disable=broad-exception-caught,no-member,import-outside-toplevel
+# pylint: disable=broad-exception-caught,import-outside-toplevel
 import os
 from ...interface import shell
 from ...interface.ChernManager import get_manager
@@ -19,7 +19,9 @@ class NavigationCommands:
         """Switch project."""
         try:
             project = arg.split()[0]
-            shell.cd_project(project)
+            result = shell.cd_project(project)
+            if result.messages:
+                print(result.colored())
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide a project name. {e}")
 
@@ -28,7 +30,10 @@ class NavigationCommands:
         try:
             from ...utils import csys
             myobject = arg.split()[0]
-            shell.cd(myobject)
+            result = shell.cd(myobject)
+            if not result.success:
+                print(result.colored())
+                return
             current_project_name = MANAGER.get_current_project()
             current_path = os.path.relpath(
                 MANAGER.c.path, csys.project_path(MANAGER.c.path)

@@ -1,11 +1,9 @@
 """ JobManager class for managing tasks
 """
 import os
-
-from CelebiChrono.utils.file_utils import temp_dir
-from ..utils.container_manager import ContainerManager
 from logging import getLogger
 
+from ..utils.container_manager import ContainerManager
 from .chern_communicator import ChernCommunicator
 from ..utils import csys
 from ..utils.message import Message
@@ -15,6 +13,7 @@ logger = getLogger("ChernLogger")
 
 
 class JobManager(Core):
+    """Job management for task execution and Docker container orchestration."""
 
     def docker_test(self) -> Message:
         """
@@ -29,12 +28,14 @@ class JobManager(Core):
         """
         print("Starting docker test...")
         success, mount_config = self.pre_docker_test()
-        print(f"Pre-docker test preparation result: success={success}, mount_config={mount_config}")
+        print(f"Pre-docker test preparation result: success={success}, "
+              f"mount_config={mount_config}")
         if not success:
             return False, f"Pre-docker test preparation failed: {mount_config}"
 
         memory_limit = self.memory_limit()
-        # Change the format of memory limit to be compatible with Docker (e.g., "1g" instead of "1024Mi")
+        # Change the format of memory limit to be compatible with Docker
+        # (e.g., "1g" instead of "1024Mi")
         if memory_limit.endswith("Mi"):
             memory_limit = str(int(memory_limit[:-2]) // 1024) + "g"
         elif memory_limit.endswith("Gi"):
@@ -44,9 +45,10 @@ class JobManager(Core):
         # Initialize the ContainerManager with the prepared mount configuration
         # Mount the base as /workspace
         volumes = {mount_config["base_dir"]: {'bind': '/workspace', 'mode': 'rw'}}
-        # Add the additional mounts for preceding jobs and algorithm code        for entry in mount_config["mounts"]:
+        # Add the additional mounts for preceding jobs and algorithm code
         for entry in mount_config["mounts"]:
-            volumes[entry["source"]] = {'bind': entry["target"], 'mode': 'ro' if entry["readonly"] else 'rw'}
+            volumes[entry["source"]] = {'bind': entry["target"],
+                                         'mode': 'ro' if entry["readonly"] else 'rw'}
         container_manager = ContainerManager(
             image=self.environment(),
             volumes=volumes,
@@ -59,18 +61,21 @@ class JobManager(Core):
             # Parse the commands, and replace any placeholders with actual values if needed
             parameters = self.parameters()
             if parameters:
-                # Example: Parameters for command execution: (['events'], {'events': '20000'})
-                # Here you can implement any logic to replace placeholders in commands with actual parameter values
-                # For example, if your command has a placeholder like {param1}, you can replace it with parameters['param1']
+                # Example: Parameters for command execution:
+                # (['events'], {'events': '20000'})
+                # Here you can implement any logic to replace placeholders
+                # in commands with actual parameter values
+                # For example, if your command has a placeholder like {param1},
+                # you can replace it with parameters['param1']
                 for key, value in parameters[1].items():
                     commands = [cmd.replace(f"${{{key}}}", str(value)) for cmd in commands]
-                # Commands after parameter substitution: ['root -b -q \'code/gendata.C(20000,"stageout/data.root")\'']
+                # Commands after parameter substitution:
+                # ['root -b -q \'code/gendata.C(20000,"stageout/data.root")\'']
             commands = " && ".join(commands)  # Join commands with '&&' to execute them sequentially
             # Insert a mkdir -p /workspace/stageout command to ensure the stageout directory exists
             commands = f"mkdir -p /workspace/stageout && {commands}"
             print(f"Final command to execute in container: {commands}")
             commands = ["/bin/bash", "-c", commands]  # Execute the commands in a bash shell
-            
             container_manager.start_container(commands=commands)
             for log in container_manager.logs():
                 print(log)  # Stream logs to the console
@@ -78,7 +83,6 @@ class JobManager(Core):
             return True, "Docker test executed successfully."
         except RuntimeError as e:
             return False, f"Docker test failed: {e}"
-    """ JobManager class for managing tasks"""
 
     def kill(self):
         """ Kill the task
@@ -264,7 +268,7 @@ class JobManager(Core):
                 os.path.join(temp_dir, "code", alias),
             )
 
-    # pylint: disable=too-many-locals,too-many-branches
+    # pylint: disable=too-many-locals
     def workaround_preshell(self) -> tuple[bool, str]:
         """ Pre-shell workaround"""
         print("Start constructing workaround environment...")
@@ -302,7 +306,10 @@ class JobManager(Core):
         temp_dir = csys.create_temp_dir(prefix="chernwd_")
         self._prepare_data_dir(temp_dir)
 
-        # The temp_dir will be mounted to the container as the workspace, and the preceding jobs and algorithm code will be mounted to the corresponding paths under the workspace. The container can access the data through these mounts, without needing to know the details of how they are prepared.
+        # The temp_dir will be mounted to the container as the workspace, and the preceding jobs
+        # and algorithm code will be mounted to the corresponding paths under the workspace.
+        # The container can access the data through these mounts, without needing to know
+        # the details of how they are prepared.
         mount_config = {
             "base_dir": temp_dir,
             "mounts": []
@@ -313,7 +320,7 @@ class JobManager(Core):
 
         return True, mount_config
 
-    def _prepare_mounting_preceding_jobs(self, cherncc, temp_dir, mount_config):
+    def _prepare_mounting_preceding_jobs(self, cherncc, _temp_dir, mount_config):
         """Prepare the preceding jobs for mounting - generates mount guidance"""
         for pre in self.inputs():
             pre_temp_dir = csys.temp_dir(name=pre.impression().uuid, prefix="chernimp_")
@@ -339,7 +346,7 @@ class JobManager(Core):
                 "description": f"Preceding job {pre}"
             })
 
-    def _prepare_mounting_algorithm_code(self, temp_dir, mount_config):
+    def _prepare_mounting_algorithm_code(self, _temp_dir, mount_config):
         """Prepare the algorithm code for mounting - generates mount guidance"""
         algorithm = self.algorithm()
         if not algorithm:
@@ -372,9 +379,11 @@ class JobManager(Core):
             lambda x: (x.object_type() == "algorithm"), algorithm.predecessors()
             )
         for alg_in in list(map(lambda x: self.get_task(x.path), alg_inputs)):
-            alg_in_temp_dir = csys.temp_dir(name=alg_in.impression().uuid, prefix="chernimp_")
+            alg_in_temp_dir = csys.temp_dir(
+                name=alg_in.impression().uuid, prefix="chernimp_")
             if not os.path.exists(alg_in_temp_dir):
-                alg_in_temp_dir = csys.create_temp_dir(name=alg_in.impression().uuid, prefix="chernimp_")
+                alg_in_temp_dir = csys.create_temp_dir(
+                    name=alg_in.impression().uuid, prefix="chernimp_")
                 alg_in_file_list = csys.tree_excluded(alg_in.path)
                 for dirpath, _, filenames in alg_in_file_list:
                     for f in filenames:

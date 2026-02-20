@@ -1,28 +1,29 @@
-import click
+"""Communication commands for Celebi CLI."""
 import sys
+from typing import Optional, Any
+import click
 from CelebiChrono.celebi_cli.utils import format_output
 
 
-def _handle_result(result):
+def _handle_result(result: Optional[Any]) -> None:
     """Handle result from shell function."""
     output = format_output(result)
     if output:
         print(output)
 
 
-def _handle_error(error):
+def _handle_error(error: str) -> None:
     """Handle error from shell function."""
     print(f"Error: {error}", file=sys.stderr)
     sys.exit(1)
 
 
 @click.command(name="config")
-def config_command():
+def config_command() -> None:
     """Configure settings."""
     try:
         from CelebiChrono.interface.shell import config
-        result = config()
-        _handle_result(result)
+        _handle_result(config())
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
@@ -31,12 +32,11 @@ def config_command():
 
 @click.command(name="danger")
 @click.argument("operation", type=str)
-def danger_command(operation):
+def danger_command(operation: str) -> None:
     """Execute dangerous operation."""
     try:
         from CelebiChrono.interface.shell import danger_call
-        result = danger_call(operation)
-        _handle_result(result)
+        _handle_result(danger_call(operation))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
@@ -44,13 +44,12 @@ def danger_command(operation):
 
 
 @click.command(name="trace")
-@click.argument("object", type=str)
-def trace_command(object):
+@click.argument("obj", type=str)
+def trace_command(obj: str) -> None:
     """Trace object."""
     try:
         from CelebiChrono.interface.shell import trace
-        result = trace(object)
-        _handle_result(result)
+        _handle_result(trace(obj))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
@@ -58,12 +57,11 @@ def trace_command(object):
 
 
 @click.command(name="history")
-def history_command():
+def history_command() -> None:
     """Show history."""
     try:
         from CelebiChrono.interface.shell import history
-        result = history()
-        _handle_result(result)
+        _handle_result(history())
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
@@ -71,7 +69,7 @@ def history_command():
 
 
 @click.command(name="changes")
-def changes_command():
+def changes_command() -> None:
     """Show changes."""
     try:
         from CelebiChrono.interface.shell import changes
@@ -84,7 +82,7 @@ def changes_command():
 
 
 @click.command(name="preshell")
-def preshell_command():
+def preshell_command() -> None:
     """Pre-shell workaround."""
     try:
         from CelebiChrono.interface.shell import workaround_preshell
@@ -98,12 +96,11 @@ def preshell_command():
 
 @click.command(name="postshell")
 @click.argument("command", type=str)
-def postshell_command(command):
+def postshell_command(command: str) -> None:
     """Post-shell workaround."""
     try:
         from CelebiChrono.interface.shell import workaround_postshell
-        result = workaround_postshell(command)
-        _handle_result(result)
+        _handle_result(workaround_postshell(command))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
@@ -111,7 +108,7 @@ def postshell_command(command):
 
 
 @click.command(name="impress")
-def impress_command():
+def impress_command() -> None:
     """Show impression."""
     try:
         from CelebiChrono.interface.shell import impress

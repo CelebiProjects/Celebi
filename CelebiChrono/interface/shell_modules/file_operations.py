@@ -4,7 +4,6 @@ File operations functions for shell interface.
 Functions for moving, copying, listing, removing files and directories.
 """
 import os
-from typing import Optional
 
 from ...utils import csys
 from ...utils.message import Message
@@ -46,34 +45,35 @@ def _normalize_paths(source: str, destination: str) -> tuple[str, str]:
     return source, destination
 
 
-def _validate_copy_operation(source: str, destination: str) -> bool:
-    """Validate if copy operation is allowed. Returns True if valid."""
+def _validate_copy_operation(source: str, destination: str) -> Message:
+    """Validate if copy operation is allowed. Returns Message with errors if invalid."""
+    message = Message()
     # Skip if the destination is outside the project
     if os.path.relpath(destination, csys.project_path()).startswith(".."):
-        print("Destination is outside the project")
-        return False
+        message.add("Destination is outside the project", "error")
+        return message
 
     # Skip the case that the source is the same as the destination
     if source == destination:
-        print("Source is the same as destination")
-        return False
+        message.add("Source is the same as destination", "error")
+        return message
 
     # Skip the case that the destination is a subdirectory of the source
     if not os.path.relpath(destination, source).startswith(".."):
-        print("Destination is a subdirectory of source")
-        return False
+        message.add("Destination is a subdirectory of source", "error")
+        return message
 
     # Skip the case that the destination already exists and is restricted
     if csys.exists(destination):
         dest_obj = VObject(destination)
         if dest_obj.is_task_or_algorithm():
-            print("Destination is a task or algorithm")
-            return False
+            message.add("Destination is a task or algorithm", "error")
+            return message
         if dest_obj.is_zombie():
-            print("Illegal to copy")
-            return False
+            message.add("Illegal to copy", "error")
+            return message
 
-    return True
+    return message
 
 
 def _adjust_destination_path(source: str, destination: str) -> str:
@@ -85,7 +85,7 @@ def _adjust_destination_path(source: str, destination: str) -> str:
     return destination
 
 
-def mv(source: str, destination: str) -> None:
+def mv(source: str, destination: str) -> Message:
     """Move or rename objects within the current project.
 
     Moves or renames Celebi objects (files, directories, tasks, algorithms, etc.)
@@ -99,7 +99,8 @@ def mv(source: str, destination: str) -> None:
             its original name.
 
     Returns:
-        None: Prints error messages to console for invalid operations
+        Message: Message containing error details for invalid operations,
+            or empty message on success.
 
     Examples:
         mv old_name new_name          # Rename object in current directory
@@ -112,24 +113,28 @@ def mv(source: str, destination: str) -> None:
         - Validates that both source and destination are within project bounds
         - BE CAREFUL: Moving critical objects may break dependencies
     """
+    message = Message()
     source, destination = _normalize_paths(source, destination)
     # Initial validation
-    if not _validate_copy_operation(source, destination):
-        return
+    validation = _validate_copy_operation(source, destination)
+    if not validation.success:
+        return validation
 
     # Adjust destination if it's an existing directory
     destination = _adjust_destination_path(source, destination)
 
     # Validate again after path adjustment
-    if not _validate_copy_operation(source, destination):
-        return
+    validation = _validate_copy_operation(source, destination)
+    if not validation.success:
+        return validation
 
     result = VObject(source).move_to(destination)
-    if result.messages:  # If there are error messages
-        print(result.colored())
+    if result.messages:
+        message.append(result)
+    return message
 
 
-def cp(source: str, destination: str) -> None:
+def cp(source: str, destination: str) -> Message:
     """Copy objects within the current project.
 
     Copies Celebi objects (files, directories, tasks, algorithms, etc.)
@@ -143,7 +148,8 @@ def cp(source: str, destination: str) -> None:
             its original name.
 
     Returns:
-        None: Prints error messages to console for invalid operations
+        Message: Message containing error details for invalid operations,
+            or empty message on success.
 
     Examples:
         cp file.txt file_copy.txt        # Copy file with new name
@@ -155,31 +161,35 @@ def cp(source: str, destination: str) -> None:
         - Within tasks or algorithms, uses object-specific copy logic
         - Validates that both source and destination are within project bounds
     """
+    message = Message()
     # Within a task or algorithm, use object-specific copy
     if MANAGER.current_object().object_type() in ("task", "algorithm"):
         MANAGER.current_object().cp(source, destination)
-        return
+        return message
 
     # Normalize paths
     source, destination = _normalize_paths(source, destination)
 
     # Initial validation
-    if not _validate_copy_operation(source, destination):
-        return
+    validation = _validate_copy_operation(source, destination)
+    if not validation.success:
+        return validation
 
     # Adjust destination if it's an existing directory
     destination = _adjust_destination_path(source, destination)
 
     # Validate again after path adjustment
-    if not _validate_copy_operation(source, destination):
-        return
+    validation = _validate_copy_operation(source, destination)
+    if not validation.success:
+        return validation
 
     result = VObject(source).copy_to(destination)
-    if result.messages:  # If there are error messages
-        print(result.colored())
+    if result.messages:
+        message.append(result)
+    return message
 
 
-def ls(*args) -> Optional[Message]:
+def ls(*args) -> Message:  # pylint: disable=too-many-return-statements
     """List the contents of a Celebi object.
 
     Displays the object's structure including sub-objects (projects, tasks,
@@ -193,9 +203,9 @@ def ls(*args) -> Optional[Message]:
               the current project)
 
     Returns:
-        Message | None: Message containing formatted directory listing with object names,
-        types, and metadata, colored for display, or None if the specified path is
-        invalid or outside project bounds.
+        Message: Message containing formatted directory listing with object names,
+        types, and metadata, colored for display. Returns Message with error if
+        the specified path is invalid or outside project bounds.
 
     Examples:
         ls                    # List current object
@@ -204,13 +214,13 @@ def ls(*args) -> Optional[Message]:
 
     Note:
         - Only lists objects within the current project boundary
-        - Returns None for invalid paths or objects outside project
+        - Returns Message with error for invalid paths or objects outside project
         - Uses object-specific ls() method for formatted output
     """
-    if len(args) == 0:
+    if not args:
         # No path provided, list current object
         return MANAGER.current_object().ls()
-    elif len(args) == 1:
+    if len(args) == 1:
         path = args[0]
         # Resolve and validate the path
         path = csys.special_path_string(path)
@@ -222,27 +232,28 @@ def ls(*args) -> Optional[Message]:
         # Check if path is within current project
         try:
             if os.path.relpath(path, csys.project_path()).startswith(".."):
-                # print("[ERROR] Unable to list object outside the current project.")
-                return None
-        except Exception as e:
-            # print(f"[ERROR] Failed to validate path: {e}")
-            return None
+                msg = Message()
+                msg.add("[ERROR] Unable to list object outside the current project.", "error")
+                return msg
+        except Exception as _e:
+            msg = Message()
+            msg.add(f"[ERROR] Failed to validate path: {_e}", "error")
+            return msg
 
         # Check if object exists
         if not csys.exists(path):
-            # print(f"[ERROR] Object not found: {path}")
-            return None
+            msg = Message()
+            msg.add(f"[ERROR] Object not found: {path}", "error")
+            return msg
 
         # Get the object and list it
         try:
             return create_object_instance(path).ls()
-        except Exception as e:
-            # print(f"[ERROR] Failed to list object: {e}")
+        except Exception as _e:
             msg = Message()
-            msg.add(f"Failed to list object: {e}", "error")
+            msg.add(f"Failed to list object: {_e}", "error")
             return msg
     else:
-        # print("[ERROR] ls takes at most one argument (path)")
         msg = Message()
         msg.add("ls takes at most one argument (path)", "error")
         return msg
@@ -280,7 +291,7 @@ def successors() -> Message:
     )
 
 
-def short_ls(_: str) -> None:
+def short_ls(_: str) -> Message:
     """Show short listing of the current object.
 
     Displays a concise summary of the current object's contents, showing only
@@ -290,7 +301,7 @@ def short_ls(_: str) -> None:
         _ (str): Parameter is ignored (maintains command interface consistency)
 
     Returns:
-        None: Output is printed directly to console
+        Message: Empty message after executing short listing.
 
     Examples:
         short_ls("")  # Show short listing of current object (parameter is ignored)
@@ -300,10 +311,12 @@ def short_ls(_: str) -> None:
         - Ignores the input parameter for interface compatibility
         - Useful for quick overviews in interactive sessions
     """
+    message = Message()
     MANAGER.current_object().short_ls()
+    return message
 
 
-def rm(line: str) -> None:
+def rm(line: str) -> Message:
     """Remove objects (files, directories, tasks, algorithms) from the project.
 
     Deletes Celebi objects from the current project. The operation is validated
@@ -314,7 +327,8 @@ def rm(line: str) -> None:
         line (str): Path to the object to remove.
 
     Returns:
-        None: Prints error messages to console for invalid operations
+        Message: Message containing error details for invalid operations,
+            or empty message on success.
 
     Examples:
         rm file.txt              # Remove file
@@ -325,25 +339,27 @@ def rm(line: str) -> None:
         - Cannot remove the current project root
         - Cannot remove objects outside the project boundary
         - Some objects may be protected from deletion
-        - Prints error messages instead of raising exceptions
+        - Returns Message with errors instead of raising exceptions
     """
+    message = Message()
     line = os.path.abspath(line)
     # Deal with the illegal operation
     if line == csys.project_path():
-        print("Unable to remove project")
-        return
+        message.add("Unable to remove project", "error")
+        return message
     if os.path.relpath(line, csys.project_path()).startswith(".."):
-        print("Unable to remove directory outside the project")
-        return
+        message.add("Unable to remove directory outside the project", "error")
+        return message
     if not csys.exists(line):
-        print("File not exists")
-        return
+        message.add("File not exists", "error")
+        return message
     result = VObject(line).rm()
-    if result.messages:  # If there are error messages
-        print(result.colored())
+    if result.messages:
+        message.append(result)
+    return message
 
 
-def rm_file(file_name: str) -> None:
+def rm_file(file_name: str) -> Message:
     """Remove a file from current task or algorithm.
 
     Deletes files within the context of a task or algorithm object. Supports
@@ -353,7 +369,8 @@ def rm_file(file_name: str) -> None:
         file_name (str): Name of file to remove, or '*' for all files
 
     Returns:
-        None: Prints error messages to console for invalid operations
+        Message: Message containing error details for invalid operations,
+            or empty message on success.
 
     Examples:
         rm_file("data.txt")      # Remove specific file
@@ -363,11 +380,12 @@ def rm_file(file_name: str) -> None:
         - Only works within task or algorithm contexts
         - Protects system files (.celebi, celebi.yaml) from deletion
         - Wildcard '*' removes all files except protected system files
-        - Prints colored error messages for failed operations
+        - Returns Message with errors for failed operations
     """
+    message = Message()
     if MANAGER.current_object().object_type() not in ("task", "algorithm"):
-        print("Unable to call rm_file if you are not in a task or algorithm.")
-        return
+        message.add("Unable to call rm_file if you are not in a task or algorithm.", "error")
+        return message
     # Deal with * case
     if file_name == "*":
         path = MANAGER.current_object().path
@@ -376,15 +394,16 @@ def rm_file(file_name: str) -> None:
             if current_file in (".celebi", "celebi.yaml"):
                 continue
             result = MANAGER.current_object().rm_file(current_file)
-            if result.messages:  # If there are error messages
-                print(result.colored())
-        return
+            if result.messages:
+                message.append(result)
+        return message
     result = MANAGER.current_object().rm_file(file_name)
-    if result.messages:  # If there are error messages
-        print(result.colored())
+    if result.messages:
+        message.append(result)
+    return message
 
 
-def mv_file(file_name: str, dest_file: str) -> None:
+def mv_file(file_name: str, dest_file: str) -> Message:
     """Move a file within current task or algorithm.
 
     Relocates or renames files within the context of a task or algorithm object.
@@ -395,7 +414,8 @@ def mv_file(file_name: str, dest_file: str) -> None:
         dest_file (str): Destination file name or path
 
     Returns:
-        None: Prints error messages to console for invalid operations
+        Message: Message containing error details for invalid operations,
+            or empty message on success.
 
     Examples:
         mv_file("old.txt", "new.txt")      # Rename file
@@ -404,18 +424,20 @@ def mv_file(file_name: str, dest_file: str) -> None:
     Note:
         - Only works within task or algorithm contexts
         - Preserves file metadata and relationships
-        - Prints colored error messages for failed operations
+        - Returns Message with errors for failed operations
         - Uses object-specific move_file() method
     """
+    message = Message()
     if MANAGER.current_object().object_type() not in ("task", "algorithm"):
-        print("Unable to call mv_file if you are not in a task or algorithm.")
-        return
+        message.add("Unable to call mv_file if you are not in a task or algorithm.", "error")
+        return message
     result = MANAGER.current_object().move_file(file_name, dest_file)
-    if result.messages:  # If there are error messages
-        print(result.colored())
+    if result.messages:
+        message.append(result)
+    return message
 
 
-def import_file(filename: str) -> None:
+def import_file(filename: str) -> Message:
     """Import a file into current task or algorithm.
 
     Copies external files into the current task or algorithm context. Supports
@@ -425,7 +447,8 @@ def import_file(filename: str) -> None:
         filename (str): Path to file to import, or directory path ending with '/*'
 
     Returns:
-        None: Prints error messages to console for invalid operations
+        Message: Message containing error details for invalid operations,
+            or empty message on success.
 
     Examples:
         import_file("/external/data.txt")      # Import specific file
@@ -435,32 +458,34 @@ def import_file(filename: str) -> None:
         - Only works within task or algorithm contexts
         - Supports directory wildcard imports with '/*' suffix
         - Validates that source paths exist and are accessible
-        - Prints colored error messages for failed operations
+        - Returns Message with errors for failed operations
         - Shows import progress messages for each file
     """
+    message = Message()
     if MANAGER.current_object().object_type() not in ("task", "algorithm"):
-        print("Unable to call importfile if you are not in a task or algorithm.")
-        return
+        message.add("Unable to call importfile if you are not in a task or algorithm.", "error")
+        return message
 
     # Check if the path is a format of /path/to/a/dir/*
     if filename.endswith("/*"):
         filename = filename[:-2]
         if not os.path.isdir(filename):
-            print("The path is not a directory")
-            return
+            message.add("The path is not a directory", "error")
+            return message
         for file in os.listdir(filename):
-            print(f"Importing: from {os.path.join(filename, file)}")
-            print(f"Importing: to {MANAGER.current_object().path}")
+            message.add(f"Importing: from {os.path.join(filename, file)}\n", "info")
+            message.add(f"Importing: to {MANAGER.current_object().path}\n", "info")
             result = MANAGER.current_object().import_file(os.path.join(filename, file))
-            if result.messages:  # If there are error messages
-                print(result.colored())
-        return
+            if result.messages:
+                message.append(result)
+        return message
     result = MANAGER.current_object().import_file(filename)
-    if result.messages:  # If there are error messages
-        print(result.colored())
+    if result.messages:
+        message.append(result)
+    return message
 
 
-def add_source(line: str) -> None:
+def add_source(line: str) -> Message:
     """Add a source file or directory to the current object.
 
     Links external source files or directories to the current Celebi object.
@@ -472,7 +497,7 @@ def add_source(line: str) -> None:
         line (str): Path to the source file or directory to add.
 
     Returns:
-        None: Source is added to current object, or error message printed to console
+        Message: Empty message after adding source to current object.
 
     Examples:
         add_source /path/to/library.py      # Add Python library
@@ -485,10 +510,12 @@ def add_source(line: str) -> None:
         - Multiple sources can be added to a single object
         - Sources can be files or directories
     """
+    message = Message()
     MANAGER.current_object().add_source(line)
+    return message
 
 
-def send(path: str) -> None:
+def send(path: str) -> Message:
     """Send a path to current object.
 
     Transfers a file or directory path to the current object for processing.
@@ -503,7 +530,7 @@ def send(path: str) -> None:
         send results/output.csv
 
     Returns:
-        None: Function executes path transfer operation.
+        Message: Empty message after executing path transfer operation.
 
     Note:
         - Path must be accessible from current working directory
@@ -511,4 +538,6 @@ def send(path: str) -> None:
         - Some objects may have specific path requirements
         - Operation may involve file copying or linking
     """
+    message = Message()
     MANAGER.current_object().send(path)
+    return message

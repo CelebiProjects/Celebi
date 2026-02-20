@@ -1,6 +1,8 @@
+"""Command execution module for Chern shell."""
 from ..shell_modules.execution_management import test
 
-class CommandsExecution:
+class CommandsExecution:  # pylint: disable=too-few-public-methods
+    """Execution commands for Chern shell."""
     def do_test(self, arg):
         """
         Execute a test workflow.
@@ -16,5 +18,5 @@ class CommandsExecution:
             print("Error: Missing arguments. Usage: test <docker_image> <command>")
             return
 
-        docker_image, command = args
-        docker_test()
+        _docker_image, _command = args
+        test()
