@@ -66,10 +66,7 @@ def status() -> Message:
         - For data objects: shows size, format, metadata
         - For directories: shows contents and structure
     """
-    message = Message()
-    result = MANAGER.current_object().printed_status()
-    message.add(str(result), "normal")
-    return message
+    return MANAGER.current_object().printed_status()
 
 
 def add_input(path: str, alias: str) -> Message:  # pylint: disable=too-many-branches
