@@ -2,6 +2,7 @@
 """
 import os
 from logging import getLogger
+from typing import Tuple, Union
 
 from ..utils.container_manager import ContainerManager
 from .chern_communicator import ChernCommunicator
@@ -292,7 +293,7 @@ class JobManager(Core):
 
         return True, temp_dir
 
-    def pre_docker_test(self) -> tuple[bool, str | dict]:
+    def pre_docker_test(self) -> Tuple[bool, Union[str, dict]]:
         """ Pre-docker workaround - returns mounting guidance for Docker"""
         cherncc = ChernCommunicator.instance()
         status = cherncc.dite_status()
