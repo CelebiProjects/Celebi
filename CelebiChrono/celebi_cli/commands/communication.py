@@ -118,3 +118,58 @@ def impress_command() -> None:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="dite")
+def dite_command() -> None:
+    """Show DITE information."""
+    try:
+        from CelebiChrono.interface.shell import dite
+        result = dite()
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="set-dite")
+@click.argument("url", type=str)
+def set_dite_command(url: str) -> None:
+    """Set DITE connection URL."""
+    try:
+        from CelebiChrono.interface.shell import set_dite
+        result = set_dite(url)
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="request-runner")
+@click.argument("runner", type=str)
+def request_runner_command(runner: str) -> None:
+    """Request a runner for current task."""
+    try:
+        from CelebiChrono.interface.shell import request_runner
+        result = request_runner(runner)
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="search-impression")
+@click.argument("partial_uuid", type=str)
+def search_impression_command(partial_uuid: str) -> None:
+    """Search impressions by partial UUID."""
+    try:
+        from CelebiChrono.interface.shell import search_impression
+        result = search_impression(partial_uuid)
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")

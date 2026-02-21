@@ -186,3 +186,15 @@ class AdvancedCommands:
             print(shell.doctor().colored())
         except Exception as e:
             print(f"Error running diagnostics: {e}")
+
+    def do_add_source(self, arg: str) -> None:
+        """Add a source file or directory to current object."""
+        try:
+            path = arg.split()[0]
+            result = shell.add_source(path)
+            if result.messages:
+                print(result.colored())
+        except (IndexError, ValueError) as e:
+            print(f"Error: Please provide a source path. {e}")
+        except Exception as e:
+            print(f"Error adding source: {e}")

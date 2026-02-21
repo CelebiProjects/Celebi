@@ -53,3 +53,12 @@ class NavigationCommands:
             MANAGER.ls_projects()
         except Exception as e:
             print(f"Error listing projects: {e}")
+
+    def do_navigate(self, _: str) -> None:
+        """Print the path of the current project."""
+        try:
+            result = shell.navigate()
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error navigating: {e}")

@@ -103,27 +103,13 @@ def collect_command(task: str) -> None:
         _handle_error(f"Command failed: {e}")
 
 
-@click.command(name="error-log")
+@click.command(name="log")
 @click.argument("task", type=str)
-def error_log_command(task: str) -> None:
-    """View error log for a task."""
+def log_command(task: str) -> None:
+    """View log for a task."""
     try:
         from CelebiChrono.interface.shell import error_log
         result = error_log(task)
-        _handle_result(result)
-    except ImportError as e:
-        _handle_error(f"Failed to import shell function: {e}")
-    except Exception as e:
-        _handle_error(f"Command failed: {e}")
-
-
-@click.command(name="view")
-@click.argument("obj", type=str)
-def view_command(obj: str) -> None:
-    """View an object."""
-    try:
-        from CelebiChrono.interface.shell import view
-        result = view(obj)
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
@@ -138,6 +124,58 @@ def edit_command(script: str) -> None:
     try:
         from CelebiChrono.interface.shell import edit_script
         result = edit_script(script)
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="purge")
+def purge_command() -> None:
+    """Purge temporary files and cleanup current object."""
+    try:
+        from CelebiChrono.interface.shell import purge
+        result = purge()
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="purge-old-impressions")
+def purge_old_impressions_command() -> None:
+    """Purge old impression data from current object."""
+    try:
+        from CelebiChrono.interface.shell import purge_old_impressions
+        result = purge_old_impressions()
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="collect-outputs")
+def collect_outputs_command() -> None:
+    """Collect only task outputs."""
+    try:
+        from CelebiChrono.interface.shell import collect_outputs
+        result = collect_outputs()
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="collect-logs")
+def collect_logs_command() -> None:
+    """Collect only task logs."""
+    try:
+        from CelebiChrono.interface.shell import collect_logs
+        result = collect_logs()
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")

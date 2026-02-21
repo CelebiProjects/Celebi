@@ -76,3 +76,33 @@ class BasicCommands:
     def do_tree(self, _arg: str) ->None:
         """Display directory tree structure."""
         print(shell.tree().colored())
+
+    def do_short_ls(self, _: str) -> None:
+        """Show short listing of current object."""
+        try:
+            result = shell.short_ls("")
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error showing short listing: {e}")
+
+    def do_jobs(self, _: str) -> None:
+        """Show jobs for current algorithm or task."""
+        try:
+            result = shell.jobs("")
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error showing jobs: {e}")
+
+    def do_log(self, arg: str) -> None:
+        """Show log for current object."""
+        try:
+            index = int(arg.split()[0]) if arg.strip() else 0
+            result = shell.error_log(index)
+            if result.messages:
+                print(result.colored())
+        except (IndexError, ValueError) as e:
+            print(f"Error: Please provide a valid log index. {e}")
+        except Exception as e:
+            print(f"Error showing error log: {e}")

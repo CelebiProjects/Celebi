@@ -2,7 +2,7 @@
 import click
 from .commands import (
     navigation, file_operations, object_creation, task_configuration,
-    execution_management, communication, visualization
+    execution_management, communication, visualization, utilities
 )
 
 @click.group()
@@ -28,6 +28,7 @@ cli.add_command(file_operations.mvfile_command)
 cli.add_command(file_operations.import_command)
 cli.add_command(file_operations.send_command)
 cli.add_command(file_operations.add_input_command)
+cli.add_command(file_operations.add_source_command)
 
 # Object creation commands (4 commands)
 cli.add_command(object_creation.create_algorithm_command)
@@ -46,18 +47,21 @@ cli.add_command(task_configuration.set_mem_command)
 cli.add_command(task_configuration.add_host_command)
 cli.add_command(task_configuration.hosts_command)
 
-# Execution management commands (8 commands)
+# Execution management commands
 cli.add_command(execution_management.runners_command)
 cli.add_command(execution_management.register_runner_command)
 cli.add_command(execution_management.remove_runner_command)
 cli.add_command(execution_management.submit_command)
 cli.add_command(execution_management.collect_command)
-cli.add_command(execution_management.error_log_command)
-cli.add_command(execution_management.view_command)
+cli.add_command(execution_management.log_command)
 cli.add_command(execution_management.edit_command)
 cli.add_command(execution_management.test_command)
+cli.add_command(execution_management.purge_command)
+cli.add_command(execution_management.purge_old_impressions_command)
+cli.add_command(execution_management.collect_outputs_command)
+cli.add_command(execution_management.collect_logs_command)
 
-# Communication commands (7 commands)
+# Communication commands
 cli.add_command(communication.config_command)
 cli.add_command(communication.danger_command)
 cli.add_command(communication.trace_command)
@@ -66,7 +70,18 @@ cli.add_command(communication.changes_command)
 cli.add_command(communication.preshell_command)
 cli.add_command(communication.postshell_command)
 cli.add_command(communication.impress_command)
+cli.add_command(communication.dite_command)
+cli.add_command(communication.set_dite_command)
+cli.add_command(communication.request_runner_command)
+cli.add_command(communication.search_impression_command)
 
-# Visualization commands (2 commands)
+# Visualization commands
 cli.add_command(visualization.view_command)
 cli.add_command(visualization.viewurl_command)
+
+# Utility commands
+cli.add_command(utilities.watermark_command)
+cli.add_command(utilities.doctor_command)
+cli.add_command(utilities.bookkeep_command)
+cli.add_command(utilities.bookkeep_url_command)
+cli.add_command(utilities.successors_command)

@@ -201,3 +201,26 @@ class EnvironmentCommands:
             print(f"Error: Please provide a runner name. {e}")
         except Exception as e:
             print(f"Error removing runner: {e}")
+
+    def do_add_host(self, arg: str) -> None:
+        """Add a host to the communicator."""
+        try:
+            args = arg.split()
+            host = args[0]
+            url = args[1]
+            result = shell.add_host(host, url)
+            if result.messages:
+                print(result.colored())
+        except (IndexError, ValueError) as e:
+            print(f"Error: Please provide a host name and URL. {e}")
+        except Exception as e:
+            print(f"Error adding host: {e}")
+
+    def do_hosts(self, _: str) -> None:
+        """List all hosts and their status."""
+        try:
+            result = shell.hosts()
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error listing hosts: {e}")

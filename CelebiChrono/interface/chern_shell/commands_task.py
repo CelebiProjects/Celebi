@@ -244,3 +244,18 @@ class TaskCommands:
             print(f"Error: Please provide a parameter name to remove. {e}")
         except Exception as e:
             print(f"Error removing parameter: {e}")
+
+    def do_add_parameter_subtask(self, arg: str) -> None:
+        """Add a parameter to a specific subtask within a directory."""
+        try:
+            args = arg.split()
+            dirname = args[0]
+            par = args[1]
+            value = args[2]
+            result = shell.add_parameter_subtask(dirname, par, value)
+            if result.messages:
+                print(result.colored())
+        except (IndexError, ValueError) as e:
+            print(f"Error: Please provide dirname, parameter name, and value. {e}")
+        except Exception as e:
+            print(f"Error adding parameter to subtask: {e}")
