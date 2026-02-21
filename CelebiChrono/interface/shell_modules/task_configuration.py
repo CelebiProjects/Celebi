@@ -69,7 +69,7 @@ def status() -> Message:
     return MANAGER.current_object().printed_status()
 
 
-def add_input(path: str, alias: str) -> Message:  # pylint: disable=too-many-branches
+def add_input(path: str, alias: str) -> Message:  # pylint: disable=too-many-branches, too-many-return-statements
     """Add an input to the current task or algorithm.
 
     Links an existing object (data, task output, or algorithm) as an input

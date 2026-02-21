@@ -141,7 +141,8 @@ def _cd_by_path(line: str) -> Message:
 
     # Check available
     if os.path.relpath(line, csys.project_path()).startswith(".."):
-        message.add("[ERROR] Unable to navigate to a location that is not within the project.", "error")
+        message.add("[ERROR] Unable to navigate to a location "
+                    "that is not within the project.", "error")
         return message
     if not csys.exists(line):
         message.add("Directory not exists", "error")

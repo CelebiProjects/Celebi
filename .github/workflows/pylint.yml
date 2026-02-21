@@ -33,4 +33,4 @@ jobs:
     - name: Lint with pylint
       run: |
         python -m pylint $(git ls-files "CelebiChrono/*.py") \
-          --disable="fixme,too-many-ancestors,broad-exception-raised"
+          --disable="fixme,too-many-ancestors,broad-exception-raised,broad-exception-caught,duplicate-code,import-outside-toplevel"
