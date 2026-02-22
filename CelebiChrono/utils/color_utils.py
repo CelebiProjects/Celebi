@@ -35,10 +35,12 @@ def colorize(string: str, color: str = "") -> str:
     if not color:
         # Automatic detection from pretty.py
         possible_status = {
-            "success": ["success", "done", "pass", "connected", "ok", "good", "ready",
+            "success": ["success", "done", "pass", "connected",
+                        "ok", "good", "ready", "coda",
                         "succeed", "validated", "archived", "finished",
                         "true"],
-            "normal": ["normal", "info", "new", "raw", "empty"],
+            "normal": ["normal", "info", "new", "raw", "empty", "prelude",
+                       "orchestrating", "in movement", "undecided"],
             "running": ["running", "start", "pending", "queued", "waiting"],
             "warning": ["warning", "error", "fail", "failed", "wrong",
                         "incorrect", "bad", "unsuccessful", "false"],

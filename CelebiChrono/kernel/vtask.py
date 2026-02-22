@@ -142,9 +142,21 @@ class VTask(InputManager, SettingManager, FileManager, JobManager):
         if dite_status != "connected":
             return message
         job_status = cherncc.job_status(self.impression())
+        # dump the string to dict
+        musical_status = job_status["status"]
+        real_status = job_status["status"]
+        if musical_status in ("created", "queued", "pending", "running"):
+            musical_status = "in movement"
+        if musical_status == "finished":
+            musical_status = "coda"
+        if real_status in ("prelude", "orchestrating"):
+            real_status = "undecided"
+        detailed_status = job_status["detailed_status"]
         message.add("Job status: ")
-        message.add(f"{'['+job_status+']'}", "success")
+        message.add(f"{'['+musical_status+']'}")
+        message.add(f"{'['+real_status+']'}")
         message.add("\n")
+        message.add(f"Detailed status: {detailed_status}\n")
 
         environment = self.environment()
         if environment == "rawdata":
