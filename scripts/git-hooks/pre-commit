@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Pre-commit hook to validate that the current git repository is a valid Celebi project.
+# Exit with a non-zero status if the project fails validation.
+
+# Check if celebi CLI is available
+if ! command -v celebi &> /dev/null; then
+    echo "[ERROR] Celebi CLI is not installed or not in PATH. Please install Celebi CLI." >&2
+    exit 1
+fi
+
+# Check if the repository is initialized as a Celebi project
+if ! celebi status &> /dev/null; then
+    echo "[ERROR] This repository is not a valid Celebi project. Use 'celebi init' to initialize." >&2
+    exit 1
+fi
+
+# Retrieve Celebi project validation status
+VALIDATION_OUTPUT=$(celebi doctor 2>&1)
+VALIDATION_STATUS=$?
+
+if [ $VALIDATION_STATUS -ne 0 ]; then
+    echo "[ERROR] Celebi project validation failed based on doctor command:" >&2
+    echo "$VALIDATION_OUTPUT" >&2
+    exit 1
+fi
+
+# Check successful
+echo "[INFO] Celebi project validation successful. Proceeding with commit."
+exit 0

@@ -320,3 +320,386 @@ def danger_call(cmd: str) -> Message:
     """
     message = MANAGER.current_object().danger_call(cmd)
     return message
+
+
+# ----------------------------------------------------------------------
+# Git Integration Functions for Shell
+# ----------------------------------------------------------------------
+
+def git_merge(branch: str, strategy: str = "interactive") -> Message:
+    """Merge a git branch with Celebi validation.
+
+    Performs a git merge with Celebi-aware validation, conflict resolution,
+    and impression regeneration.
+
+    Args:
+        branch (str): Name of the branch to merge from
+        strategy (str, optional): Merge strategy. One of: interactive,
+            auto, local, remote, union. Defaults to "interactive".
+
+    Examples:
+        git_merge feature-branch
+        git_merge main --strategy=auto
+        git_merge develop --strategy=local
+
+    Returns:
+        Message: Merge result with success/error status and details.
+
+    Note:
+        - Requires git repository
+        - Validates DAG consistency after merge
+        - Resolves conflicts interactively or automatically
+        - Regenerates impressions for changed objects
+        - Can be used with git hooks for automatic validation
+    """
+    from ...utils.git_merge_coordinator import GitMergeCoordinator, MergeStrategy
+
+    message = Message()
+
+    # Map string to enum
+    strategy_map = {
+        "interactive": MergeStrategy.INTERACTIVE,
+        "auto": MergeStrategy.AUTO,
+        "local": MergeStrategy.LOCAL,
+        "remote": MergeStrategy.REMOTE,
+        "union": MergeStrategy.UNION
+    }
+
+    merge_strategy = strategy_map.get(strategy.lower(), MergeStrategy.INTERACTIVE)
+
+    try:
+        coordinator = GitMergeCoordinator()
+        results = coordinator.execute_merge(branch, merge_strategy, dry_run=False)
+
+        if results['success']:
+            message.add(f"Merge from {branch} completed successfully", "success")
+
+            # Add details
+            details = []
+            if results.get('git_conflicts'):
+                details.append(f"Git conflicts resolved: {len(results['git_conflicts'])}")
+            if results.get('validation_conflicts'):
+                details.append(f"Celebi conflicts resolved: {len(results['validation_conflicts'])}")
+            if results.get('regeneration_stats'):
+                stats = results['regeneration_stats']
+                details.append(f"Impressions regenerated: {stats.get('regenerated', 0)}")
+
+            if details:
+                message.add("\n".join(details), "info")
+
+            message.data.update(results)
+        else:
+            message.add(f"Merge from {branch} failed", "error")
+
+            # Add error details
+            if results.get('errors'):
+                for error in results['errors']:
+                    message.add(f"  - {error}", "error")
+
+            if results.get('conflicts'):
+                message.add(f"Unresolved conflicts: {len(results['conflicts'])}", "warning")
+
+            message.data.update(results)
+
+    except Exception as e:
+        message.add(f"Error during git merge: {e}", "error")
+        import traceback
+        message.data['traceback'] = traceback.format_exc()
+
+    return message
+
+
+def git_validate() -> Message:
+    """Validate Celebi project state after git operations.
+
+    Validates the current project state for DAG consistency, config file
+    validity, and impression integrity. Can be used after git operations
+    to ensure project health.
+
+    Args:
+        None: Function takes no parameters.
+
+    Examples:
+        git_validate()  # Validate current project state
+
+    Returns:
+        Message: Validation results with issues found and repairs performed.
+
+    Note:
+        - Checks for DAG cycles and missing nodes
+        - Validates config file syntax (JSON/YAML)
+        - Verifies impression consistency
+        - Can be called from git post-merge hooks
+        - Attempts automatic repair of simple issues
+    """
+    from ...utils.git_merge_coordinator import GitMergeCoordinator
+
+    message = Message()
+
+    try:
+        coordinator = GitMergeCoordinator()
+        results = coordinator.validate_post_merge()
+
+        if results['success']:
+            message.add("Project validation successful", "success")
+
+            if results.get('repairs'):
+                repairs = "\n".join([f"  - {r}" for r in results['repairs']])
+                message.add(f"Automatic repairs performed:\n{repairs}", "info")
+        else:
+            message.add("Project validation failed", "error")
+
+            if results.get('issues'):
+                issues = "\n".join([f"  - {i}" for i in results['issues']])
+                message.add(f"Issues found:\n{issues}", "error")
+
+            if results.get('repairs'):
+                repairs = "\n".join([f"  - {r}" for r in results['repairs']])
+                message.add(f"Attempted repairs:\n{repairs}", "warning")
+
+        message.data.update(results)
+
+    except Exception as e:
+        message.add(f"Error during validation: {e}", "error")
+
+    return message
+
+
+def git_status() -> Message:
+    """Show git integration status and merge readiness.
+
+    Displays information about git repository status, Celebi git integration
+    configuration, and merge readiness.
+
+    Args:
+        None: Function takes no parameters.
+
+    Examples:
+        git_status()  # Show git integration status
+
+    Returns:
+        Message: Status information including git repo info, integration
+        configuration, and potential issues.
+
+    Note:
+        - Shows current git branch and remote
+        - Indicates if git integration is enabled
+        - Checks for uncommitted changes
+        - Detects potential merge issues
+        - Provides recommendations for git configuration
+    """
+    from ...utils.git_optional import GitOptionalIntegration
+    from ...utils.git_merge_coordinator import GitMergeCoordinator
+
+    message = Message()
+
+    try:
+        git_integration = GitOptionalIntegration()
+        git_info = git_integration.get_git_info()
+        config = git_integration.get_config()
+
+        status_lines = []
+
+        # Git repository info
+        if git_info['is_git_repo']:
+            status_lines.append("✓ Git repository detected")
+            status_lines.append(f"  Current branch: {git_info.get('current_branch', 'unknown')}")
+            status_lines.append(f"  Remote: {git_info.get('remote_url', 'none')}")
+            status_lines.append(f"  Uncommitted changes: {'yes' if git_info['has_uncommitted_changes'] else 'no'}")
+        else:
+            status_lines.append("✗ Not a git repository")
+            status_lines.append("  Run 'git init' to initialize git in this directory")
+            message.add("\n".join(status_lines), "warning")
+            message.data.update(git_info)
+            return message
+
+        # Integration status
+        status_lines.append(f"\nCelebi Git Integration: {'ENABLED' if config['enabled'] else 'DISABLED'}")
+        status_lines.append(f"  Hooks installed: {'yes' if config['hooks_installed'] else 'no'}")
+        status_lines.append(f"  Auto-validate: {'yes' if config['auto_validate'] else 'no'}")
+        status_lines.append(f"  Auto-regenerate: {'yes' if config['auto_regenerate'] else 'no'}")
+        status_lines.append(f"  Merge strategy: {config['merge_strategy']}")
+
+        # Merge readiness
+        coordinator = GitMergeCoordinator()
+        merge_status = coordinator.get_merge_status()
+
+        status_lines.append(f"\nMerge Readiness: {'READY' if merge_status['ready_to_merge'] else 'NOT READY'}")
+        if merge_status['has_uncommitted_changes']:
+            status_lines.append("  ⚠ Uncommitted changes detected")
+        if merge_status['merge_in_progress']:
+            status_lines.append("  ⚠ Merge already in progress")
+
+        # Potential issues
+        issues = git_integration.detect_potential_issues()
+        if issues:
+            status_lines.append(f"\nPotential Issues ({len(issues)}):")
+            for issue in issues:
+                level = issue['level']
+                msg = issue['message']
+                if level == 'error':
+                    status_lines.append(f"  ✗ {msg}")
+                else:
+                    status_lines.append(f"  ⚠ {msg}")
+
+                if 'suggestion' in issue:
+                    status_lines.append(f"     Suggestion: {issue['suggestion']}")
+
+        message.add("\n".join(status_lines), "info")
+        message.data.update({
+            'git_info': git_info,
+            'config': config,
+            'merge_status': merge_status,
+            'issues': issues
+        })
+
+    except Exception as e:
+        message.add(f"Error getting git status: {e}", "error")
+
+    return message
+
+
+def git_enable() -> Message:
+    """Enable Celebi git integration for current project.
+
+    Enables git integration features including automatic validation,
+    impression regeneration, and git hooks.
+
+    Args:
+        None: Function takes no parameters.
+
+    Examples:
+        git_enable()  # Enable git integration
+
+    Returns:
+        Message: Success/error status of enabling git integration.
+
+    Note:
+        - Requires git repository
+        - Can install git hooks for automatic validation
+        - Sets configuration options for merge behavior
+        - Provides recommended .gitignore additions
+    """
+    from ...utils.git_optional import GitOptionalIntegration
+
+    message = Message()
+
+    try:
+        git_integration = GitOptionalIntegration()
+
+        if not git_integration.is_git_repository():
+            message.add("Error: Not a git repository. Run 'git init' first.", "error")
+            return message
+
+        if git_integration.enable_integration():
+            message.add("Git integration enabled", "success")
+
+            # Offer to install hooks
+            message.add("Install git hooks for automatic validation? (Y/n): ", "prompt")
+            message.data['needs_hook_decision'] = True
+
+            # Show recommended settings
+            recommendations = git_integration.get_recommended_settings()
+            rec_msg = "Recommended .gitignore additions:\n"
+            for line in recommendations['.gitignore_additions']:
+                rec_msg += f"  {line}\n"
+            message.add(rec_msg, "info")
+
+            message.data['recommendations'] = recommendations
+        else:
+            message.add("Failed to enable git integration", "error")
+
+    except Exception as e:
+        message.add(f"Error enabling git integration: {e}", "error")
+
+    return message
+
+
+def git_disable() -> Message:
+    """Disable Celebi git integration for current project.
+
+    Disables git integration features and removes git hooks.
+
+    Args:
+        None: Function takes no parameters.
+
+    Examples:
+        git_disable()  # Disable git integration
+
+    Returns:
+        Message: Success/error status of disabling git integration.
+
+    Note:
+        - Removes git hooks if installed
+        - Disables automatic validation
+        - Preserves project data (does not delete anything)
+    """
+    from ...utils.git_optional import GitOptionalIntegration
+
+    message = Message()
+
+    try:
+        git_integration = GitOptionalIntegration()
+
+        if git_integration.disable_integration():
+            message.add("Git integration disabled", "success")
+            message.add("  Hooks removed if installed", "info")
+            message.add("  Auto-validation disabled", "info")
+        else:
+            message.add("Failed to disable git integration", "error")
+
+    except Exception as e:
+        message.add(f"Error disabling git integration: {e}", "error")
+
+    return message
+
+
+def git_hooks(install: bool = True) -> Message:
+    """Install or uninstall Celebi git hooks.
+
+    Manages git hooks for automatic Celebi validation after git operations.
+
+    Args:
+        install (bool, optional): True to install hooks, False to uninstall.
+            Defaults to True.
+
+    Examples:
+        git_hooks()          # Install hooks
+        git_hooks(False)     # Uninstall hooks
+
+    Returns:
+        Message: Success/error status of hook management.
+
+    Note:
+        - Installs post-merge hook for automatic validation
+        - Requires git repository
+        - Hooks only run if git integration is enabled
+        - Post-merge hook validates project state after merges
+    """
+    from ...utils.git_optional import GitOptionalIntegration
+
+    message = Message()
+
+    try:
+        git_integration = GitOptionalIntegration()
+
+        if not git_integration.is_git_repository():
+            message.add("Error: Not a git repository", "error")
+            return message
+
+        if install:
+            if git_integration.install_hooks():
+                message.add("Git hooks installed", "success")
+                message.add("  Post-merge hook will validate Celebi state after git merges", "info")
+            else:
+                message.add("Failed to install git hooks", "error")
+        else:
+            if git_integration.uninstall_hooks():
+                message.add("Git hooks uninstalled", "success")
+            else:
+                message.add("Failed to uninstall git hooks", "error")
+
+    except Exception as e:
+        message.add(f"Error managing git hooks: {e}", "error")
+
+    return message

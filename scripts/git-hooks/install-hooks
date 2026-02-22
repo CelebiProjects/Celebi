@@ -1,0 +1,59 @@
+#!/bin/bash
+# Install Celebi git hooks
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HOOKS_DIR="$SCRIPT_DIR"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+echo "Installing Celebi git hooks..."
+echo "Project root: $PROJECT_ROOT"
+
+# Check if git repository
+if [ ! -d "$PROJECT_ROOT/.git" ]; then
+    echo "Error: Not a git repository"
+    echo "Run 'git init' first to initialize git"
+    exit 1
+fi
+
+GIT_HOOKS_DIR="$PROJECT_ROOT/.git/hooks"
+
+# Create hooks directory if it doesn't exist
+mkdir -p "$GIT_HOOKS_DIR"
+
+# Install post-merge hook
+if [ -f "$HOOKS_DIR/post-merge" ]; then
+    cp "$HOOKS_DIR/post-merge" "$GIT_HOOKS_DIR/post-merge"
+    chmod +x "$GIT_HOOKS_DIR/post-merge"
+    echo "✓ Installed post-merge hook"
+else
+    echo "✗ post-merge hook not found in $HOOKS_DIR"
+fi
+
+# Create a simple post-checkout hook if needed
+POST_CHECKOUT_HOOK="$GIT_HOOKS_DIR/post-checkout"
+if [ ! -f "$POST_CHECKOUT_HOOK" ]; then
+    cat > "$POST_CHECKOUT_HOOK" << 'EOF'
+#!/bin/sh
+# Celebi post-checkout hook (optional)
+# This hook can validate project state after checkout
+
+if [ -f ".celebi/git_config.json" ]; then
+    echo "Celebi: Project checked out"
+    # Add validation here if needed
+fi
+EOF
+    chmod +x "$POST_CHECKOUT_HOOK"
+    echo "✓ Created post-checkout hook"
+fi
+
+echo ""
+echo "Git hooks installed successfully!"
+echo ""
+echo "To enable Celebi git integration, run:"
+echo "  cd $PROJECT_ROOT"
+echo "  celebi git-enable"
+echo ""
+echo "The post-merge hook will automatically validate"
+echo "Celebi project state after git merges."

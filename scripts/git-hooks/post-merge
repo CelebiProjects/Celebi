@@ -1,0 +1,52 @@
+#!/bin/sh
+# Celebi post-merge validation hook
+# This hook validates Celebi project state after a git merge
+
+# Only run if Celebi git integration is enabled
+if [ -f ".celebi/git_config.json" ]; then
+    echo "Celebi: Validating project state after merge..."
+
+    # Get project root (where .celebi directory is)
+    PROJECT_ROOT=$(pwd)
+
+    # Run Celebi validation
+    python3 -c "
+import sys
+import os
+
+# Add Celebi to path
+sys.path.insert(0, os.path.join('$PROJECT_ROOT', 'CelebiChrono'))
+
+try:
+    from CelebiChrono.utils.git_merge_coordinator import GitMergeCoordinator
+
+    coordinator = GitMergeCoordinator('$PROJECT_ROOT')
+    result = coordinator.validate_post_merge()
+
+    if not result['success']:
+        print('Celebi validation found issues:')
+        for issue in result.get('issues', []):
+            print(f'  - {issue}')
+
+        if result.get('repairs'):
+            print('Automatic repairs performed:')
+            for repair in result['repairs']:
+                print(f'  - {repair}')
+
+        # Exit with warning (not error) to allow merge to complete
+        print('Celebi validation completed with warnings')
+    else:
+        print('Celebi validation successful')
+
+except ImportError as e:
+    print(f'Celebi not available: {e}')
+except Exception as e:
+    print(f'Celebi validation error: {e}')
+"
+else
+    echo "Celebi git integration not enabled for this project"
+    echo "Run: celebi git-enable to enable git integration"
+fi
+
+# Always exit successfully to not block git operations
+exit 0
