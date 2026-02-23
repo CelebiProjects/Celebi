@@ -104,6 +104,10 @@ class VImpression():
         dependencies = [VImpression(uuid) for uuid in dependencies_uuid]
         return dependencies
 
+    def object_type(self) -> str:
+        """Get the object type stored in the impression."""
+        return self.config_file.read_variable("object_type", "")
+
     def has_alias(self, alias: str) -> bool:
         """ Check if the impression has an alias
         """
