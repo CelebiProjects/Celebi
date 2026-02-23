@@ -37,6 +37,14 @@ class BasicCommands:
         except Exception as e:
             print(f"Error listing successors: {e}")
 
+    def do_predecessors(self, _: str) -> None:
+        """List predecessors of current object."""
+        try:
+            message = shell.predecessors()
+            print(message.colored())
+        except Exception as e:
+            print(f"Error listing predecessors: {e}")
+
     def do_collect(self, arg: str) -> None:
         """Collect data for current object."""
         try:

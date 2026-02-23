@@ -81,3 +81,16 @@ def successors_command() -> None:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="predecessors")
+def predecessors_command() -> None:
+    """List predecessors of current object."""
+    try:
+        from CelebiChrono.interface.shell import predecessors
+        result = predecessors()
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")

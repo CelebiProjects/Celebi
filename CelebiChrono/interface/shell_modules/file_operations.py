@@ -19,6 +19,7 @@ __all__ = [
     'mv',
     'cp',
     'ls',
+    'predecessors',
     'successors',
     'short_ls',
     'rm',
@@ -284,6 +285,38 @@ def successors() -> Message:
             readme=False,
             successors=True,
             predecessors=False,
+            status=False,
+            sub_objects=False,
+            task_info=False,
+        )
+    )
+
+
+def predecessors() -> Message:
+    """List the predecessors of the current object.
+
+    Displays objects that the current object depends on or follows from in the
+    project workflow. Shows only predecessor relationships, excluding other
+    object details.
+
+    Returns:
+        Message: Message containing formatted listing of predecessor objects with their
+        names, paths, and relationship information, colored for display. Returns
+        empty message if no predecessors exist.
+
+    Examples:
+        predecessors()  # List all predecessors of current object
+
+    Note:
+        - Only shows predecessors, not successors or other relationships
+        - Returns empty message if no predecessors exist
+        - Uses specialized ls parameters to filter for predecessors only
+    """
+    return MANAGER.current_object().ls(
+        LsParameters(
+            readme=False,
+            successors=False,
+            predecessors=True,
             status=False,
             sub_objects=False,
             task_info=False,
