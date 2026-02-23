@@ -424,7 +424,7 @@ class FileManagementOperations(Core):
         #  Compare file lists (sorted, relative paths)
         # --------------------------------------------------------
         old_files = csys.get_files_in_directory(old_root)
-        new_files = csys.get_files_in_directory(new_root, exclude=".celebi")
+        new_files = csys.get_files_in_directory(new_root, exclude=(".celebi","README.md"))
 
         old_files_set = set(old_files)
         new_files_set = set(new_files)

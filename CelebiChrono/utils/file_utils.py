@@ -225,6 +225,8 @@ def get_files_in_directory(root, exclude=()):
     files_list = []
     for dirpath, _, files in os.walk(root):
         for f in files:
+            if f.endswith(".~undo-tree~"):
+                continue
             file_excluded = False
             for excl in exclude:
                 if os.path.normpath(os.path.join(dirpath, f)).startswith(
