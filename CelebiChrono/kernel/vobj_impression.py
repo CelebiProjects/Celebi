@@ -490,8 +490,14 @@ class ImpressionManagement(Core):
                     removed_files = old_files_set - new_files_set
                     added_files   = new_files_set - old_files_set
 
-                    message.add(f"  Added files:   {added_files}", "diff")
-                    message.add(f"  Removed files: {removed_files}", "diff")
+                    if added_files:
+                        message.add(f"  Added files ({len(added_files)}):", "info")
+                        for file in sorted(added_files):
+                            message.add(f"    • {file}", "diff")
+                    if removed_files:
+                        message.add(f"  Removed files ({len(removed_files)}):", "info")
+                        for file in sorted(removed_files):
+                            message.add(f"    • {file}", "diff")
 
                     print("Before comparing file")
                     # diff the common files
@@ -526,9 +532,17 @@ class ImpressionManagement(Core):
                     # estimating the difference in edges
                     edge_diff_a = set(added_edges_to_a) - set(removed_edges_from_r)
                     edge_diff_r = set(removed_edges_from_r) - set(added_edges_to_a)
-                    message.add(f"  Changed incoming edges to {a}:", "info")
-                    message.add(f"    Added from:   {edge_diff_a if edge_diff_a else '{}'}", "diff")
-                    message.add(f"    Removed from: {edge_diff_r if edge_diff_r else '{}'}", "diff")
+                    message.add(f"  Changed incoming edges to {format_node_display(a, child_type)}:", "info")
+                    if edge_diff_a:
+                        message.add(f"    Added from ({len(edge_diff_a)}):", "info")
+                        for parent in sorted(edge_diff_a):
+                            parent_type = VImpression(parent).object_type() if parent else ""
+                            message.add(f"      • {format_node_display(parent, parent_type)}", "diff")
+                    if edge_diff_r:
+                        message.add(f"    Removed from ({len(edge_diff_r)}):", "info")
+                        for parent in sorted(edge_diff_r):
+                            parent_type = VImpression(parent).object_type() if parent else ""
+                            message.add(f"      • {format_node_display(parent, parent_type)}", "diff")
             print("Done")
 
         return message
