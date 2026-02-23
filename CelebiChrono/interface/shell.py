@@ -11,7 +11,7 @@ from .shell_modules.navigation import (
 )
 from .shell_modules.file_operations import (
     _normalize_paths, _validate_copy_operation, _adjust_destination_path,
-    mv, cp, ls, successors, short_ls, rm, rm_file, mv_file,
+    mv, cp, ls, predecessors, successors, short_ls, rm, rm_file, mv_file,
     import_file, add_source, send
 )
 from .shell_modules.object_creation import (
@@ -48,7 +48,7 @@ __all__ = [
     'cd_project', 'shell_cd_project', 'cd', '_cd_by_index', '_cd_by_path', 'navigate',
     # File operations functions
     '_normalize_paths', '_validate_copy_operation', '_adjust_destination_path',
-    'mv', 'cp', 'ls', 'successors', 'short_ls', 'rm', 'rm_file', 'mv_file',
+    'mv', 'cp', 'ls', 'predecessors', 'successors', 'short_ls', 'rm', 'rm_file', 'mv_file',
     'import_file', 'add_source', 'send',
     # Object creation functions (from object_creation.py)
     'mkalgorithm', 'mktask', 'mkdata', 'mkdir',
