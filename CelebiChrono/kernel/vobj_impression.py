@@ -382,17 +382,27 @@ class ImpressionManagement(Core):
 
         if added_nodes:
             message.add(f"\nAdded nodes ({len(added_nodes)}):", "info")
-            for node in sorted(added_nodes):
+            # Filter out None values before sorting (None can't be sorted with strings)
+            for node in sorted([n for n in added_nodes if n is not None]):
                 obj_type = VImpression(node).object_type() if node else ""
                 message.add(f"  • {format_node_display(node, obj_type)}", "diff")
+            # Handle None nodes separately if any exist
+            none_nodes = [n for n in added_nodes if n is None]
+            if none_nodes:
+                message.add(f"  • [NEW] (no impression yet)", "diff")
         else:
             message.add("\nAdded nodes: none", "info")
 
         if removed_nodes:
             message.add(f"\nRemoved nodes ({len(removed_nodes)}):", "info")
-            for node in sorted(removed_nodes):
+            # Filter out None values before sorting (None can't be sorted with strings)
+            for node in sorted([n for n in removed_nodes if n is not None]):
                 obj_type = VImpression(node).object_type() if node else ""
                 message.add(f"  • {format_node_display(node, obj_type)}", "diff")
+            # Handle None nodes separately if any exist
+            none_nodes = [n for n in removed_nodes if n is None]
+            if none_nodes:
+                message.add(f"  • [DELETED] (impression missing)", "diff")
         else:
             message.add("\nRemoved nodes: none", "info")
 
@@ -400,19 +410,35 @@ class ImpressionManagement(Core):
 
         if added_edges:
             message.add(f"\nAdded edges ({len(added_edges)}):", "info")
-            for parent, child in sorted(added_edges):
+            # Filter out edges with None values before sorting (None can't be sorted with strings)
+            valid_edges = [e for e in added_edges if e[0] is not None and e[1] is not None]
+            for parent, child in sorted(valid_edges):
                 parent_type = VImpression(parent).object_type() if parent else ""
                 child_type = VImpression(child).object_type() if child else ""
                 message.add(f"  • {format_edge_display(parent, child, parent_type, child_type)}", "diff")
+            # Handle edges with None values separately
+            none_edges = [e for e in added_edges if e[0] is None or e[1] is None]
+            for parent, child in none_edges:
+                parent_display = "[NEW]" if parent is None else format_node_display(parent, VImpression(parent).object_type() if parent else "")
+                child_display = "[NEW]" if child is None else format_node_display(child, VImpression(child).object_type() if child else "")
+                message.add(f"  • {parent_display} → {child_display}", "diff")
         else:
             message.add("\nAdded edges: none", "info")
 
         if removed_edges:
             message.add(f"\nRemoved edges ({len(removed_edges)}):", "info")
-            for parent, child in sorted(removed_edges):
+            # Filter out edges with None values before sorting (None can't be sorted with strings)
+            valid_edges = [e for e in removed_edges if e[0] is not None and e[1] is not None]
+            for parent, child in sorted(valid_edges):
                 parent_type = VImpression(parent).object_type() if parent else ""
                 child_type = VImpression(child).object_type() if child else ""
                 message.add(f"  • {format_edge_display(parent, child, parent_type, child_type)}", "diff")
+            # Handle edges with None values separately
+            none_edges = [e for e in removed_edges if e[0] is None or e[1] is None]
+            for parent, child in none_edges:
+                parent_display = "[MISSING]" if parent is None else format_node_display(parent, VImpression(parent).object_type() if parent else "")
+                child_display = "[MISSING]" if child is None else format_node_display(child, VImpression(child).object_type() if child else "")
+                message.add(f"  • {parent_display} → {child_display}", "diff")
         else:
             message.add("\nRemoved edges: none", "info")
 
