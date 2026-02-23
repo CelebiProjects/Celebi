@@ -46,7 +46,23 @@ def danger_command(operation: str) -> None:
 @click.command(name="trace")
 @click.argument("obj", type=str)
 def trace_command(obj: str) -> None:
-    """Trace object."""
+    """Trace object to its source impression and show DAG differences.
+
+    Compares the current dependency DAG with the DAG stored in the impression
+    and displays differences in human-readable format:
+
+    - Short UUIDs (7 characters) with type prefixes: [TASK], [ALGO], [DATA], [PROJ]
+    - Bulleted lists for added/removed nodes and edges
+    - Formatted as "parent → child" for edge relationships
+    - Detailed file and edge change information
+
+    Args:
+        obj: UUID or identifier of the impression to trace.
+
+    Examples:
+        celebi trace abc123-def456-ghi789
+        celebi trace impression_2024_01_15
+    """
     try:
         from CelebiChrono.interface.shell import trace
         _handle_result(trace(obj))

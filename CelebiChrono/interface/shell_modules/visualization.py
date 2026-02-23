@@ -121,12 +121,17 @@ def trace(impression: str) -> Message:
         trace impression_2024_01_15
 
     Returns:
-        Message: Message containing DAG comparison details.
+        Message: Message containing DAG comparison details in human-readable
+        format with short UUIDs (7 characters) and type prefixes:
+        - [TASK], [ALGO], [DATA], [PROJ] for object types
+        - Bulleted lists for added/removed nodes and edges
+        - Formatted as "parent → child" for edge relationships
 
     Note:
         - Impression must exist in current project
         - Source object must still be accessible
         - Changes current working context to source object
         - Useful for debugging complex execution chains
+        - Output includes detailed DAG differences with human-readable formatting
     """
     return MANAGER.current_object().trace(impression)
