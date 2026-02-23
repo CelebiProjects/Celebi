@@ -9,7 +9,7 @@ from logging import getLogger
 
 from ..utils import csys
 from ..utils.csys import colorize_diff
-from ..utils.format_utils import format_node_display
+from ..utils.format_utils import format_node_display, format_edge_display
 from ..utils.message import Message
 from .vobj_core import Core
 from .vimpression import VImpression
@@ -397,8 +397,24 @@ class ImpressionManagement(Core):
             message.add("\nRemoved nodes: none", "info")
 
         message.add("\n=== DAG Edge Differences ===", "title0")
-        message.add(f"Added edges:   {added_edges if added_edges else '{}'}", "diff")
-        message.add(f"Removed edges: {removed_edges if removed_edges else '{}'}", "diff")
+
+        if added_edges:
+            message.add(f"\nAdded edges ({len(added_edges)}):", "info")
+            for parent, child in sorted(added_edges):
+                parent_type = VImpression(parent).object_type() if parent else ""
+                child_type = VImpression(child).object_type() if child else ""
+                message.add(f"  • {format_edge_display(parent, child, parent_type, child_type)}", "diff")
+        else:
+            message.add("\nAdded edges: none", "info")
+
+        if removed_edges:
+            message.add(f"\nRemoved edges ({len(removed_edges)}):", "info")
+            for parent, child in sorted(removed_edges):
+                parent_type = VImpression(parent).object_type() if parent else ""
+                child_type = VImpression(child).object_type() if child else ""
+                message.add(f"  • {format_edge_display(parent, child, parent_type, child_type)}", "diff")
+        else:
+            message.add("\nRemoved edges: none", "info")
 
         # --------------------------------------------------------
         #  Check parent-child relationships between removed/added
