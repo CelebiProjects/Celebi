@@ -36,7 +36,9 @@ from .shell_modules.visualization import (
 from .shell_modules.utilities import (
     workaround_preshell, workaround_postshell, history,
     watermark, changes, doctor, bookkeep, bookkeep_url,
-    tree, error_log, danger_call
+    tree, error_log, danger_call,
+    git_merge, git_validate, git_status, git_enable,
+    git_disable, git_hooks
 )
 
 # Explicitly export all functions for backward compatibility
@@ -66,6 +68,9 @@ __all__ = [
     'workaround_preshell', 'workaround_postshell', 'history',
     'watermark', 'changes', 'doctor', 'bookkeep', 'bookkeep_url',
     'danger_call', 'tree', 'error_log',
+    # Git integration functions (from utilities.py)
+    'git_merge', 'git_validate', 'git_status', 'git_enable',
+    'git_disable', 'git_hooks',
     # MANAGER export
     'MANAGER'
 ]

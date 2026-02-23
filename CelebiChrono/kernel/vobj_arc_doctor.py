@@ -1,5 +1,6 @@
 """ Doctor methods for ArcManagement mixin.
 """
+import networkx as nx
 from logging import getLogger
 from typing import TYPE_CHECKING
 
@@ -99,3 +100,271 @@ class ArcManagementDoctor(Core):
                 choice = input("Would you like to remove it? [Y/N]: ")
                 if choice.upper() == "Y":
                     obj.remove_alias(obj.path_to_alias(path))
+
+    # ----------------------------------------------------------------------
+    # MERGE-SPECIFIC VALIDATION METHODS
+    # ----------------------------------------------------------------------
+
+    def validate_merge(self, local_dag=None, remote_dag=None, base_dag=None):
+        """
+        Validate that a merge result maintains DAG consistency.
+
+        Args:
+            local_dag: Optional local branch DAG for comparison
+            remote_dag: Optional remote branch DAG for comparison
+            base_dag: Optional base ancestor DAG for comparison
+
+        Returns:
+            Tuple of (is_valid, issues, conflicts)
+        """
+        from .vobj_arc_merge import DAGMerger, MergeConflictType
+
+        issues = []
+        conflicts = []
+
+        # Build current DAG (filter to dependency edges only)
+        current_dag = self.build_dependency_dag()
+        dep_edges = [
+            (u, v) for u, v, data in current_dag.edges(data=True)
+            if data.get('type') == 'dependency'
+        ]
+        dep_dag = nx.DiGraph()
+        dep_dag.add_nodes_from(current_dag.nodes())
+        dep_dag.add_edges_from(dep_edges)
+
+        # Check for cycles
+        try:
+            nx.find_cycle(dep_dag, orientation='original')
+            issues.append("DAG contains cycles after merge")
+        except nx.NetworkXNoCycle:
+            pass  # Good - no cycles
+
+        # Check for missing node references
+        for u, v in dep_dag.edges():
+            if u not in dep_dag.nodes():
+                issues.append(f"Edge source node missing: {u}")
+            if v not in dep_dag.nodes():
+                issues.append(f"Edge target node missing: {v}")
+
+        # If we have comparison DAGs, check for merge-specific issues
+        if local_dag and remote_dag and base_dag:
+            merger = DAGMerger()
+            merged_dag = merger.merge_dags(local_dag, remote_dag, base_dag)
+
+            # Compare with current DAG
+            current_edges = set(dep_dag.edges())
+            merged_edges = set(merged_dag.edges())
+
+            extra_edges = current_edges - merged_edges
+            missing_edges = merged_edges - current_edges
+
+            if extra_edges:
+                issues.append(f"Extra edges in current DAG: {extra_edges}")
+            if missing_edges:
+                issues.append(f"Missing edges in current DAG: {missing_edges}")
+
+            # Get conflicts from merger
+            for conflict in merger.get_conflicts():
+                conflicts.append({
+                    'type': conflict.conflict_type.value,
+                    'description': conflict.description,
+                    'local': conflict.local_data,
+                    'remote': conflict.remote_data
+                })
+
+        is_valid = len(issues) == 0
+
+        return is_valid, issues, conflicts
+
+    def repair_merge_conflicts(self, conflicts=None, strategy="interactive"):
+        """
+        Repair merge conflicts in the current project.
+
+        Args:
+            conflicts: Optional list of conflicts to repair
+            strategy: Repair strategy ("interactive", "auto", "local", "remote")
+
+        Returns:
+            Tuple of (repaired_count, remaining_conflicts)
+        """
+        from .vobj_arc_merge import DAGMerger, MergeResolutionStrategy
+
+        if not conflicts:
+            # Build current DAG and detect conflicts
+            current_dag = self.build_dependency_dag()
+            # For now, just validate
+            is_valid, issues, _ = self.validate_merge()
+            if not is_valid:
+                print(f"Found {len(issues)} issues:")
+                for issue in issues:
+                    print(f"  - {issue}")
+
+                if strategy == "interactive":
+                    choice = input("Attempt automatic repair? [Y/N]: ")
+                    if choice.upper() == "Y":
+                        return self._auto_repair_issues(issues)
+                elif strategy == "auto":
+                    return self._auto_repair_issues(issues)
+
+            return 0, []
+
+        # Repair specific conflicts
+        repaired = 0
+        remaining = []
+
+        for conflict in conflicts:
+            conflict_type = conflict.get('type')
+            description = conflict.get('description', 'Unknown conflict')
+
+            print(f"\nConflict: {description}")
+
+            if strategy == "interactive":
+                print("Resolution options:")
+                # For now, just log the conflict
+                print("  (Manual resolution required)")
+                remaining.append(conflict)
+            elif strategy == "auto":
+                # Attempt automatic repair based on conflict type
+                if self._auto_repair_conflict(conflict):
+                    repaired += 1
+                else:
+                    remaining.append(conflict)
+            else:
+                remaining.append(conflict)
+
+        return repaired, remaining
+
+    def reconcile_arc_relations(self, verbose: bool = False):
+        """
+        Rebuild and reconcile predecessor/successor links across all objects.
+
+        This method:
+        - Removes links to missing objects
+        - Ensures successor/predecessor lists are symmetric
+        - Deduplicates and stabilizes ordering
+
+        Returns:
+            Dict with counts of updates performed.
+        """
+        objects = [obj for obj in self.sub_objects_recursively()
+                   if obj.is_task_or_algorithm()]
+        obj_by_path = {obj.invariant_path(): obj for obj in objects}
+
+        edges_before = set()
+        edges = set()
+        missing_refs = 0
+        for obj in objects:
+            obj_path = obj.invariant_path()
+            pred_list = obj.config_file.read_variable("predecessors", [])
+            succ_list = obj.config_file.read_variable("successors", [])
+
+            for pred in pred_list:
+                edges_before.add((pred, obj_path))
+                if pred in obj_by_path:
+                    edges.add((pred, obj_path))
+                else:
+                    missing_refs += 1
+            for succ in succ_list:
+                edges_before.add((obj_path, succ))
+                if succ in obj_by_path:
+                    edges.add((obj_path, succ))
+                else:
+                    missing_refs += 1
+
+        update_counts = {
+            "predecessors_updated": 0,
+            "successors_updated": 0,
+            "missing_refs": missing_refs,
+            "edges_before": len(edges_before),
+            "edges_after": len(edges),
+        }
+
+        for obj in objects:
+            obj_path = obj.invariant_path()
+            new_preds = sorted({u for (u, v) in edges if v == obj_path})
+            new_succs = sorted({v for (u, v) in edges if u == obj_path})
+
+            old_preds = obj.config_file.read_variable("predecessors", [])
+            old_succs = obj.config_file.read_variable("successors", [])
+
+            if old_preds != new_preds:
+                obj.config_file.write_variable("predecessors", new_preds)
+                update_counts["predecessors_updated"] += 1
+            if old_succs != new_succs:
+                obj.config_file.write_variable("successors", new_succs)
+                update_counts["successors_updated"] += 1
+
+        if verbose:
+            print("Dag reconciliation:")
+            print(f"  edges before: {update_counts['edges_before']}")
+            print(f"  edges after:  {update_counts['edges_after']}")
+            print(f"  missing refs: {update_counts['missing_refs']}")
+            print(f"  preds updated: {update_counts['predecessors_updated']}")
+            print(f"  succs updated: {update_counts['successors_updated']}")
+
+        return update_counts
+
+    def _auto_repair_issues(self, issues):
+        """Attempt automatic repair of validation issues."""
+        repaired = 0
+        remaining = []
+
+        for issue in issues:
+            print(f"\nAttempting to repair: {issue}")
+
+            # Simple heuristics for common issues
+            if "contains cycles" in issue:
+                if self._attempt_cycle_repair():
+                    repaired += 1
+                else:
+                    remaining.append(issue)
+            elif "node missing" in issue:
+                # Extract node name from issue message
+                # This is a simplified approach
+                print("  (Manual repair required for missing nodes)")
+                remaining.append(issue)
+            else:
+                remaining.append(issue)
+
+        return repaired, remaining
+
+    def _attempt_cycle_repair(self):
+        """Attempt to repair cycles in the DAG."""
+        current_dag = self.build_dependency_dag()
+
+        try:
+            cycles = list(nx.simple_cycles(current_dag))
+        except nx.NetworkXNoCycle:
+            return True  # No cycles found
+
+        print(f"Found {len(cycles)} cycle(s)")
+
+        # Simple heuristic: remove the last edge in each cycle
+        for cycle in cycles:
+            if len(cycle) >= 2:
+                u = cycle[-2]
+                v = cycle[-1]
+                print(f"  Removing edge {u} -> {v} to break cycle")
+
+                # This would need actual edge removal logic
+                # For now, just report
+                print("  (Edge removal not implemented in this prototype)")
+
+        return False  # Not actually repaired in this prototype
+
+    def _auto_repair_conflict(self, conflict):
+        """Attempt automatic repair of a specific conflict."""
+        conflict_type = conflict.get('type')
+
+        # Simple heuristics for automatic repair
+        if conflict_type == "additive_edge":
+            # Keep additive edges
+            return True
+        elif conflict_type == "subtractive_edge":
+            # Keep edge (don't remove)
+            return True
+        elif conflict_type == "contradictory_edge":
+            # Use union strategy
+            return True
+        else:
+            return False

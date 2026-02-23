@@ -23,6 +23,7 @@ class ChernCache:  # pylint: disable=too-many-instance-attributes
         self.deposit_consult_table = {}
         self.count = 0
         self.impression_check_count = {}
+        self.generic_cache = {}
 
     @classmethod
     def instance(cls): # UnitTest: DONE
@@ -36,3 +37,11 @@ class ChernCache:  # pylint: disable=too-many-instance-attributes
         if not self.project_path:
             self.project_path = path
         return self.project_path
+
+    def get(self, key):
+        """Get a value from the generic cache."""
+        return self.generic_cache.get(key)
+
+    def set(self, key, value):
+        """Set a value in the generic cache."""
+        self.generic_cache[key] = value
