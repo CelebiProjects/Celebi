@@ -445,7 +445,7 @@ class ImpressionManagement(Core):
         # --------------------------------------------------------
         #  Check parent-child relationships between removed/added
         # --------------------------------------------------------
-        message.add("\n=== Detailed Diff (removed parent → added child) ===", "title0")
+        message.add("\n=== Detailed Changes (Parent → Child) ===", "title0")
 
 
         def is_parent(parent_uuid, child_uuid):
@@ -458,7 +458,9 @@ class ImpressionManagement(Core):
                 print(r, a)
                 if is_parent(r, a):
                     print("Is parent")
-                    message.add(f"\n--- Change detected: {r} → {a}", "title1")
+                    parent_type = VImpression(r).object_type() if r else ""
+                    child_type = VImpression(a).object_type() if a else ""
+                    message.add(f"\nChange: {format_edge_display(r, a, parent_type, child_type)}", "title1")
 
                     # --------------------------------------------------------
                     #  Run impression diff
