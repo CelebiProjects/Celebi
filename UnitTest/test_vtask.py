@@ -1604,7 +1604,12 @@ class TestChernVTask(unittest.TestCase):
             mock_communicator = MagicMock()
             mock_instance.return_value = mock_communicator
             mock_communicator.dite_status.return_value = "connected"
-            mock_communicator.job_status.return_value = "running"
+            mock_communicator.job_status.return_value = {
+                    "status": "running",
+                    "musical_status": "in movement",
+                    "legancy_status": "running",
+                    "detailed_status": "Detailed Status"
+                    }
 
             mock_message = MagicMock()
             mock_super.return_value = mock_message
