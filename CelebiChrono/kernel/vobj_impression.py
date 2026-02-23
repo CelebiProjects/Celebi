@@ -9,6 +9,7 @@ from logging import getLogger
 
 from ..utils import csys
 from ..utils.csys import colorize_diff
+from ..utils.format_utils import format_node_display
 from ..utils.message import Message
 from .vobj_core import Core
 from .vimpression import VImpression
@@ -378,8 +379,22 @@ class ImpressionManagement(Core):
         # Pretty print
         # ------------------------------------------------------
         message.add("\n=== DAG Node Differences ===", "title0")
-        message.add(f"Added nodes:   {added_nodes if added_nodes else '{}'}", "diff")
-        message.add(f"Removed nodes: {removed_nodes if removed_nodes else '{}'}", "diff")
+
+        if added_nodes:
+            message.add(f"\nAdded nodes ({len(added_nodes)}):", "info")
+            for node in sorted(added_nodes):
+                obj_type = VImpression(node).object_type() if node else ""
+                message.add(f"  • {format_node_display(node, obj_type)}", "diff")
+        else:
+            message.add("\nAdded nodes: none", "info")
+
+        if removed_nodes:
+            message.add(f"\nRemoved nodes ({len(removed_nodes)}):", "info")
+            for node in sorted(removed_nodes):
+                obj_type = VImpression(node).object_type() if node else ""
+                message.add(f"  • {format_node_display(node, obj_type)}", "diff")
+        else:
+            message.add("\nRemoved nodes: none", "info")
 
         message.add("\n=== DAG Edge Differences ===", "title0")
         message.add(f"Added edges:   {added_edges if added_edges else '{}'}", "diff")
