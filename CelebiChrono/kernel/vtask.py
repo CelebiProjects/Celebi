@@ -156,7 +156,8 @@ class VTask(InputManager, SettingManager, FileManager, JobManager):
         message.add(f"{'['+musical_status+']'}")
         message.add(f"{'['+real_status+']'}")
         message.add("\n")
-        message.add(f"Detailed status: {detailed_status}\n")
+        message.add(f"Details: {detailed_status}\n",
+                    "warning" if musical_status in ("failed") else "normal")
 
         environment = self.environment()
         if environment == "rawdata":
