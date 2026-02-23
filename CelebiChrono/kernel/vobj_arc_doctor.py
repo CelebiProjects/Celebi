@@ -122,21 +122,28 @@ class ArcManagementDoctor(Core):
         issues = []
         conflicts = []
 
-        # Build current DAG
+        # Build current DAG (filter to dependency edges only)
         current_dag = self.build_dependency_dag()
+        dep_edges = [
+            (u, v) for u, v, data in current_dag.edges(data=True)
+            if data.get('type') == 'dependency'
+        ]
+        dep_dag = nx.DiGraph()
+        dep_dag.add_nodes_from(current_dag.nodes())
+        dep_dag.add_edges_from(dep_edges)
 
         # Check for cycles
         try:
-            nx.find_cycle(current_dag, orientation='original')
+            nx.find_cycle(dep_dag, orientation='original')
             issues.append("DAG contains cycles after merge")
         except nx.NetworkXNoCycle:
             pass  # Good - no cycles
 
         # Check for missing node references
-        for u, v in current_dag.edges():
-            if u not in current_dag.nodes():
+        for u, v in dep_dag.edges():
+            if u not in dep_dag.nodes():
                 issues.append(f"Edge source node missing: {u}")
-            if v not in current_dag.nodes():
+            if v not in dep_dag.nodes():
                 issues.append(f"Edge target node missing: {v}")
 
         # If we have comparison DAGs, check for merge-specific issues
@@ -145,7 +152,7 @@ class ArcManagementDoctor(Core):
             merged_dag = merger.merge_dags(local_dag, remote_dag, base_dag)
 
             # Compare with current DAG
-            current_edges = set(current_dag.edges())
+            current_edges = set(dep_dag.edges())
             merged_edges = set(merged_dag.edges())
 
             extra_edges = current_edges - merged_edges
@@ -226,6 +233,76 @@ class ArcManagementDoctor(Core):
                 remaining.append(conflict)
 
         return repaired, remaining
+
+    def reconcile_arc_relations(self, verbose: bool = False):
+        """
+        Rebuild and reconcile predecessor/successor links across all objects.
+
+        This method:
+        - Removes links to missing objects
+        - Ensures successor/predecessor lists are symmetric
+        - Deduplicates and stabilizes ordering
+
+        Returns:
+            Dict with counts of updates performed.
+        """
+        objects = [obj for obj in self.sub_objects_recursively()
+                   if obj.is_task_or_algorithm()]
+        obj_by_path = {obj.invariant_path(): obj for obj in objects}
+
+        edges_before = set()
+        edges = set()
+        missing_refs = 0
+        for obj in objects:
+            obj_path = obj.invariant_path()
+            pred_list = obj.config_file.read_variable("predecessors", [])
+            succ_list = obj.config_file.read_variable("successors", [])
+
+            for pred in pred_list:
+                edges_before.add((pred, obj_path))
+                if pred in obj_by_path:
+                    edges.add((pred, obj_path))
+                else:
+                    missing_refs += 1
+            for succ in succ_list:
+                edges_before.add((obj_path, succ))
+                if succ in obj_by_path:
+                    edges.add((obj_path, succ))
+                else:
+                    missing_refs += 1
+
+        update_counts = {
+            "predecessors_updated": 0,
+            "successors_updated": 0,
+            "missing_refs": missing_refs,
+            "edges_before": len(edges_before),
+            "edges_after": len(edges),
+        }
+
+        for obj in objects:
+            obj_path = obj.invariant_path()
+            new_preds = sorted({u for (u, v) in edges if v == obj_path})
+            new_succs = sorted({v for (u, v) in edges if u == obj_path})
+
+            old_preds = obj.config_file.read_variable("predecessors", [])
+            old_succs = obj.config_file.read_variable("successors", [])
+
+            if old_preds != new_preds:
+                obj.config_file.write_variable("predecessors", new_preds)
+                update_counts["predecessors_updated"] += 1
+            if old_succs != new_succs:
+                obj.config_file.write_variable("successors", new_succs)
+                update_counts["successors_updated"] += 1
+
+        if verbose:
+            print("Dag reconciliation:")
+            print(f"  edges before: {update_counts['edges_before']}")
+            print(f"  edges after:  {update_counts['edges_after']}")
+            print(f"  missing refs: {update_counts['missing_refs']}")
+            print(f"  preds updated: {update_counts['predecessors_updated']}")
+            print(f"  succs updated: {update_counts['successors_updated']}")
+
+        return update_counts
 
     def _auto_repair_issues(self, issues):
         """Attempt automatic repair of validation issues."""

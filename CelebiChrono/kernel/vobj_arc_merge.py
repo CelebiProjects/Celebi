@@ -106,6 +106,9 @@ class DAGMerger:
         # Step 5: Apply conflict resolution strategy
         self._apply_resolution_strategy()
 
+        # Step 5b: Apply resolved actions to the merged graph
+        self.apply_resolutions_to_graph()
+
         # Step 6: Validate merged DAG
         self._validate_merged_dag()
 

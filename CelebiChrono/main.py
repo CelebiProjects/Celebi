@@ -214,7 +214,12 @@ def prologue():
 # Git Integration Commands
 # ----------------------------------------------------------------------
 
-@cli.command()
+@click.group()
+def git_cli():
+    """Celebi git integration commands."""
+
+
+@git_cli.command(name="merge")
 @click.argument("branch", type=str)
 @click.option("--strategy", "-s", type=click.Choice(["interactive", "auto", "local", "remote", "union"]),
               default="interactive", help="Merge strategy to use")
@@ -275,7 +280,7 @@ def git_merge(branch, strategy, dry_run):
         import traceback
         traceback.print_exc()
 
-@cli.command()
+@git_cli.command(name="validate")
 def git_validate():
     """Validate Celebi project state after git operations."""
     try:
@@ -307,7 +312,7 @@ def git_validate():
     except Exception as e:
         print(f"Error during validation: {e}")
 
-@cli.command()
+@git_cli.command(name="status")
 def git_status():
     """Show git integration status and merge readiness."""
     try:
@@ -367,7 +372,7 @@ def git_status():
     except Exception as e:
         print(f"Error getting git status: {e}")
 
-@cli.command()
+@git_cli.command(name="enable")
 def git_enable():
     """Enable Celebi git integration for current project."""
     try:
@@ -404,7 +409,7 @@ def git_enable():
     except Exception as e:
         print(f"Error enabling git integration: {e}")
 
-@cli.command()
+@git_cli.command(name="disable")
 def git_disable():
     """Disable Celebi git integration for current project."""
     try:
@@ -422,7 +427,7 @@ def git_disable():
     except Exception as e:
         print(f"Error disabling git integration: {e}")
 
-@cli.command()
+@git_cli.command(name="hooks")
 @click.option("--install/--uninstall", default=True, help="Install or uninstall git hooks")
 def git_hooks(install):
     """Install or uninstall Celebi git hooks."""
@@ -450,7 +455,7 @@ def git_hooks(install):
     except Exception as e:
         print(f"Error managing git hooks: {e}")
 
-@cli.command()
+@git_cli.command(name="config")
 @click.argument("key", type=str)
 @click.argument("value", type=str)
 def git_config(key, value):

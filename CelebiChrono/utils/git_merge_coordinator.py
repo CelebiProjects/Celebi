@@ -155,6 +155,14 @@ class GitMergeCoordinator:
             if git_result.get('has_conflicts') and results['conflicts_resolved'] and not dry_run:
                 subprocess.run(['git', 'commit', '--no-edit'], cwd=self.project_path)
 
+            # Step 3: Reconcile arcs (even in dry-run, since merge already touched working tree)
+            if self.doctor:
+                try:
+                    arc_updates = self.doctor.reconcile_arc_relations(verbose=True)
+                    results['arc_reconciliation'] = arc_updates
+                except Exception as e:
+                    results['warnings'].append(f"Arc reconciliation failed: {e}")
+
             # Step 3: Validate and repair merged state
             if not dry_run:
                 validation_result = self._validate_and_repair(strategy)
@@ -222,6 +230,12 @@ class GitMergeCoordinator:
             print("Resolving conflict:", conflict)
             file_path = conflict['file']
 
+            if conflict['type'].startswith('rename/rename'):
+                resolved = self._resolve_rename_rename_conflict(conflict, strategy)
+                if not resolved:
+                    all_resolved = False
+                continue
+
             if conflict['type'] == 'content' and file_path.endswith(('.yaml', '.yml')):
                 logger.info("Resolving YAML conflict automatically: %s", file_path)
                 try:
@@ -243,6 +257,141 @@ class GitMergeCoordinator:
                 all_resolved = False
 
         return all_resolved
+
+    def _read_index_stage(self, stage: int, path: str) -> Optional[bytes]:
+        """Read file content from git index stage."""
+        try:
+            result = subprocess.run(
+                ['git', 'show', f':{stage}:{path}'],
+                cwd=self.project_path,
+                capture_output=True,
+                check=True
+            )
+            return result.stdout
+        except subprocess.CalledProcessError as e:
+            logger.warning("Failed to read stage %s for %s: %s", stage, path, e)
+            return None
+
+    def _write_file(self, path: str, content: bytes) -> None:
+        """Write file content to disk, creating parent dirs if needed."""
+        full_path = os.path.join(self.project_path, path)
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        with open(full_path, 'wb') as f:
+            f.write(content)
+
+    def _remove_path(self, path: str) -> None:
+        """Remove path from git index and working tree if present."""
+        if not path:
+            return
+        subprocess.run(['git', 'rm', '--cached', '--ignore-unmatch', path],
+                       cwd=self.project_path, check=False)
+        full_path = os.path.join(self.project_path, path)
+        if os.path.exists(full_path):
+            try:
+                os.remove(full_path)
+            except OSError:
+                pass
+
+    def _resolve_rename_rename_conflict(self, conflict: Dict, strategy: MergeStrategy) -> bool:
+        """Resolve rename/rename conflicts by keeping local/remote/both."""
+        base_path = conflict.get('base_path')
+        ours_path = conflict.get('ours_path')
+        theirs_path = conflict.get('theirs_path')
+
+        if not ours_path or not theirs_path:
+            logger.warning("rename/rename conflict missing paths: %s", conflict)
+            return False
+
+        ours_content = self._read_index_stage(2, ours_path)
+        theirs_content = self._read_index_stage(3, theirs_path)
+
+        if ours_content is None or theirs_content is None:
+            # Fallback: try to locate stage entries from index
+            stage_entries = self._get_unmerged_stage_entries()
+            ours_candidate = stage_entries.get((2, ours_path))
+            theirs_candidate = stage_entries.get((3, theirs_path))
+            if ours_candidate:
+                ours_content = self._read_index_stage(2, ours_candidate)
+            if theirs_candidate:
+                theirs_content = self._read_index_stage(3, theirs_candidate)
+
+        if ours_content is None:
+            ours_content = self._read_working_tree_file(ours_path)
+        if theirs_content is None:
+            theirs_content = self._read_working_tree_file(theirs_path)
+
+        if ours_content is None or theirs_content is None:
+            logger.warning("rename/rename conflict missing stage content: %s", conflict)
+            return False
+
+        # For rename/rename, prefer keeping both paths to avoid data loss.
+        keep_local = strategy in [MergeStrategy.LOCAL]
+        keep_remote = strategy in [MergeStrategy.REMOTE]
+        keep_both = True
+
+        if keep_local:
+            self._write_file(ours_path, ours_content)
+            self._write_file(theirs_path, theirs_content)
+            subprocess.run(['git', 'add', ours_path, theirs_path],
+                           cwd=self.project_path, check=False)
+            self._remove_path(base_path)
+            return True
+
+        if keep_remote:
+            self._write_file(ours_path, ours_content)
+            self._write_file(theirs_path, theirs_content)
+            subprocess.run(['git', 'add', ours_path, theirs_path],
+                           cwd=self.project_path, check=False)
+            self._remove_path(base_path)
+            return True
+
+        if keep_both:
+            self._write_file(ours_path, ours_content)
+            self._write_file(theirs_path, theirs_content)
+            subprocess.run(['git', 'add', ours_path, theirs_path],
+                           cwd=self.project_path, check=False)
+            self._remove_path(base_path)
+            return True
+
+        return False
+
+    def _get_unmerged_stage_entries(self) -> Dict[tuple, str]:
+        """Return a mapping of (stage, path) -> path for unmerged index entries."""
+        entries = {}
+        try:
+            process = subprocess.run(
+                ['git', 'ls-files', '-u'],
+                cwd=self.project_path,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            for line in process.stdout.splitlines():
+                # format: <mode> <sha1> <stage>\t<path>
+                if not line.strip():
+                    continue
+                try:
+                    meta, path = line.split('\t', 1)
+                    stage = int(meta.split()[2])
+                    entries[(stage, path)] = path
+                except (ValueError, IndexError):
+                    continue
+        except subprocess.CalledProcessError:
+            pass
+        return entries
+
+    def _read_working_tree_file(self, path: str) -> Optional[bytes]:
+        """Read file content from working tree if present."""
+        if not path:
+            return None
+        full_path = os.path.join(self.project_path, path)
+        if not os.path.exists(full_path):
+            return None
+        try:
+            with open(full_path, 'rb') as f:
+                return f.read()
+        except OSError:
+            return None
 
     def _merge_yaml_file(self, file_path: str, strategy: MergeStrategy) -> bool:
         """Handle YAML merge conflicts using Git conflict markers."""
@@ -298,15 +447,26 @@ class GitMergeCoordinator:
         conflicts = []
         for line in git_output.split('\n'):
             if "CONFLICT" in line:
-                parts = line.split(':')
+                parts = line.split(':', 1)
                 if len(parts) >= 2:
                     conflict_type = parts[0].replace('CONFLICT', '').strip(' ()')
-                    file_path = parts[1].replace('Merge conflict in', '').strip()
-                    conflicts.append({
+                    file_desc = parts[1].replace('Merge conflict in', '').strip()
+                    conflict = {
                         'type': conflict_type,
-                        'file': file_path,
+                        'file': file_desc,
                         'description': line.strip()
-                    })
+                    }
+                    if conflict_type.startswith('rename/rename'):
+                        rename_match = re.match(
+                            r'(.+?) renamed to (.+?) in HEAD and to (.+?) in .+$',
+                            file_desc
+                        )
+                        if rename_match:
+                            conflict['base_path'] = rename_match.group(1)
+                            conflict['ours_path'] = rename_match.group(2)
+                            conflict['theirs_path'] = rename_match.group(3)
+                            conflict['file'] = conflict['base_path']
+                    conflicts.append(conflict)
         return conflicts
 
     def _has_unmerged_paths(self) -> bool:
@@ -375,17 +535,24 @@ class GitMergeCoordinator:
         result = {'issues': [], 'conflicts': []}
         try:
             current_dag = self.doctor.build_dependency_dag()
+            dep_edges = [
+                (u, v) for u, v, data in current_dag.edges(data=True)
+                if data.get('type') == 'dependency'
+            ]
+            dep_dag = nx.DiGraph()
+            dep_dag.add_nodes_from(current_dag.nodes())
+            dep_dag.add_edges_from(dep_edges)
             import networkx as nx
             try:
-                nx.find_cycle(current_dag, orientation='original')
+                nx.find_cycle(dep_dag, orientation='original')
                 result['issues'].append("DAG contains cycles")
             except nx.NetworkXNoCycle:
                 pass
 
-            for u, v in current_dag.edges():
-                if u not in current_dag.nodes():
+            for u, v in dep_dag.edges():
+                if u not in dep_dag.nodes():
                     result['issues'].append(f"Missing source node: {u}")
-                if v not in current_dag.nodes():
+                if v not in dep_dag.nodes():
                     result['issues'].append(f"Missing target node: {v}")
 
             is_valid, issues, conflicts = self.doctor.validate_merge()
@@ -423,6 +590,13 @@ class GitMergeCoordinator:
         """Repair issues interactively with user guidance."""
         result = {'success': True, 'repairs': [], 'remaining_issues': [], 'remaining_conflicts': []}
         # Assuming interactive CLI logic is implemented here. Skipped for brevity.
+        if self.doctor:
+            arc_updates = self.doctor.reconcile_arc_relations()
+            if arc_updates["predecessors_updated"] or arc_updates["successors_updated"]:
+                result['repairs'].append(
+                    f"Reconciled arcs (pred={arc_updates['predecessors_updated']}, "
+                    f"succ={arc_updates['successors_updated']})"
+                )
         return result
 
     def _repair_automatically(self, issues: List[str], conflicts: List[Dict]) -> Dict[str, Any]:
@@ -432,6 +606,12 @@ class GitMergeCoordinator:
             repairs, remaining = self.doctor.repair_merge_conflicts(conflicts=conflicts, strategy="auto")
             result['repairs'].extend([f"Auto-repaired: {r}" for r in repairs])
             result['remaining_conflicts'] = remaining
+            arc_updates = self.doctor.reconcile_arc_relations()
+            if arc_updates["predecessors_updated"] or arc_updates["successors_updated"]:
+                result['repairs'].append(
+                    f"Reconciled arcs (pred={arc_updates['predecessors_updated']}, "
+                    f"succ={arc_updates['successors_updated']})"
+                )
 
         for issue in issues:
             if "contains cycles" in issue and hasattr(self.doctor, '_attempt_cycle_repair') and self.doctor._attempt_cycle_repair():
@@ -498,8 +678,9 @@ class GitMergeCoordinator:
             results['issues'].extend(issues)
             if not is_valid:
                 repaired, remaining = self.doctor.repair_merge_conflicts(conflicts=conflicts, strategy="auto")
-                if len(repaired) > 0:
-                    results['repairs'].append(f"Automatically repaired {len(repaired)} issue(s)")
+                repaired_count = repaired if isinstance(repaired, int) else len(repaired)
+                if repaired_count > 0:
+                    results['repairs'].append(f"Automatically repaired {repaired_count} issue(s)")
                 results['success'] = len(remaining) == 0
             else:
                 results['success'] = True

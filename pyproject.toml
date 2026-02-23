@@ -47,3 +47,4 @@ include-package-data = true
 [project.scripts]
 celebi = "CelebiChrono.main:main"
 celebi-cli = "CelebiChrono.celebi_cli.cli:cli"
+celebi-git = "CelebiChrono.main:git_cli"
