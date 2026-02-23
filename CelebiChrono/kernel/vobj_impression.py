@@ -451,13 +451,9 @@ class ImpressionManagement(Core):
         def is_parent(parent_uuid, child_uuid):
             return parent_uuid in VImpression(child_uuid).parents()
 
-        print(removed_nodes)
-        print(added_nodes)
         for r in removed_nodes:
             for a in added_nodes:
-                print(r, a)
                 if is_parent(r, a):
-                    print("Is parent")
                     parent_type = VImpression(r).object_type() if r else ""
                     child_type = VImpression(a).object_type() if a else ""
                     message.add(f"\nChange: {format_edge_display(r, a, parent_type, child_type)}", "title1")
@@ -476,12 +472,9 @@ class ImpressionManagement(Core):
                     new_root = new_impr.path + "/contents"
 
                     # Compare file lists (sorted, relative paths)
-                    print("Before comparing file", old_root, "with", new_root, "...)")
                     old_files = csys.get_files_in_directory(old_root)
                     new_files = csys.get_files_in_directory(new_root)
 
-                    print(old_files)
-                    print(new_files)
 
                     old_files_set = set(old_files)
                     new_files_set = set(new_files)
@@ -499,12 +492,10 @@ class ImpressionManagement(Core):
                         for file in sorted(removed_files):
                             message.add(f"    • {file}", "diff")
 
-                    print("Before comparing file")
                     # diff the common files
                     for rel in sorted(common):
                         old_f = os.path.join(old_root, rel)
                         new_f = os.path.join(new_root, rel)
-                        print("Compare file", old_f, "with", new_f, "...)")
 
                         with open(old_f, 'r', encoding='utf-8',
                                   errors="ignore") as f1:
@@ -524,7 +515,6 @@ class ImpressionManagement(Core):
                             message.add(f"\n  Diff in file: {rel}", "info")
                             message.add("".join(diff), "diff")
 
-                    print("After comparing file")
 
                     # Calculate the changes in incoming edges
                     added_edges_to_a = [e[0] for e in added_edges if e[1] == a]
@@ -543,7 +533,6 @@ class ImpressionManagement(Core):
                         for parent in sorted(edge_diff_r):
                             parent_type = VImpression(parent).object_type() if parent else ""
                             message.add(f"      • {format_node_display(parent, parent_type)}", "diff")
-            print("Done")
 
         return message
 
