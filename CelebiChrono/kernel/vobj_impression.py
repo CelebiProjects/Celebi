@@ -296,11 +296,11 @@ class ImpressionManagement(Core):
         return status
 
     # pylint: disable=too-many-locals,too-many-statements
-    def trace(self, impression=None):
+    def trace(self, impression=None) -> Message:
         """
         Compare the *current* dependency DAG of `self` with the DAG stored in
         a given impression (or the current impression if not provided).
-        Print the differences.
+        Return a Message with the differences.
 
         Output example:
 
@@ -314,12 +314,13 @@ class ImpressionManagement(Core):
 
         """
         logger.debug("Tracing DAG differences for %s", self.path)
+        message = Message()
 
         if impression is None:
             impression = self.impression()
         if impression is None:
-            print("No impression exists. Object is NEW.")
-            return
+            message.add("No impression exists. Object is NEW.", "warning")
+            return message
         impression = VImpression(impression)
 
         # ---------------------------------------------
@@ -376,26 +377,31 @@ class ImpressionManagement(Core):
         # ------------------------------------------------------
         # Pretty print
         # ------------------------------------------------------
-        print("\n=== DAG Node Differences ===")
-        print(f"Added nodes:   {added_nodes if added_nodes else '{}'}")
-        print(f"Removed nodes: {removed_nodes if removed_nodes else '{}'}")
+        message.add("\n=== DAG Node Differences ===", "title0")
+        message.add(f"Added nodes:   {added_nodes if added_nodes else '{}'}", "diff")
+        message.add(f"Removed nodes: {removed_nodes if removed_nodes else '{}'}", "diff")
 
-        print("\n=== DAG Edge Differences ===")
-        print(f"Added edges:   {added_edges if added_edges else '{}'}")
-        print(f"Removed edges: {removed_edges if removed_edges else '{}'}")
+        message.add("\n=== DAG Edge Differences ===", "title0")
+        message.add(f"Added edges:   {added_edges if added_edges else '{}'}", "diff")
+        message.add(f"Removed edges: {removed_edges if removed_edges else '{}'}", "diff")
 
         # --------------------------------------------------------
         #  Check parent-child relationships between removed/added
         # --------------------------------------------------------
-        print("\n=== Detailed Diff (removed parent → added child) ===")
+        message.add("\n=== Detailed Diff (removed parent → added child) ===", "title0")
+
 
         def is_parent(parent_uuid, child_uuid):
             return parent_uuid in VImpression(child_uuid).parents()
 
+        print(removed_nodes)
+        print(added_nodes)
         for r in removed_nodes:
             for a in added_nodes:
+                print(r, a)
                 if is_parent(r, a):
-                    print(f"\n--- Change detected: {r} → {a}")
+                    print("Is parent")
+                    message.add(f"\n--- Change detected: {r} → {a}", "title1")
 
                     # --------------------------------------------------------
                     #  Run impression diff
@@ -404,15 +410,19 @@ class ImpressionManagement(Core):
                     new_impr = VImpression(a) if a else None
 
                     if not (old_impr and new_impr):
-                        print("One of the impressions does not exist, skipping diff.")
+                        message.add("One of the impressions does not exist, skipping diff.", "warning")
                         continue
 
                     old_root = old_impr.path + "/contents"
                     new_root = new_impr.path + "/contents"
 
                     # Compare file lists (sorted, relative paths)
+                    print("Before comparing file", old_root, "with", new_root, "...)")
                     old_files = csys.get_files_in_directory(old_root)
                     new_files = csys.get_files_in_directory(new_root)
+
+                    print(old_files)
+                    print(new_files)
 
                     old_files_set = set(old_files)
                     new_files_set = set(new_files)
@@ -421,13 +431,15 @@ class ImpressionManagement(Core):
                     removed_files = old_files_set - new_files_set
                     added_files   = new_files_set - old_files_set
 
-                    print(f"  Added files:   {added_files}")
-                    print(f"  Removed files: {removed_files}")
+                    message.add(f"  Added files:   {added_files}", "diff")
+                    message.add(f"  Removed files: {removed_files}", "diff")
 
+                    print("Before comparing file")
                     # diff the common files
                     for rel in sorted(common):
                         old_f = os.path.join(old_root, rel)
                         new_f = os.path.join(new_root, rel)
+                        print("Compare file", old_f, "with", new_f, "...)")
 
                         with open(old_f, 'r', encoding='utf-8',
                                   errors="ignore") as f1:
@@ -444,8 +456,10 @@ class ImpressionManagement(Core):
 
                         if diff:
                             diff = colorize_diff(diff).splitlines(keepends=True)
-                            print(f"\n  Diff in file: {rel}")
-                            print("".join(diff))
+                            message.add(f"\n  Diff in file: {rel}", "info")
+                            message.add("".join(diff), "diff")
+
+                    print("After comparing file")
 
                     # Calculate the changes in incoming edges
                     added_edges_to_a = [e[0] for e in added_edges if e[1] == a]
@@ -453,11 +467,12 @@ class ImpressionManagement(Core):
                     # estimating the difference in edges
                     edge_diff_a = set(added_edges_to_a) - set(removed_edges_from_r)
                     edge_diff_r = set(removed_edges_from_r) - set(added_edges_to_a)
-                    print(f"  Changed incoming edges to {a}:")
-                    print(f"    Added from:   {edge_diff_a if edge_diff_a else '{}'}")
-                    print(f"    Removed from: {edge_diff_r if edge_diff_r else '{}'}")
+                    message.add(f"  Changed incoming edges to {a}:", "info")
+                    message.add(f"    Added from:   {edge_diff_a if edge_diff_a else '{}'}", "diff")
+                    message.add(f"    Removed from: {edge_diff_r if edge_diff_r else '{}'}", "diff")
+            print("Done")
 
-        print("\nTrace complete.\n")
+        return message
 
     def history(self) -> Message:
         """Print all the parents of the current impression.

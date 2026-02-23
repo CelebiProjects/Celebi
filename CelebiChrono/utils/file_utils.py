@@ -222,7 +222,7 @@ def update_time(consult_id):
 def get_files_in_directory(root, exclude=()):
     """ Get all files in the directory recursively, excluding specified paths
     """
-    files = []
+    files_list = []
     for dirpath, _, files in os.walk(root):
         for f in files:
             file_excluded = False
@@ -235,8 +235,8 @@ def get_files_in_directory(root, exclude=()):
             if file_excluded:
                 continue
             rel = os.path.relpath(os.path.join(dirpath, f), root)
-            files.append(rel)
-    return files
+            files_list.append(rel)
+    return files_list
 
 
 @contextmanager

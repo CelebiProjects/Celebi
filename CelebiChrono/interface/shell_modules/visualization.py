@@ -121,7 +121,7 @@ def trace(impression: str) -> Message:
         trace impression_2024_01_15
 
     Returns:
-        Message: Status message indicating trace completion.
+        Message: Message containing DAG comparison details.
 
     Note:
         - Impression must exist in current project
@@ -129,7 +129,4 @@ def trace(impression: str) -> Message:
         - Changes current working context to source object
         - Useful for debugging complex execution chains
     """
-    message = Message()
-    MANAGER.current_object().trace(impression)
-    message.add("Trace complete", "success")
-    return message
+    return MANAGER.current_object().trace(impression)
