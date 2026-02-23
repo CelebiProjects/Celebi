@@ -308,7 +308,8 @@ class ChernCommunicator():
         except Exception as e:
             print(f"An error occurred: {e}")
             return "unconnected to DITE"
-        return r.text
+        json_data = json.loads(r.text)
+        return json_data
 
     def sample_status(self, impression):
         """ Get the sample status of the impression """
