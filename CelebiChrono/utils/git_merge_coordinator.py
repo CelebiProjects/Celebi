@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 import json
 import shutil
+from collections import defaultdict
 from typing import Dict, List, Optional, Any
 from enum import Enum
 from logging import getLogger
@@ -141,12 +142,15 @@ class GitMergeCoordinator:  # pylint: disable=too-many-instance-attributes
         backup_info = None
         if not dry_run:
             backup_info = self._create_backup()
+        local_alias_snapshot = self._capture_alias_snapshot()
+        remote_alias_snapshot = self._capture_alias_snapshot(branch)
 
         try:
             # Step 1: Perform git merge
             git_result = self._run_git_merge(branch, dry_run)
             results['git_merge_success'] = git_result['success']
             results['git_conflicts'] = git_result.get('conflicts', [])
+            rename_map = self._build_object_rename_map(results['git_conflicts'])
 
             # Step 2: Handle Conflicts
             if git_result.get('has_conflicts'):
@@ -202,6 +206,23 @@ class GitMergeCoordinator:  # pylint: disable=too-many-instance-attributes
                     results['arc_reconciliation'] = arc_updates
                 except Exception as e:
                     results['warnings'].append(f"Arc reconciliation failed: {e}")
+
+            alias_resolution = self._apply_alias_collision_policy(
+                strategy=strategy,
+                local_snapshot=local_alias_snapshot,
+                remote_snapshot=remote_alias_snapshot,
+                rename_map=rename_map,
+            )
+            results['alias_collision_resolution'] = alias_resolution
+            if self.doctor and alias_resolution.get("targets_updated", 0) > 0:
+                try:
+                    # Keep predecessor/successor symmetry after alias-based edge removals.
+                    arc_updates_after_alias = self.doctor.reconcile_arc_relations(verbose=False)
+                    results['arc_reconciliation_after_alias'] = arc_updates_after_alias
+                except Exception as e:
+                    results['warnings'].append(
+                        f"Post-alias arc reconciliation failed: {e}"
+                    )
 
             # Step 3: Validate and repair merged state
             if not dry_run:
@@ -718,6 +739,11 @@ class GitMergeCoordinator:  # pylint: disable=too-many-instance-attributes
             'remaining_conflicts': [],
         }
         # Assuming interactive CLI logic is implemented here. Skipped for brevity.
+        alias_updates = self._apply_alias_collision_policy(MergeStrategy.AUTO)
+        if alias_updates["targets_updated"]:
+            result['repairs'].append(
+                f"Resolved alias collisions in {alias_updates['targets_updated']} target(s)"
+            )
         if self.doctor:
             arc_updates = self.doctor.reconcile_arc_relations()
             if arc_updates["predecessors_updated"] or arc_updates["successors_updated"]:
@@ -739,6 +765,11 @@ class GitMergeCoordinator:  # pylint: disable=too-many-instance-attributes
             'remaining_issues': [],
             'remaining_conflicts': [],
         }
+        alias_updates = self._apply_alias_collision_policy(MergeStrategy.AUTO)
+        if alias_updates["targets_updated"]:
+            result['repairs'].append(
+                f"Resolved alias collisions in {alias_updates['targets_updated']} target(s)"
+            )
         if self.doctor:
             repairs, remaining = self.doctor.repair_merge_conflicts(
                 conflicts=conflicts,
@@ -778,10 +809,17 @@ class GitMergeCoordinator:  # pylint: disable=too-many-instance-attributes
         self,
         issues: List[str],
         conflicts: List[Dict],
-        _strategy: MergeStrategy,
+        strategy: MergeStrategy,
     ) -> Dict[str, Any]:
         """Repair issues with local/remote preference."""
-        return self._repair_automatically(issues, conflicts)
+        result = self._repair_automatically(issues, conflicts)
+        alias_updates = self._apply_alias_collision_policy(strategy)
+        if alias_updates["targets_updated"]:
+            result['repairs'].append(
+                "Applied strategy-specific alias collision policy "
+                f"for {alias_updates['targets_updated']} target(s)"
+            )
+        return result
 
     def _regenerate_impressions(self) -> Dict[str, Any]:
         """Regenerate impressions after successful merge."""
@@ -836,11 +874,279 @@ class GitMergeCoordinator:  # pylint: disable=too-many-instance-attributes
         ):
             shutil.rmtree(backup_info['backup_dir'])
 
+    def _iter_task_algorithm_objects(self) -> List[VObject]:
+        """Return task/algorithm objects in the current project."""
+        if not self.doctor:
+            return []
+        return [
+            obj for obj in self.doctor.sub_objects_recursively()
+            if obj.is_task_or_algorithm()
+        ]
+
+    def _capture_alias_snapshot(
+        self,
+        git_ref: Optional[str] = None,
+    ) -> Dict[str, Dict[str, List[str]]]:
+        """Capture alias->predecessor mapping per target from working tree or git ref."""
+        snapshot: Dict[str, Dict[str, List[str]]] = {}
+
+        if git_ref is None:
+            for obj in self._iter_task_algorithm_objects():
+                target = obj.invariant_path()
+                alias_map = obj.config_file.read_variable("alias_to_path", {}) or {}
+                snapshot[target] = {
+                    alias: [path]
+                    for alias, path in alias_map.items()
+                    if path
+                }
+            return snapshot
+
+        try:
+            process = subprocess.run(
+                ['git', 'ls-tree', '-r', '--name-only', git_ref],
+                cwd=self.project_path,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            config_paths = [
+                path for path in process.stdout.splitlines()
+                if path.endswith('/.celebi/config.json')
+            ]
+            for config_path in config_paths:
+                show_process = subprocess.run(
+                    ['git', 'show', f'{git_ref}:{config_path}'],
+                    cwd=self.project_path,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                if show_process.returncode:
+                    continue
+                try:
+                    config_data = json.loads(show_process.stdout)
+                except json.JSONDecodeError:
+                    continue
+                if config_data.get("object_type") not in ("task", "algorithm"):
+                    continue
+                target = config_path.replace('/.celebi/config.json', '')
+                alias_map = config_data.get("alias_to_path", {}) or {}
+                snapshot[target] = {
+                    alias: [path]
+                    for alias, path in alias_map.items()
+                    if path
+                }
+        except subprocess.CalledProcessError:
+            logger.warning("Failed to capture alias snapshot for ref '%s'", git_ref)
+
+        return snapshot
+
+    def _build_object_rename_map(self, conflicts: List[Dict]) -> Dict[str, List[str]]:
+        """Build object-level rename mapping from rename/rename conflict entries."""
+        rename_map: Dict[str, set] = {}
+        for conflict in conflicts or []:
+            if not str(conflict.get('type', '')).startswith('rename/rename'):
+                continue
+            base_path = conflict.get('base_path', '')
+            ours_path = conflict.get('ours_path', '')
+            theirs_path = conflict.get('theirs_path', '')
+            if not base_path or not ours_path or not theirs_path:
+                continue
+            base_obj = os.path.dirname(base_path)
+            ours_obj = os.path.dirname(ours_path)
+            theirs_obj = os.path.dirname(theirs_path)
+            for src, dst in [
+                (base_obj, ours_obj),
+                (base_obj, theirs_obj),
+                (ours_obj, base_obj),
+                (theirs_obj, base_obj),
+                (ours_obj, theirs_obj),
+                (theirs_obj, ours_obj),
+            ]:
+                rename_map.setdefault(src, set()).add(dst)
+        return {src: sorted(dsts) for src, dsts in rename_map.items()}
+
+    @staticmethod
+    def _path_family_key(path: str) -> str:
+        """Compute a conservative rename-family key for task-like names."""
+        name = os.path.basename(path)
+        prefix = re.sub(r'\d+$', '', name)
+        return f"{os.path.dirname(path)}::{prefix}"
+
+    def _paths_match(
+        self,
+        current_pred: str,
+        snapshot_pred: str,
+        rename_map: Dict[str, List[str]],
+    ) -> bool:
+        """Return True if current/snapshot predecessor paths refer to same lineage."""
+        if current_pred == snapshot_pred:
+            return True
+        mapped = rename_map.get(snapshot_pred, [])
+        if current_pred in mapped:
+            return True
+        reverse_mapped = rename_map.get(current_pred, [])
+        if snapshot_pred in reverse_mapped:
+            return True
+        return False
+
+    def _pick_winner_predecessor(
+        self,
+        candidates: List[str],
+        strategy: MergeStrategy,
+        local_candidates: List[str],
+        remote_candidates: List[str],
+    ) -> str:
+        """Pick one predecessor based on strategy and branch snapshots."""
+        if strategy in (MergeStrategy.LOCAL, MergeStrategy.AUTO, MergeStrategy.UNION):
+            if local_candidates:
+                return sorted(local_candidates)[0]
+            if remote_candidates:
+                return sorted(remote_candidates)[0]
+            return sorted(candidates)[0]
+
+        if strategy == MergeStrategy.REMOTE:
+            if remote_candidates:
+                return sorted(remote_candidates)[0]
+            if local_candidates:
+                return sorted(local_candidates)[0]
+            return sorted(candidates)[-1]
+
+        if local_candidates:
+            return sorted(local_candidates)[0]
+        if remote_candidates:
+            return sorted(remote_candidates)[0]
+        return sorted(candidates)[0]
+
+    def _apply_alias_collision_policy(
+        self,
+        strategy: MergeStrategy,
+        local_snapshot: Optional[Dict[str, Dict[str, List[str]]]] = None,
+        remote_snapshot: Optional[Dict[str, Dict[str, List[str]]]] = None,
+        rename_map: Optional[Dict[str, List[str]]] = None,
+    ) -> Dict[str, int]:
+        """Ensure one predecessor per alias on each task/algorithm target."""
+        local_snapshot = local_snapshot or {}
+        remote_snapshot = remote_snapshot or {}
+        rename_map = rename_map or {}
+        update_counts = {
+            "targets_updated": 0,
+            "edges_removed": 0,
+            "aliases_fixed": 0,
+            "collisions_found": 0,
+        }
+
+        for obj in self._iter_task_algorithm_objects():
+            target_path = obj.invariant_path()
+            predecessors = obj.config_file.read_variable("predecessors", []) or []
+            path_to_alias = obj.config_file.read_variable("path_to_alias", {}) or {}
+            alias_to_path = obj.config_file.read_variable("alias_to_path", {}) or {}
+
+            local_pred_to_alias = {}
+            remote_pred_to_alias = {}
+            for alias, preds in local_snapshot.get(target_path, {}).items():
+                for pred in preds:
+                    local_pred_to_alias[pred] = alias
+            for alias, preds in remote_snapshot.get(target_path, {}).items():
+                for pred in preds:
+                    remote_pred_to_alias[pred] = alias
+
+            has_update = False
+            alias_to_preds: Dict[str, List[str]] = defaultdict(list)
+            for pred in predecessors:
+                alias = path_to_alias.get(pred, "")
+                if not alias:
+                    alias = local_pred_to_alias.get(pred, "")
+                if not alias:
+                    alias = remote_pred_to_alias.get(pred, "")
+                if not alias:
+                    # Try rename-aware or family-key recovery from local snapshot aliases.
+                    for snapshot_pred, snapshot_alias in local_pred_to_alias.items():
+                        if self._paths_match(pred, snapshot_pred, rename_map):
+                            alias = snapshot_alias
+                            break
+                if not alias:
+                    # Try rename-aware or family-key recovery from remote snapshot aliases.
+                    for snapshot_pred, snapshot_alias in remote_pred_to_alias.items():
+                        if self._paths_match(pred, snapshot_pred, rename_map):
+                            alias = snapshot_alias
+                            break
+                if alias and pred not in path_to_alias:
+                    # Recover missing alias metadata from branch snapshots.
+                    path_to_alias[pred] = alias
+                    has_update = True
+                if alias:
+                    alias_to_preds[alias].append(pred)
+
+            for alias, pred_list in alias_to_preds.items():
+                unique_preds = sorted(set(pred_list))
+                if len(unique_preds) <= 1:
+                    continue
+
+                update_counts["collisions_found"] += 1
+                local_candidates = []
+                remote_candidates = []
+                for pred in unique_preds:
+                    local_alias_preds = local_snapshot.get(target_path, {}).get(alias, [])
+                    remote_alias_preds = remote_snapshot.get(target_path, {}).get(alias, [])
+                    if any(self._paths_match(pred, candidate, rename_map)
+                           for candidate in local_alias_preds):
+                        local_candidates.append(pred)
+                    if any(self._paths_match(pred, candidate, rename_map)
+                           for candidate in remote_alias_preds):
+                        remote_candidates.append(pred)
+
+                winner = self._pick_winner_predecessor(
+                    candidates=unique_preds,
+                    strategy=strategy,
+                    local_candidates=local_candidates,
+                    remote_candidates=remote_candidates,
+                )
+                losers = [pred for pred in unique_preds if pred != winner]
+                for loser in losers:
+                    predecessors = [pred for pred in predecessors if pred != loser]
+                    path_to_alias.pop(loser, None)
+                    update_counts["edges_removed"] += 1
+                    update_counts["aliases_fixed"] += 1
+                    has_update = True
+
+                    loser_obj = VObject(
+                        os.path.join(self.project_path, loser),
+                        self.project_path,
+                    )
+                    loser_succ = loser_obj.config_file.read_variable("successors", []) or []
+                    if target_path in loser_succ:
+                        loser_succ = [
+                            succ for succ in loser_succ
+                            if succ != target_path
+                        ]
+                        loser_obj.config_file.write_variable(
+                            "successors",
+                            sorted(set(loser_succ)),
+                        )
+
+                if alias_to_path.get(alias) != winner:
+                    alias_to_path[alias] = winner
+                    has_update = True
+
+            if has_update:
+                obj.config_file.write_variable("predecessors", sorted(set(predecessors)))
+                obj.config_file.write_variable("path_to_alias", path_to_alias)
+                obj.config_file.write_variable("alias_to_path", alias_to_path)
+                update_counts["targets_updated"] += 1
+
+        return update_counts
+
     def validate_post_merge(self) -> Dict[str, Any]:
         """Validate project state after a git merge (e.g., from a hook)."""
         logger.info("Validating post-merge state")
         results = {'success': False, 'issues': [], 'warnings': [], 'repairs': []}
         try:
+            alias_updates = self._apply_alias_collision_policy(MergeStrategy.AUTO)
+            if alias_updates["targets_updated"]:
+                results['repairs'].append(
+                    f"Resolved alias collisions in {alias_updates['targets_updated']} target(s)"
+                )
             is_valid, issues, conflicts = self.doctor.validate_merge()
             results['issues'].extend(issues)
             if not is_valid:

@@ -268,6 +268,7 @@ def git_cli():
 @click.option("--dry-run", "-n", is_flag=True, help="Simulate merge without making changes")
 def git_merge(branch, strategy, dry_run):
     """Merge a git branch with Celebi validation and impression regeneration."""
+    print("############# DEBUG #############")
     try:
         from .utils.git_merge_coordinator import GitMergeCoordinator, MergeStrategy
 

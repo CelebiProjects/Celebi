@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch, MagicMock
 
 from CelebiChrono.utils.git_optional import GitOptionalIntegration
 from CelebiChrono.utils.git_merge_coordinator import GitMergeCoordinator, MergeStrategy
+from CelebiChrono.utils.metadata import ConfigFile
 
 
 class TestGitOptionalIntegration(unittest.TestCase):
@@ -264,6 +265,228 @@ Automatic merge failed; fix conflicts and then commit the result.
         self.assertEqual(MergeStrategy.LOCAL.value, 'local')
         self.assertEqual(MergeStrategy.REMOTE.value, 'remote')
         self.assertEqual(MergeStrategy.UNION.value, 'union')
+
+    def _create_project_layout(self):
+        """Create a minimal project layout with task objects."""
+        os.makedirs(os.path.join(self.test_dir, '.celebi'), exist_ok=True)
+        with open(
+            os.path.join(self.test_dir, '.celebi', 'project.json'),
+            'w',
+            encoding='utf-8'
+        ):
+            pass
+        root_config = ConfigFile(os.path.join(self.test_dir, '.celebi', 'config.json'))
+        root_config.write_variable('object_type', 'project')
+        root_config.write_variable('project_uuid', 'test-project-uuid')
+
+        for obj_name in ['A1', 'A2', 'B']:
+            obj_dir = os.path.join(self.test_dir, obj_name)
+            os.makedirs(os.path.join(obj_dir, '.celebi'), exist_ok=True)
+            obj_config = ConfigFile(os.path.join(obj_dir, '.celebi', 'config.json'))
+            obj_config.write_variable('object_type', 'task')
+            obj_config.write_variable('predecessors', [])
+            obj_config.write_variable('successors', [])
+            obj_config.write_variable('path_to_alias', {})
+            obj_config.write_variable('alias_to_path', {})
+
+    def test_alias_collision_policy_local_wins(self):
+        """Alias collision should keep local predecessor for LOCAL strategy."""
+        self._create_project_layout()
+        self.coordinator = GitMergeCoordinator(self.test_dir)
+
+        b_config = ConfigFile(os.path.join(self.test_dir, 'B', '.celebi', 'config.json'))
+        b_config.write_variable('predecessors', ['A1', 'A2'])
+        b_config.write_variable('path_to_alias', {'A1': 'shared', 'A2': 'shared'})
+        b_config.write_variable('alias_to_path', {'shared': 'A2'})
+
+        a1_config = ConfigFile(os.path.join(self.test_dir, 'A1', '.celebi', 'config.json'))
+        a1_config.write_variable('successors', ['B'])
+        a2_config = ConfigFile(os.path.join(self.test_dir, 'A2', '.celebi', 'config.json'))
+        a2_config.write_variable('successors', ['B'])
+
+        local_snapshot = {'B': {'shared': ['A1']}}
+        remote_snapshot = {'B': {'shared': ['A2']}}
+        updates = self.coordinator._apply_alias_collision_policy(
+            strategy=MergeStrategy.LOCAL,
+            local_snapshot=local_snapshot,
+            remote_snapshot=remote_snapshot,
+        )
+
+        self.assertEqual(updates['targets_updated'], 1)
+        self.assertEqual(b_config.read_variable('predecessors'), ['A1'])
+        self.assertEqual(b_config.read_variable('alias_to_path')['shared'], 'A1')
+        self.assertEqual(a2_config.read_variable('successors'), [])
+
+    def test_alias_collision_policy_remote_wins(self):
+        """Alias collision should keep remote predecessor for REMOTE strategy."""
+        self._create_project_layout()
+        self.coordinator = GitMergeCoordinator(self.test_dir)
+
+        b_config = ConfigFile(os.path.join(self.test_dir, 'B', '.celebi', 'config.json'))
+        b_config.write_variable('predecessors', ['A1', 'A2'])
+        b_config.write_variable('path_to_alias', {'A1': 'shared', 'A2': 'shared'})
+        b_config.write_variable('alias_to_path', {'shared': 'A1'})
+
+        a1_config = ConfigFile(os.path.join(self.test_dir, 'A1', '.celebi', 'config.json'))
+        a1_config.write_variable('successors', ['B'])
+        a2_config = ConfigFile(os.path.join(self.test_dir, 'A2', '.celebi', 'config.json'))
+        a2_config.write_variable('successors', ['B'])
+
+        local_snapshot = {'B': {'shared': ['A1']}}
+        remote_snapshot = {'B': {'shared': ['A2']}}
+        updates = self.coordinator._apply_alias_collision_policy(
+            strategy=MergeStrategy.REMOTE,
+            local_snapshot=local_snapshot,
+            remote_snapshot=remote_snapshot,
+        )
+
+        self.assertEqual(updates['targets_updated'], 1)
+        self.assertEqual(b_config.read_variable('predecessors'), ['A2'])
+        self.assertEqual(b_config.read_variable('alias_to_path')['shared'], 'A2')
+        self.assertEqual(a1_config.read_variable('successors'), [])
+
+    def test_alias_collision_policy_auto_wins_local(self):
+        """Alias collision should keep local predecessor for AUTO strategy."""
+        self._create_project_layout()
+        self.coordinator = GitMergeCoordinator(self.test_dir)
+
+        b_config = ConfigFile(os.path.join(self.test_dir, 'B', '.celebi', 'config.json'))
+        b_config.write_variable('predecessors', ['A1', 'A2'])
+        b_config.write_variable('path_to_alias', {'A1': 'shared', 'A2': 'shared'})
+        b_config.write_variable('alias_to_path', {'shared': 'A2'})
+
+        local_snapshot = {'B': {'shared': ['A1']}}
+        remote_snapshot = {'B': {'shared': ['A2']}}
+        updates = self.coordinator._apply_alias_collision_policy(
+            strategy=MergeStrategy.AUTO,
+            local_snapshot=local_snapshot,
+            remote_snapshot=remote_snapshot,
+        )
+
+        self.assertEqual(updates['targets_updated'], 1)
+        self.assertEqual(b_config.read_variable('predecessors'), ['A1'])
+        self.assertEqual(b_config.read_variable('alias_to_path')['shared'], 'A1')
+
+    def test_alias_collision_policy_repairs_missing_alias_metadata(self):
+        """Alias collision should still resolve when one predecessor lacks alias metadata."""
+        self._create_project_layout()
+        self.coordinator = GitMergeCoordinator(self.test_dir)
+
+        b_config = ConfigFile(os.path.join(self.test_dir, 'B', '.celebi', 'config.json'))
+        b_config.write_variable('predecessors', ['A1', 'A2'])
+        b_config.write_variable('path_to_alias', {'A1': 'shared'})
+        b_config.write_variable('alias_to_path', {'shared': 'A1'})
+
+        a1_config = ConfigFile(os.path.join(self.test_dir, 'A1', '.celebi', 'config.json'))
+        a1_config.write_variable('successors', ['B'])
+        a2_config = ConfigFile(os.path.join(self.test_dir, 'A2', '.celebi', 'config.json'))
+        a2_config.write_variable('successors', ['B'])
+
+        local_snapshot = {'B': {'shared': ['A1']}}
+        remote_snapshot = {'B': {'shared': ['A2']}}
+        updates = self.coordinator._apply_alias_collision_policy(
+            strategy=MergeStrategy.LOCAL,
+            local_snapshot=local_snapshot,
+            remote_snapshot=remote_snapshot,
+        )
+
+        self.assertEqual(updates['targets_updated'], 1)
+        self.assertEqual(b_config.read_variable('predecessors'), ['A1'])
+        self.assertEqual(b_config.read_variable('path_to_alias'), {'A1': 'shared'})
+        self.assertEqual(b_config.read_variable('alias_to_path')['shared'], 'A1')
+        self.assertEqual(a2_config.read_variable('successors'), [])
+
+    def test_alias_collision_policy_rename_family_recovery(self):
+        """Alias collision should recover when snapshot uses old renamed predecessor path."""
+        self._create_project_layout()
+        self.coordinator = GitMergeCoordinator(self.test_dir)
+
+        b_config = ConfigFile(os.path.join(self.test_dir, 'B', '.celebi', 'config.json'))
+        b_config.write_variable('predecessors', ['Fit', 'GenTask1', 'GenTask2'])
+        b_config.write_variable('path_to_alias', {'GenTask1': 'gen'})
+        b_config.write_variable('alias_to_path', {'gen': 'GenTask1'})
+
+        fit_config = ConfigFile(os.path.join(self.test_dir, 'Fit', '.celebi', 'config.json'))
+        fit_config.write_variable('object_type', 'algorithm')
+        fit_config.write_variable('predecessors', [])
+        fit_config.write_variable('successors', ['B'])
+        fit_config.write_variable('path_to_alias', {})
+        fit_config.write_variable('alias_to_path', {})
+
+        gt1_config = ConfigFile(os.path.join(self.test_dir, 'GenTask1', '.celebi', 'config.json'))
+        gt1_config.write_variable('object_type', 'task')
+        gt1_config.write_variable('predecessors', [])
+        gt1_config.write_variable('successors', ['B'])
+        gt1_config.write_variable('path_to_alias', {})
+        gt1_config.write_variable('alias_to_path', {})
+
+        gt2_config = ConfigFile(os.path.join(self.test_dir, 'GenTask2', '.celebi', 'config.json'))
+        gt2_config.write_variable('object_type', 'task')
+        gt2_config.write_variable('predecessors', [])
+        gt2_config.write_variable('successors', ['B'])
+        gt2_config.write_variable('path_to_alias', {})
+        gt2_config.write_variable('alias_to_path', {})
+
+        local_snapshot = {'B': {'gen': ['GenTask1']}}
+        remote_snapshot = {'B': {'gen': ['GenTask']}}
+        rename_map = {'GenTask': ['GenTask1', 'GenTask2']}
+
+        updates = self.coordinator._apply_alias_collision_policy(
+            strategy=MergeStrategy.LOCAL,
+            local_snapshot=local_snapshot,
+            remote_snapshot=remote_snapshot,
+            rename_map=rename_map,
+        )
+
+        self.assertEqual(updates['targets_updated'], 1)
+        self.assertEqual(b_config.read_variable('predecessors'), ['Fit', 'GenTask1'])
+        self.assertEqual(b_config.read_variable('path_to_alias'), {'GenTask1': 'gen'})
+        self.assertEqual(b_config.read_variable('alias_to_path')['gen'], 'GenTask1')
+        self.assertEqual(gt2_config.read_variable('successors'), [])
+
+    def test_reconcile_then_alias_policy_removes_reintroduced_edge(self):
+        """Alias policy must run after reconcile to remove alias-less reintroduced edge."""
+        self._create_project_layout()
+        self.coordinator = GitMergeCoordinator(self.test_dir)
+
+        # Rename minimal layout semantics to mirror real report.
+        fit_config = ConfigFile(os.path.join(self.test_dir, 'A1', '.celebi', 'config.json'))
+        fit_config.write_variable('object_type', 'algorithm')
+        fit_config.write_variable('successors', ['B'])
+
+        gt1_config = ConfigFile(os.path.join(self.test_dir, 'A2', '.celebi', 'config.json'))
+        gt1_config.write_variable('object_type', 'task')
+        gt1_config.write_variable('successors', ['B'])
+
+        gt2_dir = os.path.join(self.test_dir, 'GenTask2')
+        os.makedirs(os.path.join(gt2_dir, '.celebi'), exist_ok=True)
+        gt2_config = ConfigFile(os.path.join(gt2_dir, '.celebi', 'config.json'))
+        gt2_config.write_variable('object_type', 'task')
+        gt2_config.write_variable('predecessors', [])
+        gt2_config.write_variable('successors', ['B'])
+        gt2_config.write_variable('path_to_alias', {})
+        gt2_config.write_variable('alias_to_path', {})
+
+        b_config = ConfigFile(os.path.join(self.test_dir, 'B', '.celebi', 'config.json'))
+        b_config.write_variable('predecessors', ['A1', 'A2'])
+        b_config.write_variable('path_to_alias', {'A2': 'gen'})
+        b_config.write_variable('alias_to_path', {'gen': 'A2'})
+
+        # Reconcile can reintroduce predecessor from successor-side reference.
+        self.coordinator.doctor.reconcile_arc_relations()
+        self.assertIn('GenTask2', b_config.read_variable('predecessors'))
+
+        updates = self.coordinator._apply_alias_collision_policy(
+            strategy=MergeStrategy.LOCAL,
+            local_snapshot={'B': {'gen': ['A2']}},
+            remote_snapshot={'B': {'gen': ['GenTask2']}},
+        )
+        self.assertEqual(updates['targets_updated'], 1)
+
+        # Final reconciliation keeps symmetry after alias resolution.
+        self.coordinator.doctor.reconcile_arc_relations()
+        self.assertNotIn('GenTask2', b_config.read_variable('predecessors'))
+        self.assertEqual(b_config.read_variable('alias_to_path')['gen'], 'A2')
 
 
 class TestIntegration(unittest.TestCase):
