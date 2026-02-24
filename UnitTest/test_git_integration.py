@@ -123,9 +123,10 @@ class TestGitMergeCoordinator(unittest.TestCase):
         mock_process.returncode = 0
         mock_subprocess.return_value = mock_process
 
-        # Create .git directory
+        # Create .git directory and refresh coordinator
         git_dir = os.path.join(self.test_dir, '.git')
         os.makedirs(git_dir)
+        self.coordinator = GitMergeCoordinator(self.test_dir)
 
         status = self.coordinator.get_merge_status()
 
@@ -156,9 +157,10 @@ class TestGitMergeCoordinator(unittest.TestCase):
             'stats': {'regenerated': 5}
         }
 
-        # Create .git directory
+        # Create .git directory and refresh coordinator
         git_dir = os.path.join(self.test_dir, '.git')
         os.makedirs(git_dir)
+        self.coordinator = GitMergeCoordinator(self.test_dir)
 
         # Execute dry run
         results = self.coordinator.execute_merge('feature-branch', MergeStrategy.AUTO, dry_run=True)
