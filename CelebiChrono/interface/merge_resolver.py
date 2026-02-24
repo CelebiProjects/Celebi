@@ -5,12 +5,11 @@ merge conflicts with clear prompts and visualizations.
 """
 import sys
 import os
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any
 from enum import Enum
 from logging import getLogger
 
 from ..utils.dag_visualizer import DAGVisualizer
-from ..kernel.vobj_arc_merge import MergeConflict, MergeConflictType
 
 logger = getLogger("ChernLogger")
 
@@ -95,19 +94,24 @@ class MergeResolver:
             results['actions'].extend(config_results['actions'])
 
         # Resolve other conflicts
-        other_types = [t for t in grouped_conflicts.keys() if t not in ['dag', 'config']]
+        other_types = [
+            t for t in grouped_conflicts if t not in ['dag', 'config']
+        ]
         for conflict_type in other_types:
-            print(f"\n" + "-" * 80)
+            print("\n" + "-" * 80)
             print(f"RESOLVING {conflict_type.upper()} CONFLICTS")
             print("-" * 80)
-            type_results = self._resolve_generic_conflicts(grouped_conflicts[conflict_type], context)
+            type_results = self._resolve_generic_conflicts(
+                grouped_conflicts[conflict_type],
+                context,
+            )
             results['resolved'] += type_results['resolved']
             results['skipped'] += type_results['skipped']
             results['actions'].extend(type_results['actions'])
 
         # Update remaining count
         results['remaining'] = len(conflicts) - results['resolved'] - results['skipped']
-        results['success'] = results['remaining'] == 0
+        results['success'] = not results['remaining']
 
         # Show final summary
         self._show_resolution_summary(results)
@@ -163,8 +167,11 @@ class MergeResolver:
 
         return groups
 
-    def _resolve_dag_conflicts(self, conflicts: List[Dict],
-                               context: Dict[str, Any]) -> Dict[str, Any]:
+    def _resolve_dag_conflicts(
+        self,
+        conflicts: List[Dict],
+        _context: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Resolve DAG-related conflicts."""
         results = {
             'resolved': 0,
@@ -313,8 +320,11 @@ class MergeResolver:
 
         return options
 
-    def _resolve_config_conflicts(self, conflicts: List[Dict],
-                                  context: Dict[str, Any]) -> Dict[str, Any]:
+    def _resolve_config_conflicts(
+        self,
+        conflicts: List[Dict],
+        _context: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Resolve configuration file conflicts."""
         results = {
             'resolved': 0,
@@ -456,8 +466,11 @@ class MergeResolver:
 
         return options
 
-    def _resolve_generic_conflicts(self, conflicts: List[Dict],
-                                   context: Dict[str, Any]) -> Dict[str, Any]:
+    def _resolve_generic_conflicts(
+        self,
+        conflicts: List[Dict],
+        _context: Dict[str, Any],
+    ) -> Dict[str, Any]:
         """Resolve generic conflicts."""
         results = {
             'resolved': 0,
@@ -517,8 +530,11 @@ class MergeResolver:
 
         return results
 
-    def _present_resolution_options(self, options: List[Dict],
-                                    conflict: Dict) -> ResolutionAction:
+    def _present_resolution_options(
+        self,
+        options: List[Dict],
+        _conflict: Dict,
+    ) -> ResolutionAction:
         """Present resolution options to user and get their choice."""
         print("\n  Resolution options:")
 
@@ -546,8 +562,11 @@ class MergeResolver:
                 print("\n  Input interrupted, aborting merge")
                 return ResolutionAction.ABORT
 
-    def _apply_dag_resolution(self, conflict: Dict,
-                              action: ResolutionAction) -> Dict[str, Any]:
+    def _apply_dag_resolution(
+        self,
+        _conflict: Dict,
+        action: ResolutionAction,
+    ) -> Dict[str, Any]:
         """Apply DAG conflict resolution."""
         # This would actually modify the DAG
         # For now, just return success
@@ -556,8 +575,11 @@ class MergeResolver:
             'details': f'Applied {action.value} to DAG conflict'
         }
 
-    def _apply_config_resolution(self, conflict: Dict,
-                                 action: ResolutionAction) -> Dict[str, Any]:
+    def _apply_config_resolution(
+        self,
+        _conflict: Dict,
+        action: ResolutionAction,
+    ) -> Dict[str, Any]:
         """Apply config conflict resolution."""
         # This would actually modify config files
         # For now, just return success
@@ -575,8 +597,8 @@ class MergeResolver:
 
         try:
             import subprocess
-            result = subprocess.run([editor, file_path])
-            return result.returncode == 0
+            result = subprocess.run([editor, file_path], check=False)
+            return not result.returncode
         except Exception as e:
             print(f"  Failed to open editor: {e}")
             return False
@@ -611,7 +633,12 @@ class MergeResolver:
             if len(results['actions']) > 10:
                 print(f"  ... and {len(results['actions']) - 10} more actions")
 
-    def preview_merge(self, local_dag, remote_dag, base_dag) -> str:
+    def preview_merge(  # pylint: disable=too-many-locals
+        self,
+        local_dag,
+        remote_dag,
+        base_dag,
+    ) -> str:
         """
         Generate a preview of merge results.
 

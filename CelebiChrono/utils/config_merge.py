@@ -4,13 +4,13 @@ This module provides specialized merging for Celebi's configuration files
 with semantic understanding of UUIDs, dependencies, and other Celebi-specific
 structures.
 """
-import yaml
 import json
 import re
 from typing import Dict, List, Any, Optional, Tuple
 from enum import Enum
 from logging import getLogger
 
+import yaml
 logger = getLogger("ChernLogger")
 
 
@@ -54,14 +54,21 @@ class ConfigMerger:
             return self._textual_merge(local_content, remote_content, base_content)
 
         # Check for git conflict markers first
-        if self._has_conflict_markers(local_content) or self._has_conflict_markers(remote_content):
+        if (
+            self._has_conflict_markers(local_content)
+            or self._has_conflict_markers(remote_content)
+        ):
             return self._resolve_conflict_markers(local_content, remote_content)
 
         # Perform semantic merge
         merged_data = self._merge_dicts(local_data, remote_data, base_data, path="")
 
         # Convert back to YAML
-        merged_content = yaml.dump(merged_data, default_flow_style=False, sort_keys=False)
+        merged_content = yaml.dump(
+            merged_data,
+            default_flow_style=False,
+            sort_keys=False,
+        )
 
         return merged_content, self.conflicts
 
@@ -88,7 +95,10 @@ class ConfigMerger:
             return self._textual_merge(local_content, remote_content, base_content)
 
         # Check for git conflict markers first
-        if self._has_conflict_markers(local_content) or self._has_conflict_markers(remote_content):
+        if (
+            self._has_conflict_markers(local_content)
+            or self._has_conflict_markers(remote_content)
+        ):
             return self._resolve_conflict_markers(local_content, remote_content)
 
         # Perform semantic merge
@@ -115,19 +125,49 @@ class ConfigMerger:
 
             # Special handling for Celebi-specific fields
             if key in ["uuid", "id"]:
-                merged[key] = self._merge_uuid(local_val, remote_val, base_val, current_path)
+                merged[key] = self._merge_uuid(
+                    local_val,
+                    remote_val,
+                    base_val,
+                    current_path,
+                )
             elif key in ["dependencies", "predecessors", "successors"]:
-                merged[key] = self._merge_dependencies(local_val, remote_val, base_val, current_path)
+                merged[key] = self._merge_dependencies(
+                    local_val,
+                    remote_val,
+                    base_val,
+                    current_path,
+                )
             elif key in ["aliases", "path_to_alias"]:
-                merged[key] = self._merge_aliases(local_val, remote_val, base_val, current_path)
+                merged[key] = self._merge_aliases(
+                    local_val,
+                    remote_val,
+                    base_val,
+                    current_path,
+                )
             elif isinstance(local_val, dict) and isinstance(remote_val, dict):
                 # Recursively merge nested dictionaries
                 base_dict = base_val if isinstance(base_val, dict) else {}
-                merged[key] = self._merge_dicts(local_val, remote_val, base_dict, current_path)
+                merged[key] = self._merge_dicts(
+                    local_val,
+                    remote_val,
+                    base_dict,
+                    current_path,
+                )
             elif isinstance(local_val, list) and isinstance(remote_val, list):
-                merged[key] = self._merge_lists(local_val, remote_val, base_val, current_path)
+                merged[key] = self._merge_lists(
+                    local_val,
+                    remote_val,
+                    base_val,
+                    current_path,
+                )
             else:
-                merged[key] = self._merge_values(local_val, remote_val, base_val, current_path)
+                merged[key] = self._merge_values(
+                    local_val,
+                    remote_val,
+                    base_val,
+                    current_path,
+                )
 
         return merged
 
@@ -135,25 +175,32 @@ class ConfigMerger:
         """Merge UUID fields - must be identical or conflict."""
         if local_val == remote_val:
             return local_val or remote_val
-        elif local_val == base_val:
+        if local_val == base_val:
             return remote_val  # Remote changed it
-        elif remote_val == base_val:
+        if remote_val == base_val:
             return local_val  # Local changed it
-        else:
-            # Both changed differently - conflict
-            self.conflicts.append({
-                'type': ConfigConflictType.UUID_CONFLICT.value,
-                'path': path,
-                'local': local_val,
-                'remote': remote_val,
-                'base': base_val,
-                'description': f"UUID conflict at {path}: local='{local_val}', remote='{remote_val}'"
-            })
-            # Prefer local by default
-            return local_val if self.prefer_local else remote_val
+        # Both changed differently - conflict
+        self.conflicts.append({
+            'type': ConfigConflictType.UUID_CONFLICT.value,
+            'path': path,
+            'local': local_val,
+            'remote': remote_val,
+            'base': base_val,
+            'description': (
+                f"UUID conflict at {path}: "
+                f"local='{local_val}', remote='{remote_val}'"
+            ),
+        })
+        # Prefer local by default
+        return local_val if self.prefer_local else remote_val
 
-    def _merge_dependencies(self, local_val: Any, remote_val: Any,
-                            base_val: Any, path: str) -> List:
+    def _merge_dependencies(
+        self,
+        local_val: Any,
+        remote_val: Any,
+        base_val: Any,
+        path: str,
+    ) -> List:
         """Merge dependency lists using DAG union logic."""
         local_list = self._ensure_list(local_val)
         remote_list = self._ensure_list(remote_val)
@@ -163,10 +210,6 @@ class ConfigMerger:
         local_set = set(local_list)
         remote_set = set(remote_list)
         base_set = set(base_list)
-
-        # Additive changes: added in either branch
-        added_local = local_set - base_set
-        added_remote = remote_set - base_set
 
         # Subtractive changes: removed in either branch
         removed_local = base_set - local_set
@@ -190,7 +233,9 @@ class ConfigMerger:
                     'local': list(local_set),
                     'remote': list(remote_set),
                     'base': list(base_set),
-                    'description': f"Dependency conflict at {path}: different removals"
+                    'description': (
+                        f"Dependency conflict at {path}: different removals"
+                    ),
                 })
 
         return list(merged_set)
@@ -203,7 +248,11 @@ class ConfigMerger:
         base_dict = self._ensure_dict(base_val)
 
         merged = {}
-        all_keys = set(local_dict.keys()) | set(remote_dict.keys()) | set(base_dict.keys())
+        all_keys = (
+            set(local_dict.keys())
+            | set(remote_dict.keys())
+            | set(base_dict.keys())
+        )
 
         for key in all_keys:
             local_alias = local_dict.get(key)
@@ -212,27 +261,38 @@ class ConfigMerger:
 
             if local_alias == remote_alias:
                 merged[key] = local_alias or remote_alias
-            elif local_alias == base_alias:
+                continue
+            if local_alias == base_alias:
                 merged[key] = remote_alias  # Remote changed it
-            elif remote_alias == base_alias:
+                continue
+            if remote_alias == base_alias:
                 merged[key] = local_alias  # Local changed it
-            else:
-                # Both changed differently - conflict
-                self.conflicts.append({
-                    'type': ConfigConflictType.ALIAS_CONFLICT.value,
-                    'path': f"{path}.{key}",
-                    'local': local_alias,
-                    'remote': remote_alias,
-                    'base': base_alias,
-                    'description': f"Alias conflict for key '{key}': local='{local_alias}', remote='{remote_alias}'"
-                })
-                # Prefer local by default
-                merged[key] = local_alias if self.prefer_local else remote_alias
+                continue
+
+            # Both changed differently - conflict
+            self.conflicts.append({
+                'type': ConfigConflictType.ALIAS_CONFLICT.value,
+                'path': f"{path}.{key}",
+                'local': local_alias,
+                'remote': remote_alias,
+                'base': base_alias,
+                'description': (
+                    f"Alias conflict for key '{key}': "
+                    f"local='{local_alias}', remote='{remote_alias}'"
+                ),
+            })
+            # Prefer local by default
+            merged[key] = local_alias if self.prefer_local else remote_alias
 
         return merged
 
-    def _merge_lists(self, local_list: List, remote_list: List,
-                     base_list: List, path: str) -> List:
+    def _merge_lists(
+        self,
+        local_list: List,
+        remote_list: List,
+        base_list: List,
+        _path: str,
+    ) -> List:
         """Merge lists - simple union for now."""
         if base_list is None:
             base_list = []
@@ -246,22 +306,25 @@ class ConfigMerger:
         """Merge simple values."""
         if local_val == remote_val:
             return local_val or remote_val
-        elif local_val == base_val:
+        if local_val == base_val:
             return remote_val  # Remote changed it
-        elif remote_val == base_val:
+        if remote_val == base_val:
             return local_val  # Local changed it
-        else:
-            # Both changed differently - conflict
-            self.conflicts.append({
-                'type': ConfigConflictType.VALUE_CONFLICT.value,
-                'path': path,
-                'local': local_val,
-                'remote': remote_val,
-                'base': base_val,
-                'description': f"Value conflict at {path}: local='{local_val}', remote='{remote_val}'"
-            })
-            # Prefer local by default
-            return local_val if self.prefer_local else remote_val
+
+        # Both changed differently - conflict
+        self.conflicts.append({
+            'type': ConfigConflictType.VALUE_CONFLICT.value,
+            'path': path,
+            'local': local_val,
+            'remote': remote_val,
+            'base': base_val,
+            'description': (
+                f"Value conflict at {path}: "
+                f"local='{local_val}', remote='{remote_val}'"
+            ),
+        })
+        # Prefer local by default
+        return local_val if self.prefer_local else remote_val
 
     def _has_conflict_markers(self, content: str) -> bool:
         """Check if content contains git conflict markers."""
@@ -305,7 +368,11 @@ class ConfigMerger:
             local_data = yaml.safe_load(local_section) or {}
             remote_data = yaml.safe_load(remote_section) or {}
             merged_data = self._merge_dicts(local_data, remote_data, {}, "")
-            merged_content = yaml.dump(merged_data, default_flow_style=False, sort_keys=False)
+            merged_content = yaml.dump(
+                merged_data,
+                default_flow_style=False,
+                sort_keys=False,
+            )
         except yaml.YAMLError:
             try:
                 local_data = json.loads(local_section) if local_section.strip() else {}
@@ -336,15 +403,19 @@ class ConfigMerger:
             if stripped.startswith(start_marker):
                 in_section = True
                 continue
-            elif stripped.startswith(end_marker):
+            if stripped.startswith(end_marker):
                 break
-            elif in_section:
+            if in_section:
                 section_lines.append(line)
 
         return '\n'.join(section_lines) if section_lines else None
 
-    def _textual_merge(self, local_content: str, remote_content: str,
-                       base_content: str) -> Tuple[str, List[Dict]]:
+    def _textual_merge(
+        self,
+        local_content: str,
+        remote_content: str,
+        _base_content: str,
+    ) -> Tuple[str, List[Dict]]:
         """Fallback textual merge when semantic merge fails."""
         # Simple heuristic: use local if prefer_local, otherwise remote
         if self.prefer_local:
@@ -365,36 +436,34 @@ class ConfigMerger:
         """Simple textual merge for non-parsable content."""
         if self.prefer_local:
             return local_content
-        else:
-            return remote_content
+        return remote_content
 
     def _ensure_list(self, value: Any) -> List:
         """Ensure value is a list."""
         if value is None:
             return []
-        elif isinstance(value, list):
+        if isinstance(value, list):
             return value
-        elif isinstance(value, (str, int, float, bool)):
+        if isinstance(value, (str, int, float, bool)):
             return [value]
-        else:
-            try:
-                return list(value)
-            except (TypeError, ValueError):
-                return [str(value)]
+        try:
+            return list(value)
+        except (TypeError, ValueError):
+            return [str(value)]
 
     def _ensure_dict(self, value: Any) -> Dict:
         """Ensure value is a dict."""
         if value is None:
             return {}
-        elif isinstance(value, dict):
+        if isinstance(value, dict):
             return value
-        else:
-            # Try to convert if it's a list of pairs
-            if isinstance(value, list) and all(isinstance(item, (list, tuple)) and len(item) == 2
-                                               for item in value):
-                return dict(value)
-            else:
-                return {}
+        # Try to convert if it's a list of pairs
+        if isinstance(value, list) and all(
+            isinstance(item, (list, tuple)) and len(item) == 2
+            for item in value
+        ):
+            return dict(value)
+        return {}
 
 
 def detect_config_file_type(content: str) -> str:

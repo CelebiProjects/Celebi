@@ -296,7 +296,7 @@ class ImpressionManagement(Core):
             consult_table[self.path] = (consult_id, status)
         return status
 
-    # pylint: disable=too-many-locals,too-many-statements
+    # pylint: disable=too-many-locals,too-many-statements,too-many-branches
     def trace(self, impression=None) -> Message:
         """
         Compare the *current* dependency DAG of `self` with the DAG stored in
@@ -389,7 +389,7 @@ class ImpressionManagement(Core):
             # Handle None nodes separately if any exist
             none_nodes = [n for n in added_nodes if n is None]
             if none_nodes:
-                message.add(f"  • [NEW] (no impression yet)", "diff")
+                message.add("  • [NEW] (no impression yet)", "diff")
         else:
             message.add("\nAdded nodes: none", "info")
 
@@ -402,7 +402,7 @@ class ImpressionManagement(Core):
             # Handle None nodes separately if any exist
             none_nodes = [n for n in removed_nodes if n is None]
             if none_nodes:
-                message.add(f"  • [DELETED] (impression missing)", "diff")
+                message.add("  • [DELETED] (impression missing)", "diff")
         else:
             message.add("\nRemoved nodes: none", "info")
 
@@ -415,12 +415,32 @@ class ImpressionManagement(Core):
             for parent, child in sorted(valid_edges):
                 parent_type = VImpression(parent).object_type() if parent else ""
                 child_type = VImpression(child).object_type() if child else ""
-                message.add(f"  • {format_edge_display(parent, child, parent_type, child_type)}", "diff")
+                edge_display = format_edge_display(
+                    parent,
+                    child,
+                    parent_type,
+                    child_type,
+                )
+                message.add(f"  • {edge_display}", "diff")
             # Handle edges with None values separately
             none_edges = [e for e in added_edges if e[0] is None or e[1] is None]
             for parent, child in none_edges:
-                parent_display = "[NEW]" if parent is None else format_node_display(parent, VImpression(parent).object_type() if parent else "")
-                child_display = "[NEW]" if child is None else format_node_display(child, VImpression(child).object_type() if child else "")
+                parent_display = (
+                    "[NEW]"
+                    if parent is None
+                    else format_node_display(
+                        parent,
+                        VImpression(parent).object_type() if parent else "",
+                    )
+                )
+                child_display = (
+                    "[NEW]"
+                    if child is None
+                    else format_node_display(
+                        child,
+                        VImpression(child).object_type() if child else "",
+                    )
+                )
                 message.add(f"  • {parent_display} → {child_display}", "diff")
         else:
             message.add("\nAdded edges: none", "info")
@@ -432,12 +452,32 @@ class ImpressionManagement(Core):
             for parent, child in sorted(valid_edges):
                 parent_type = VImpression(parent).object_type() if parent else ""
                 child_type = VImpression(child).object_type() if child else ""
-                message.add(f"  • {format_edge_display(parent, child, parent_type, child_type)}", "diff")
+                edge_display = format_edge_display(
+                    parent,
+                    child,
+                    parent_type,
+                    child_type,
+                )
+                message.add(f"  • {edge_display}", "diff")
             # Handle edges with None values separately
             none_edges = [e for e in removed_edges if e[0] is None or e[1] is None]
             for parent, child in none_edges:
-                parent_display = "[MISSING]" if parent is None else format_node_display(parent, VImpression(parent).object_type() if parent else "")
-                child_display = "[MISSING]" if child is None else format_node_display(child, VImpression(child).object_type() if child else "")
+                parent_display = (
+                    "[MISSING]"
+                    if parent is None
+                    else format_node_display(
+                        parent,
+                        VImpression(parent).object_type() if parent else "",
+                    )
+                )
+                child_display = (
+                    "[MISSING]"
+                    if child is None
+                    else format_node_display(
+                        child,
+                        VImpression(child).object_type() if child else "",
+                    )
+                )
                 message.add(f"  • {parent_display} → {child_display}", "diff")
         else:
             message.add("\nRemoved edges: none", "info")
@@ -456,7 +496,13 @@ class ImpressionManagement(Core):
                 if is_parent(r, a):
                     parent_type = VImpression(r).object_type() if r else ""
                     child_type = VImpression(a).object_type() if a else ""
-                    message.add(f"\nChange: {format_edge_display(r, a, parent_type, child_type)}", "title1")
+                    edge_display = format_edge_display(
+                        r,
+                        a,
+                        parent_type,
+                        child_type,
+                    )
+                    message.add(f"\nChange: {edge_display}", "title1")
 
                     # --------------------------------------------------------
                     #  Run impression diff
@@ -465,7 +511,10 @@ class ImpressionManagement(Core):
                     new_impr = VImpression(a) if a else None
 
                     if not (old_impr and new_impr):
-                        message.add("One of the impressions does not exist, skipping diff.", "warning")
+                        message.add(
+                            "One of the impressions does not exist, skipping diff.",
+                            "warning",
+                        )
                         continue
 
                     old_root = old_impr.path + "/contents"
@@ -522,17 +571,22 @@ class ImpressionManagement(Core):
                     # estimating the difference in edges
                     edge_diff_a = set(added_edges_to_a) - set(removed_edges_from_r)
                     edge_diff_r = set(removed_edges_from_r) - set(added_edges_to_a)
-                    message.add(f"  Changed incoming edges to {format_node_display(a, child_type)}:", "info")
+                    message.add(
+                        f"  Changed incoming edges to {format_node_display(a, child_type)}:",
+                        "info",
+                    )
                     if edge_diff_a:
                         message.add(f"    Added from ({len(edge_diff_a)}):", "info")
                         for parent in sorted(edge_diff_a):
                             parent_type = VImpression(parent).object_type() if parent else ""
-                            message.add(f"      • {format_node_display(parent, parent_type)}", "diff")
+                            parent_display = format_node_display(parent, parent_type)
+                            message.add(f"      • {parent_display}", "diff")
                     if edge_diff_r:
                         message.add(f"    Removed from ({len(edge_diff_r)}):", "info")
                         for parent in sorted(edge_diff_r):
                             parent_type = VImpression(parent).object_type() if parent else ""
-                            message.add(f"      • {format_node_display(parent, parent_type)}", "diff")
+                            parent_display = format_node_display(parent, parent_type)
+                            message.add(f"      • {parent_display}", "diff")
 
         return message
 

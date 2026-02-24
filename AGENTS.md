@@ -14,7 +14,7 @@
 - `python -m pytest` runs the test suite in `tests/`.
 
 ## Coding Style & Naming Conventions
-- Python code follows a 100-character line limit (see `pylintrc.backup`).
+- Python code follows a 100-character line limit (see `.pylintrc`).
 - Prefer clear, explicit names for commands and modules; CLI commands use kebab-case (e.g., `add-algorithm`).
 - When adding new CLI commands, keep naming consistent with existing `celebi-cli` command patterns.
 

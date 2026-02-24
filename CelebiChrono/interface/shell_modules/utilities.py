@@ -503,9 +503,16 @@ def git_status() -> Message:
         # Git repository info
         if git_info['is_git_repo']:
             status_lines.append("✓ Git repository detected")
-            status_lines.append(f"  Current branch: {git_info.get('current_branch', 'unknown')}")
-            status_lines.append(f"  Remote: {git_info.get('remote_url', 'none')}")
-            status_lines.append(f"  Uncommitted changes: {'yes' if git_info['has_uncommitted_changes'] else 'no'}")
+            status_lines.append(
+                f"  Current branch: {git_info.get('current_branch', 'unknown')}"
+            )
+            status_lines.append(
+                f"  Remote: {git_info.get('remote_url', 'none')}"
+            )
+            status_lines.append(
+                "  Uncommitted changes: "
+                f"{'yes' if git_info['has_uncommitted_changes'] else 'no'}"
+            )
         else:
             status_lines.append("✗ Not a git repository")
             status_lines.append("  Run 'git init' to initialize git in this directory")
@@ -514,7 +521,10 @@ def git_status() -> Message:
             return message
 
         # Integration status
-        status_lines.append(f"\nCelebi Git Integration: {'ENABLED' if config['enabled'] else 'DISABLED'}")
+        status_lines.append(
+            "\nCelebi Git Integration: "
+            f"{'ENABLED' if config['enabled'] else 'DISABLED'}"
+        )
         status_lines.append(f"  Hooks installed: {'yes' if config['hooks_installed'] else 'no'}")
         status_lines.append(f"  Auto-validate: {'yes' if config['auto_validate'] else 'no'}")
         status_lines.append(f"  Auto-regenerate: {'yes' if config['auto_regenerate'] else 'no'}")
@@ -524,7 +534,10 @@ def git_status() -> Message:
         coordinator = GitMergeCoordinator()
         merge_status = coordinator.get_merge_status()
 
-        status_lines.append(f"\nMerge Readiness: {'READY' if merge_status['ready_to_merge'] else 'NOT READY'}")
+        status_lines.append(
+            "\nMerge Readiness: "
+            f"{'READY' if merge_status['ready_to_merge'] else 'NOT READY'}"
+        )
         if merge_status['has_uncommitted_changes']:
             status_lines.append("  ⚠ Uncommitted changes detected")
         if merge_status['merge_in_progress']:
@@ -600,10 +613,11 @@ def git_enable() -> Message:
 
             # Show recommended settings
             recommendations = git_integration.get_recommended_settings()
-            rec_msg = "Recommended .gitignore additions:\n"
-            for line in recommendations['.gitignore_additions']:
-                rec_msg += f"  {line}\n"
-            message.add(rec_msg, "info")
+            rec_lines = ["Recommended .gitignore additions:"]
+            rec_lines.extend(
+                f"  {line}" for line in recommendations['.gitignore_additions']
+            )
+            message.add("\n".join(rec_lines) + "\n", "info")
 
             message.data['recommendations'] = recommendations
         else:

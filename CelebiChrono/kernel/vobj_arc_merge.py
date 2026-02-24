@@ -3,11 +3,11 @@
 This module provides specialized algorithms for merging dependency graphs
 with cycle detection and conflict resolution.
 """
-import networkx as nx
-from collections import defaultdict
 from enum import Enum
-from typing import Dict, List, Set, Tuple, Optional, Any
 from logging import getLogger
+from typing import Dict, List, Set, Optional, Any
+
+import networkx as nx
 
 logger = getLogger("ChernLogger")
 
@@ -32,15 +32,18 @@ class MergeResolutionStrategy(Enum):
     AUTO_MERGE = "auto_merge"  # Automatic resolution based on heuristics
 
 
-class MergeConflict:
+class MergeConflict:  # pylint: disable=too-many-instance-attributes
     """Represents a merge conflict with resolution options."""
 
-    def __init__(self, conflict_type: MergeConflictType,
-                 description: str,
-                 local_data: Any = None,
-                 remote_data: Any = None,
-                 base_data: Any = None,
-                 resolution_options: List[Dict] = None):
+    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        conflict_type: MergeConflictType,
+        description: str,
+        local_data: Any = None,
+        remote_data: Any = None,
+        base_data: Any = None,
+        resolution_options: List[Dict] = None,
+    ):
         self.conflict_type = conflict_type
         self.description = description
         self.local_data = local_data
@@ -210,9 +213,13 @@ class DAGMerger:
             # Check for contradictory edges (same source, different targets)
             self._detect_contradictory_edges(local_dag, remote_dag, u, v)
 
-    def _detect_contradictory_edges(self, local_dag: nx.DiGraph,
-                                    remote_dag: nx.DiGraph,
-                                    u: Any, v: Any):
+    def _detect_contradictory_edges(
+        self,
+        local_dag: nx.DiGraph,
+        remote_dag: nx.DiGraph,
+        u: Any,
+        _v: Any,
+    ):
         """Detect contradictory edges where same source has different targets."""
         local_targets = set(local_dag.successors(u))
         remote_targets = set(remote_dag.successors(u))
@@ -259,17 +266,17 @@ class DAGMerger:
             cycles = list(nx.simple_cycles(self.merged_graph))
 
             for cycle in cycles:
+                cycle_path = " -> ".join(str(n) for n in cycle)
                 conflict = MergeConflict(
                     MergeConflictType.CYCLE_CREATION,
-                    f"Cycle detected: {' -> '.join(str(n) for n in cycle)} -> {cycle[0]}",
+                    f"Cycle detected: {cycle_path} -> {cycle[0]}",
                     local_data=cycle,
                     remote_data=cycle,
-                    base_data=None
+                    base_data=None,
                 )
 
                 # Generate resolution options - suggest removing each edge in cycle
-                for i in range(len(cycle)):
-                    u = cycle[i]
+                for i, u in enumerate(cycle):
                     v = cycle[(i + 1) % len(cycle)]
                     conflict.add_resolution_option({
                         'description': f'Remove edge {u} -> {v} to break cycle',
@@ -386,14 +393,18 @@ class DAGMerger:
         """Check if there are unresolved conflicts."""
         return any(not c.resolved for c in self.conflicts)
 
-    def resolve_conflict_interactively(self, conflict_index: int, option_index: int) -> bool:
+    def resolve_conflict_interactively(
+        self,
+        conflict_index: int,
+        option_index: int,
+    ) -> bool:
         """Resolve a specific conflict interactively."""
         if 0 <= conflict_index < len(self.conflicts):
             conflict = self.conflicts[conflict_index]
             return conflict.resolve(option_index)
         return False
 
-    def apply_resolutions_to_graph(self):
+    def apply_resolutions_to_graph(self):  # pylint: disable=too-many-branches
         """Apply all conflict resolutions to the merged graph."""
         if not self.merged_graph:
             return
@@ -426,7 +437,7 @@ class DAGMerger:
                 # Add union edges
                 for target in targets:
                     self.merged_graph.add_edge(source, target)
-            elif action == 'prefer_local_targets' or action == 'prefer_remote_targets':
+            elif action in ('prefer_local_targets', 'prefer_remote_targets'):
                 source = data['source']
                 targets = data['targets']
                 # Remove existing edges from this source

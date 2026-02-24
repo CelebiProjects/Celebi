@@ -3,11 +3,11 @@
 This module provides ASCII/Unicode graph visualization for DAG conflicts
 to help users understand and resolve merge conflicts.
 """
-import networkx as nx
-from typing import Dict, List, Set, Tuple, Any, Optional
-from collections import defaultdict
 from enum import Enum
 from logging import getLogger
+from typing import Dict, List, Set, Tuple, Any
+
+import networkx as nx
 
 logger = getLogger("ChernLogger")
 
@@ -29,10 +29,13 @@ class DAGVisualizer:
         self.node_labels: Dict[Any, str] = {}
         self.edge_types: Dict[Tuple[Any, Any], EdgeType] = {}
 
-    def visualize_merge_conflict(self, local_dag: nx.DiGraph,
-                                 remote_dag: nx.DiGraph,
-                                 base_dag: nx.DiGraph,
-                                 conflicts: List[Dict]) -> str:
+    def visualize_merge_conflict(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+        self,
+        local_dag: nx.DiGraph,
+        remote_dag: nx.DiGraph,
+        base_dag: nx.DiGraph,
+        conflicts: List[Dict],
+    ) -> str:
         """
         Create a visualization showing merge conflicts between DAGs.
 
@@ -49,7 +52,11 @@ class DAGVisualizer:
         combined = nx.DiGraph()
 
         # Add all nodes
-        all_nodes = set(local_dag.nodes()) | set(remote_dag.nodes()) | set(base_dag.nodes())
+        all_nodes = (
+            set(local_dag.nodes())
+            | set(remote_dag.nodes())
+            | set(base_dag.nodes())
+        )
         for node in all_nodes:
             combined.add_node(node)
             self.node_labels[node] = self._get_node_label(node)
@@ -208,9 +215,14 @@ class DAGVisualizer:
 
         return layers
 
-    def _visualize_subgraph(self, node: Any, graph: nx.DiGraph,
-                            visited: Set, depth: int,
-                            output: List[str]):
+    def _visualize_subgraph(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        node: Any,
+        graph: nx.DiGraph,
+        visited: Set,
+        depth: int,
+        output: List[str],
+    ):
         """Visualize subgraph starting from node with depth-first traversal."""
         if node in visited:
             return
@@ -230,49 +242,39 @@ class DAGVisualizer:
                 output.append(f"{indent}  {edge_str} {succ_label}")
                 self._visualize_subgraph(succ, graph, visited, depth + 2, output)
 
-    def _format_node(self, node: Any, graph: nx.DiGraph) -> str:
+    def _format_node(self, node: Any, _graph: nx.DiGraph) -> str:
         """Format a node for display."""
         label = self.node_labels.get(node, str(node))
 
         # Check if node is involved in conflicts
         conflict_edges = []
         for (u, v), edge_type in self.edge_types.items():
-            if edge_type == EdgeType.CONFLICT and (u == node or v == node):
+            if edge_type == EdgeType.CONFLICT and node in (u, v):
                 conflict_edges.append((u, v))
 
         if conflict_edges:
             return f"[{label}] (CONFLICT)"
-        else:
-            return f"[{label}]"
+        return f"[{label}]"
 
     def _format_edge(self, edge_type: EdgeType) -> str:
         """Format an edge for display based on its type."""
+        unicode_map = {
+            EdgeType.BOTH: "────►",
+            EdgeType.LOCAL_ONLY: "────L►",
+            EdgeType.REMOTE_ONLY: "────R►",
+            EdgeType.CONFLICT: "════►",
+            EdgeType.CYCLE: "────◯─►",
+        }
+        ascii_map = {
+            EdgeType.BOTH: "---->",
+            EdgeType.LOCAL_ONLY: "---L>",
+            EdgeType.REMOTE_ONLY: "---R>",
+            EdgeType.CONFLICT: "====>",
+            EdgeType.CYCLE: "---O->",
+        }
         if self.use_unicode:
-            if edge_type == EdgeType.BOTH:
-                return "────►"
-            elif edge_type == EdgeType.LOCAL_ONLY:
-                return "────L►"
-            elif edge_type == EdgeType.REMOTE_ONLY:
-                return "────R►"
-            elif edge_type == EdgeType.CONFLICT:
-                return "════►"
-            elif edge_type == EdgeType.CYCLE:
-                return "────◯─►"
-            else:
-                return "────►"
-        else:
-            if edge_type == EdgeType.BOTH:
-                return "---->"
-            elif edge_type == EdgeType.LOCAL_ONLY:
-                return "---L>"
-            elif edge_type == EdgeType.REMOTE_ONLY:
-                return "---R>"
-            elif edge_type == EdgeType.CONFLICT:
-                return "====>"
-            elif edge_type == EdgeType.CYCLE:
-                return "---O->"
-            else:
-                return "---->"
+            return unicode_map.get(edge_type, "────►")
+        return ascii_map.get(edge_type, "---->")
 
     def _get_node_label(self, node: Any) -> str:
         """Get a readable label for a node."""
@@ -282,12 +284,15 @@ class DAGVisualizer:
             if '/' in path:
                 return path.split('/')[-1]
             return path
-        elif hasattr(node, '__str__'):
+        if hasattr(node, '__str__'):
             return str(node)
-        else:
-            return repr(node)
+        return repr(node)
 
-    def visualize_simple_dag(self, dag: nx.DiGraph, title: str = "DAG") -> str:
+    def visualize_simple_dag(  # pylint: disable=too-many-locals
+        self,
+        dag: nx.DiGraph,
+        title: str = "DAG",
+    ) -> str:
         """
         Create a simple visualization of a single DAG.
 
@@ -388,7 +393,10 @@ class DAGVisualizer:
                     all_keys = set(local.keys()) | set(remote.keys())
                     for key in all_keys:
                         if key in local and key in remote and local[key] != remote[key]:
-                            output.append(f"    {key}: local='{local[key]}', remote='{remote[key]}'")
+                            output.append(
+                                f"    {key}: local='{local[key]}', "
+                                f"remote='{remote[key]}'"
+                            )
                         elif key in local and key not in remote:
                             output.append(f"    {key}: local='{local[key]}', remote=<missing>")
                         elif key not in local and key in remote:

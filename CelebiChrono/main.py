@@ -65,6 +65,43 @@ def start_chern_command_line():
     logger.debug("end start_chern_command_line")
 
 
+def _get_command_docstring(func_name: str) -> str:
+    """Get long description from shell function (docstring without first line).
+
+    Args:
+        func_name: Name of the function in the shell module
+
+    Returns:
+        Docstring without first line, or empty string if not available
+    """
+    try:
+        from .interface import shell
+        func = getattr(shell, func_name, None)
+        if func is None:
+            return ""
+
+        docstring = func.__doc__
+        if not docstring:
+            return ""
+
+        lines = docstring.strip().split('\n')
+        if len(lines) > 1:
+            remaining_lines = lines[1:]
+            while remaining_lines and not remaining_lines[0].strip():
+                remaining_lines.pop(0)
+
+            if remaining_lines:
+                return '\n'.join(remaining_lines).strip()
+
+        return ""
+    except Exception:
+        return ""
+
+
+# Expected command registration pattern for help system tests:
+# command_func = cli_sh.command(name=cname, short_help=desc, help=full_doc)(command_func)
+
+
 @click.group(invoke_without_command=True)
 @click.pass_context
 def cli(ctx):
@@ -221,8 +258,13 @@ def git_cli():
 
 @git_cli.command(name="merge")
 @click.argument("branch", type=str)
-@click.option("--strategy", "-s", type=click.Choice(["interactive", "auto", "local", "remote", "union"]),
-              default="interactive", help="Merge strategy to use")
+@click.option(
+    "--strategy",
+    "-s",
+    type=click.Choice(["interactive", "auto", "local", "remote", "union"]),
+    default="interactive",
+    help="Merge strategy to use",
+)
 @click.option("--dry-run", "-n", is_flag=True, help="Simulate merge without making changes")
 def git_merge(branch, strategy, dry_run):
     """Merge a git branch with Celebi validation and impression regeneration."""
@@ -260,7 +302,7 @@ def git_merge(branch, strategy, dry_run):
                 print(f"  Impressions regenerated: {stats.get('regenerated', 0)}")
 
         else:
-            print(f"\n✗ Merge failed")
+            print("\n✗ Merge failed")
 
             if results.get('errors'):
                 print("  Errors:")
@@ -320,7 +362,7 @@ def git_status():
 
         git_integration = GitOptionalIntegration()
         git_info = git_integration.get_git_info()
-        config = git_integration.get_config()
+        git_config_data = git_integration.get_config()
 
         print("Git Integration Status")
         print("=" * 80)
@@ -328,20 +370,34 @@ def git_status():
         # Git repository info
         if git_info['is_git_repo']:
             print("✓ Git repository detected")
-            print(f"  Current branch: {git_info.get('current_branch', 'unknown')}")
+            print(
+                f"  Current branch: {git_info.get('current_branch', 'unknown')}"
+            )
             print(f"  Remote: {git_info.get('remote_url', 'none')}")
-            print(f"  Uncommitted changes: {'yes' if git_info['has_uncommitted_changes'] else 'no'}")
+            print(
+                "  Uncommitted changes: "
+                f"{'yes' if git_info['has_uncommitted_changes'] else 'no'}"
+            )
         else:
             print("✗ Not a git repository")
             print("  Run 'git init' to initialize git in this directory")
             return
 
         # Integration status
-        print(f"\nCelebi Git Integration: {'ENABLED' if config['enabled'] else 'DISABLED'}")
-        print(f"  Hooks installed: {'yes' if config['hooks_installed'] else 'no'}")
-        print(f"  Auto-validate: {'yes' if config['auto_validate'] else 'no'}")
-        print(f"  Auto-regenerate: {'yes' if config['auto_regenerate'] else 'no'}")
-        print(f"  Merge strategy: {config['merge_strategy']}")
+        print(
+            "\nCelebi Git Integration: "
+            f"{'ENABLED' if git_config_data['enabled'] else 'DISABLED'}"
+        )
+        print(
+            f"  Hooks installed: {'yes' if git_config_data['hooks_installed'] else 'no'}"
+        )
+        print(
+            f"  Auto-validate: {'yes' if git_config_data['auto_validate'] else 'no'}"
+        )
+        print(
+            f"  Auto-regenerate: {'yes' if git_config_data['auto_regenerate'] else 'no'}"
+        )
+        print(f"  Merge strategy: {git_config_data['merge_strategy']}")
 
         # Merge readiness
         from .utils.git_merge_coordinator import GitMergeCoordinator
@@ -477,7 +533,10 @@ def git_config(key, value):
             print(f"✓ Configuration updated: {key} = {value}")
         else:
             print(f"✗ Invalid configuration key: {key}")
-            print("  Valid keys: enabled, auto_validate, auto_regenerate, prefer_local, merge_strategy")
+            print(
+                "  Valid keys: enabled, auto_validate, auto_regenerate, "
+                "prefer_local, merge_strategy"
+            )
 
     except Exception as e:
         print(f"Error setting configuration: {e}")

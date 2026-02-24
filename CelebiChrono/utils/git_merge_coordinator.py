@@ -9,10 +9,10 @@ import subprocess
 import tempfile
 import json
 import shutil
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Any
 from enum import Enum
-from pathlib import Path
 from logging import getLogger
+import networkx as nx
 
 # Assuming these are available in your project structure
 from ..kernel.vobj_arc_merge import DAGMerger, MergeResolutionStrategy
@@ -33,13 +33,18 @@ class MergeStrategy(Enum):
     UNION = "union"  # Keep changes from both branches when possible
 
 
-class GitMergeCoordinator:
+class GitMergeCoordinator:  # pylint: disable=too-many-instance-attributes
     """Coordinates git merge with Celebi validation and repair."""
 
     def __init__(self, project_path: Optional[str] = None):
         self.project_path = project_path or os.getcwd()
         self.git_dir = os.path.join(self.project_path, '.git')
         self.is_git_repo = os.path.exists(self.git_dir)
+        self.dag_merger = None
+        self.config_merger = None
+        self.doctor = None
+        self.impression_regenerator = None
+        self.visualizer = None
 
         if not self.is_git_repo:
             logger.warning("Not a git repository: %s", self.project_path)
@@ -72,15 +77,21 @@ class GitMergeCoordinator:
 
         try:
             cmd = ['git', 'status', '--porcelain']
-            process = subprocess.run(cmd, cwd=self.project_path, capture_output=True, text=True)
+            process = subprocess.run(
+                cmd,
+                cwd=self.project_path,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
             status['has_uncommitted_changes'] = bool(process.stdout.strip())
 
             merge_head = os.path.join(self.git_dir, 'MERGE_HEAD')
             status['merge_in_progress'] = os.path.exists(merge_head)
 
             status['ready_to_merge'] = (
-                not status['has_uncommitted_changes'] and
-                not status['merge_in_progress']
+                not status['has_uncommitted_changes']
+                and not status['merge_in_progress']
             )
 
         except Exception as e:
@@ -89,11 +100,19 @@ class GitMergeCoordinator:
 
         return status
 
-    def execute_merge(self, branch: str, strategy: MergeStrategy = MergeStrategy.INTERACTIVE,
-                      dry_run: bool = False) -> Dict[str, Any]:
+    def execute_merge(  # pylint: disable=too-many-branches,too-many-statements
+        self,
+        branch: str,
+        strategy: MergeStrategy = MergeStrategy.INTERACTIVE,
+        dry_run: bool = False,
+    ) -> Dict[str, Any]:
         """Execute a git merge with Celebi validation."""
-        logger.info("Executing Celebi-aware git merge from %s (strategy=%s, dry_run=%s)",
-                    branch, strategy.value, dry_run)
+        logger.info(
+            "Executing Celebi-aware git merge from %s (strategy=%s, dry_run=%s)",
+            branch,
+            strategy.value,
+            dry_run,
+        )
 
         results = {
             'success': False,
@@ -114,7 +133,9 @@ class GitMergeCoordinator:
             if merge_status.get('merge_in_progress'):
                 results['errors'].append("Merge already in progress")
             if merge_status.get('error'):
-                results['errors'].append(f"Merge status check error: {merge_status['error']}")
+                results['errors'].append(
+                    f"Merge status check error: {merge_status['error']}"
+                )
             return results
 
         backup_info = None
@@ -129,15 +150,27 @@ class GitMergeCoordinator:
 
             # Step 2: Handle Conflicts
             if git_result.get('has_conflicts'):
-                if strategy in [MergeStrategy.AUTO, MergeStrategy.LOCAL, MergeStrategy.REMOTE, MergeStrategy.UNION]:
+                if strategy in [
+                    MergeStrategy.AUTO,
+                    MergeStrategy.LOCAL,
+                    MergeStrategy.REMOTE,
+                    MergeStrategy.UNION,
+                ]:
                     logger.info("Applying automated merge workflow")
-                    resolved = self._resolve_auto_merge_conflicts(git_result['conflicts'], strategy)
+                    resolved = self._resolve_auto_merge_conflicts(
+                        git_result['conflicts'],
+                        strategy,
+                    )
                     results['conflicts_resolved'] = resolved
                     if not resolved:
-                        results['errors'].append("Automated conflict resolution failed to clear all conflicts.")
+                        results['errors'].append(
+                            "Automated conflict resolution failed to clear all conflicts."
+                        )
                 elif strategy == MergeStrategy.INTERACTIVE:
                     logger.info("Using interactive strategy")
-                    user_choices = self._prompt_interactive_conflicts_resolution(git_result['conflicts'])
+                    user_choices = self._prompt_interactive_conflicts_resolution(
+                        git_result['conflicts'],
+                    )
                     results['interactive_choices'] = user_choices
                     results['conflicts_resolved'] = True  # Assuming user handled it
             else:
@@ -145,7 +178,10 @@ class GitMergeCoordinator:
 
             # Abort if git merge fundamentally failed and conflicts weren't resolved
             if not git_result['success'] and not results['conflicts_resolved']:
-                error_msg = git_result.get('error', 'Conflicts require manual resolution.')
+                error_msg = git_result.get(
+                    'error',
+                    'Conflicts require manual resolution.',
+                )
                 results['errors'].append(f"Git merge halted: {error_msg}")
                 if not dry_run and backup_info:
                     self._restore_backup(backup_info)
@@ -153,7 +189,11 @@ class GitMergeCoordinator:
 
             # Commit the resolved merge if there were conflicts and we auto-resolved them
             if git_result.get('has_conflicts') and results['conflicts_resolved'] and not dry_run:
-                subprocess.run(['git', 'commit', '--no-edit'], cwd=self.project_path)
+                subprocess.run(
+                    ['git', 'commit', '--no-edit'],
+                    cwd=self.project_path,
+                    check=False,
+                )
 
             # Step 3: Reconcile arcs (even in dry-run, since merge already touched working tree)
             if self.doctor:
@@ -167,7 +207,9 @@ class GitMergeCoordinator:
             if not dry_run:
                 validation_result = self._validate_and_repair(strategy)
                 results['validation_success'] = validation_result['success']
-                results['conflicts'].extend(validation_result.get('conflicts', []))
+                results['conflicts'].extend(
+                    validation_result.get('conflicts', [])
+                )
 
                 if not validation_result['success']:
                     results['errors'].append("Celebi validation failed post-merge")
@@ -176,7 +218,9 @@ class GitMergeCoordinator:
 
                 # Step 4: Regenerate impressions
                 regeneration_result = self._regenerate_impressions()
-                results['impression_regeneration_success'] = regeneration_result['success']
+                results['impression_regeneration_success'] = (
+                    regeneration_result['success']
+                )
                 results['regeneration_stats'] = regeneration_result['stats']
 
                 if not regeneration_result['success']:
@@ -201,16 +245,28 @@ class GitMergeCoordinator:
         """Run git merge command."""
         result = {'success': False, 'output': '', 'conflicts': [], 'has_conflicts': False}
         try:
-            cmd = ['git', 'merge', '--no-commit', '--no-ff', branch] if dry_run else ['git', 'merge', '--no-ff', branch]
-            process = subprocess.run(cmd, cwd=self.project_path, capture_output=True, text=True, timeout=300)
+            if dry_run:
+                cmd = ['git', 'merge', '--no-commit', '--no-ff', branch]
+            else:
+                cmd = ['git', 'merge', '--no-ff', branch]
+            process = subprocess.run(
+                cmd,
+                cwd=self.project_path,
+                capture_output=True,
+                text=True,
+                timeout=300,
+                check=False,
+            )
 
             result['output'] = process.stdout + process.stderr
-            result['has_conflicts'] = "CONFLICT" in result['output'] or self._has_unmerged_paths()
+            result['has_conflicts'] = (
+                "CONFLICT" in result['output'] or self._has_unmerged_paths()
+            )
 
             if result['has_conflicts']:
                 result['conflicts'] = self._parse_git_conflicts(result['output'])
 
-            result['success'] = process.returncode == 0 and not result['has_conflicts']
+            result['success'] = not process.returncode and not result['has_conflicts']
             if not result['success']:
                 result['error'] = process.stderr.strip() or process.stdout.strip()
         except subprocess.TimeoutExpired:
@@ -220,7 +276,11 @@ class GitMergeCoordinator:
 
         return result
 
-    def _resolve_auto_merge_conflicts(self, conflicts: List[Dict], strategy: MergeStrategy) -> bool:
+    def _resolve_auto_merge_conflicts(
+        self,
+        conflicts: List[Dict],
+        strategy: MergeStrategy,
+    ) -> bool:
         """Automatically resolve known merge conflicts based on strategy."""
         if not conflicts:
             return True
@@ -241,7 +301,11 @@ class GitMergeCoordinator:
                 try:
                     if self._merge_yaml_file(file_path, strategy):
                         # Mark as resolved in git
-                        subprocess.run(['git', 'add', file_path], cwd=self.project_path, check=True)
+                        subprocess.run(
+                            ['git', 'add', file_path],
+                            cwd=self.project_path,
+                            check=True,
+                        )
                     else:
                         all_resolved = False
                 except Exception as e:
@@ -250,8 +314,16 @@ class GitMergeCoordinator:
             elif strategy in [MergeStrategy.LOCAL, MergeStrategy.REMOTE]:
                 # Force checkout ours/theirs for non-YAML files if strong strategy is selected
                 flag = "--ours" if strategy == MergeStrategy.LOCAL else "--theirs"
-                subprocess.run(['git', 'checkout', flag, file_path], cwd=self.project_path)
-                subprocess.run(['git', 'add', file_path], cwd=self.project_path)
+                subprocess.run(
+                    ['git', 'checkout', flag, file_path],
+                    cwd=self.project_path,
+                    check=False,
+                )
+                subprocess.run(
+                    ['git', 'add', file_path],
+                    cwd=self.project_path,
+                    check=False,
+                )
             else:
                 logger.info("Conflict requires manual resolution: %s", file_path)
                 all_resolved = False
@@ -283,8 +355,11 @@ class GitMergeCoordinator:
         """Remove path from git index and working tree if present."""
         if not path:
             return
-        subprocess.run(['git', 'rm', '--cached', '--ignore-unmatch', path],
-                       cwd=self.project_path, check=False)
+        subprocess.run(
+            ['git', 'rm', '--cached', '--ignore-unmatch', path],
+            cwd=self.project_path,
+            check=False,
+        )
         full_path = os.path.join(self.project_path, path)
         if os.path.exists(full_path):
             try:
@@ -292,7 +367,11 @@ class GitMergeCoordinator:
             except OSError:
                 pass
 
-    def _resolve_rename_rename_conflict(self, conflict: Dict, strategy: MergeStrategy) -> bool:
+    def _resolve_rename_rename_conflict(
+        self,
+        conflict: Dict,
+        strategy: MergeStrategy,
+    ) -> bool:
         """Resolve rename/rename conflicts by keeping local/remote/both."""
         base_path = conflict.get('base_path')
         ours_path = conflict.get('ours_path')
@@ -332,24 +411,33 @@ class GitMergeCoordinator:
         if keep_local:
             self._write_file(ours_path, ours_content)
             self._write_file(theirs_path, theirs_content)
-            subprocess.run(['git', 'add', ours_path, theirs_path],
-                           cwd=self.project_path, check=False)
+            subprocess.run(
+                ['git', 'add', ours_path, theirs_path],
+                cwd=self.project_path,
+                check=False,
+            )
             self._remove_path(base_path)
             return True
 
         if keep_remote:
             self._write_file(ours_path, ours_content)
             self._write_file(theirs_path, theirs_content)
-            subprocess.run(['git', 'add', ours_path, theirs_path],
-                           cwd=self.project_path, check=False)
+            subprocess.run(
+                ['git', 'add', ours_path, theirs_path],
+                cwd=self.project_path,
+                check=False,
+            )
             self._remove_path(base_path)
             return True
 
         if keep_both:
             self._write_file(ours_path, ours_content)
             self._write_file(theirs_path, theirs_content)
-            subprocess.run(['git', 'add', ours_path, theirs_path],
-                           cwd=self.project_path, check=False)
+            subprocess.run(
+                ['git', 'add', ours_path, theirs_path],
+                cwd=self.project_path,
+                check=False,
+            )
             self._remove_path(base_path)
             return True
 
@@ -404,12 +492,15 @@ class GitMergeCoordinator:
 
             # Simple text-based resolution for git markers
             if strategy == MergeStrategy.LOCAL:
-                resolved_content = re.sub(r'<<<<<<< HEAD\n(.*?)\n=======\n.*?\n>>>>>>> .*?\n', r'\1\n', content, flags=re.DOTALL)
+                pattern = r'<<<<<<< HEAD\n(.*?)\n=======\n.*?\n>>>>>>> .*?\n'
+                resolved_content = re.sub(pattern, r'\1\n', content, flags=re.DOTALL)
             elif strategy == MergeStrategy.REMOTE:
-                resolved_content = re.sub(r'<<<<<<< HEAD\n.*?\n=======\n(.*?)\n>>>>>>> .*?\n', r'\1\n', content, flags=re.DOTALL)
+                pattern = r'<<<<<<< HEAD\n.*?\n=======\n(.*?)\n>>>>>>> .*?\n'
+                resolved_content = re.sub(pattern, r'\1\n', content, flags=re.DOTALL)
             elif strategy == MergeStrategy.UNION:
                 # Keep both sets of changes
-                resolved_content = re.sub(r'<<<<<<< HEAD\n(.*?)\n=======\n(.*?)\n>>>>>>> .*?\n', r'\1\n\2\n', content, flags=re.DOTALL)
+                pattern = r'<<<<<<< HEAD\n(.*?)\n=======\n(.*?)\n>>>>>>> .*?\n'
+                resolved_content = re.sub(pattern, r'\1\n\2\n', content, flags=re.DOTALL)
             else:
                 # AUTO attempts to use the config_merger if available, else fails back to manual
                 if hasattr(self.config_merger, 'merge_files'):
@@ -425,7 +516,10 @@ class GitMergeCoordinator:
             logger.error("Error modifying YAML file %s: %s", file_path, e)
             return False
 
-    def _prompt_interactive_conflicts_resolution(self, conflicts: List[Dict]) -> Dict[str, str]:
+    def _prompt_interactive_conflicts_resolution(
+        self,
+        conflicts: List[Dict],
+    ) -> Dict[str, str]:
         """Prompt user to resolve conflicts for the interactive strategy."""
         resolved = {}
         print("\n=== INTERACTIVE CONFLICT RESOLUTION ===")
@@ -433,11 +527,17 @@ class GitMergeCoordinator:
             file_path = conflict.get('file')
             logger.info("Conflict detected: %s", conflict.get('description'))
             print(f"File with conflict: {file_path}")
-            print("Please open this file in your editor, resolve the markers, and save.")
+            print(
+                "Please open this file in your editor, resolve the markers, and save."
+            )
             input("Press Enter when you have resolved and saved the file...")
 
             # Stage the file assuming the user fixed it
-            subprocess.run(['git', 'add', file_path], cwd=self.project_path)
+            subprocess.run(
+                ['git', 'add', file_path],
+                cwd=self.project_path,
+                check=False,
+            )
             resolved[file_path] = 'resolved_manually'
 
         return resolved
@@ -475,8 +575,15 @@ class GitMergeCoordinator:
             return True
 
         try:
-            process = subprocess.run(['git', 'status', '--porcelain'], cwd=self.project_path, capture_output=True, text=True, timeout=30)
-            if process.returncode != 0:
+            process = subprocess.run(
+                ['git', 'status', '--porcelain'],
+                cwd=self.project_path,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=False,
+            )
+            if process.returncode:
                 return True
             for line in process.stdout.split('\n'):
                 if line and line[0] in 'ADU' and line[1] in 'ADU':
@@ -500,11 +607,21 @@ class GitMergeCoordinator:
             result['conflicts'].extend(config_result['conflicts'])
 
             if strategy == MergeStrategy.INTERACTIVE:
-                repair_result = self._repair_interactively(result['issues'], result['conflicts'])
+                repair_result = self._repair_interactively(
+                    result['issues'],
+                    result['conflicts'],
+                )
             elif strategy == MergeStrategy.AUTO:
-                repair_result = self._repair_automatically(result['issues'], result['conflicts'])
+                repair_result = self._repair_automatically(
+                    result['issues'],
+                    result['conflicts'],
+                )
             else:
-                repair_result = self._repair_with_preference(result['issues'], result['conflicts'], strategy)
+                repair_result = self._repair_with_preference(
+                    result['issues'],
+                    result['conflicts'],
+                    strategy,
+                )
 
             result['repairs'] = repair_result.get('repairs', [])
             result['success'] = repair_result.get('success', False)
@@ -524,11 +641,11 @@ class GitMergeCoordinator:
             MergeStrategy.AUTO: MergeResolutionStrategy.AUTO_MERGE,
             MergeStrategy.LOCAL: MergeResolutionStrategy.LOCAL_PREFERENCE,
             MergeStrategy.REMOTE: MergeResolutionStrategy.REMOTE_PREFERENCE,
-            MergeStrategy.UNION: MergeResolutionStrategy.UNION
+            MergeStrategy.UNION: MergeResolutionStrategy.UNION,
         }
         dag_strategy = strategy_map.get(strategy, MergeResolutionStrategy.AUTO_MERGE)
         self.dag_merger = DAGMerger(strategy=dag_strategy)
-        self.config_merger = ConfigMerger(prefer_local=(strategy == MergeStrategy.LOCAL))
+        self.config_merger = ConfigMerger(prefer_local=strategy == MergeStrategy.LOCAL)
 
     def _validate_dag_consistency(self) -> Dict[str, Any]:
         """Validate DAG consistency after merge."""
@@ -542,7 +659,6 @@ class GitMergeCoordinator:
             dep_dag = nx.DiGraph()
             dep_dag.add_nodes_from(current_dag.nodes())
             dep_dag.add_edges_from(dep_edges)
-            import networkx as nx
             try:
                 nx.find_cycle(dep_dag, orientation='original')
                 result['issues'].append("DAG contains cycles")
@@ -555,7 +671,7 @@ class GitMergeCoordinator:
                 if v not in dep_dag.nodes():
                     result['issues'].append(f"Missing target node: {v}")
 
-            is_valid, issues, conflicts = self.doctor.validate_merge()
+            _is_valid, issues, conflicts = self.doctor.validate_merge()
             result['issues'].extend(issues)
             result['conflicts'].extend(conflicts)
         except Exception as e:
@@ -564,16 +680,17 @@ class GitMergeCoordinator:
 
     def _validate_config_files(self) -> Dict[str, Any]:
         """Validate Celebi config files after merge."""
+        # pylint: disable=too-many-nested-blocks
         result = {'issues': [], 'conflicts': []}
         try:
-            for root, dirs, files in os.walk(self.project_path):
+            for root, _, files in os.walk(self.project_path):
                 if '.git' in root or '.celebi' in root:
                     continue
                 for file in files:
                     if file.endswith(('.json', '.yaml', '.yml')):
                         full_path = os.path.join(root, file)
                         try:
-                            with open(full_path, 'r') as f:
+                            with open(full_path, 'r', encoding='utf-8') as f:
                                 content = f.read()
                             if file.endswith('.json'):
                                 json.loads(content)
@@ -581,14 +698,25 @@ class GitMergeCoordinator:
                                 import yaml
                                 yaml.safe_load(content)
                         except Exception as e:
-                            result['issues'].append(f"Invalid config file {full_path}: {e}")
+                            result['issues'].append(
+                                f"Invalid config file {full_path}: {e}"
+                            )
         except Exception as e:
             result['issues'].append(f"Config validation error: {e}")
         return result
 
-    def _repair_interactively(self, issues: List[str], conflicts: List[Dict]) -> Dict[str, Any]:
+    def _repair_interactively(
+        self,
+        _issues: List[str],
+        _conflicts: List[Dict],
+    ) -> Dict[str, Any]:
         """Repair issues interactively with user guidance."""
-        result = {'success': True, 'repairs': [], 'remaining_issues': [], 'remaining_conflicts': []}
+        result = {
+            'success': True,
+            'repairs': [],
+            'remaining_issues': [],
+            'remaining_conflicts': [],
+        }
         # Assuming interactive CLI logic is implemented here. Skipped for brevity.
         if self.doctor:
             arc_updates = self.doctor.reconcile_arc_relations()
@@ -599,12 +727,30 @@ class GitMergeCoordinator:
                 )
         return result
 
-    def _repair_automatically(self, issues: List[str], conflicts: List[Dict]) -> Dict[str, Any]:
+    def _repair_automatically(
+        self,
+        issues: List[str],
+        conflicts: List[Dict],
+    ) -> Dict[str, Any]:
         """Repair issues automatically using heuristics."""
-        result = {'success': False, 'repairs': [], 'remaining_issues': [], 'remaining_conflicts': []}
+        result = {
+            'success': False,
+            'repairs': [],
+            'remaining_issues': [],
+            'remaining_conflicts': [],
+        }
         if self.doctor:
-            repairs, remaining = self.doctor.repair_merge_conflicts(conflicts=conflicts, strategy="auto")
-            result['repairs'].extend([f"Auto-repaired: {r}" for r in repairs])
+            repairs, remaining = self.doctor.repair_merge_conflicts(
+                conflicts=conflicts,
+                strategy="auto",
+            )
+            if isinstance(repairs, int):
+                repairs_list = [repairs] if repairs > 0 else []
+            else:
+                repairs_list = list(repairs)
+            result['repairs'].extend(
+                [f"Auto-repaired: {r}" for r in repairs_list]
+            )
             result['remaining_conflicts'] = remaining
             arc_updates = self.doctor.reconcile_arc_relations()
             if arc_updates["predecessors_updated"] or arc_updates["successors_updated"]:
@@ -614,15 +760,26 @@ class GitMergeCoordinator:
                 )
 
         for issue in issues:
-            if "contains cycles" in issue and hasattr(self.doctor, '_attempt_cycle_repair') and self.doctor._attempt_cycle_repair():
+            if (
+                "contains cycles" in issue
+                and hasattr(self.doctor, '_attempt_cycle_repair')
+                and self.doctor._attempt_cycle_repair()  # pylint: disable=protected-access
+            ):
                 result['repairs'].append(f"Fixed: {issue}")
             else:
                 result['remaining_issues'].append(issue)
 
-        result['success'] = not result['remaining_issues'] and not result['remaining_conflicts']
+        result['success'] = (
+            not result['remaining_issues'] and not result['remaining_conflicts']
+        )
         return result
 
-    def _repair_with_preference(self, issues: List[str], conflicts: List[Dict], strategy: MergeStrategy) -> Dict[str, Any]:
+    def _repair_with_preference(
+        self,
+        issues: List[str],
+        conflicts: List[Dict],
+        _strategy: MergeStrategy,
+    ) -> Dict[str, Any]:
         """Repair issues with local/remote preference."""
         return self._repair_automatically(issues, conflicts)
 
@@ -631,9 +788,11 @@ class GitMergeCoordinator:
         result = {'success': False, 'stats': {}}
         try:
             if self.impression_regenerator:
-                stats = self.impression_regenerator.regenerate_impressions(incremental=True)
+                stats = self.impression_regenerator.regenerate_impressions(
+                    incremental=True,
+                )
                 result['stats'] = stats
-                result['success'] = stats.get('failed', 0) == 0
+                result['success'] = not stats.get('failed', 0)
             else:
                 result['stats'] = {'error': 'Impression regenerator not initialized'}
         except Exception as e:
@@ -643,7 +802,11 @@ class GitMergeCoordinator:
     def _create_backup(self) -> Dict[str, Any]:
         """Create backup of current state for rollback."""
         backup_dir = tempfile.mkdtemp(prefix='celebi_merge_backup_')
-        backup_info = {'backup_dir': backup_dir, 'timestamp': os.path.getmtime(self.project_path), 'files': []}
+        backup_info = {
+            'backup_dir': backup_dir,
+            'timestamp': os.path.getmtime(self.project_path),
+            'files': [],
+        }
         celebi_dir = os.path.join(self.project_path, '.celebi')
         if os.path.exists(celebi_dir):
             shutil.copytree(celebi_dir, os.path.join(backup_dir, '.celebi'))
@@ -666,7 +829,11 @@ class GitMergeCoordinator:
 
     def _cleanup_backup(self, backup_info: Dict[str, Any]):
         """Clean up backup directory."""
-        if backup_info and 'backup_dir' in backup_info and os.path.exists(backup_info['backup_dir']):
+        if (
+            backup_info
+            and 'backup_dir' in backup_info
+            and os.path.exists(backup_info['backup_dir'])
+        ):
             shutil.rmtree(backup_info['backup_dir'])
 
     def validate_post_merge(self) -> Dict[str, Any]:
@@ -677,11 +844,16 @@ class GitMergeCoordinator:
             is_valid, issues, conflicts = self.doctor.validate_merge()
             results['issues'].extend(issues)
             if not is_valid:
-                repaired, remaining = self.doctor.repair_merge_conflicts(conflicts=conflicts, strategy="auto")
+                repaired, remaining = self.doctor.repair_merge_conflicts(
+                    conflicts=conflicts,
+                    strategy="auto",
+                )
                 repaired_count = repaired if isinstance(repaired, int) else len(repaired)
                 if repaired_count > 0:
-                    results['repairs'].append(f"Automatically repaired {repaired_count} issue(s)")
-                results['success'] = len(remaining) == 0
+                    results['repairs'].append(
+                        f"Automatically repaired {repaired_count} issue(s)"
+                    )
+                results['success'] = not remaining
             else:
                 results['success'] = True
         except Exception as e:

@@ -4,11 +4,9 @@ This module handles regenerating impressions after a merge to ensure
 the impression system reflects the merged project state.
 """
 import os
-import hashlib
 import json
-from typing import Dict, List, Set, Optional, Any
+from typing import Dict, List, Any
 from logging import getLogger
-from pathlib import Path
 
 from .vobject import VObject
 from .chern_cache import ChernCache
@@ -26,6 +24,7 @@ class ImpressionRegenerator(VObject):
         self.regenerated_count = 0
         self.skipped_count = 0
         self.failed_count = 0
+        self._diagnostics = None
 
     def regenerate_impressions(self, incremental: bool = True,
                                force: bool = False) -> Dict[str, int]:
@@ -46,6 +45,7 @@ class ImpressionRegenerator(VObject):
             'skipped_objects': [],
             'failed_objects': []
         }
+        self._diagnostics = diagnostics
 
         # Get all objects in the project
         all_objects = self.sub_objects_recursively()
@@ -82,6 +82,7 @@ class ImpressionRegenerator(VObject):
 
         logger.info("Impression regeneration completed: %s", stats)
         logger.debug("Detailed diagnostics: %s", diagnostics)
+        self._diagnostics = None
         return stats
 
     def _identify_changed_objects(self, objects: List) -> List:
@@ -174,11 +175,13 @@ class ImpressionRegenerator(VObject):
         """
         try:
             obj_path = obj.invariant_path() if hasattr(obj, 'invariant_path') else str(obj)
+            diagnostics = self._diagnostics
 
             # Check if regeneration is needed
             if not force and self._is_impression_current(obj):
                 logger.debug("Skipping %s - impression appears current", obj_path)
-                diagnostics['skipped_objects'].append(obj_path)
+                if diagnostics is not None:
+                    diagnostics['skipped_objects'].append(obj_path)
                 self.skipped_count += 1
                 return
 
@@ -193,11 +196,13 @@ class ImpressionRegenerator(VObject):
                     obj.impress()  # No force parameter
                     self.regenerated_count += 1
                     logger.debug("Successfully regenerated impression for %s", obj_path)
-                    diagnostics['handled_objects'].append(obj_path)
+                    if diagnostics is not None:
+                        diagnostics['handled_objects'].append(obj_path)
                 except Exception as e:
                     self.failed_count += 1
                     logger.warning("Failed to regenerate impression for %s: %s", obj_path, e)
-                    diagnostics['failed_objects'].append({'object': obj_path, 'error': str(e)})
+                    if diagnostics is not None:
+                        diagnostics['failed_objects'].append({'object': obj_path, 'error': str(e)})
             else:
                 self.failed_count += 1
                 logger.warning("Object %s doesn't support impression regeneration", obj_path)
@@ -295,16 +300,26 @@ class ImpressionRegenerator(VObject):
                     results['consistent_objects'] += 1
                 else:
                     results['inconsistent_objects'] += 1
+                    obj_name = (
+                        obj.invariant_path()
+                        if hasattr(obj, 'invariant_path')
+                        else str(obj)
+                    )
                     results['errors'].append({
-                        'object': obj.invariant_path() if hasattr(obj, 'invariant_path') else str(obj),
-                        'issue': 'Impression inconsistent with current state'
+                        'object': obj_name,
+                        'issue': 'Impression inconsistent with current state',
                     })
 
             except Exception as e:
                 results['inconsistent_objects'] += 1
+                obj_name = (
+                    obj.invariant_path()
+                    if hasattr(obj, 'invariant_path')
+                    else str(obj)
+                )
                 results['errors'].append({
-                    'object': obj.invariant_path() if hasattr(obj, 'invariant_path') else str(obj),
-                    'issue': f'Validation error: {e}'
+                    'object': obj_name,
+                    'issue': f'Validation error: {e}',
                 })
 
         logger.info("Impression consistency validation completed: %s", results)
@@ -338,7 +353,7 @@ class ImpressionRegenerator(VObject):
 
         # Compare key metadata
         try:
-            with open(config_path, 'r') as f:
+            with open(config_path, 'r', encoding='utf-8') as f:
                 impression_config = json.load(f)
 
             # Get current config
@@ -354,7 +369,10 @@ class ImpressionRegenerator(VObject):
 
         return False
 
-    def cleanup_stale_impressions(self, dry_run: bool = True) -> Dict[str, Any]:
+    def cleanup_stale_impressions(  # pylint: disable=too-many-locals,too-many-branches
+        self,
+        dry_run: bool = True,
+    ) -> Dict[str, Any]:
         """
         Clean up impressions that are no longer referenced.
 

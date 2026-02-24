@@ -7,7 +7,6 @@ import os
 import json
 import subprocess
 from typing import Dict, Optional, Any, List
-from pathlib import Path
 from logging import getLogger
 
 logger = getLogger("ChernLogger")
@@ -34,7 +33,7 @@ class GitOptionalIntegration:
 
         if os.path.exists(self.config_path):
             try:
-                with open(self.config_path, 'r') as f:
+                with open(self.config_path, 'r', encoding='utf-8') as f:
                     user_config = json.load(f)
                 # Merge with defaults
                 default_config.update(user_config)
@@ -47,7 +46,7 @@ class GitOptionalIntegration:
         """Save git integration configuration."""
         try:
             os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
-            with open(self.config_path, 'w') as f:
+            with open(self.config_path, 'w', encoding='utf-8') as f:
                 json.dump(self.config, f, indent=2)
         except IOError as e:
             logger.error("Failed to save git config: %s", e)
@@ -142,7 +141,7 @@ fi
 """
 
         try:
-            with open(post_merge_hook, 'w') as f:
+            with open(post_merge_hook, 'w', encoding='utf-8') as f:
                 f.write(hook_content)
 
             # Make hook executable
@@ -174,7 +173,7 @@ fi
         if os.path.exists(post_merge_hook):
             try:
                 # Check if it's our hook by reading first few lines
-                with open(post_merge_hook, 'r') as f:
+                with open(post_merge_hook, 'r', encoding='utf-8') as f:
                     content = f.read(100)
                 if 'Celebi post-merge validation hook' in content:
                     os.remove(post_merge_hook)
@@ -210,22 +209,37 @@ fi
         try:
             # Get current branch
             cmd = ['git', 'rev-parse', '--abbrev-ref', 'HEAD']
-            process = subprocess.run(cmd, cwd=self.project_path,
-                                     capture_output=True, text=True)
-            if process.returncode == 0:
+            process = subprocess.run(
+                cmd,
+                cwd=self.project_path,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if not process.returncode:
                 info['current_branch'] = process.stdout.strip()
 
             # Check for uncommitted changes
             cmd = ['git', 'status', '--porcelain']
-            process = subprocess.run(cmd, cwd=self.project_path,
-                                     capture_output=True, text=True)
+            process = subprocess.run(
+                cmd,
+                cwd=self.project_path,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
             info['has_uncommitted_changes'] = bool(process.stdout.strip())
 
             # Get remote URL
             cmd = ['git', 'remote', 'get-url', 'origin']
-            process = subprocess.run(cmd, cwd=self.project_path,
-                                     capture_output=True, text=True)
-            if process.returncode == 0:
+            process = subprocess.run(
+                cmd,
+                cwd=self.project_path,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if not process.returncode:
                 info['remote_url'] = process.stdout.strip()
 
         except Exception as e:
@@ -280,8 +294,8 @@ fi
         # Check git version
         try:
             cmd = ['git', '--version']
-            process = subprocess.run(cmd, capture_output=True, text=True)
-            if process.returncode != 0:
+            process = subprocess.run(cmd, capture_output=True, text=True, check=False)
+            if process.returncode:
                 issues.append({
                     'level': 'error',
                     'message': 'Git not found or not executable',
@@ -322,12 +336,29 @@ fi
 
         try:
             # Use find command to locate large files
-            cmd = ['find', '.', '-type', 'f', '-size', f'+{size_limit_mb}M',
-                   '-not', '-path', './.git/*', '-not', '-path', './.celebi/*']
-            process = subprocess.run(cmd, cwd=self.project_path,
-                                     capture_output=True, text=True)
+            cmd = [
+                'find',
+                '.',
+                '-type',
+                'f',
+                '-size',
+                f'+{size_limit_mb}M',
+                '-not',
+                '-path',
+                './.git/*',
+                '-not',
+                '-path',
+                './.celebi/*',
+            ]
+            process = subprocess.run(
+                cmd,
+                cwd=self.project_path,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
 
-            if process.returncode == 0:
+            if not process.returncode:
                 for file_path in process.stdout.strip().split('\n'):
                     if file_path:
                         try:
@@ -355,7 +386,7 @@ fi
 
         try:
             # Simple heuristic: check file extensions
-            for root, dirs, files in os.walk(celebi_dir):
+            for root, _, files in os.walk(celebi_dir):
                 for file in files:
                     file_path = os.path.join(root, file)
                     # Skip impressions directory (contains binary data)
@@ -396,31 +427,50 @@ fi
         # Check for git flow or similar workflows
         try:
             cmd = ['git', 'config', '--get', 'gitflow.branch.master']
-            process = subprocess.run(cmd, cwd=self.project_path,
-                                     capture_output=True, text=True)
-            if process.returncode == 0:
+            process = subprocess.run(
+                cmd,
+                cwd=self.project_path,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if not process.returncode:
                 results['warnings'].append('Git flow detected')
-                results['suggestions'].append('Celebi merge validation should work with git flow')
+                results['suggestions'].append(
+                    'Celebi merge validation should work with git flow'
+                )
         except Exception:
             pass
 
         # Check for merge strategy preferences
         try:
             cmd = ['git', 'config', '--get', 'pull.rebase']
-            process = subprocess.run(cmd, cwd=self.project_path,
-                                     capture_output=True, text=True)
-            if process.returncode == 0 and process.stdout.strip() == 'true':
+            process = subprocess.run(
+                cmd,
+                cwd=self.project_path,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if not process.returncode and process.stdout.strip() == 'true':
                 results['warnings'].append('Git pull with rebase enabled')
-                results['suggestions'].append('Consider using "git pull --no-rebase" for Celebi projects')
+                results['suggestions'].append(
+                    'Consider using "git pull --no-rebase" for Celebi projects'
+                )
         except Exception:
             pass
 
         # Check for custom merge drivers
         try:
             cmd = ['git', 'config', '--get', 'merge.celebi.driver']
-            process = subprocess.run(cmd, cwd=self.project_path,
-                                     capture_output=True, text=True)
-            if process.returncode == 0:
+            process = subprocess.run(
+                cmd,
+                cwd=self.project_path,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if not process.returncode:
                 results['warnings'].append('Custom Celebi merge driver configured')
         except Exception:
             pass

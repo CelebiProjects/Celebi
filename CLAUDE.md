@@ -36,7 +36,7 @@ python -m pytest UnitTest/ -v
 ### Linting
 ```bash
 # Run pylint on CelebiChrono package
-python -m pylint $(git ls-files "CelebiChrono/*.py") --disable="fixme,too-many-ancestors,broad-exception-raised"
+python -m pylint --rcfile=.pylintrc $(git ls-files "CelebiChrono/*.py")
 ```
 
 ### Documentation
