@@ -579,8 +579,12 @@ class ImpressionManagement(Core):
         message = Message()
         current_impression = self.impression()
         descriptor = current_impression.get_descriptor()
+        history_header = (
+            f"History of impression {current_impression.short_uuid()} "
+            f"({descriptor}):(latest->oldest)\n"
+        )
         message.add(
-            f"History of impression {current_impression.short_uuid()} ({descriptor}):(latest->oldest)\n",
+            history_header,
             "title0"
             )
         parents = current_impression.parents()
