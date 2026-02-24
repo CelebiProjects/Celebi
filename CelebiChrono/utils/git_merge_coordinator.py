@@ -3,6 +3,7 @@
 This module coordinates git merge operations with Celebi validation
 and impression regeneration.
 """
+# pylint: disable=too-many-lines
 import os
 import re
 import subprocess
@@ -101,7 +102,7 @@ class GitMergeCoordinator:  # pylint: disable=too-many-instance-attributes
 
         return status
 
-    def execute_merge(  # pylint: disable=too-many-branches,too-many-statements
+    def execute_merge(  # pylint: disable=too-many-branches,too-many-statements,too-many-locals
         self,
         branch: str,
         strategy: MergeStrategy = MergeStrategy.INTERACTIVE,
@@ -990,7 +991,7 @@ class GitMergeCoordinator:  # pylint: disable=too-many-instance-attributes
             return True
         return False
 
-    def _pick_winner_predecessor(
+    def _pick_winner_predecessor(  # pylint: disable=too-many-return-statements
         self,
         candidates: List[str],
         strategy: MergeStrategy,
@@ -1018,7 +1019,7 @@ class GitMergeCoordinator:  # pylint: disable=too-many-instance-attributes
             return sorted(remote_candidates)[0]
         return sorted(candidates)[0]
 
-    def _apply_alias_collision_policy(
+    def _apply_alias_collision_policy(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
         self,
         strategy: MergeStrategy,
         local_snapshot: Optional[Dict[str, Dict[str, List[str]]]] = None,
