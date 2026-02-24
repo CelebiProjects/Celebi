@@ -23,6 +23,7 @@ def test_format_node_display():
     assert format_node_display("abc123-def456-ghi789", "task") == "[TASK] abc123d"
     assert format_node_display("def456-ghi789-jkl012", "algorithm") == "[ALGO] def456g"
     assert format_node_display("ghi789-jkl012-mno345", "") == "ghi789j"
+    assert format_node_display("abc123-def456-ghi789", "task", "mytask") == "[TASK] abc123d (mytask)"
 
 
 def test_format_edge_display():

@@ -9,7 +9,7 @@ from logging import getLogger
 
 from ..utils import csys
 from ..utils.csys import colorize_diff
-from ..utils.format_utils import format_node_display, format_edge_display
+from ..utils.format_utils import format_node_display
 from ..utils.message import Message
 from .vobj_core import Core
 from .vimpression import VImpression
@@ -375,6 +375,31 @@ class ImpressionManagement(Core):
         added_edges   = current_dag["edges"] - stored_dag["edges"]
         removed_edges = stored_dag["edges"] - current_dag["edges"]
 
+        def node_display(uuid):
+            """Format node with short UUID and descriptor for readability."""
+            if uuid is None:
+                return "[NEW] (no impression yet)"
+            impression_obj = VImpression(uuid)
+            obj_type = impression_obj.object_type()
+            descriptor = impression_obj.get_descriptor()
+            return format_node_display(uuid, obj_type, descriptor)
+
+        def edge_display(parent_uuid, child_uuid):
+            """Format edge with descriptors for readability."""
+            parent_impression = VImpression(parent_uuid)
+            child_impression = VImpression(child_uuid)
+            parent_display = format_node_display(
+                parent_uuid,
+                parent_impression.object_type(),
+                parent_impression.get_descriptor(),
+            )
+            child_display = format_node_display(
+                child_uuid,
+                child_impression.object_type(),
+                child_impression.get_descriptor(),
+            )
+            return f"{parent_display} → {child_display}"
+
         # ------------------------------------------------------
         # Pretty print
         # ------------------------------------------------------
@@ -384,8 +409,7 @@ class ImpressionManagement(Core):
             message.add(f"\nAdded nodes ({len(added_nodes)}):", "info")
             # Filter out None values before sorting (None can't be sorted with strings)
             for node in sorted([n for n in added_nodes if n is not None]):
-                obj_type = VImpression(node).object_type() if node else ""
-                message.add(f"  • {format_node_display(node, obj_type)}", "diff")
+                message.add(f"  • {node_display(node)}", "diff")
             # Handle None nodes separately if any exist
             none_nodes = [n for n in added_nodes if n is None]
             if none_nodes:
@@ -397,8 +421,7 @@ class ImpressionManagement(Core):
             message.add(f"\nRemoved nodes ({len(removed_nodes)}):", "info")
             # Filter out None values before sorting (None can't be sorted with strings)
             for node in sorted([n for n in removed_nodes if n is not None]):
-                obj_type = VImpression(node).object_type() if node else ""
-                message.add(f"  • {format_node_display(node, obj_type)}", "diff")
+                message.add(f"  • {node_display(node)}", "diff")
             # Handle None nodes separately if any exist
             none_nodes = [n for n in removed_nodes if n is None]
             if none_nodes:
@@ -413,33 +436,19 @@ class ImpressionManagement(Core):
             # Filter out edges with None values before sorting (None can't be sorted with strings)
             valid_edges = [e for e in added_edges if e[0] is not None and e[1] is not None]
             for parent, child in sorted(valid_edges):
-                parent_type = VImpression(parent).object_type() if parent else ""
-                child_type = VImpression(child).object_type() if child else ""
-                edge_display = format_edge_display(
-                    parent,
-                    child,
-                    parent_type,
-                    child_type,
-                )
-                message.add(f"  • {edge_display}", "diff")
+                message.add(f"  • {edge_display(parent, child)}", "diff")
             # Handle edges with None values separately
             none_edges = [e for e in added_edges if e[0] is None or e[1] is None]
             for parent, child in none_edges:
                 parent_display = (
                     "[NEW]"
                     if parent is None
-                    else format_node_display(
-                        parent,
-                        VImpression(parent).object_type() if parent else "",
-                    )
+                    else node_display(parent)
                 )
                 child_display = (
                     "[NEW]"
                     if child is None
-                    else format_node_display(
-                        child,
-                        VImpression(child).object_type() if child else "",
-                    )
+                    else node_display(child)
                 )
                 message.add(f"  • {parent_display} → {child_display}", "diff")
         else:
@@ -450,33 +459,19 @@ class ImpressionManagement(Core):
             # Filter out edges with None values before sorting (None can't be sorted with strings)
             valid_edges = [e for e in removed_edges if e[0] is not None and e[1] is not None]
             for parent, child in sorted(valid_edges):
-                parent_type = VImpression(parent).object_type() if parent else ""
-                child_type = VImpression(child).object_type() if child else ""
-                edge_display = format_edge_display(
-                    parent,
-                    child,
-                    parent_type,
-                    child_type,
-                )
-                message.add(f"  • {edge_display}", "diff")
+                message.add(f"  • {edge_display(parent, child)}", "diff")
             # Handle edges with None values separately
             none_edges = [e for e in removed_edges if e[0] is None or e[1] is None]
             for parent, child in none_edges:
                 parent_display = (
                     "[MISSING]"
                     if parent is None
-                    else format_node_display(
-                        parent,
-                        VImpression(parent).object_type() if parent else "",
-                    )
+                    else node_display(parent)
                 )
                 child_display = (
                     "[MISSING]"
                     if child is None
-                    else format_node_display(
-                        child,
-                        VImpression(child).object_type() if child else "",
-                    )
+                    else node_display(child)
                 )
                 message.add(f"  • {parent_display} → {child_display}", "diff")
         else:
@@ -494,15 +489,7 @@ class ImpressionManagement(Core):
         for r in removed_nodes:
             for a in added_nodes:
                 if is_parent(r, a):
-                    parent_type = VImpression(r).object_type() if r else ""
-                    child_type = VImpression(a).object_type() if a else ""
-                    edge_display = format_edge_display(
-                        r,
-                        a,
-                        parent_type,
-                        child_type,
-                    )
-                    message.add(f"\nChange: {edge_display}", "title1")
+                    message.add(f"\nChange: {edge_display(r, a)}", "title1")
 
                     # --------------------------------------------------------
                     #  Run impression diff
@@ -572,21 +559,17 @@ class ImpressionManagement(Core):
                     edge_diff_a = set(added_edges_to_a) - set(removed_edges_from_r)
                     edge_diff_r = set(removed_edges_from_r) - set(added_edges_to_a)
                     message.add(
-                        f"  Changed incoming edges to {format_node_display(a, child_type)}:",
+                        f"  Changed incoming edges to {node_display(a)}:",
                         "info",
                     )
                     if edge_diff_a:
                         message.add(f"    Added from ({len(edge_diff_a)}):", "info")
                         for parent in sorted(edge_diff_a):
-                            parent_type = VImpression(parent).object_type() if parent else ""
-                            parent_display = format_node_display(parent, parent_type)
-                            message.add(f"      • {parent_display}", "diff")
+                            message.add(f"      • {node_display(parent)}", "diff")
                     if edge_diff_r:
                         message.add(f"    Removed from ({len(edge_diff_r)}):", "info")
                         for parent in sorted(edge_diff_r):
-                            parent_type = VImpression(parent).object_type() if parent else ""
-                            parent_display = format_node_display(parent, parent_type)
-                            message.add(f"      • {parent_display}", "diff")
+                            message.add(f"      • {node_display(parent)}", "diff")
 
         return message
 
@@ -594,13 +577,16 @@ class ImpressionManagement(Core):
         """Print all the parents of the current impression.
         """
         message = Message()
+        current_impression = self.impression()
+        descriptor = current_impression.get_descriptor()
         message.add(
-            f"History of impression {self.impression().short_uuid()}:(latest->oldest)\n",
+            f"History of impression {current_impression.short_uuid()} ({descriptor}):(latest->oldest)\n",
             "title0"
             )
-        parents = self.impression().parents()
+        parents = current_impression.parents()
         # reverse the order
         parents.reverse()
         for i, uuid in enumerate(parents):
-            message.add(f"[{i+1}]. {uuid}\n")
+            impression = VImpression(uuid)
+            message.add(f"[{i+1}]. {impression.short_uuid()} ({impression.get_descriptor()})\n")
         return message

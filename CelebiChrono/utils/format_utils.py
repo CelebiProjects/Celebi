@@ -10,13 +10,14 @@ def format_uuid_short(uuid: str) -> str:
     return uuid_no_hyphens[:7]
 
 
-def format_node_display(uuid: str, obj_type: str = "") -> str:
-    """Format node with type prefix and short UUID."""
+def format_node_display(uuid: str, obj_type: str = "", descriptor: str = "") -> str:
+    """Format node with type prefix, short UUID, and optional descriptor."""
     short = format_uuid_short(uuid)
+    descriptor_part = f" ({descriptor})" if descriptor else ""
     if obj_type:
         type_prefix = f"[{obj_type.upper()[:4]}] "  # TASK, ALGO, DATA, PROJ
-        return f"{type_prefix}{short}"
-    return short
+        return f"{type_prefix}{short}{descriptor_part}"
+    return f"{short}{descriptor_part}"
 
 
 def format_edge_display(parent_uuid: str, child_uuid: str,

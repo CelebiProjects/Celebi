@@ -416,6 +416,10 @@ class FileManagementOperations(Core):
         #  Run impression diff
         # --------------------------------------------------------
         old_impr = impression
+        message.add(
+            f"Comparing against impression {old_impr.short_uuid()} ({old_impr.get_descriptor()})\n",
+            "title0",
+        )
 
         old_root = os.path.join(old_impr.path, "contents")
         new_root = self.path
