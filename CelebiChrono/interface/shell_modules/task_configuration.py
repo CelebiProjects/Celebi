@@ -349,6 +349,19 @@ def set_memory_limit(limit: str) -> Message:
     return message
 
 
+def set_descriptor(descriptor: str) -> Message:
+    """Set descriptor for the current task or algorithm."""
+    message = Message()
+    if not MANAGER.current_object().is_task_or_algorithm():
+        message.add(
+            "Unable to call set_descriptor if you are not in a task or algorithm.",
+            "error"
+        )
+        return message
+    MANAGER.current_object().set_descriptor(descriptor)
+    return message
+
+
 def rm_parameter(par: str) -> Message:
     """Remove a parameter from the current task.
 

@@ -51,6 +51,22 @@ class EnvironmentCommands:
         except Exception as e:
             print(f"Error setting memory limit: {e}")
 
+    def do_set_descriptor(self, arg: str) -> None:
+        """Set descriptor for current task or algorithm."""
+        try:
+            descriptor = arg.split()[0]
+            result = shell.set_descriptor(descriptor)
+            if result.messages:
+                print(result.colored())
+        except (IndexError, ValueError) as e:
+            print(f"Error: Please provide a descriptor. {e}")
+        except Exception as e:
+            print(f"Error setting descriptor: {e}")
+
+    def do_setdescriptor(self, arg: str) -> None:
+        """Set descriptor for current task or algorithm (alias for set-descriptor)."""
+        self.do_set_descriptor(arg)
+
     def do_auto_download(self, arg: str) -> None:
         """Enable or disable auto download."""
         try:

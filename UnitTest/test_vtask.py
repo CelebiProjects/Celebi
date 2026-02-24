@@ -86,6 +86,38 @@ class TestChernVTask(unittest.TestCase):
         prepare.remove_chern_project("demo_complex")
         CHERN_CACHE.__init__()
 
+    def test_get_descriptor(self):
+        """Test get_descriptor method."""
+        print(Fore.BLUE + "Testing VTask get_descriptor..." + Style.RESET)
+        obj_tsk = vtsk.VTask.__new__(vtsk.VTask)
+        obj_tsk.path = "/tmp/demo_complex/tasks/taskAna1"
+
+        with patch('CelebiChrono.kernel.vtask.metadata.YamlFile') as mock_yaml:
+            mock_yaml_instance = MagicMock()
+            mock_yaml.return_value = mock_yaml_instance
+            mock_yaml_instance.read_variable.return_value = "Task Descriptor"
+
+            descriptor = obj_tsk.get_descriptor()
+            self.assertEqual(descriptor, "Task Descriptor")
+            mock_yaml_instance.read_variable.assert_called_with(
+                "descriptor", "taskAna1"
+            )
+
+    def test_set_descriptor(self):
+        """Test set_descriptor method."""
+        print(Fore.BLUE + "Testing VTask set_descriptor..." + Style.RESET)
+        obj_tsk = vtsk.VTask.__new__(vtsk.VTask)
+        obj_tsk.path = "/tmp/demo_complex/tasks/taskAna1"
+
+        with patch('CelebiChrono.kernel.vtask.metadata.YamlFile') as mock_yaml:
+            mock_yaml_instance = MagicMock()
+            mock_yaml.return_value = mock_yaml_instance
+
+            obj_tsk.set_descriptor("Updated Task Descriptor")
+            mock_yaml_instance.write_variable.assert_called_once_with(
+                "descriptor", "Updated Task Descriptor"
+            )
+
     def test_job_manager_methods(self):
         """Test JobManager methods inherited by VTask"""
         print(Fore.BLUE + "Testing JobManager Methods..." + Style.RESET)
@@ -1625,6 +1657,36 @@ class TestChernVTask(unittest.TestCase):
         prepare.remove_chern_project("demo_complex")
         CHERN_CACHE.__init__()
 
+    def test_create_task_writes_descriptor(self):
+        """Test create_task writes default descriptor to celebi.yaml."""
+        test_path = "tasks/new_task"
+
+        with patch('CelebiChrono.kernel.vtask.csys.strip_path_string',
+                   return_value=test_path), \
+             patch('CelebiChrono.kernel.vtask.os.path.abspath',
+                   return_value="/tmp/parent"), \
+             patch('CelebiChrono.kernel.vtask.VObject') as mock_vobject, \
+             patch('CelebiChrono.kernel.vtask.csys.mkdir'), \
+             patch('CelebiChrono.kernel.vtask.metadata.ConfigFile'), \
+             patch('CelebiChrono.kernel.vtask.metadata.YamlFile') as mock_yaml_file, \
+             patch('builtins.open', mock_open()):
+
+            mock_parent = MagicMock()
+            mock_parent.object_type.return_value = "project"
+            mock_task = MagicMock()
+            mock_task.invariant_path.return_value = "tasks/new_task"
+            mock_vobject.side_effect = [mock_parent, mock_task]
+
+            vtsk.create_task(test_path)
+
+            yaml_calls = mock_yaml_file.return_value.write_variable.call_args_list
+            self.assertEqual(yaml_calls[0][0], ("descriptor", "new_task"))
+            self.assertEqual(
+                yaml_calls[1][0],
+                ("environment", "reanahub/reana-env-root6:6.18.04")
+            )
+            self.assertEqual(yaml_calls[2][0], ("memory_limit", "256Mi"))
+
     # def test_create_task_function(self):
     #     """Test create_task function"""
     #     print(Fore.BLUE + "Testing create_task function..." + Style.RESET)
@@ -1777,4 +1839,3 @@ class TestChernVTask(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
-

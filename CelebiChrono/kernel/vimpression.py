@@ -108,6 +108,25 @@ class VImpression():
         """Get the object type stored in the impression."""
         return self.config_file.read_variable("object_type", "")
 
+    def get_descriptor(self) -> str:
+        """Get descriptor from impression contents, fallback to object path basename."""
+        yaml_paths = [
+            os.path.join(self.path, "contents", "celebi.yaml"),
+            os.path.join(self.path, "contents", ".", "celebi.yaml"),
+        ]
+        for yaml_path in yaml_paths:
+            if not csys.exists(yaml_path):
+                continue
+            yaml_file = metadata.YamlFile(yaml_path)
+            descriptor = yaml_file.read_variable("descriptor", "")
+            if descriptor:
+                return descriptor
+
+        current_path = self.config_file.read_variable("current_path", "")
+        if current_path:
+            return os.path.basename(os.path.normpath(current_path))
+        return self.short_uuid()
+
     def has_alias(self, alias: str) -> bool:
         """ Check if the impression has an alias
         """

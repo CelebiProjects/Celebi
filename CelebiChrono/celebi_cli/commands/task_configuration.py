@@ -110,6 +110,19 @@ def set_mem_command(memory):
     except Exception as e:
         _handle_error(f"Command failed: {e}")
 
+@click.command(name="set-descriptor")
+@click.argument("descriptor", type=str)
+def set_descriptor_command(descriptor):
+    """Set descriptor for task or algorithm."""
+    try:
+        from CelebiChrono.interface.shell import set_descriptor
+        result = set_descriptor(descriptor)
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
 @click.command(name="add-host")
 @click.argument("host", type=str)
 @click.argument("port", type=str)

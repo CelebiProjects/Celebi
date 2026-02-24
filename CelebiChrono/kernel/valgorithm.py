@@ -136,13 +136,27 @@ class VAlgorithm(VObject):
         yaml_file = metadata.YamlFile(os.path.join(self.path, "celebi.yaml"))
         return yaml_file.read_variable("environment", "")
 
+    def get_descriptor(self) -> str:
+        """Get descriptor from celebi.yaml, fallback to algorithm directory name."""
+        yaml_file = metadata.YamlFile(os.path.join(self.path, "celebi.yaml"))
+        default_descriptor = os.path.basename(os.path.normpath(self.path))
+        return yaml_file.read_variable("descriptor", default_descriptor)
+
+    def set_descriptor(self, descriptor: str) -> None:
+        """Set descriptor in celebi.yaml."""
+        yaml_file = metadata.YamlFile(os.path.join(self.path, "celebi.yaml"))
+        yaml_file.write_variable("descriptor", descriptor)
+
 def create_algorithm(path: str, use_template: bool = False) -> None:
     """ Create an algorithm """
     path = csys.strip_path_string(path)
+    descriptor = os.path.basename(os.path.normpath(path))
     os.mkdir(path)
     os.mkdir(f"{path}/.celebi")
     config_file = metadata.ConfigFile(f"{path}/.celebi/config.json")
     config_file.write_variable("object_type", "algorithm")
+    yaml_file = metadata.YamlFile(f"{path}/celebi.yaml")
+    yaml_file.write_variable("descriptor", descriptor)
 
     with open(f"{path}/README.md", "w", encoding="utf-8") as readme_file:
         readme_file.write("Please write README for this algorithm")

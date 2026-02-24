@@ -36,3 +36,6 @@ def test_jobs_command():
     runner = CliRunner()
     result = runner.invoke(cli, ['jobs'])
     assert result.exit_code == 0
+
+def test_set_descriptor_command():
+    assert 'set-descriptor' in cli.commands

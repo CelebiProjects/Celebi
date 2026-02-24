@@ -19,7 +19,7 @@ from .shell_modules.object_creation import (
 )
 from .shell_modules.task_configuration import (
     add_input, add_algorithm, add_parameter, add_parameter_subtask,
-    set_environment, set_memory_limit, rm_parameter, remove_input,
+    set_environment, set_memory_limit, set_descriptor, rm_parameter, remove_input,
     jobs, status, get_script_path, config
 )
 from .shell_modules.execution_management import (
@@ -54,7 +54,7 @@ __all__ = [
     'mkalgorithm', 'mktask', 'mkdata', 'mkdir',
     # Task configuration functions (from task_configuration.py)
     'add_input', 'add_algorithm', 'add_parameter', 'add_parameter_subtask',
-    'set_environment', 'set_memory_limit', 'rm_parameter', 'remove_input',
+    'set_environment', 'set_memory_limit', 'set_descriptor', 'rm_parameter', 'remove_input',
     'jobs', 'status', 'get_script_path', 'config',
     # Execution management functions (from execution_management.py)
     'submit', 'purge', 'purge_old_impressions', 'test',

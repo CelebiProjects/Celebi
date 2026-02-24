@@ -44,6 +44,7 @@ cli.add_command(task_configuration.rm_parameter_command)
 cli.add_command(task_configuration.add_parameter_subtask_command)
 cli.add_command(task_configuration.set_env_command)
 cli.add_command(task_configuration.set_mem_command)
+cli.add_command(task_configuration.set_descriptor_command)
 cli.add_command(task_configuration.add_host_command)
 cli.add_command(task_configuration.hosts_command)
 

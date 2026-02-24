@@ -194,11 +194,23 @@ class VTask(InputManager, SettingManager, FileManager, JobManager):
         """
         return VTask(path)
 
+    def get_descriptor(self) -> str:
+        """Get descriptor from celebi.yaml, fallback to task directory name."""
+        yaml_file = metadata.YamlFile(join(self.path, "celebi.yaml"))
+        default_descriptor = os.path.basename(os.path.normpath(self.path))
+        return yaml_file.read_variable("descriptor", default_descriptor)
+
+    def set_descriptor(self, descriptor: str) -> None:
+        """Set descriptor in celebi.yaml."""
+        yaml_file = metadata.YamlFile(join(self.path, "celebi.yaml"))
+        yaml_file.write_variable("descriptor", descriptor)
+
 
 def create_task(path):
     """ Create a task
     """
     path = csys.strip_path_string(path)
+    descriptor = os.path.basename(os.path.normpath(path))
     parent_path = os.path.abspath(join(path, ".."))
     object_type = VObject(parent_path).object_type()
     if object_type not in ("project", "directory"):
@@ -213,6 +225,7 @@ def create_task(path):
 
     # Create the default celebi.yaml file
     yaml_file = metadata.YamlFile(join(path, "celebi.yaml"))
+    yaml_file.write_variable("descriptor", descriptor)
     yaml_file.write_variable("environment", "reanahub/reana-env-root6:6.18.04")
     yaml_file.write_variable("memory_limit", "256Mi")
 

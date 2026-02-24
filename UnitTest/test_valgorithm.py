@@ -296,6 +296,60 @@ class TestVAlgorithm(unittest.TestCase):
             prepare.remove_chern_project("demo_complex")
             CHERN_CACHE.__init__()
 
+    def test_get_descriptor(self):
+        """Test get_descriptor method."""
+        print(Fore.BLUE + "Testing VAlgorithm get_descriptor..." + Style.RESET)
+
+        prepare.create_chern_project("demo_complex")
+        os.chdir("demo_complex")
+
+        try:
+            algorithm = valg.VAlgorithm(os.getcwd() + "/algorithms/algAna1")
+            test_path = os.getcwd() + "/algorithms/algAna1"
+
+            with patch('CelebiChrono.kernel.valgorithm.metadata.YamlFile') as mock_yaml, \
+                 patch.object(algorithm, 'path', test_path):
+                mock_yaml_instance = MagicMock()
+                mock_yaml.return_value = mock_yaml_instance
+                mock_yaml_instance.read_variable.return_value = "Algorithm Descriptor"
+
+                descriptor = algorithm.get_descriptor()
+                self.assertEqual(descriptor, "Algorithm Descriptor")
+                mock_yaml_instance.read_variable.assert_called_with(
+                    "descriptor", "algAna1"
+                )
+
+        finally:
+            os.chdir("..")
+            prepare.remove_chern_project("demo_complex")
+            CHERN_CACHE.__init__()
+
+    def test_set_descriptor(self):
+        """Test set_descriptor method."""
+        print(Fore.BLUE + "Testing VAlgorithm set_descriptor..." + Style.RESET)
+
+        prepare.create_chern_project("demo_complex")
+        os.chdir("demo_complex")
+
+        try:
+            algorithm = valg.VAlgorithm(os.getcwd() + "/algorithms/algAna1")
+            test_path = os.getcwd() + "/algorithms/algAna1"
+
+            with patch('CelebiChrono.kernel.valgorithm.metadata.YamlFile') as mock_yaml, \
+                 patch.object(algorithm, 'path', test_path):
+                mock_yaml_instance = MagicMock()
+                mock_yaml.return_value = mock_yaml_instance
+
+                algorithm.set_descriptor("Updated Algorithm Descriptor")
+                mock_yaml_instance.write_variable.assert_called_once_with(
+                    "descriptor", "Updated Algorithm Descriptor"
+                )
+
+        finally:
+            os.chdir("..")
+            prepare.remove_chern_project("demo_complex")
+            CHERN_CACHE.__init__()
+
     def test_printed_status(self):
         """Test printed_status method"""
         print(Fore.BLUE + "Testing VAlgorithm printed_status..." + Style.RESET)
@@ -382,6 +436,7 @@ class TestVAlgorithm(unittest.TestCase):
         # Test creating algorithm without template
         with patch('os.mkdir') as mock_mkdir, \
              patch('CelebiChrono.utils.metadata.ConfigFile') as mock_config, \
+             patch('CelebiChrono.kernel.valgorithm.metadata.YamlFile') as mock_yaml_file, \
              patch('builtins.open', mock_open()) as mock_file:
 
             valg.create_algorithm(test_path)
@@ -394,6 +449,9 @@ class TestVAlgorithm(unittest.TestCase):
             mock_config.assert_called_once()
             mock_config.return_value.write_variable.assert_called_with(
                 "object_type", "algorithm"
+            )
+            mock_yaml_file.return_value.write_variable.assert_called_once_with(
+                "descriptor", "test_algorithm"
             )
 
             # Verify README file was created
@@ -415,6 +473,7 @@ class TestVAlgorithm(unittest.TestCase):
         # Test creating algorithm with template
         with patch('os.mkdir') as mock_mkdir, \
              patch('CelebiChrono.utils.metadata.ConfigFile'), \
+             patch('CelebiChrono.kernel.valgorithm.metadata.YamlFile'), \
              patch('builtins.open', mock_open()), \
              patch('builtins.print') as mock_print:
 
