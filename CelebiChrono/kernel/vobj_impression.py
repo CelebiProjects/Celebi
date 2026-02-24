@@ -327,7 +327,45 @@ class ImpressionManagement(Core):
         if impression is None:
             message.add("No impression exists. Object is NEW.", "warning")
             return message
-        impression = VImpression(impression)
+
+        def resolve_impression_uuid(impr) -> str:
+            if hasattr(impr, "uuid"):
+                return impr.uuid
+            token = str(impr)
+            project_path = self.project_path()
+            impressions_path = os.path.join(project_path, ".celebi", "impressions")
+            ref_path = os.path.join(project_path, ".celebi", "impressions_store", "refs", "impressions")
+            matches = set()
+
+            if os.path.isdir(impressions_path):
+                for uuid in os.listdir(impressions_path):
+                    if uuid.startswith(token):
+                        matches.add(uuid)
+            if os.path.isdir(ref_path):
+                for name in os.listdir(ref_path):
+                    if not name.endswith(".json"):
+                        continue
+                    uuid = name[:-5]
+                    if uuid.startswith(token):
+                        matches.add(uuid)
+
+            if len(matches) == 1:
+                return next(iter(matches))
+            if len(matches) > 1:
+                raise ValueError(
+                    f"Ambiguous impression prefix '{token}': {sorted(matches)}"
+                )
+            return token
+
+        try:
+            impression_uuid = resolve_impression_uuid(impression)
+            impression = VImpression(impression_uuid)
+            if impression.is_zombie():
+                message.add(f"Impression not found: {impression_uuid}", "error")
+                return message
+        except (ValueError, FileNotFoundError) as e:
+            message.add(str(e), "error")
+            return message
 
         # ---------------------------------------------
         # Build DAG from current object state
@@ -487,75 +525,78 @@ class ImpressionManagement(Core):
         # --------------------------------------------------------
         message.add("\n=== Detailed Changes (Parent → Child) ===", "title0")
 
+        def render_impression_diff(old_uuid, new_uuid, title):
+            old_impr = VImpression(old_uuid) if old_uuid else None
+            new_impr = VImpression(new_uuid) if new_uuid else None
+
+            if not (old_impr and new_impr):
+                message.add(
+                    "One of the impressions does not exist, skipping diff.",
+                    "warning",
+                )
+                return False
+
+            old_root = old_impr.materialize_contents()
+            new_root = new_impr.materialize_contents()
+
+            old_files = csys.get_files_in_directory(old_root)
+            new_files = csys.get_files_in_directory(new_root)
+
+            old_files_set = set(old_files)
+            new_files_set = set(new_files)
+
+            common = old_files_set & new_files_set
+            removed_files = old_files_set - new_files_set
+            added_files = new_files_set - old_files_set
+            has_changes = bool(added_files or removed_files)
+
+            message.add(f"\n{title}", "title1")
+
+            if added_files:
+                message.add(f"  Added files ({len(added_files)}):", "info")
+                for file in sorted(added_files):
+                    message.add(f"    • {file}", "diff")
+            if removed_files:
+                message.add(f"  Removed files ({len(removed_files)}):", "info")
+                for file in sorted(removed_files):
+                    message.add(f"    • {file}", "diff")
+
+            for rel in sorted(common):
+                old_f = os.path.join(old_root, rel)
+                new_f = os.path.join(new_root, rel)
+
+                with open(old_f, 'r', encoding='utf-8', errors="ignore") as f1:
+                    old_txt = f1.readlines()
+                with open(new_f, 'r', encoding='utf-8', errors="ignore") as f2:
+                    new_txt = f2.readlines()
+
+                diff = list(difflib.unified_diff(
+                    old_txt, new_txt,
+                    fromfile=f"{old_uuid}:{rel}",
+                    tofile=f"{new_uuid}:{rel}"
+                ))
+
+                if diff:
+                    has_changes = True
+                    diff = colorize_diff(diff).splitlines(keepends=True)
+                    message.add(f"\n  Diff in file: {rel}", "info")
+                    message.add("".join(diff), "diff")
+
+            if not has_changes:
+                message.add("  No file-level changes detected.", "info")
+            return has_changes
 
         def is_parent(parent_uuid, child_uuid):
             return parent_uuid in VImpression(child_uuid).parents()
 
+        detailed_changes_found = False
+
         for r in removed_nodes:
             for a in added_nodes:
                 if is_parent(r, a):
-                    message.add(f"\nChange: {edge_display(r, a)}", "title1")
-
-                    # --------------------------------------------------------
-                    #  Run impression diff
-                    # --------------------------------------------------------
-                    old_impr = VImpression(r) if r else None
-                    new_impr = VImpression(a) if a else None
-
-                    if not (old_impr and new_impr):
-                        message.add(
-                            "One of the impressions does not exist, skipping diff.",
-                            "warning",
-                        )
-                        continue
-
-                    old_root = old_impr.materialize_contents()
-                    new_root = new_impr.materialize_contents()
-
-                    # Compare file lists (sorted, relative paths)
-                    old_files = csys.get_files_in_directory(old_root)
-                    new_files = csys.get_files_in_directory(new_root)
-
-
-                    old_files_set = set(old_files)
-                    new_files_set = set(new_files)
-
-                    common = old_files_set & new_files_set
-                    removed_files = old_files_set - new_files_set
-                    added_files   = new_files_set - old_files_set
-
-                    if added_files:
-                        message.add(f"  Added files ({len(added_files)}):", "info")
-                        for file in sorted(added_files):
-                            message.add(f"    • {file}", "diff")
-                    if removed_files:
-                        message.add(f"  Removed files ({len(removed_files)}):", "info")
-                        for file in sorted(removed_files):
-                            message.add(f"    • {file}", "diff")
-
-                    # diff the common files
-                    for rel in sorted(common):
-                        old_f = os.path.join(old_root, rel)
-                        new_f = os.path.join(new_root, rel)
-
-                        with open(old_f, 'r', encoding='utf-8',
-                                  errors="ignore") as f1:
-                            old_txt = f1.readlines()
-                        with open(new_f, 'r', encoding='utf-8',
-                                  errors="ignore") as f2:
-                            new_txt = f2.readlines()
-
-                        diff = list(difflib.unified_diff(
-                            old_txt, new_txt,
-                            fromfile=f"{r}:{rel}",
-                            tofile=f"{a}:{rel}"
-                        ))
-
-                        if diff:
-                            diff = colorize_diff(diff).splitlines(keepends=True)
-                            message.add(f"\n  Diff in file: {rel}", "info")
-                            message.add("".join(diff), "diff")
-
+                    change_title = f"Change: {edge_display(r, a)}"
+                    render_impression_diff(r, a, change_title)
+                    detailed_changes_found = True
 
                     # Calculate the changes in incoming edges
                     added_edges_to_a = [e[0] for e in added_edges if e[1] == a]
@@ -564,8 +605,8 @@ class ImpressionManagement(Core):
                     edge_diff_a = set(added_edges_to_a) - set(removed_edges_from_r)
                     edge_diff_r = set(removed_edges_from_r) - set(added_edges_to_a)
                     message.add(
-                        f"  Changed incoming edges to {node_display(a)}:",
-                        "info",
+                        f"\n  Changed incoming edges to {node_display(a)}:",
+                        "title1",
                     )
                     if edge_diff_a:
                         message.add(f"    Added from ({len(edge_diff_a)}):", "info")
@@ -575,6 +616,19 @@ class ImpressionManagement(Core):
                         message.add(f"    Removed from ({len(edge_diff_r)}):", "info")
                         for parent in sorted(edge_diff_r):
                             message.add(f"      • {node_display(parent)}", "diff")
+
+        if not detailed_changes_found:
+            current_impression = self.impression()
+            if current_impression and impression.uuid != current_impression.uuid:
+                old_display = node_display(impression.uuid)
+                new_display = node_display(current_impression.uuid)
+                render_impression_diff(
+                    impression.uuid,
+                    current_impression.uuid,
+                    f"Direct comparison: {old_display} → {new_display}",
+                )
+            else:
+                message.add("\nNo detailed parent-child impression changes detected.", "info")
 
         return message
 
@@ -595,7 +649,9 @@ class ImpressionManagement(Core):
         parents = current_impression.parents()
         # reverse the order
         parents.reverse()
-        for i, uuid in enumerate(parents):
+        # Keep order while removing duplicates for cleaner history output.
+        unique_parents = list(dict.fromkeys(parents))
+        for i, uuid in enumerate(unique_parents):
             impression = VImpression(uuid)
             message.add(f"[{i+1}]. {impression.short_uuid()} ({impression.get_descriptor()})\n")
         return message

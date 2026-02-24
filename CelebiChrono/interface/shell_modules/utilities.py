@@ -246,6 +246,11 @@ def pack_impressions(force: bool = False) -> Message:
     return MANAGER.root_object().pack_impressions(force=force)
 
 
+def migrate_impressions(dry_run: bool = False) -> Message:
+    """Migrate legacy impressions into CAS refs immediately."""
+    return MANAGER.root_object().migrate_impressions(dry_run=dry_run)
+
+
 def tree(_depth: int = -1) -> Message:
     """Get the directory tree.
 

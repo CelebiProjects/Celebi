@@ -264,8 +264,11 @@ class VImpression:
         if parent_impression is None:
             parents = []
         else:
-            parents = parent_impression.parents()
-            parents.append(parent_impression.uuid)
+            parents = list(parent_impression.parents())
+            if parent_impression.uuid and parent_impression.uuid != self.uuid:
+                parents.append(parent_impression.uuid)
+            # Keep order, remove duplicates to avoid repeated history entries.
+            parents = list(dict.fromkeys(parents))
             if parent_impression.is_zombie():
                 parent_impression.clean()
         self.config_file.write_variable("parents", parents)

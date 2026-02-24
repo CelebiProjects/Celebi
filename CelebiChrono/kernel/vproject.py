@@ -12,6 +12,7 @@ from . import helpme
 from .chern_communicator import ChernCommunicator
 from .impression_gc import ImpressionGC
 from .impression_pack import ImpressionPack
+from .vimpression import VImpression
 
 
 class VProject(VDirectory):
@@ -85,7 +86,7 @@ class VProject(VDirectory):
         message = Message()
         result = ImpressionGC(self.path).run(grace_days=grace_days, dry_run=dry_run)
         mode = "dry-run" if dry_run else "delete"
-        message.add(f"Impression GC ({mode}) completed", "title0")
+        message.add(f"Impression GC ({mode}) completed\n", "title0")
         message.add(
             f"Live hashes: {result['live_hashes']}, "
             f"unreachable: {result['unreachable_objects']}, "
@@ -108,6 +109,64 @@ class VProject(VDirectory):
         else:
             message.add("Loose object counts are below pack thresholds.", "info")
         message.data.update(result)
+        return message
+
+    def migrate_impressions(self, dry_run: bool = False) -> Message:
+        """Migrate legacy impression contents into CAS refs immediately."""
+        message = Message()
+        impressions_dir = os.path.join(self.path, ".celebi", "impressions")
+        if not os.path.isdir(impressions_dir):
+            message.add("No legacy .celebi/impressions directory found.", "warning")
+            message.data.update({
+                "processed": 0,
+                "migrated": 0,
+                "already_migrated": 0,
+                "missing_contents": 0,
+                "dry_run": dry_run,
+            })
+            return message
+
+        processed = 0
+        migrated = 0
+        already_migrated = 0
+        missing_contents = 0
+
+        for uuid in sorted(os.listdir(impressions_dir)):
+            imp_path = os.path.join(impressions_dir, uuid)
+            if not os.path.isdir(imp_path):
+                continue
+            processed += 1
+
+            impression = VImpression(uuid)
+            had_ref = impression.store.has_impression_ref(uuid)
+            has_contents = os.path.isdir(os.path.join(imp_path, "contents"))
+
+            if had_ref:
+                already_migrated += 1
+                continue
+            if not has_contents:
+                missing_contents += 1
+                continue
+
+            if not dry_run:
+                impression.is_zombie()  # Triggers lazy import for legacy contents
+            if impression.store.has_impression_ref(uuid) or dry_run:
+                migrated += 1
+
+        mode = "dry-run" if dry_run else "execute"
+        message.add(f"Impression migration ({mode}) completed\n", "title0")
+        message.add(
+            f"Processed: {processed}, migrated: {migrated}, "
+            f"already migrated: {already_migrated}, missing contents: {missing_contents}",
+            "info",
+        )
+        message.data.update({
+            "processed": processed,
+            "migrated": migrated,
+            "already_migrated": already_migrated,
+            "missing_contents": missing_contents,
+            "dry_run": dry_run,
+        })
         return message
 
 ######################################

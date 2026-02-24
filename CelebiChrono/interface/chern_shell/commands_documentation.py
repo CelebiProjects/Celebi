@@ -61,7 +61,7 @@ class DocumentationCommands:
         """Create impression of current object."""
         try:
             result = shell.impress()
-            if result.messages:
+            if result and result.messages:
                 print(result.colored())
         except Exception as e:
             print(e)
