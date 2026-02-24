@@ -10,6 +10,8 @@ from .vdirectory import VDirectory
 from .vobject import VObject
 from . import helpme
 from .chern_communicator import ChernCommunicator
+from .impression_gc import ImpressionGC
+from .impression_pack import ImpressionPack
 
 
 class VProject(VDirectory):
@@ -77,6 +79,36 @@ class VProject(VDirectory):
         """ Get the bookkeeping url"""
         cherncc = ChernCommunicator.instance()
         return cherncc.bkkview()
+
+    def gc_impressions(self, grace_days: int = 14, dry_run: bool = True) -> Message:
+        """Run CAS impression garbage collection."""
+        message = Message()
+        result = ImpressionGC(self.path).run(grace_days=grace_days, dry_run=dry_run)
+        mode = "dry-run" if dry_run else "delete"
+        message.add(f"Impression GC ({mode}) completed", "title0")
+        message.add(
+            f"Live hashes: {result['live_hashes']}, "
+            f"unreachable: {result['unreachable_objects']}, "
+            f"deleted: {result['deleted_objects']}, "
+            f"freed bytes: {result['deleted_bytes']}",
+            "info",
+        )
+        message.data.update(result)
+        return message
+
+    def pack_impressions(self, force: bool = False) -> Message:
+        """Evaluate loose object packing thresholds for CAS impressions."""
+        message = Message()
+        result = ImpressionPack(self.path).maybe_pack(force=force)
+        if result["should_pack"]:
+            message.add(
+                "Packing threshold reached. Packfile writing is not implemented yet.",
+                "warning",
+            )
+        else:
+            message.add("Loose object counts are below pack thresholds.", "info")
+        message.data.update(result)
+        return message
 
 ######################################
 # Helper functions

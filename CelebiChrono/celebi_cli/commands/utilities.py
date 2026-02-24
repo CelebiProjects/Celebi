@@ -94,3 +94,32 @@ def predecessors_command() -> None:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="gc-impressions")
+@click.option("--grace-days", type=int, default=14, show_default=True)
+@click.option("--dry-run/--execute", default=True, show_default=True)
+def gc_impressions_command(grace_days: int, dry_run: bool) -> None:
+    """Garbage collect unreachable CAS impression objects."""
+    try:
+        from CelebiChrono.interface.shell import gc_impressions
+        result = gc_impressions(grace_days=grace_days, dry_run=dry_run)
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="pack-impressions")
+@click.option("--force/--no-force", default=False, show_default=True)
+def pack_impressions_command(force: bool) -> None:
+    """Evaluate packing thresholds for CAS impression objects."""
+    try:
+        from CelebiChrono.interface.shell import pack_impressions
+        result = pack_impressions(force=force)
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")

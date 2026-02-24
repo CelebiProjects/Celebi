@@ -488,6 +488,7 @@ fi
             '.gitignore_additions': [
                 '# Celebi-specific',
                 '.celebi/impressions/',
+                '.celebi/impressions_store/',
                 '.celebi/cache/',
                 '*.pyc',
                 '__pycache__/'

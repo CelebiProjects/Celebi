@@ -164,10 +164,15 @@ class ImpressionManagement(Core):
                 return False
         # print(f"Time used for checking aliases: {time.time() - start_time:.6f} seconds")
 
+        try:
+            impression_root = impression.materialize_contents()
+        except FileNotFoundError:
+            return False
         for dirpath, dirnames, filenames in file_list: # pylint: disable=unused-variable
             for f in filenames:
-                if not filecmp.cmp(f"{self.path}/{dirpath}/{f}",
-                                   f"{impression.path}/contents/{dirpath}/{f}"):
+                current_file = f"{self.path}/{dirpath}/{f}"
+                impression_file = f"{impression_root}/{dirpath}/{f}"
+                if not filecmp.cmp(current_file, impression_file):
                     # print("# File difference:")
                     # print(f"cp {impression.path}/contents/{dirpath}/{f}",
                     #       f"{self.path}/{dirpath}/{f} ",
@@ -504,8 +509,8 @@ class ImpressionManagement(Core):
                         )
                         continue
 
-                    old_root = old_impr.path + "/contents"
-                    new_root = new_impr.path + "/contents"
+                    old_root = old_impr.materialize_contents()
+                    new_root = new_impr.materialize_contents()
 
                     # Compare file lists (sorted, relative paths)
                     old_files = csys.get_files_in_directory(old_root)

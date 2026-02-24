@@ -36,6 +36,7 @@ from .shell_modules.visualization import (
 from .shell_modules.utilities import (
     workaround_preshell, workaround_postshell, history,
     watermark, changes, doctor, bookkeep, bookkeep_url,
+    gc_impressions, pack_impressions,
     tree, error_log, danger_call,
     git_merge, git_validate, git_status, git_enable,
     git_disable, git_hooks
@@ -67,6 +68,7 @@ __all__ = [
     # Utilities functions (from utilities.py)
     'workaround_preshell', 'workaround_postshell', 'history',
     'watermark', 'changes', 'doctor', 'bookkeep', 'bookkeep_url',
+    'gc_impressions', 'pack_impressions',
     'danger_call', 'tree', 'error_log',
     # Git integration functions (from utilities.py)
     'git_merge', 'git_validate', 'git_status', 'git_enable',

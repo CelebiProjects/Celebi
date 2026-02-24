@@ -157,6 +157,8 @@ def dir_mtime(path):
             continue
         if sub_dir == "impressions":
             continue
+        if sub_dir == "impressions_store":
+            continue
         mtime = max(mtime, dir_mtime(os.path.join(path, sub_dir)))
     return mtime
 
