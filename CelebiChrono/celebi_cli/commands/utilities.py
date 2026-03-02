@@ -127,11 +127,25 @@ def pack_impressions_command(force: bool) -> None:
 
 @click.command(name="migrate-impressions")
 @click.option("--dry-run/--execute", default=False, show_default=True)
-def migrate_impressions_command(dry_run: bool) -> None:
+@click.option("--prune-legacy/--keep-legacy", default=False, show_default=True)
+def migrate_impressions_command(dry_run: bool, prune_legacy: bool) -> None:
     """Migrate legacy impressions into CAS-backed refs."""
     try:
         from CelebiChrono.interface.shell import migrate_impressions
-        result = migrate_impressions(dry_run=dry_run)
+        result = migrate_impressions(dry_run=dry_run, prune_legacy=prune_legacy)
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="stats-impressions")
+def stats_impressions_command() -> None:
+    """Show impression storage stats and dedup indicators."""
+    try:
+        from CelebiChrono.interface.shell import stats_impressions
+        result = stats_impressions()
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")

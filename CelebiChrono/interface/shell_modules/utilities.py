@@ -246,9 +246,16 @@ def pack_impressions(force: bool = False) -> Message:
     return MANAGER.root_object().pack_impressions(force=force)
 
 
-def migrate_impressions(dry_run: bool = False) -> Message:
+def migrate_impressions(dry_run: bool = False, prune_legacy: bool = False) -> Message:
     """Migrate legacy impressions into CAS refs immediately."""
-    return MANAGER.root_object().migrate_impressions(dry_run=dry_run)
+    return MANAGER.root_object().migrate_impressions(
+        dry_run=dry_run, prune_legacy=prune_legacy
+    )
+
+
+def stats_impressions() -> Message:
+    """Show legacy vs CAS impression storage statistics."""
+    return MANAGER.root_object().stats_impressions()
 
 
 def tree(_depth: int = -1) -> Message:
