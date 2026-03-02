@@ -36,11 +36,64 @@ class Core(VObject):
         message = super().ls(show_info)
 
         if show_info.task_info:
+            message.append(self.show_task_files())
             message.append(self.show_parameters())
 
             if self.algorithm() is not None:
                 message.append(self.show_algorithm())
             return message
+
+        return message
+
+    def show_task_files(self) -> Message:
+        """ Show the files and directories in the task directory.
+
+        Lists all files and directories except:
+        - .celebi/ (internal metadata directory)
+        - README.md (shown separately)
+        - celebi.yaml (configuration file)
+        - Registered subobjects (already shown in subobjects section)
+        """
+        message = Message()
+
+        # Get all items in the task directory
+        all_items = os.listdir(self.path)
+
+        # Get subobject paths to exclude
+        subobject_paths = {os.path.basename(obj.path) for obj in self.sub_objects()}
+
+        # Filter out excluded items
+        excluded = {".celebi", "README.md", "celebi.yaml"} | subobject_paths
+        task_files = sorted(f for f in all_items if f not in excluded)
+
+        if not task_files:
+            return message
+
+        message.add("---- Task files:\n", "title0")
+
+        # Determine file type (file or directory) for display
+        files_with_type = []
+        for f in task_files:
+            full_path = os.path.join(self.path, f)
+            is_dir = os.path.isdir(full_path)
+            display_name = f"{f}/" if is_dir else f
+            files_with_type.append((display_name, is_dir))
+
+        # Calculate column layout
+        max_len = max(len(f[0]) for f in files_with_type)
+        columns = shutil.get_terminal_size((80, 20)).columns
+        nfiles = max(1, columns // (max_len + 4))  # Avoid division by zero
+        line = ""
+
+        for i, (display_name, is_dir) in enumerate(files_with_type, start=1):
+            # Use different coloring for directories vs files
+            color_tag = "success" if is_dir else "normal"
+            line += f"{display_name:<{max_len+4}}"
+            if not i % nfiles:
+                message.add(line.rstrip() + "\n", color_tag)
+                line = ""
+        if line:
+            message.add(line.rstrip() + "\n", "normal")
 
         return message
 
