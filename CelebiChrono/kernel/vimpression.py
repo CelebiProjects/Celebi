@@ -1,6 +1,7 @@
 """Helper class for impression operations."""
 import hashlib
 import os
+import tarfile
 import tempfile
 from logging import getLogger
 from os.path import join
@@ -133,7 +134,9 @@ class VImpression:
         csys.mkdir(self.path)
         source_dir = self.materialize_contents()
         output_name = os.path.join(self.path, "packed" + self.uuid)
-        csys.make_archive(output_name, source_dir)
+        # Use "contents" as arcname for backward compatibility with legacy system
+        with tarfile.open(output_name + ".tar.gz", "w:gz") as tar:
+            tar.add(source_dir, arcname="contents")
 
     def clean(self) -> None:
         contents_path = os.path.join(self.path, "contents")
