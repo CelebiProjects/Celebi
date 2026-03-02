@@ -31,13 +31,22 @@ def jobs(_: str) -> Message:
         jobs          # No arguments needed, parameter is unused
 
     Note:
-        - Only works within algorithm or task contexts
+        - Works within algorithm, task, directory, or project contexts
         - Shows job ID, status, creation time, and parameters
         - Jobs can be in states: pending, running, completed, failed
         - Use this command to monitor execution progress
     """
     message = Message()
     object_type = MANAGER.current_object().object_type()
+    if object_type in ("directory", "project"):
+        sub_objects = MANAGER.current_object().sub_objects()
+        for obj in sub_objects:
+            if obj.object_type() not in ("algorithm", "task"):
+                continue
+            obj_path = MANAGER.current_object().relative_path(obj.path)
+            task = MANAGER.sub_object(obj_path)
+            task.jobs()
+        return message
     if object_type not in ("algorithm", "task"):
         message.add("Not able to found job", "error")
         return message
@@ -350,8 +359,37 @@ def set_memory_limit(limit: str) -> Message:
 
 
 def set_descriptor(descriptor: str) -> Message:
-    """Set descriptor for the current task or algorithm."""
+    """Set descriptor for the current task or algorithm.
+
+    Updates the descriptor field in the celebi.yaml configuration file.
+    The descriptor provides a human-readable name or description for the object.
+
+    Args:
+        descriptor (str): The descriptor value to set.
+
+    Returns:
+        Message: Message with status information or error message.
+
+    Examples:
+        set_descriptor "Analysis Task 1"     # Set descriptor for current task
+        set_descriptor "Data Processing"     # Set descriptor for current algorithm
+
+    Note:
+        - Works within task, algorithm, directory, or project contexts
+        - For directories/projects, applies to all sub-tasks and sub-algorithms
+        - The descriptor is stored in celebi.yaml
+        - Used for display and identification purposes
+    """
     message = Message()
+    if MANAGER.current_object().object_type() in ("directory", "project"):
+        sub_objects = MANAGER.current_object().sub_objects()
+        for obj in sub_objects:
+            if not obj.is_task_or_algorithm():
+                continue
+            obj_path = MANAGER.current_object().relative_path(obj.path)
+            sub_obj = MANAGER.sub_object(obj_path)
+            sub_obj.set_descriptor(descriptor)
+        return message
     if not MANAGER.current_object().is_task_or_algorithm():
         message.add(
             "Unable to call set_descriptor if you are not in a task or algorithm.",
@@ -380,13 +418,22 @@ def rm_parameter(par: str) -> Message:
         rm_parameter learning_rate     # Remove learning_rate parameter
 
     Note:
-        - Only works within task contexts
+        - Works within task, directory, or project contexts
         - Parameter must exist to be removed
         - Removing non-existent parameters has no effect
         - Use add_parameter to define new parameters
         - Parameter removal affects future executions, not running jobs
     """
     message = Message()
+    if MANAGER.current_object().object_type() in ("directory", "project"):
+        sub_objects = MANAGER.current_object().sub_objects()
+        for obj in sub_objects:
+            if obj.object_type() != "task":
+                continue
+            obj_path = MANAGER.current_object().relative_path(obj.path)
+            task = MANAGER.sub_object(obj_path)
+            task.remove_parameter(par)
+        return message
     if MANAGER.current_object().object_type() != "task":
         message.add("Unable to call remove_parameter if you are not in a task.", "error")
         return message
