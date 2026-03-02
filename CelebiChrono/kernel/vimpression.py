@@ -125,12 +125,16 @@ class VImpression:
 
     def ensure_tarfile(self) -> str:
         """Make sure tarfile exists and return path."""
-        self.pack()
+        # Force repack to ensure correct archive structure (contents as root)
+        self.pack(force=True)
         return self.tarfile
 
-    def pack(self) -> None:
+    def pack(self, force: bool = False) -> None:
         if self.is_packed():
-            return
+            if not force:
+                return
+            # Remove old tarfile to ensure it's recreated with correct structure
+            os.remove(self.tarfile)
         csys.mkdir(self.path)
         source_dir = self.materialize_contents()
         output_name = os.path.join(self.path, "packed" + self.uuid)
