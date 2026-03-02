@@ -236,6 +236,28 @@ def bookkeep_url() -> Message:
     return message
 
 
+def gc_impressions(grace_days: int = 14, dry_run: bool = True) -> Message:
+    """Run project-level impression garbage collection."""
+    return MANAGER.root_object().gc_impressions(grace_days=grace_days, dry_run=dry_run)
+
+
+def pack_impressions(force: bool = False) -> Message:
+    """Evaluate/trigger impression pack behavior."""
+    return MANAGER.root_object().pack_impressions(force=force)
+
+
+def migrate_impressions(dry_run: bool = False, prune_legacy: bool = False) -> Message:
+    """Migrate legacy impressions into CAS refs immediately."""
+    return MANAGER.root_object().migrate_impressions(
+        dry_run=dry_run, prune_legacy=prune_legacy
+    )
+
+
+def stats_impressions() -> Message:
+    """Show legacy vs CAS impression storage statistics."""
+    return MANAGER.root_object().stats_impressions()
+
+
 def tree(_depth: int = -1) -> Message:
     """Get the directory tree.
 

@@ -101,6 +101,13 @@ class ChernCommunicator():
         """ Get the serverurl """
         return self.config_file.read_variable("serverurl", "localhost:5000")
 
+    @staticmethod
+    def _resolve_impression_tarfile(impression):
+        """Return a usable tarfile path for an impression-like object."""
+        if hasattr(impression, "ensure_tarfile") and callable(impression.ensure_tarfile):
+            return impression.ensure_tarfile()
+        return impression.tarfile
+
     # === Server Status & Connection ===
     def dite_status(self): # UnitTest: DONE
         """ Get the status of the DITE """
@@ -135,7 +142,7 @@ class ChernCommunicator():
     # === Job Submission & Execution ===
     def submit(self, impression, machine="local"):
         """ Submit the impression to the server """
-        tarname = impression.tarfile
+        tarname = self._resolve_impression_tarfile(impression)
         files = {
             f"{impression.uuid}.tar.gz": open(tarname, "rb").read(),
             "config.json": open(impression.path + "/config.json", "rb").read()
@@ -163,7 +170,7 @@ class ChernCommunicator():
 
     def deposit(self, impression):
         """ Deposit the impression to the server """
-        tarname = impression.tarfile
+        tarname = self._resolve_impression_tarfile(impression)
         files = {
             f"{impression.uuid}.tar.gz": open(tarname, "rb").read(),
             "config.json": open(impression.path + "/config.json", "rb").read()
@@ -184,7 +191,7 @@ class ChernCommunicator():
         """ Deposit the impression with additional data """
         tmpdir = "/tmp"
         tarname = tmpdir + "/" + impression.uuid + ".tar.gz"
-        impression_tar = tarfile.open(impression.tarfile, "r")
+        impression_tar = tarfile.open(self._resolve_impression_tarfile(impression), "r")
         # Add additional data to the tar file
         tar = tarfile.open(tarname, "w:gz")
         for member in impression_tar.getmembers():
