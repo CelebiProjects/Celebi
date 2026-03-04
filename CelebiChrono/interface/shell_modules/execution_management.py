@@ -180,3 +180,29 @@ def test() -> Message:
         This is a placeholder function for testing purposes and may not be fully implemented.
     """
     return MANAGER.current_object().docker_test()
+
+
+def engine_logs() -> Message:
+    """Fetch and display engine logs for the current task.
+
+    Retrieves documented engine logs from the DITE server for the current
+    task's impression. Engine logs provide detailed information about the
+    execution environment, workflow engine operations, and runtime events.
+
+    Args:
+        None: Function takes no parameters.
+
+    Examples:
+        engine_logs()  # Display engine logs for current task
+
+    Returns:
+        Message containing engine log content or error message if logs
+        cannot be retrieved.
+
+    Note:
+        - The current object must be a task with an active impression
+        - Requires connection to DITE server
+        - Logs are fetched from http://localhost:3315/engine-log/
+        - Useful for debugging execution issues and monitoring workflow
+    """
+    return MANAGER.current_object().engine_logs()

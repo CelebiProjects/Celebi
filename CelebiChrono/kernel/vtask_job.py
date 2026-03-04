@@ -128,6 +128,142 @@ class JobManager(Core):
         msg.add(cherncc.error_log(self.impression(), error_index))
         return msg
 
+    def engine_logs(self):
+        """ Fetch and display engine logs for the task.
+
+        Retrieves documented engine logs from the DITE server for the current
+        task's impression. Engine logs provide detailed information about the
+        execution environment, workflow engine operations, and runtime events.
+
+        Returns:
+            Message containing formatted engine log content or error message.
+        """
+        import json
+
+        cherncc = ChernCommunicator.instance()
+        # Check the connection
+        dite_status = cherncc.dite_status()
+        if dite_status != "connected":
+            msg = Message()
+            msg.add("DITE is not connected. Please check the connection.", "warning")
+            return msg
+        impression = self.impression()
+        if not impression:
+            msg = Message()
+            msg.add("No impression found for current task", "error")
+            return msg
+        try:
+            logs_raw = cherncc.engine_logs(impression)
+            if logs_raw == "unconnected to DITE":
+                msg = Message()
+                msg.add("Failed to connect to DITE server", "error")
+                return msg
+
+            msg = Message()
+            msg.add("=" * 60 + "\n", "title0")
+            msg.add("ENGINE LOGS\n", "title0")
+            msg.add("=" * 60 + "\n", "title0")
+
+            # Parse outer JSON
+            try:
+                outer_data = json.loads(logs_raw)
+            except json.JSONDecodeError:
+                # If not JSON, print raw
+                msg.add(logs_raw + "\n", "normal")
+                return msg
+
+            # The structure is: {"logs": {"logs": "...", "user": "...", "workflow_id": "...", "workflow_name": "..."}}
+            logs_container = outer_data.get("logs", {})
+            if isinstance(logs_container, str):
+                try:
+                    logs_container = json.loads(logs_container)
+                except json.JSONDecodeError:
+                    logs_container = {}
+
+            # Extract workflow info from logs_container
+            workflow_name = logs_container.get("workflow_name", "N/A")
+            workflow_id = logs_container.get("workflow_id", "N/A")
+            user = logs_container.get("user", "N/A")
+
+            msg.add(f"Workflow Name: ", "title0")
+            msg.add(f"{workflow_name}\n", "normal")
+            msg.add(f"Workflow ID: ", "title0")
+            msg.add(f"{workflow_id}\n", "normal")
+            msg.add(f"User: ", "title0")
+            msg.add(f"{user}\n", "normal")
+            msg.add("-" * 60 + "\n", "normal")
+
+            # Parse inner logs (the nested "logs" field containing workflow_logs and job_logs)
+            inner_logs_str = logs_container.get("logs", "{}")
+            if isinstance(inner_logs_str, str):
+                try:
+                    inner_logs = json.loads(inner_logs_str)
+                except json.JSONDecodeError:
+                    inner_logs = {"workflow_logs": inner_logs_str}
+            else:
+                inner_logs = inner_logs_str
+
+            # Display workflow logs with color-coded severity
+            workflow_logs = inner_logs.get("workflow_logs", "")
+            if workflow_logs:
+                msg.add("\n", "normal")
+                msg.add("WORKFLOW LOGS:\n", "title0")
+                msg.add("=" * 40 + "\n", "normal")
+                for line in workflow_logs.split("\n"):
+                    # Determine color based on log severity
+                    line_upper = line.upper()
+                    if "CRITICAL" in line_upper or "ERROR" in line_upper:
+                        color = "warning"  # Red for error/critical
+                    elif "WARNING" in line_upper:
+                        color = "running"  # Yellow for warning
+                    else:
+                        color = "normal"
+                    msg.add(line + "\n", color)
+                msg.add("\n", "normal")
+
+            # Display job logs
+            job_logs = inner_logs.get("job_logs", {})
+            if job_logs:
+                msg.add("\n", "normal")
+                msg.add("JOB LOGS:\n", "title0")
+                msg.add("=" * 40 + "\n", "normal")
+                for job_id, job_info in job_logs.items():
+                    msg.add(f"\nJob: ", "title0")
+                    msg.add(f"{job_info.get('job_name', job_id)}\n", "success")
+                    msg.add(f"  Status: ", "normal")
+                    status = job_info.get("status", "unknown")
+                    status_color = "success" if status == "finished" else "warning"
+                    msg.add(f"{status}\n", status_color)
+                    msg.add(f"  Backend: ", "normal")
+                    msg.add(f"{job_info.get('compute_backend', 'N/A')}\n", "normal")
+                    msg.add(f"  Docker: ", "normal")
+                    msg.add(f"{job_info.get('docker_img', 'N/A')}\n", "normal")
+                    msg.add(f"  Started: ", "normal")
+                    msg.add(f"{job_info.get('started_at', 'N/A')}\n", "normal")
+                    msg.add(f"  Finished: ", "normal")
+                    msg.add(f"{job_info.get('finished_at', 'N/A')}\n", "normal")
+                    msg.add(f"  Command: ", "normal")
+                    msg.add(f"{job_info.get('cmd', 'N/A')}\n", "info")
+                    job_log_content = job_info.get("logs", "")
+                    if job_log_content and job_log_content.strip():
+                        msg.add(f"  Output:\n", "normal")
+                        for line in job_log_content.strip().split("\n"):
+                            msg.add(f"    {line}\n", "normal")
+
+            # Display engine-specific info if present
+            engine_specific = inner_logs.get("engine_specific")
+            if engine_specific:
+                msg.add("\n", "normal")
+                msg.add("ENGINE SPECIFIC:\n", "title0")
+                msg.add("=" * 40 + "\n", "normal")
+                msg.add(json.dumps(engine_specific, indent=2) + "\n", "normal")
+
+            return msg
+        except Exception as e:
+            msg = Message()
+            msg.add(f"Failed to fetch engine logs: {e}", "error")
+            return msg
+
     def watermark(self):
         """ Set the watermark to png files """
         cherncc = ChernCommunicator.instance()

@@ -61,6 +61,7 @@ cli.add_command(execution_management.purge_command)
 cli.add_command(execution_management.purge_old_impressions_command)
 cli.add_command(execution_management.collect_outputs_command)
 cli.add_command(execution_management.collect_logs_command)
+cli.add_command(execution_management.engine_logs_command)
 
 # Communication commands
 cli.add_command(communication.config_command)

@@ -24,7 +24,7 @@ from .shell_modules.task_configuration import (
 )
 from .shell_modules.execution_management import (
     submit, purge, purge_old_impressions, test,
-    collect, collect_outputs, collect_logs
+    collect, collect_outputs, collect_logs, engine_logs
 )
 from .shell_modules.communication import (
     dite, set_dite, add_host, hosts, runners, register_runner,
@@ -59,7 +59,7 @@ __all__ = [
     'jobs', 'status', 'get_script_path', 'config',
     # Execution management functions (from execution_management.py)
     'submit', 'purge', 'purge_old_impressions', 'test',
-    'collect', 'collect_outputs', 'collect_logs',
+    'collect', 'collect_outputs', 'collect_logs', 'engine_logs',
     # Communication functions (from communication.py)
     'dite', 'set_dite', 'add_host', 'hosts', 'runners', 'register_runner',
     'remove_runner', 'request_runner', 'search_impression',

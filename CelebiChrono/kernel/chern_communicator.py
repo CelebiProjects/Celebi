@@ -344,6 +344,19 @@ class ChernCommunicator():
             return ["unconnected to DITE"]
         return r.text.split()
 
+    def engine_logs(self, impression):
+        """ Get the engine logs for the impression from the server """
+        url = self.serverurl()
+        try:
+            r = requests.get(
+                f"http://{url}/engine-log/{self.project_uuid}/{impression.uuid}",
+                timeout=self.timeout
+            )
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return "unconnected to DITE"
+        return r.text
+
     # === Job Control ===
     def kill(self, impression):
         """ Kill the impression on the server """
