@@ -275,6 +275,131 @@ class JobManager(Core):
         # Open the browser to display the file
         cherncc.display(self.impression(), filename)
 
+    def imgcat(self, filename):
+        """ Display image file inline in terminal using imgcat protocol.
+
+        Fetches the image from dite and returns data for inline terminal display
+        using iTerm2 imgcat escape sequences.
+
+        Args:
+            filename: Name of the image file to display from dite.
+
+        Returns:
+            tuple: (success: bool, message: str, image_output: str or None)
+        """
+        import base64
+
+        cherncc = ChernCommunicator.instance()
+        impression = self.impression()
+
+        if impression is None:
+            return False, "No impression available for current task", None
+
+        # Fetch image data from dite
+        url = cherncc.serverurl()
+        try:
+            import requests
+            response = requests.get(
+                f"http://{url}/export/{cherncc.project_uuid}/{impression.uuid}/{filename}",
+                timeout=cherncc.timeout * 1000
+            )
+            if response.status_code != 200:
+                return False, f"Failed to fetch image: HTTP {response.status_code}", None
+            image_data = response.content
+
+            # Validate that the data is actually an image by checking magic bytes
+            if not self._is_valid_image_data(image_data):
+                return False, f"File not found or not a valid image: {filename}", None
+        except Exception as e:
+            return False, f"Failed to fetch image from dite: {e}", None
+
+        # Generate imgcat escape sequence for inline image display
+        try:
+            imgcat_output = self._generate_imgcat_output(image_data, filename)
+            return True, "Image ready for display", imgcat_output
+        except Exception as e:
+            return False, f"Failed to generate imgcat output: {e}", None
+
+    def _is_valid_image_data(self, data):
+        """Check if data is a valid image by examining magic bytes.
+
+        Args:
+            data: Raw bytes to check.
+
+        Returns:
+            bool: True if data looks like a valid image format.
+        """
+        if len(data) < 8:
+            return False
+
+        # Check magic bytes for common image formats
+        magic_bytes = {
+            b'\x89PNG\r\n\x1a\n': 'png',  # PNG
+            b'\xff\xd8\xff': 'jpeg',      # JPEG
+            b'GIF87a': 'gif',              # GIF87a
+            b'GIF89a': 'gif',              # GIF89a
+            b'BM': 'bmp',                  # BMP
+            b'RIFF': 'webp',               # WebP (starts with RIFF)
+        }
+
+        for magic, _fmt in magic_bytes.items():
+            if data.startswith(magic):
+                return True
+
+        return False
+
+    def _generate_imgcat_output(self, image_data, filename):
+        """Generate iTerm2 imgcat escape sequence for image data.
+
+        Args:
+            image_data: Raw bytes of the image file.
+            filename: Name of the file (used to determine format).
+
+        Returns:
+            str: The imgcat escape sequence.
+        """
+        import base64
+        import os
+
+        # Determine format from extension
+        ext = filename.lower().split('.')[-1] if '.' in filename else 'png'
+        format_map = {
+            'png': 'image/png',
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'gif': 'image/gif',
+            'bmp': 'image/bmp',
+            'webp': 'image/webp'
+        }
+        mime_type = format_map.get(ext, 'image/png')
+
+        # Base64 encode the image
+        b64_data = base64.b64encode(image_data).decode('utf-8')
+
+        # Build imgcat escape sequence
+        name_b64 = base64.b64encode(filename.encode('utf-8')).decode('utf-8')
+        output = f"\033]1337;File=name={name_b64};size={len(image_data)};inline=1;type={mime_type}:{b64_data}\007"
+
+        return output
+
+    def list_output_files(self):
+        """List available output files from dite for current impression.
+
+        Returns:
+            tuple: (success: bool, files: list or error_message: str)
+        """
+        cherncc = ChernCommunicator.instance()
+        impression = self.impression()
+
+        if impression is None:
+            return False, "No impression available for current task"
+
+        try:
+            files = cherncc.output_files(impression, "none")
+            return True, files
+        except Exception as e:
+            return False, f"Failed to list output files: {e}"
+
     def impview(self):
         """ Open browser to view the impression"""
         cherncc = ChernCommunicator.instance()

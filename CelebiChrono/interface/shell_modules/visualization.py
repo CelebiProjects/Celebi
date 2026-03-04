@@ -143,3 +143,74 @@ def trace(impression: str) -> Message:
         - Output includes detailed DAG differences with human-readable formatting
     """
     return MANAGER.current_object().trace(impression)
+
+
+def imgcat(filename: str = None) -> Message:
+    """Display image file inline in terminal from dite.
+
+    Fetches an image file from the dite server and displays it inline
+    in the terminal using the iTerm2 imgcat protocol. Supported by
+    iTerm2, Claude Code, and other compatible terminals.
+
+    Args:
+        filename: Name of the image file to display. If not provided,
+            lists available image files.
+
+    Examples:
+        imgcat plot.png           # Display plot.png inline
+        imgcat                    # List available output files
+
+    Returns:
+        Message: Status message or inline image data.
+
+    Note:
+        - Current object must be a task with an impression
+        - File must exist in the task's output on dite
+        - Terminal must support imgcat escape sequences
+        - Supports PNG, JPG, GIF, BMP, WebP formats
+    """
+    import sys
+
+    message = Message()
+    current_obj = MANAGER.current_object()
+
+    if not current_obj.is_task():
+        message.add("imgcat is only available for tasks\n", "error")
+        return message
+
+    # If no filename provided, list available files
+    if filename is None:
+        success, result = current_obj.list_output_files()
+        if not success:
+            message.add(f"Failed to list files: {result}\n", "error")
+            return message
+
+        # Filter for image files
+        image_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp')
+        images = [f for f in result if f.lower().endswith(image_extensions)]
+
+        if not images:
+            message.add("No image files found in task outputs.\n", "warning")
+            message.add(f"Available files: {', '.join(result)}\n", "info")
+        else:
+            message.add("Available image files:\n", "title0")
+            for img in images:
+                message.add(f"  - {img}\n")
+            message.add("\nUse 'imgcat <filename>' to display an image.\n", "info")
+        return message
+
+    # Display the image
+    success, msg, imgcat_output = current_obj.imgcat(filename)
+
+    if not success:
+        message.add(f"{msg}\n", "error")
+        return message
+
+    # Output the imgcat escape sequence directly to stdout
+    # This must be raw bytes, not through the message system
+    sys.stdout.buffer.write(imgcat_output.encode('utf-8'))
+    sys.stdout.buffer.write(b'\n')
+    sys.stdout.flush()
+
+    message.add(f"Displayed: {filename}\n", "success")
+    return message

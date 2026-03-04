@@ -5,16 +5,19 @@ import click
 
 from CelebiChrono.celebi_cli.utils import format_output
 
+
 def _handle_result(result):
     """Handle result from shell function."""
     output = format_output(result)
     if output:
         print(output)
 
+
 def _handle_error(error):
     """Handle error from shell function."""
     print(f"Error: {error}", file=sys.stderr)
     sys.exit(1)
+
 
 @click.command(name="view")
 @click.argument("browser", type=str, required=False, default="open")
@@ -42,6 +45,7 @@ def view_command(browser):
     except Exception as e:
         _handle_error(f"Command failed: {e}")
 
+
 @click.command(name="viewurl")
 def viewurl_command():
     """Get the impression URL for current task.
@@ -56,6 +60,41 @@ def viewurl_command():
     try:
         from CelebiChrono.interface.shell import viewurl
         result = viewurl()
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="imgcat")
+@click.argument("filename", type=str, required=False)
+def imgcat_command(filename):
+    """Display image file inline in terminal from dite.
+
+    Fetches an image file from the dite server and displays it inline
+    in the terminal using the iTerm2 imgcat protocol. Supported by
+    iTerm2, Claude Code, and other compatible terminals.
+
+    If no filename is provided, lists available image files from the
+    task's output on dite.
+
+    Args:
+        filename: Name of the image file to display (optional).
+
+    Examples:
+        celebi imgcat plot.png        # Display plot.png inline
+        celebi imgcat                  # List available image files
+
+    Note:
+        - Current object must be a task with an impression
+        - File must exist in the task's output on dite
+        - Terminal must support imgcat escape sequences
+        - Supports PNG, JPG, GIF, BMP, WebP formats
+    """
+    try:
+        from CelebiChrono.interface.shell import imgcat
+        result = imgcat(filename)
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")

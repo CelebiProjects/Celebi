@@ -74,6 +74,17 @@ class BasicCommands:
         except Exception as e:
             print(f"Error displaying file: {e}")
 
+    def do_imgcat(self, arg: str) -> None:
+        """Display an image file inline in terminal."""
+        import sys
+        try:
+            filename = arg.strip() if arg else None
+            result = shell.imgcat(filename)
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error displaying image: {e}")
+
     def do_cat(self, arg: str) -> None:
         """Display file contents."""
         try:

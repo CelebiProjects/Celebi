@@ -80,6 +80,7 @@ cli.add_command(communication.search_impression_command)
 # Visualization commands
 cli.add_command(visualization.view_command)
 cli.add_command(visualization.viewurl_command)
+cli.add_command(visualization.imgcat_command)
 
 # Utility commands
 cli.add_command(utilities.watermark_command)
