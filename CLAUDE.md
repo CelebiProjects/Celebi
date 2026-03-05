@@ -2,6 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Disabled Skills
+
+The following skills are disabled for this project and should NOT be used:
+- `celebi`
+- `celebi-amend-expert`
+- `celebi-workflow-patience`
+- `celebi-object-creation`
+- `celebi-output-checker`
+- `celebi-workflow-execution`
+- `celebi-algorithm-expert`
+- `celebi-navigation`
+- `celebi-task-expert`
+
 ## Project Overview
 
 Celebi is a data analysis management toolkit for high-energy physics research. It provides structured organization for projects, tasks, algorithms, and data with dependency tracking, versioning (impressions), and reproducible workflows.
