@@ -61,6 +61,7 @@ For detailed usage, see the following pages:
    :caption: Contents
 
    installation
+   configuration_files
    commands
    examples
 
