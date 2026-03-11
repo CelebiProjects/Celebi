@@ -18,6 +18,28 @@ if TYPE_CHECKING:
 CHERN_CACHE = ChernCache.instance()
 logger = getLogger("ChernLogger")
 
+# Object type priority for sorting: directory < algorithm < task
+OBJECT_TYPE_ORDER = {"directory": 0, "algorithm": 1, "task": 2}
+
+
+def _natural_sort_key(obj: 'VObject') -> tuple:
+    """Generate natural sort key for VObjects.
+
+    Sorts by:
+    1. Object type priority (directory < algorithm < task)
+    2. Natural numeric sorting of the basename (e.g., eff_2 < eff_10)
+
+    Args:
+        obj: VObject to generate sort key for
+
+    Returns:
+        Tuple for sorting: (type_priority, [natural_key_parts])
+    """
+    type_priority = OBJECT_TYPE_ORDER.get(obj.object_type(), 99)
+    basename = os.path.basename(obj.path)
+    natural_key = [int(part) if part.isdigit() else part for part in basename.split('_')]
+    return (type_priority, natural_key)
+
 
 @dataclass
 class LsParameters:
@@ -111,10 +133,8 @@ class FileManagementDisplay(Core):
                 # Parallelized subobject status checks
 
                 sub_objects = self.sub_objects()
-                # sort the objects according to (object_type: directory < algorithm < task, path)
-                # need to map the object_type to a sortable value
-                object_type_order = {"directory": 0, "algorithm": 1, "task": 2}
-                sub_objects.sort(key=lambda x: (object_type_order.get(x.object_type(), 99), x.path))
+                # Sort by type priority, then natural numeric sort of basename
+                sub_objects.sort(key=_natural_sort_key)
 
                 # Parallel check of subobject statuses (CPU-bound)
                 # with ProcessPoolExecutor(max_workers=8) as executor:
@@ -160,13 +180,8 @@ class FileManagementDisplay(Core):
             message.add("\n---------------\n")
             objects = []
             sub_objects = self.sub_objects()
-            object_type_order = {"directory": 0, "algorithm": 1, "task": 2}
-            # Make the sort even smarter
-            # If the object is in the format of xxx_aaa_xxx_bbb, where some part is a number,
-            # we can sort according to the number
-            sub_objects.sort(key=lambda x: (object_type_order.get(x.object_type(), 99),
-                                                [int(part) if part.isdigit() else part
-                                                for part in os.path.basename(x.path).split('_')]))
+            # Sort by type priority, then natural numeric sort of basename
+            sub_objects.sort(key=_natural_sort_key)
             for sub_object in sub_objects:
                 # only append the base name
                 objects.append((os.path.basename(sub_object.path),
@@ -202,7 +217,8 @@ class FileManagementDisplay(Core):
         """ Show the sub_objects with dynamic alignment """
         message = Message()
         # sub_objects = self.sub_objects()
-        sub_objects.sort(key=lambda x: (x.object_type(), x.path))
+        # Sort by type priority, then natural numeric sort of basename
+        sub_objects.sort(key=_natural_sort_key)
 
         if not sub_objects:
             return message
@@ -308,7 +324,8 @@ class FileManagementDisplay(Core):
         message = Message()
         index = "--" * current_depth
         message.add(f"{index}{os.path.basename(self.path)}({self.object_type()})\n")
-        objects = sorted(self.sub_objects(), key=lambda x: x.path)
+        # Sort by type priority, then natural numeric sort of basename
+        objects = sorted(self.sub_objects(), key=_natural_sort_key)
         for obj in objects:
             message.append(obj.tree(max_depth, current_depth+1))
         return message
