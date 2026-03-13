@@ -211,11 +211,17 @@ class ExecutionManagement(Core):
         if runner is None:
             job_status_data = cherncc.job_status(self.impression())
             # Extract status string from dict returned by communicator
-            job_status = job_status_data.get("status", "unknown") if isinstance(job_status_data, dict) else job_status_data
+            job_status = (
+                job_status_data.get("status", "unknown")
+                if isinstance(job_status_data, dict) else job_status_data
+            )
             consult_table[self.path] = (consult_id, job_status)
             return job_status
         job_status_data = cherncc.job_status(self.impression(), runner)
-        job_status = job_status_data.get("status", "unknown") if isinstance(job_status_data, dict) else job_status_data
+        job_status = (
+            job_status_data.get("status", "unknown")
+            if isinstance(job_status_data, dict) else job_status_data
+        )
         consult_table[self.path] = (consult_id, job_status)
         return job_status
 

@@ -76,7 +76,6 @@ class BasicCommands:
 
     def do_imgcat(self, arg: str) -> None:
         """Display an image file inline in terminal."""
-        import sys
         try:
             filename = arg.strip() if arg else None
             result = shell.imgcat(filename)

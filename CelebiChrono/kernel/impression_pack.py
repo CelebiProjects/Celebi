@@ -8,7 +8,7 @@ from typing import Dict
 from .impression_store import ImpressionStore
 
 
-class ImpressionPack:
+class ImpressionPack:  # pylint: disable=too-few-public-methods
     """Pack planner for loose CAS objects."""
 
     def __init__(self, project_path: str = "") -> None:
@@ -20,6 +20,7 @@ class ImpressionPack:
         max_loose_size_mb: int = 256,
         force: bool = False,
     ) -> Dict[str, int]:
+        """Check if packing is needed based on loose object thresholds."""
         stats = self.store.loose_object_stats()
         size_mb = stats["total_size_bytes"] / (1024 * 1024)
         should_pack = force or (

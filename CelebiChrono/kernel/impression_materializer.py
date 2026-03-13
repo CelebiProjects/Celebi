@@ -6,7 +6,7 @@ from ..utils import csys
 from .impression_store import ImpressionStore
 
 
-class ImpressionMaterializer:
+class ImpressionMaterializer:  # pylint: disable=too-few-public-methods
     """Reconstructs a snapshot tree from impression CAS metadata."""
 
     def __init__(self, project_path: Optional[str] = None) -> None:

@@ -73,6 +73,7 @@ class ImpressionStore:
         return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
     def put_blob(self, content: bytes) -> str:
+        """Store blob content and return its hash."""
         blob_hash = self._sha256_bytes(content)
         blob_path = self._blob_path(blob_hash)
         if os.path.exists(blob_path):
@@ -83,10 +84,12 @@ class ImpressionStore:
         return blob_hash
 
     def get_blob(self, blob_hash: str) -> bytes:
+        """Retrieve blob content by its hash."""
         with open(self._blob_path(blob_hash), "rb") as f:
             return f.read()
 
     def put_tree(self, entries: List[Dict[str, Any]]) -> str:
+        """Store tree entries and return its hash."""
         tree_hash = self._sha256_bytes(self._canonical_json_bytes(entries))
         tree_path = self._tree_path(tree_hash)
         if os.path.exists(tree_path):
@@ -97,13 +100,16 @@ class ImpressionStore:
         return tree_hash
 
     def get_tree(self, tree_hash: str) -> List[Dict[str, Any]]:
+        """Retrieve tree entries by its hash."""
         with open(self._tree_path(tree_hash), "r", encoding="utf-8") as f:
             return json.load(f)
 
     def has_impression_ref(self, impression_uuid: str) -> bool:
+        """Check if impression reference exists."""
         return os.path.exists(self._ref_path(impression_uuid))
 
     def write_impression_ref(self, impression_uuid: str, data: Dict[str, Any]) -> None:
+        """Write impression reference data."""
         payload = dict(data)
         payload["uuid"] = impression_uuid
         ref_path = self._ref_path(impression_uuid)
@@ -111,6 +117,7 @@ class ImpressionStore:
             self._atomic_write_bytes(ref_path, self._canonical_json_bytes(payload))
 
     def read_impression_ref(self, impression_uuid: str) -> Optional[Dict[str, Any]]:
+        """Read impression reference data."""
         ref_path = self._ref_path(impression_uuid)
         if not os.path.exists(ref_path):
             return None
@@ -118,6 +125,7 @@ class ImpressionStore:
             return json.load(f)
 
     def iter_referenced_hashes(self) -> Iterable[str]:
+        """Iterate over all referenced tree hashes."""
         if not os.path.exists(self.ref_root):
             return
         for filename in os.listdir(self.ref_root):
@@ -130,6 +138,7 @@ class ImpressionStore:
                 yield root_tree
 
     def read_store_meta(self, key: str, default: Any = None) -> Any:
+        """Read store metadata by key."""
         path = os.path.join(self.meta_root, f"{key}.json")
         if not os.path.exists(path):
             return default
@@ -137,11 +146,13 @@ class ImpressionStore:
             return json.load(f)
 
     def write_store_meta(self, key: str, data: Any) -> None:
+        """Write store metadata by key."""
         path = os.path.join(self.meta_root, f"{key}.json")
         with self._write_lock():
             self._atomic_write_bytes(path, self._canonical_json_bytes(data))
 
     def loose_object_stats(self) -> Dict[str, int]:
+        """Return statistics about loose objects in the store."""
         blob_count = 0
         blob_size = 0
         tree_count = 0

@@ -45,7 +45,7 @@ class Core(VObject):
 
         return message
 
-    def show_task_files(self) -> Message:
+    def show_task_files(self) -> Message:  # pylint: disable=too-many-locals
         """ Show the files and directories in the task directory.
 
         Lists all files and directories except:

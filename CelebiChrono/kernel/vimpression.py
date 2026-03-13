@@ -4,7 +4,7 @@ import os
 import tarfile
 import tempfile
 from logging import getLogger
-from os.path import join
+# from os.path import join  # unused
 from typing import TYPE_CHECKING, Any, List, Optional
 
 from ..utils import csys
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 logger = getLogger("ChernLogger")
 
 
-class VImpression:
+class VImpression:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """A class to represent an impression."""
 
     uuid: Optional[str] = None
@@ -39,12 +39,15 @@ class VImpression:
         self._materialized_contents: Optional[str] = None
 
     def __str__(self) -> str:
+        """Return string representation (the UUID)."""
         return self.uuid
 
     def short_uuid(self) -> str:
+        """Return shortened UUID (first 7 chars)."""
         return self.uuid[:7]
 
     def is_cas_backed(self) -> bool:
+        """Check if impression uses CAS storage backend."""
         backend = self.config_file.read_variable("storage_backend", "")
         if backend == "cas":
             return True
@@ -52,6 +55,7 @@ class VImpression:
         return ref is not None
 
     def has_contents_dir(self) -> bool:
+        """Check if impression has a contents directory."""
         return csys.exists(os.path.join(self.path, "contents"))
 
     def _import_legacy_contents_to_cas(self) -> None:
@@ -93,6 +97,7 @@ class VImpression:
         )
 
     def is_zombie(self) -> bool:
+        """Check if impression is a zombie (no valid content)."""
         if not self.uuid:
             return True
         self._import_legacy_contents_to_cas()
@@ -103,6 +108,7 @@ class VImpression:
         return True
 
     def is_packed(self) -> bool:
+        """Check if impression is packed into a tarfile."""
         return csys.exists(self.tarfile)
 
     def materialize_contents(self, target_dir: Optional[str] = None) -> str:
@@ -130,6 +136,7 @@ class VImpression:
         return self.tarfile
 
     def pack(self, force: bool = False) -> None:
+        """Pack impression contents into a tarfile."""
         if self.is_packed():
             if not force:
                 return
@@ -143,6 +150,7 @@ class VImpression:
             tar.add(source_dir, arcname="contents")
 
     def clean(self) -> None:
+        """Clean up contents and materialized directories."""
         contents_path = os.path.join(self.path, "contents")
         if csys.exists(contents_path):
             csys.rm_tree(contents_path)
@@ -151,20 +159,24 @@ class VImpression:
             self._materialized_contents = None
 
     def upack(self) -> None:
+        """Unpack impression (FIXME: to be implemented)."""
         # FIXME: to be implemented
         return
 
     def difference(self) -> Any:
+        """Compute difference (FIXME: to be implemented)."""
         # FIXME: to be implemented
         return None
 
     def _read_ref_metadata(self) -> dict:
+        """Read reference metadata from store."""
         ref = self.store.read_impression_ref(self.uuid)
         if ref is None:
             return {}
         return ref
 
     def read_metadata(self, key: str, default: Any = None) -> Any:
+        """Read metadata value by key."""
         value = self.config_file.read_variable(key, default)
         if value != default:
             return value
@@ -174,26 +186,32 @@ class VImpression:
         return value
 
     def tree(self) -> Any:
+        """Get the impression tree."""
         return self.read_metadata("tree", [])
 
     def parents(self) -> List[str]:
+        """Get list of parent impression UUIDs."""
         return self.read_metadata("parents", [])
 
     def parent(self) -> Optional[str]:
+        """Get the immediate parent impression UUID."""
         parents = self.parents()
         if parents:
             return parents[-1]
         return None
 
     def pred_impressions(self) -> List["VImpression"]:
+        """Get predecessor impressions (dependencies)."""
         dependencies_uuid = self.read_metadata("dependencies", [])
         dependencies = [VImpression(uuid) for uuid in dependencies_uuid]
         return dependencies
 
     def object_type(self) -> str:
+        """Get the object type stored in this impression."""
         return self.read_metadata("object_type", "")
 
     def get_descriptor(self) -> str:
+        """Get the descriptor for this impression."""
         yaml_paths = [
             os.path.join(self.path, "contents", "celebi.yaml"),
             os.path.join(self.path, "contents", ".", "celebi.yaml"),
@@ -224,10 +242,12 @@ class VImpression:
         return self.short_uuid()
 
     def has_alias(self, alias: str) -> bool:
+        """Check if impression has the given alias."""
         alias_to_imp = self.read_metadata("alias_to_impression", {})
         return alias in alias_to_imp
 
     def alias_to_impression_uuid(self, alias: str) -> str:
+        """Get impression UUID for the given alias."""
         alias_to_imp = self.read_metadata("alias_to_impression", {})
         return alias_to_imp.get(alias, "")
 
@@ -299,6 +319,7 @@ class VImpression:
         )
 
     def update_uuid(self, obj: "VObject") -> str:
+        """Update UUID based on object state and dependencies."""
         dependencies = obj.pred_impressions()
         dependencies_uuid = [dep.uuid for dep in dependencies]
         new_uuid = self.generate_imp_uuid(obj.project_uuid(), obj.path, dependencies_uuid)
@@ -319,6 +340,7 @@ class VImpression:
         directory_path: str,
         dependency_uuids: List[str],
     ) -> str:
+        """Generate impression UUID from project, path and dependencies."""
         hasher = hashlib.md5()
         hasher.update(project_uuid.encode("utf-8"))
         for dep_uuid in sorted(dependency_uuids):

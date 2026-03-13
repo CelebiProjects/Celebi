@@ -128,7 +128,7 @@ class JobManager(Core):
         msg.add(cherncc.error_log(self.impression(), error_index))
         return msg
 
-    def engine_logs(self):
+    def engine_logs(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
         """ Fetch and display engine logs for the task.
 
         Retrieves documented engine logs from the DITE server for the current
@@ -172,7 +172,8 @@ class JobManager(Core):
                 msg.add(logs_raw + "\n", "normal")
                 return msg
 
-            # The structure is: {"logs": {"logs": "...", "user": "...", "workflow_id": "...", "workflow_name": "..."}}
+            # The structure is: {"logs": {"logs": "...", "user": "...",
+            # "workflow_id": "...", "workflow_name": "..."}}
             logs_container = outer_data.get("logs", {})
             if isinstance(logs_container, str):
                 try:
@@ -185,11 +186,11 @@ class JobManager(Core):
             workflow_id = logs_container.get("workflow_id", "N/A")
             user = logs_container.get("user", "N/A")
 
-            msg.add(f"Workflow Name: ", "title0")
+            msg.add("Workflow Name: ", "title0")
             msg.add(f"{workflow_name}\n", "normal")
-            msg.add(f"Workflow ID: ", "title0")
+            msg.add("Workflow ID: ", "title0")
             msg.add(f"{workflow_id}\n", "normal")
-            msg.add(f"User: ", "title0")
+            msg.add("User: ", "title0")
             msg.add(f"{user}\n", "normal")
             msg.add("-" * 60 + "\n", "normal")
 
@@ -228,25 +229,25 @@ class JobManager(Core):
                 msg.add("JOB LOGS:\n", "title0")
                 msg.add("=" * 40 + "\n", "normal")
                 for job_id, job_info in job_logs.items():
-                    msg.add(f"\nJob: ", "title0")
+                    msg.add("\nJob: ", "title0")
                     msg.add(f"{job_info.get('job_name', job_id)}\n", "success")
-                    msg.add(f"  Status: ", "normal")
+                    msg.add("  Status: ", "normal")
                     status = job_info.get("status", "unknown")
                     status_color = "success" if status == "finished" else "warning"
                     msg.add(f"{status}\n", status_color)
-                    msg.add(f"  Backend: ", "normal")
+                    msg.add("  Backend: ", "normal")
                     msg.add(f"{job_info.get('compute_backend', 'N/A')}\n", "normal")
-                    msg.add(f"  Docker: ", "normal")
+                    msg.add("  Docker: ", "normal")
                     msg.add(f"{job_info.get('docker_img', 'N/A')}\n", "normal")
-                    msg.add(f"  Started: ", "normal")
+                    msg.add("  Started: ", "normal")
                     msg.add(f"{job_info.get('started_at', 'N/A')}\n", "normal")
-                    msg.add(f"  Finished: ", "normal")
+                    msg.add("  Finished: ", "normal")
                     msg.add(f"{job_info.get('finished_at', 'N/A')}\n", "normal")
-                    msg.add(f"  Command: ", "normal")
+                    msg.add("  Command: ", "normal")
                     msg.add(f"{job_info.get('cmd', 'N/A')}\n", "info")
                     job_log_content = job_info.get("logs", "")
                     if job_log_content and job_log_content.strip():
-                        msg.add(f"  Output:\n", "normal")
+                        msg.add("  Output:\n", "normal")
                         for line in job_log_content.strip().split("\n"):
                             msg.add(f"    {line}\n", "normal")
 
@@ -287,7 +288,6 @@ class JobManager(Core):
         Returns:
             tuple: (success: bool, message: str, image_output: str or None)
         """
-        import base64
 
         cherncc = ChernCommunicator.instance()
         impression = self.impression()
@@ -359,8 +359,6 @@ class JobManager(Core):
             str: The imgcat escape sequence.
         """
         import base64
-        import os
-
         # Determine format from extension
         ext = filename.lower().split('.')[-1] if '.' in filename else 'png'
         format_map = {
@@ -373,12 +371,15 @@ class JobManager(Core):
         }
         mime_type = format_map.get(ext, 'image/png')
 
-        # Base64 encode the image
+        # Base64 encode the image and filename
         b64_data = base64.b64encode(image_data).decode('utf-8')
+        name_b64 = base64.b64encode(filename.encode('utf-8')).decode('utf-8')
 
         # Build imgcat escape sequence
-        name_b64 = base64.b64encode(filename.encode('utf-8')).decode('utf-8')
-        output = f"\033]1337;File=name={name_b64};size={len(image_data)};inline=1;type={mime_type}:{b64_data}\007"
+        output = (
+            f"\033]1337;File=name={name_b64};size={len(image_data)};inline=1;"
+            f"type={mime_type}:{b64_data}\007"
+        )
 
         return output
 

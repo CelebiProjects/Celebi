@@ -6,7 +6,7 @@ from typing import Dict, Set
 from .impression_store import ImpressionStore
 
 
-class ImpressionGC:
+class ImpressionGC:  # pylint: disable=too-few-public-methods
     """Mark-and-sweep style cleanup for loose CAS objects."""
 
     def __init__(self, project_path: str = "") -> None:

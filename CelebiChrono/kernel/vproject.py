@@ -141,7 +141,7 @@ class VProject(VDirectory):
 
         return removed_contents, removed_packed
 
-    def migrate_impressions(
+    def migrate_impressions(  # pylint: disable=too-many-locals
         self, dry_run: bool = False, prune_legacy: bool = False
     ) -> Message:
         """Migrate legacy impression contents into CAS refs immediately."""
@@ -249,7 +249,7 @@ class VProject(VDirectory):
                 total += os.path.getsize(full_path)
         return total
 
-    def stats_impressions(self) -> Message:
+    def stats_impressions(self) -> Message:  # pylint: disable=too-many-locals
         """Report legacy/CAS impression storage usage and dedup indicators."""
         message = Message()
         legacy_root = os.path.join(self.path, ".celebi", "impressions")

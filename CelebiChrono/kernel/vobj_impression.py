@@ -334,7 +334,9 @@ class ImpressionManagement(Core):
             token = str(impr)
             project_path = self.project_path()
             impressions_path = os.path.join(project_path, ".celebi", "impressions")
-            ref_path = os.path.join(project_path, ".celebi", "impressions_store", "refs", "impressions")
+            ref_path = os.path.join(
+                project_path, ".celebi", "impressions_store", "refs", "impressions"
+            )
             matches = set()
 
             if os.path.isdir(impressions_path):

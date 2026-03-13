@@ -1,7 +1,7 @@
 """Command execution module for Chern shell."""
 from ..shell_modules.execution_management import test, engine_logs
 
-class CommandsExecution:  # pylint: disable=too-few-public-methods
+class CommandsExecution:
     """Execution commands for Chern shell."""
     def do_test(self, arg):
         """
