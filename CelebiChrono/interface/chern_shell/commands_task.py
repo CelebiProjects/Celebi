@@ -109,6 +109,18 @@ class TaskCommands:
         except Exception as e:
             print(f"Error creating multiple data objects: {e}")
 
+    def do_create_data_list(self, arg: str) -> None:
+        """Create a new data list object."""
+        try:
+            obj = arg.split()[0]
+            result = shell.mkdatalist(obj)
+            if result.messages:
+                print(result.colored())
+        except (IndexError, ValueError) as e:
+            print(f"Error: Please provide a data list name. {e}")
+        except Exception as e:
+            print(f"Error creating data list: {e}")
+
 
 
 

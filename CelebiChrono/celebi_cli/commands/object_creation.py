@@ -55,6 +55,19 @@ def create_data_command(name):
     except Exception as e:
         _handle_error(f"Command failed: {e}")
 
+@click.command(name="create-data-list")
+@click.argument("name", type=str)
+def create_data_list_command(name):
+    """Create data list."""
+    try:
+        from CelebiChrono.interface.shell import mkdatalist
+        result = mkdatalist(name)
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
 @click.command(name="mkdir")
 @click.argument("name", type=str)
 def mkdir_command(name):

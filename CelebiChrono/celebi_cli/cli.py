@@ -30,10 +30,11 @@ cli.add_command(file_operations.send_command)
 cli.add_command(file_operations.add_input_command)
 cli.add_command(file_operations.add_source_command)
 
-# Object creation commands (4 commands)
+# Object creation commands (5 commands)
 cli.add_command(object_creation.create_algorithm_command)
 cli.add_command(object_creation.create_task_command)
 cli.add_command(object_creation.create_data_command)
+cli.add_command(object_creation.create_data_list_command)
 cli.add_command(object_creation.mkdir_command)
 
 # Task configuration commands (9 commands)

@@ -10,6 +10,7 @@ from ...utils.message import Message
 from ...kernel.vobject import VObject
 from ...kernel.vtask import create_task
 from ...kernel.vtask import create_data
+from ...kernel.vtask import create_data_list
 from ...kernel.valgorithm import create_algorithm
 from ...kernel.vdirectory import create_directory
 from ._manager import MANAGER
@@ -119,6 +120,42 @@ def mkdata(line: str) -> Message:
         message.add("Not allowed to create data here", "warning")
         return message
     create_data(line)
+    message.add("Created successfully", "success")
+    return message
+
+
+def mkdatalist(line: str) -> Message:
+    """Create a new data list object.
+
+    Creates a new data list object within the current project. Data list objects
+    store a list of file paths that can be used as input for batch processing.
+    They use the 'datalist' environment and generate a dataList.txt file in stageout.
+
+    Args:
+        line (str): Path where the data list object should be created. Must be within
+            a valid directory or project location.
+
+    Returns:
+        Message: A Message object containing success or warning information
+
+    Examples:
+        mkdatalist my_datalist       # Create data list at my_datalist/
+        mkdatalist path/to/datalist  # Create at specific path
+        mkdatalist @/data/lists      # Use project-relative path
+
+    Note:
+        Data list objects can only be created within directories or projects,
+        not within other object types like tasks or algorithms.
+        The datalist field in celebi.yaml stores the list of file paths.
+    """
+    line = csys.refine_path(line, MANAGER.current_object().path)
+    message = Message()
+    parent_path = os.path.abspath(line+"/..")
+    object_type = VObject(parent_path).object_type()
+    if object_type not in ("directory", "project"):
+        message.add("Not allowed to create data list here", "warning")
+        return message
+    create_data_list(line)
     message.add("Created successfully", "success")
     return message
 
