@@ -53,14 +53,17 @@ Method Usage Status:
 import json
 import subprocess
 import tarfile
+import os
 from logging import getLogger
 from os.path import join
+from typing import Optional, Callable
 
 import requests
 
 from ..utils import csys
 from ..utils import metadata
 from ..utils.pretty import colorize
+from ..utils.resumable_upload import ResumableUploader, UploadError
 from .chern_cache import ChernCache
 
 
@@ -187,39 +190,89 @@ class ChernCommunicator():
             timeout=self.timeout * 1000
         )
 
-    def deposit_with_data(self, impression, path): # UnitTest: DONE
-        """ Deposit the impression with additional data """
+    def deposit_with_data(self, impression, path, progress_callback=None):
+        """
+        Deposit the impression with additional data using resumable upload.
+
+        This method uploads a tar.gz file containing the impression data plus
+        additional files from the specified path. It supports resumable uploads
+        with progress tracking, automatically resuming from interruptions.
+
+        Args:
+            impression: Impression object to deposit
+            path: Path to additional data to include in the upload
+            progress_callback: Optional callback function(uploaded_bytes, total_bytes)
+                              for tracking upload progress
+
+        Raises:
+            UploadError: If the upload fails after all retries
+        """
+        # Create temp tar file (streaming, not in-memory)
         tmpdir = "/tmp"
-        tarname = tmpdir + "/" + impression.uuid + ".tar.gz"
-        impression_tar = tarfile.open(self._resolve_impression_tarfile(impression), "r")
-        # Add additional data to the tar file
-        tar = tarfile.open(tarname, "w:gz")
-        for member in impression_tar.getmembers():
-            tar.addfile(member, impression_tar.extractfile(member))
-        tar.add(path, arcname="rawdata")
-        tar.close()
-        impression_tar.close()
+        tarname = f"{tmpdir}/{impression.uuid}.tar.gz"
 
-        files = {
-            f"{impression.uuid}.tar.gz": open(tarname, "rb").read(),
-            "config.json": open(impression.path + "/config.json", "rb").read()
-        }
-        url = self.serverurl()
+        try:
+            # Build tar incrementally to avoid memory issues
+            self._create_tar_with_data(impression, path, tarname)
 
-        requests.post(
-            f"http://{url}/upload",
-            data={
-                'tarname': f"{impression.uuid}.tar.gz",
-                'config': "config.json",
-                'project_uuid': self.project_uuid,
-            },
-            files=files,
-            timeout=self.timeout * 1000
-        )
-        requests.get(
+            # Use resumable uploader
+            uploader = ResumableUploader(self.serverurl(), self.timeout)
+            uploader.upload(
+                file_path=tarname,
+                project_uuid=self.project_uuid,
+                impression_uuid=impression.uuid,
+                progress_callback=progress_callback,
+                resume=True
+            )
+
+            # Upload config.json separately (required for impression registration)
+            url = self.serverurl()
+            config_path = f"{impression.path}/config.json"
+            with open(config_path, "rb") as f:
+                config_data = f.read()
+
+            requests.post(
+                f"http://{url}/upload-config/{self.project_uuid}/{impression.uuid}",
+                files={"config": ("config.json", config_data)},
+                timeout=self.timeout
+            )
+
+            # Set status to archived
+            requests.get(
                 f"http://{url}/set-job-status/{self.project_uuid}/{impression.uuid}/archived",
                 timeout=self.timeout
-        )
+            )
+
+        except UploadError:
+            raise
+        except Exception as e:
+            raise UploadError(f"Deposit failed: {e}") from e
+        finally:
+            # Clean up temp tar
+            if os.path.exists(tarname):
+                os.unlink(tarname)
+
+    def _create_tar_with_data(self, impression, extra_path, output_path):
+        """Create tar.gz with impression and extra data (streaming).
+
+        Args:
+            impression: Impression object
+            extra_path: Path to additional data to include
+            output_path: Path for the output tar.gz file
+        """
+        with tarfile.open(output_path, "w:gz") as tar:
+            # Add impression files
+            impression_tar = tarfile.open(
+                self._resolve_impression_tarfile(impression), "r"
+            )
+            try:
+                for member in impression_tar.getmembers():
+                    tar.addfile(member, impression_tar.extractfile(member))
+            finally:
+                impression_tar.close()
+
+            # Add extra data
+            tar.add(extra_path, arcname="rawdata")
 
     def execute(self, impressions, use_eos, machine="local"):
         """ Execute the impressions on the server """

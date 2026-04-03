@@ -3,7 +3,8 @@ Visualization functions for shell interface.
 
 Functions for viewing, creating, and tracing impressions.
 """
-import subprocess
+import os
+from collections import defaultdict
 
 from ...utils.message import Message
 from ._manager import MANAGER
@@ -34,6 +35,7 @@ def view(browser: str = "open") -> Message:
         - Browser command must be available in system PATH
         - Uses system's subprocess to launch browser
     """
+    import subprocess
     message = Message()
     is_task = MANAGER.current_object().is_task()
     if not is_task:
@@ -158,7 +160,7 @@ def imgcat(filename: str = None) -> Message:
 
     Examples:
         imgcat plot.png           # Display plot.png inline
-        imgcat                    # List available output files
+        imgcat                    # List available image files
 
     Returns:
         Message: Status message or inline image data.
@@ -213,4 +215,209 @@ def imgcat(filename: str = None) -> Message:
     sys.stdout.flush()
 
     message.add(f"Displayed: {filename}\n", "success")
+    return message
+
+
+def draw_dag_graphviz(output_file: str = "dag.pdf", exclude_algorithms: bool = False) -> Message:
+    """Draw DAG using Graphviz (supports PDF, SVG, PNG).
+
+    Generates a visualization of the project dependency DAG using Graphviz.
+    The graph shows task dependencies with color-coded nodes based on
+    directory depth and top-level grouping.
+
+    Args:
+        output_file: Output filename (default: "dag.pdf").
+            Supported formats: pdf, svg, png.
+            Saved to ~/Downloads/ directory.
+        exclude_algorithms: If True, excludes algorithm objects from the graph.
+
+    Examples:
+        draw_dag_graphviz()                    # Creates ~/Downloads/dag.pdf
+        draw_dag_graphviz("mydag.svg")         # Creates ~/Downloads/mydag.svg
+        draw_dag_graphviz("dag.png", True)     # Creates PNG excluding algorithms
+
+    Returns:
+        Message: Status message indicating success or failure.
+
+    Note:
+        - Requires graphviz Python package and Graphviz binaries
+        - Requires networkx and pydot packages
+        - Large graphs may take time to render
+        - Output is always saved to ~/Downloads/
+    """
+    # pylint: disable=import-outside-toplevel,too-many-locals
+    import networkx as nx
+    import graphviz
+    from colorsys import hls_to_rgb, rgb_to_hls
+
+    message = Message()
+
+    # Helper: Color Lighter based on Depth
+    def lighten_color(hex_color, depth_factor):
+        """Adjusts the lightness component of a color based on depth."""
+        h = hex_color.lstrip('#')
+        rgb = tuple(int(h[i:i+2], 16) / 255.0 for i in (0, 2, 4))
+        hls = rgb_to_hls(*rgb)
+        new_l = max(0.30, min(0.80, hls[1] + 0.10 * (depth_factor % 7)))
+        r, g, b = hls_to_rgb(hls[0], new_l, hls[2])
+        return f'#{int(r*255):02x}{int(g*255):02x}{int(b*255):02x}'
+
+    # Constants tuned for massive DAGs
+    base_colors = [
+        '#FF4500', '#4169E1', '#3CB371', '#FFD700', '#8A2BE2', '#FF69B4'
+    ]
+    node_shape = 'box'
+    node_font_size = '10'
+    edge_penwidth = '1.2'
+    graph_dpi = '150'
+
+    # Output Setup
+    output_file = os.path.join(
+        os.environ.get("HOME", "."), "Downloads", output_file
+    )
+    output_format = output_file.split('.')[-1].lower()
+
+    if output_format not in ['svg', 'png', 'pdf']:
+        output_format = 'pdf'
+        output_file = os.path.splitext(output_file)[0] + ".pdf"
+
+    # Build graph
+    try:
+        current_obj = MANAGER.current_object()
+        graph = current_obj.build_dependency_dag(
+            exclude_algorithms=exclude_algorithms
+        )
+    except Exception as e:
+        message.add(f"Error building DAG: {e}", "error")
+        return message
+
+    if not graph.nodes:
+        message.add("Graph empty.", "warning")
+        return message
+
+    # Node identity, depth, color, and Grouping
+    node_map = {}
+    node_depth = {}
+    top_color_map = {}
+    color_idx = 0
+    layers = defaultdict(list)
+
+    for n in graph.nodes():
+        if graph.nodes[n].get('node_type') == 'aggregate':
+            sid = str(graph.nodes[n]['label'])
+            path = graph.nodes[n].get('aggregated_path', sid)
+        else:
+            v = getattr(n, 'invariant_path', str(n))
+            sid = str(v() if callable(v) else v)
+            path = sid
+
+        node_map[n] = sid
+
+        parts = str(path).replace("AGGREGATE:", "").strip("/").split('/')
+        top = parts[0] if parts and parts[0] else "default"
+        depth = max(0, len(parts) - 1)
+
+        node_depth[n] = depth
+        layers[depth].append(sid)
+
+        if top not in top_color_map:
+            top_color_map[top] = base_colors[
+                color_idx % len(base_colors)
+            ]
+            color_idx += 1
+
+        graph.nodes[n]['color_fill'] = lighten_color(
+            top_color_map[top], depth
+        )
+        graph.nodes[n]['label'] = sid
+
+    # Transitive Reduction
+    dependency_graph = nx.DiGraph(
+        (u, v, data) for u, v, data in graph.edges(data=True)
+        if data.get('type') == 'dependency'
+    )
+    dependency_graph.add_nodes_from(graph.nodes(data=True))
+
+    try:
+        relabeled_graph = nx.relabel_nodes(dependency_graph, node_map)
+        reduced_graph = nx.transitive_reduction(relabeled_graph)
+        inv = {v: k for k, v in node_map.items()}
+        reduced_dependency_edges = [
+            (inv[u], inv[v]) for u, v in reduced_graph.edges()
+        ]
+    except Exception:
+        reduced_dependency_edges = [
+            (u, v) for u, v, data in dependency_graph.edges(data=True)
+        ]
+
+    # GRAPHVIZ RENDERING SETUP
+    dot = graphviz.Digraph(
+        comment=f"Dependency DAG: {current_obj.invariant_path()}",
+        graph_attr={
+            'rankdir': 'LR',
+            'splines': 'true',
+            'overlap': 'false',
+            'bgcolor': 'white',
+            'nodesep': '0.5',
+            'ranksep': '0.9',
+            'dpi': graph_dpi,
+        },
+        node_attr={
+            'shape': node_shape,
+            'style': 'filled',
+            'fontname': 'Helvetica',
+            'fontsize': node_font_size,
+            'margin': '0.15',
+        },
+        edge_attr={
+            'fontname': 'Helvetica',
+            'fontsize': '8',
+            'penwidth': edge_penwidth,
+            'color': '#555555',
+        }
+    )
+
+    # Add Nodes
+    for n in graph.nodes():
+        dot.node(
+            node_map[n],
+            label=graph.nodes[n]['label'],
+            fillcolor=graph.nodes[n]['color_fill'],
+            color='#333333',
+            fontcolor='#111111'
+        )
+
+    # Add Filtered Dependency Edges
+    for u, v in reduced_dependency_edges:
+        u_id = node_map[u]
+        v_id = node_map[v]
+
+        source_color = graph.nodes[u]['color_fill']
+
+        dot.edge(
+            u_id, v_id,
+            color=source_color,
+            arrowhead='normal',
+            penwidth=edge_penwidth
+        )
+
+    # Save
+    message.add(
+        f"Rendering to {output_file} ({output_format.upper()} format)...\n",
+        "normal"
+    )
+    try:
+        dot.render(
+            os.path.splitext(output_file)[0],
+            format=output_format,
+            cleanup=True
+        )
+        message.add("Done.", "success")
+    except Exception as e:
+        message.add(
+            "Save failed. Ensure Graphviz binaries are installed "
+            f"and accessible on your system PATH. {e}",
+            "error"
+        )
+
     return message

@@ -22,13 +22,19 @@ class InputManager(Core):
         data_file.write_variable("md5", md5)
         self.impress()
 
-    def send(self, path):
-        """ Send the data to the task"""
+    def send(self, path, progress_callback=None):
+        """ Send the data to the task with progress tracking.
+
+        Args:
+            path: Path to the data directory to send
+            progress_callback: Optional callback function(uploaded_bytes, total_bytes)
+                              for tracking upload progress
+        """
         md5 = csys.dir_md5(path)
         print("The md5 of the dir is: ", md5)
         self.set_input_md5(path)
         self.impress()
-        self.send_data(path)
+        self.send_data(path, progress_callback)
 
     def add_algorithm(self, path):
         """ Add a algorithm
