@@ -213,8 +213,11 @@ def register_runner(runner: str, url: str, secret: str, backend_type: str) -> Me
     """
     message = Message()
     cherncc = ChernCommunicator.instance()
-    cherncc.register_runner(runner, url, secret, backend_type)
-    message.add(f"Runner '{runner}' registered", "success")
+    try:
+        cherncc.register_runner(runner, url, secret, backend_type)
+        message.add(f"Runner '{runner}' registered", "success")
+    except (ConnectionError, RuntimeError) as e:
+        message.add(str(e), "error")
     return message
 
 

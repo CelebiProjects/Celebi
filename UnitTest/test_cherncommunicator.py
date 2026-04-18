@@ -4,6 +4,7 @@ from colored import Fore, Style
 import CelebiChrono.kernel.vobject as vobj
 from CelebiChrono.kernel.chern_cache import ChernCache
 import prepare
+import requests
 
 CHERN_CACHE = ChernCache.instance()
 
@@ -597,17 +598,38 @@ class TestChernCommunicator(unittest.TestCase):
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
         self.comm.project_uuid = "projectuuid"
 
-        # Call register_runner method
-        self.comm.register_runner("new_runner", "http://runner.url",
-                                  "token123", "reana")
+        # Successful registration
+        mock_response = MagicMock()
+        mock_response.text = "successful"
+        mock_post.return_value = mock_response
 
-        # Verify post call
+        result = self.comm.register_runner("new_runner", "http://runner.url",
+                                           "token123", "reana")
+
+        self.assertTrue(result)
         mock_post.assert_called_once_with(
             "http://localhost:8080/register-runner",
             data={'runner': 'new_runner', 'url': 'http://runner.url',
                   'token': 'token123', 'backend_type': 'reana'},
             timeout=10
         )
+
+        # Registration failure - non-successful response
+        mock_post.reset_mock()
+        mock_response.text = "runner already exists"
+        mock_post.return_value = mock_response
+        with self.assertRaises(RuntimeError) as context:
+            self.comm.register_runner("new_runner", "http://runner.url",
+                                      "token123", "reana")
+        self.assertIn("runner already exists", str(context.exception))
+
+        # Registration failure - connection error
+        mock_post.reset_mock()
+        mock_post.side_effect = requests.exceptions.ConnectionError("Connection refused")
+        with self.assertRaises(ConnectionError) as context:
+            self.comm.register_runner("new_runner", "http://runner.url",
+                                      "token123", "reana")
+        self.assertIn("Connection refused", str(context.exception))
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")

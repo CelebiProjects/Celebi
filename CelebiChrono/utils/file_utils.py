@@ -194,10 +194,19 @@ def md5sum(file_path):
     return hash_md5.hexdigest()
 
 
-def dir_md5(directory_path):
-    """Get the md5sum of the directory."""
+def dir_md5(directory_path, exclude_hidden=True):
+    """Get the md5sum of the directory.
+
+    Args:
+        directory_path: Path to the directory to hash.
+        exclude_hidden: If True (default), skip files and directories
+            whose names start with a dot (e.g. .DS_Store, .git).
+    """
     md5_hash = hashlib.md5()
     for root, dirs, files in os.walk(directory_path):
+        if exclude_hidden:
+            dirs[:] = [d for d in dirs if not d.startswith(".")]
+            files = [f for f in files if not f.startswith(".")]
         dirs.sort()
         files.sort()
         for file in files:

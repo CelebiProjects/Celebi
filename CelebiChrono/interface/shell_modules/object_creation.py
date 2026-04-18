@@ -6,6 +6,7 @@ Functions for creating new algorithms, tasks, data objects, and directories.
 import os
 
 from ...utils import csys
+from ...utils import metadata
 from ...utils.message import Message
 from ...kernel.vobject import VObject
 from ...kernel.vtask import create_task
@@ -238,20 +239,64 @@ def use_data(impression_uuid: str, path_override: str = "") -> Message:
         )
         return message
 
-    task_path = path_override if path_override else descriptor
-    task_path = csys.refine_path(task_path, current_obj.path)
-    full_path = os.path.join(current_obj.path, task_path)
+    def _is_rawdata_task(obj_path):
+        yaml_path = os.path.join(obj_path, "celebi.yaml")
+        if not os.path.exists(yaml_path):
+            return False
+        yaml_file = metadata.YamlFile(yaml_path)
+        return yaml_file.read_variable("environment", "") == "rawdata"
 
-    if not os.path.exists(full_path):
-        parent_path = os.path.abspath(full_path + "/..")
-        object_type = VObject(parent_path).object_type()
-        if object_type not in ("directory", "project"):
-            message.add("Not allowed to create data task here", "warning")
-            return message
-        create_rawdata_task(full_path, descriptor, data_md5)
-        message.add(f"Created rawdata task at {task_path}", "success")
+    if current_obj.object_type() == "task" and _is_rawdata_task(current_obj.path):
+        full_path = current_obj.path
+        task_path = current_obj.invariant_path()
+        yaml_file = metadata.YamlFile(os.path.join(full_path, "celebi.yaml"))
+        yaml_file.write_variable("uuid", data_md5)
+        yaml_file.write_variable("descriptor", descriptor)
+        print(f"use-data: updated rawdata task via metadata.YamlFile.write_variable({full_path}/celebi.yaml, uuid={data_md5}, descriptor={descriptor})")
+        message.add(
+            f"Updated rawdata task at {task_path} with new impression data",
+            "success",
+        )
     else:
-        message.add(f"Using existing task at {task_path}", "info")
+        task_path = path_override if path_override else descriptor
+        task_path = csys.refine_path(task_path, current_obj.path)
+        full_path = os.path.join(current_obj.path, task_path)
+
+        if not os.path.exists(full_path):
+            parent_path = os.path.abspath(full_path + "/..")
+            object_type = VObject(parent_path).object_type()
+            if object_type not in ("directory", "project"):
+                message.add("Not allowed to create data task here", "warning")
+                return message
+            create_rawdata_task(full_path, descriptor, data_md5)
+            print(f"use-data: created rawdata task via create_rawdata_task({full_path}, {descriptor}, {data_md5})")
+            message.add(f"Created rawdata task at {task_path}", "success")
+        else:
+            existing = KernelVObject(full_path, project_path)
+            if existing.object_type() != "task":
+                message.add(
+                    f"Path {task_path} exists but is not a task "
+                    f"(type: {existing.object_type()})",
+                    "error",
+                )
+                return message
+            yaml_path = os.path.join(full_path, "celebi.yaml")
+            yaml_file = metadata.YamlFile(yaml_path)
+            env = yaml_file.read_variable("environment", "")
+            if env != "rawdata":
+                message.add(
+                    f"Path {task_path} exists but is not a rawdata task "
+                    f"(environment: {env})",
+                    "error",
+                )
+                return message
+            yaml_file.write_variable("uuid", data_md5)
+            yaml_file.write_variable("descriptor", descriptor)
+            print(f"use-data: updated rawdata task via metadata.YamlFile.write_variable({yaml_path}, uuid={data_md5}, descriptor={descriptor})")
+            message.add(
+                f"Updated rawdata task at {task_path} with new impression data",
+                "success",
+            )
 
     task_obj = KernelVObject(full_path, project_path)
     task_obj.impress()

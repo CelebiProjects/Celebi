@@ -529,16 +529,22 @@ class ChernCommunicator():
     def register_runner(self, runner, runner_url, token, backend_type):
         """ Register a runner to the server """
         url = self.serverurl()
-
-        requests.post(
-            f"http://{url}/register-runner",
-            data={'runner': runner,
-                  'url': runner_url,
-                  'token': token,
-                  'backend_type': backend_type,
-                  },
-            timeout=self.timeout
-        )
+        try:
+            r = requests.post(
+                f"http://{url}/register-runner",
+                data={'runner': runner,
+                      'url': runner_url,
+                      'token': token,
+                      'backend_type': backend_type,
+                      },
+                timeout=self.timeout
+            )
+            r.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        if r.text != "successful":
+            raise RuntimeError(f"Runner registration failed: {r.text}")
+        return True
 
     def remove_runner(self, runner):
         """ Remove a runner from the server """

@@ -87,6 +87,26 @@ class TestChernUtils(unittest.TestCase):
         finally:
             prepare.remove_chern_project("demo_genfit")
 
+    def test_dir_md5_excludes_hidden_by_default(self):
+        """Test dir_md5 excludes hidden files by default"""
+        import tempfile
+        print(Fore.BLUE + "Testing dir_md5 excludes hidden..." + Style.RESET)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, "visible.txt"), "w") as f:
+                f.write("hello")
+            with open(os.path.join(tmpdir, ".hidden.txt"), "w") as f:
+                f.write("secret")
+            os.mkdir(os.path.join(tmpdir, ".hidden_dir"))
+            with open(os.path.join(tmpdir, ".hidden_dir", "file.txt"), "w") as f:
+                f.write("nested")
+
+            md5_default = csys.dir_md5(tmpdir)
+            md5_include = csys.dir_md5(tmpdir, exclude_hidden=False)
+
+            self.assertNotEqual(md5_default, md5_include)
+            self.assertEqual(len(md5_default), 32)
+            self.assertEqual(len(md5_include), 32)
+
     def test_daemon_path(self):
         """Test daemon path (deprecated)"""
         print(Fore.BLUE + "Testing daemon_path..." + Style.RESET)
