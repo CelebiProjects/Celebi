@@ -31,7 +31,7 @@ from .shell_modules.communication import (
     remove_runner, request_runner, search_impression
 )
 from .shell_modules.visualization import (
-    view, viewurl, impress, trace, imgcat
+    view, viewurl, impress, trace, imgcat, draw_dag_graphviz
 )
 from .shell_modules.utilities import (
     workaround_preshell, workaround_postshell, history,
@@ -64,7 +64,7 @@ __all__ = [
     'dite', 'set_dite', 'add_host', 'hosts', 'runners', 'register_runner',
     'remove_runner', 'request_runner', 'search_impression',
     # Visualization functions (from visualization.py)
-    'view', 'viewurl', 'impress', 'trace', 'imgcat',
+    'view', 'viewurl', 'impress', 'trace', 'imgcat', 'draw_dag_graphviz',
     # Utilities functions (from utilities.py)
     'workaround_preshell', 'workaround_postshell', 'history',
     'watermark', 'changes', 'doctor', 'bookkeep', 'bookkeep_url',

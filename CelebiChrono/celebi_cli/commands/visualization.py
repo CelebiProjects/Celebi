@@ -100,3 +100,43 @@ def imgcat_command(filename):
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="draw-dag")
+@click.argument("output_file", type=str, required=False, default="dag.pdf")
+@click.option(
+    "--exclude-algorithms", "-x",
+    is_flag=True,
+    default=False,
+    help="Exclude algorithm objects from the graph"
+)
+def draw_dag_command(output_file, exclude_algorithms):
+    """Draw project dependency DAG using Graphviz.
+
+    Generates a visualization of the project dependency DAG and saves it
+    to the Downloads folder. Supports PDF, SVG, and PNG output formats.
+
+    Args:
+        output_file: Output filename (default: "dag.pdf").
+            Saved to ~/Downloads/ directory.
+        exclude_algorithms: If set, excludes algorithm objects from the graph.
+
+    Examples:
+        celebi draw-dag                    # Creates ~/Downloads/dag.pdf
+        celebi draw-dag mydag.svg          # Creates ~/Downloads/mydag.svg
+        celebi draw-dag dag.png -x         # Creates PNG excluding algorithms
+
+    Note:
+        - Requires graphviz Python package and Graphviz binaries installed
+        - Requires networkx package
+        - Output is always saved to ~/Downloads/
+        - Large graphs may take time to render
+    """
+    try:
+        from CelebiChrono.interface.shell import draw_dag_graphviz
+        result = draw_dag_graphviz(output_file, exclude_algorithms)
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")

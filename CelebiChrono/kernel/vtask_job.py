@@ -418,10 +418,16 @@ class JobManager(Core):
                 filename, self.impression()
             )
 
-    def send_data(self, path):
-        """ Send data to the job"""
+    def send_data(self, path, progress_callback=None):
+        """ Send data to the job with optional progress tracking.
+
+        Args:
+            path: Path to the data to send
+            progress_callback: Optional callback function(uploaded_bytes, total_bytes)
+                              for tracking upload progress
+        """
         cherncc = ChernCommunicator.instance()
-        cherncc.deposit_with_data(self.impression(), path)
+        cherncc.deposit_with_data(self.impression(), path, progress_callback)
 
     def _check_preceding_jobs(self, cherncc) -> tuple[bool, str]:
         """Check whether all the preceding jobs are finished"""

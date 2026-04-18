@@ -5,6 +5,8 @@ Functions for moving, copying, listing, removing files and directories.
 """
 import os
 
+from tqdm import tqdm
+
 from ...utils import csys
 from ...utils.message import Message
 from ...kernel.vobject import VObject
@@ -552,6 +554,7 @@ def send(path: str) -> Message:
     """Send a path to current object.
 
     Transfers a file or directory path to the current object for processing.
+    For tasks, this uploads data with a progress bar showing upload status.
     The object receives the path and may use it for various operations
     depending on the object type and context.
 
@@ -570,7 +573,32 @@ def send(path: str) -> Message:
         - Object type determines how path is processed
         - Some objects may have specific path requirements
         - Operation may involve file copying or linking
+        - Displays progress bar for task uploads
     """
     message = Message()
-    MANAGER.current_object().send(path)
+    current_obj = MANAGER.current_object()
+
+    # For tasks, use progress bar
+    if current_obj.object_type() == "task":
+        progress_bar = tqdm(
+            unit='B',
+            unit_scale=True,
+            unit_divisor=1024,
+            desc=f"Uploading {os.path.basename(path)}"
+        )
+
+        def progress_callback(uploaded_bytes: int, total_bytes: int):
+            """Update progress bar during upload."""
+            if progress_bar.total != total_bytes:
+                progress_bar.total = total_bytes
+            progress_bar.n = uploaded_bytes
+            progress_bar.refresh()
+
+        try:
+            current_obj.send(path, progress_callback=progress_callback)
+        finally:
+            progress_bar.close()
+    else:
+        current_obj.send(path)
+
     return message
