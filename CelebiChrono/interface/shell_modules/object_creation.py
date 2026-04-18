@@ -11,8 +11,11 @@ from ...kernel.vobject import VObject
 from ...kernel.vtask import create_task
 from ...kernel.vtask import create_data
 from ...kernel.vtask import create_data_list
+from ...kernel.vtask import create_rawdata_task
 from ...kernel.valgorithm import create_algorithm
 from ...kernel.vdirectory import create_directory
+from ...kernel.vobject import VObject as KernelVObject
+from ...kernel.chern_communicator import ChernCommunicator
 from ._manager import MANAGER
 
 
@@ -191,4 +194,86 @@ def mkdir(line: str) -> Message:
         return message
     create_directory(line)
     message.add("Created successfully", "success")
+    return message
+
+
+def use_data(impression_uuid: str, path_override: str = "") -> Message:
+    """Adopt a Yuki impression as a rawdata task in the current project.
+
+    Queries Yuki for the impression info (descriptor and MD5), creates a
+    matching canonical rawdata task, impresses it to generate the same UUID,
+    and marks the Yuki impression as ready ('raw').
+
+    Args:
+        impression_uuid (str): The impression UUID created by yuki-create-data.
+        path_override (str, optional): Custom task path. Defaults to automatic
+            path based on the descriptor.
+
+    Examples:
+        use_data abc123...
+        use_data abc123... --path my_custom_data
+
+    Returns:
+        Message: Status message for the operation.
+    """
+    message = Message()
+    current_obj = MANAGER.current_object()
+    if current_obj is None:
+        message.add("No current object selected", "error")
+        return message
+    project_path = current_obj.project_path()
+    if not project_path:
+        message.add("No current project selected", "error")
+        return message
+
+    cherncc = ChernCommunicator.instance()
+    info = cherncc.get_impression_info(impression_uuid)
+    descriptor = info.get("descriptor", "")
+    data_md5 = info.get("md5", "")
+
+    if not descriptor or not data_md5:
+        message.add(
+            f"Could not retrieve impression info from Yuki for {impression_uuid}",
+            "error",
+        )
+        return message
+
+    task_path = path_override if path_override else descriptor
+    task_path = csys.refine_path(task_path, current_obj.path)
+    full_path = os.path.join(current_obj.path, task_path)
+
+    if not os.path.exists(full_path):
+        parent_path = os.path.abspath(full_path + "/..")
+        object_type = VObject(parent_path).object_type()
+        if object_type not in ("directory", "project"):
+            message.add("Not allowed to create data task here", "warning")
+            return message
+        create_rawdata_task(full_path, descriptor, data_md5)
+        message.add(f"Created rawdata task at {task_path}", "success")
+    else:
+        message.add(f"Using existing task at {task_path}", "info")
+
+    task_obj = KernelVObject(full_path, project_path)
+    task_obj.impress()
+    local_uuid = task_obj.config_file.read_variable("impression", "")
+
+    if local_uuid != impression_uuid:
+        message.add(
+            f"UUID mismatch: local={local_uuid}, yuki={impression_uuid}. "
+            "The task configuration may differ from the canonical rawdata task.",
+            "error",
+        )
+        return message
+
+    result = cherncc.set_impression_status(impression_uuid, "archived")
+    if result == "OK":
+        message.add(
+            f"Successfully adopted impression {impression_uuid} as task {task_path}",
+            "success",
+        )
+    else:
+        message.add(
+            f"Impressed locally but failed to mark Yuki status as archived: {result}",
+            "warning",
+        )
     return message

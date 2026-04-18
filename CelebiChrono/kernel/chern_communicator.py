@@ -249,6 +249,39 @@ class ChernCommunicator():
             timeout=self.timeout
         )
 
+    def get_impression_info(self, impression_uuid: str):
+        """Get descriptor, md5 and environment from Yuki impression."""
+        url = self.serverurl()
+        try:
+            r = requests.get(
+                f"http://{url}/get-impression-info/{self.project_uuid}/{impression_uuid}",
+                timeout=self.timeout,
+            )
+            r.raise_for_status()
+            return r.json()
+        except Exception as e:
+            print(f"Failed to get impression info: {e}")
+            return {"descriptor": "", "md5": "", "environment": ""}
+
+    def set_impression_status(self, impression_uuid: str, status: str):
+        """Set the status of an impression in Yuki storage."""
+        url = self.serverurl()
+        try:
+            r = requests.post(
+                f"http://{url}/set-impression-status",
+                data={
+                    "project_uuid": self.project_uuid,
+                    "impression": impression_uuid,
+                    "status": status,
+                },
+                timeout=self.timeout,
+            )
+            r.raise_for_status()
+            return r.text
+        except Exception as e:
+            print(f"Failed to set impression status: {e}")
+            return ""
+
     def resubmit(self, impression, machine="local"):
         """ Resubmit the impression to the server
 
@@ -315,7 +348,10 @@ class ChernCommunicator():
         except Exception as e:
             print(f"An error occurred: {e}")
             return "unconnected to DITE"
-        json_data = json.loads(r.text)
+        try:
+            json_data = json.loads(r.text)
+        except json.JSONDecodeError:
+            return "unconnected to DITE"
         return json_data
 
     def sample_status(self, impression):

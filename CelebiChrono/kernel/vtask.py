@@ -142,7 +142,10 @@ class VTask(InputManager, SettingManager, FileManager, JobManager):
         if dite_status != "connected":
             return message
         job_status = cherncc.job_status(self.impression())
-        # dump the string to dict
+        if not isinstance(job_status, dict):
+            message.add("Job status: ")
+            message.add(f"[{job_status}]\n")
+            return message
         musical_status = job_status["status"]
         real_status = job_status["status"]
         if musical_status in ("created", "queued", "pending", "running"):
@@ -231,6 +234,31 @@ def create_task(path):
 
     with open(path + "/README.md", "w", encoding="utf-8") as f:
         f.write(f"Please write README for task {task.invariant_path()}")
+
+
+def create_rawdata_task(path: str, descriptor: str, data_md5: str) -> None:
+    """Create a canonical rawdata task directory with a given descriptor and MD5.
+
+    This helper is used by `use-data` to create a task that matches a Yuki
+    impression created by `yuki-create-data`.
+    """
+    path = csys.strip_path_string(path)
+    parent_path = os.path.abspath(path + "/..")
+    object_type = VObject(parent_path).object_type()
+    if object_type not in ("project", "directory"):
+        raise ValueError(f"Cannot create task under {parent_path}: not a project or directory")
+
+    csys.mkdir(path + "/.celebi")
+    config_file = metadata.ConfigFile(path + "/.celebi/config.json")
+    config_file.write_variable("object_type", "task")
+
+    with open(path + "/README.md", "w", encoding="utf-8") as f:
+        f.write(f"Please write README for task {descriptor}")
+
+    yaml_file = metadata.YamlFile(join(path, "celebi.yaml"))
+    yaml_file.write_variable("environment", "rawdata")
+    yaml_file.write_variable("uuid", data_md5)
+    yaml_file.write_variable("descriptor", descriptor)
 
 
 def create_data(path):

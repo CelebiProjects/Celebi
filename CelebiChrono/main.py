@@ -33,6 +33,7 @@ from .kernel import vproject
 from .utils import csys
 from .utils import metadata
 from .interface.ChernShell import ChernShell
+from .celebi_cli.commands.object_creation import use_data_command
 
 
 def is_first_time():
@@ -227,6 +228,20 @@ def remove(project):
             print(f"Project ``{project}'' not found")
     except Exception:
         print("Fail to remove the project")
+
+@cli.command(name="project-uuid")
+def project_uuid_command():
+    """Print the current project's UUID."""
+    import os
+    from CelebiChrono.utils import csys
+    from CelebiChrono.kernel.vproject import VProject
+    project_path = csys.project_path(os.getcwd())
+    if not project_path:
+        print("Error: Not inside a Celebi project.")
+        return
+    uuid = VProject(project_path).project_uuid()
+    print(uuid)
+
 
 @cli.command()
 def prologue():
@@ -540,6 +555,9 @@ def git_config(key, value):
 
     except Exception as e:
         print(f"Error setting configuration: {e}")
+
+cli.add_command(use_data_command)
+
 
 def main():
     """Main entry point for the Celebi CLI."""

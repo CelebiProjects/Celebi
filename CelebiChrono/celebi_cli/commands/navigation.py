@@ -73,3 +73,17 @@ def jobs_command():
     output = format_output(result)
     if output:
         print(output)
+
+
+@click.command(name="project-uuid")
+def project_uuid_command():
+    """Print the current project's UUID."""
+    import os
+    from CelebiChrono.utils import csys
+    from CelebiChrono.kernel.vproject import VProject
+    project_path = csys.project_path(os.getcwd())
+    if not project_path:
+        print("Error: Not inside a Celebi project.")
+        return
+    uuid = VProject(project_path).project_uuid()
+    print(uuid)

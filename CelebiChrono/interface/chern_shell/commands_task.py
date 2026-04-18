@@ -271,3 +271,18 @@ class TaskCommands:
             print(f"Error: Please provide dirname, parameter name, and value. {e}")
         except Exception as e:
             print(f"Error adding parameter to subtask: {e}")
+
+    def do_use_data(self, arg: str) -> None:
+        """Adopt a Yuki impression as a rawdata task."""
+        try:
+            args = arg.split()
+            if not args:
+                print("Error: Please provide an impression UUID.")
+                return
+            impression_uuid = args[0]
+            path_override = args[1] if len(args) > 1 else ""
+            result = shell.use_data(impression_uuid, path_override)
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error adopting impression: {e}")

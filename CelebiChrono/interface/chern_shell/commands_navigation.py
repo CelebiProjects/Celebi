@@ -62,3 +62,16 @@ class NavigationCommands:
                 print(result.colored())
         except Exception as e:
             print(f"Error navigating: {e}")
+
+    def do_project_uuid(self, _: str) -> None:
+        """Print the UUID of the current project."""
+        try:
+            from ...kernel.vproject import VProject
+            project_path = MANAGER.c.project_path() if MANAGER.c else ""
+            if not project_path:
+                print("Error: Not inside a Celebi project.")
+                return
+            uuid = VProject(project_path).project_uuid()
+            print(uuid)
+        except Exception as e:
+            print(f"Error getting project UUID: {e}")
