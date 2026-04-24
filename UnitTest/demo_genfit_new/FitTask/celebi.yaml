@@ -1,0 +1,3 @@
+environment: reanahub/reana-env-root6:6.18.04
+kubernetes_memory_limit: 256Mi
+parameters: {}
