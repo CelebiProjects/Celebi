@@ -293,10 +293,10 @@ class ArcManagementDoctor(Core):
             old_succs = obj.config_file.read_variable("successors", [])
 
             if old_preds != new_preds:
-                obj.config_file.write_variable("predecessors", new_preds)
+                obj.config_file.write_variable_to_shared("predecessors", new_preds)
                 update_counts["predecessors_updated"] += 1
             if old_succs != new_succs:
-                obj.config_file.write_variable("successors", new_succs)
+                obj.config_file.write_variable_to_shared("successors", new_succs)
                 update_counts["successors_updated"] += 1
 
         if verbose:

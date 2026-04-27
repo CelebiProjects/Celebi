@@ -143,6 +143,31 @@ class TwoTierConfigFile():
             json.dump(data, f)
             fcntl.flock(f, fcntl.LOCK_UN)
 
+    def write_variable_to_shared(self, variable_name: str, value: Any) -> None:
+        """Write a variable to the shared config file.
+
+        Use this for structural metadata that should be shared across machines
+        (e.g., predecessors, path_to_alias, alias_to_path).
+
+        Args:
+            variable_name: The name of the variable to write.
+            value: The value to write.
+        """
+        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+        if not csys.exists(self.file_path):
+            with open(self.file_path, "w", encoding='utf-8') as f:
+                json.dump({}, f)
+
+        with open(self.file_path, "r+", encoding='utf-8') as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            contents = f.read()
+            data = json.loads(contents) if contents.strip() else {}
+            data[variable_name] = value
+            f.seek(0)
+            f.truncate()
+            json.dump(data, f)
+            fcntl.flock(f, fcntl.LOCK_UN)
+
 
 class YamlFile():
     """YamlFile class used to read and write metadata in a YAML file.

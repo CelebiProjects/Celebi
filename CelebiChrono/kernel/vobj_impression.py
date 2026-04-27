@@ -201,10 +201,10 @@ class ImpressionManagement(Core):
         this is used only when it is copied to a new place
         and needed to remove impression information.
         """
-        self.config_file.write_variable("alias_to_path", {})
-        self.config_file.write_variable("path_to_alias", {})
-        self.config_file.write_variable("predecessors", [])
-        self.config_file.write_variable("successors", [])
+        self.config_file.write_variable_to_shared("alias_to_path", {})
+        self.config_file.write_variable_to_shared("path_to_alias", {})
+        self.config_file.write_variable_to_shared("predecessors", [])
+        self.config_file.write_variable_to_shared("successors", [])
 
     def is_impressed_fast(self, consult_id = None): # UnitTest: DONE
         """ Judge whether the file is impressed, with timestamp

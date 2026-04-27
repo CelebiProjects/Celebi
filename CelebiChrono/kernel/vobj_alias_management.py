@@ -47,8 +47,8 @@ class AliasManagement(Core):
         path = alias_to_path[alias]
         path_to_alias.pop(path)
         alias_to_path.pop(alias)
-        self.config_file.write_variable("alias_to_path", alias_to_path)
-        self.config_file.write_variable("path_to_alias", path_to_alias)
+        self.config_file.write_variable_to_shared("alias_to_path", alias_to_path)
+        self.config_file.write_variable_to_shared("path_to_alias", path_to_alias)
         if not ignore_yaml:
             yaml_file = metadata.YamlFile(os.path.join(self.path, "celebi.yaml"))
             yaml_alias = yaml_file.read_variable("alias", [])
@@ -70,8 +70,8 @@ class AliasManagement(Core):
             return
         path_to_alias[path] = alias
         alias_to_path[alias] = path
-        self.config_file.write_variable("path_to_alias", path_to_alias)
-        self.config_file.write_variable("alias_to_path", alias_to_path)
+        self.config_file.write_variable_to_shared("path_to_alias", path_to_alias)
+        self.config_file.write_variable_to_shared("alias_to_path", alias_to_path)
         if not ignore_yaml:
             yaml_file = metadata.YamlFile(os.path.join(self.path, "celebi.yaml"))
             yaml_alias = yaml_file.read_variable("alias", [])

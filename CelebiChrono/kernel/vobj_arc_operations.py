@@ -29,11 +29,11 @@ class ArcManagementOperations(Core):
         """
         succ_str = obj.config_file.read_variable("successors", [])
         succ_str.append(self.invariant_path())
-        obj.config_file.write_variable("successors", succ_str)
+        obj.config_file.write_variable_to_shared("successors", succ_str)
 
         pred_str = self.config_file.read_variable("predecessors", [])
         pred_str.append(obj.invariant_path())
-        self.config_file.write_variable("predecessors", pred_str)
+        self.config_file.write_variable_to_shared("predecessors", pred_str)
 
     def remove_arc_from(self, obj, single=False):
         """
@@ -54,11 +54,11 @@ class ArcManagementOperations(Core):
             config_file = obj.config_file
             succ_str = config_file.read_variable("successors", [])
             succ_str.remove(self.invariant_path())
-            config_file.write_variable("successors", succ_str)
+            config_file.write_variable_to_shared("successors", succ_str)
 
         pred_str = self.config_file.read_variable("predecessors", [])
         pred_str.remove(obj.invariant_path())
-        self.config_file.write_variable("predecessors", pred_str)
+        self.config_file.write_variable_to_shared("predecessors", pred_str)
 
     def add_arc_to(self, obj):
         """
@@ -73,11 +73,11 @@ class ArcManagementOperations(Core):
         """
         pred_str = obj.config_file.read_variable("predecessors", [])
         pred_str.append(self.invariant_path())
-        obj.config_file.write_variable("predecessors", pred_str)
+        obj.config_file.write_variable_to_shared("predecessors", pred_str)
 
         succ_str = self.config_file.read_variable("successors", [])
         succ_str.append(obj.invariant_path())
-        self.config_file.write_variable("successors", succ_str)
+        self.config_file.write_variable_to_shared("successors", succ_str)
 
     def remove_arc_to(self, obj, single=False):
         """
@@ -98,8 +98,8 @@ class ArcManagementOperations(Core):
             config_file = obj.config_file
             pred_str = config_file.read_variable("predecessors", [])
             pred_str.remove(self.invariant_path())
-            config_file.write_variable("predecessors", pred_str)
+            config_file.write_variable_to_shared("predecessors", pred_str)
 
         succ_str = self.config_file.read_variable("successors", [])
         succ_str.remove(obj.invariant_path())
-        self.config_file.write_variable("successors", succ_str)
+        self.config_file.write_variable_to_shared("successors", succ_str)
