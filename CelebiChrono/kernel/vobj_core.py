@@ -29,7 +29,7 @@ class Core(ABC):
         """
         logger.debug("VObject::Core.__init__")
         self.path = csys.strip_path_string(path)
-        self.config_file = metadata.ConfigFile(self.path+"/.celebi/config.json")
+        self.config_file = metadata.TwoTierConfigFile(self.path+"/.celebi/config.json")
         self._project_path = project_path
         self._project_uuid = ""
         # self._project_uuid = ""

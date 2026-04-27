@@ -1,6 +1,7 @@
 .venv
 .claude
 .celebi
+**/*.local.json
 *.~undo-tree~
 test
 trash
