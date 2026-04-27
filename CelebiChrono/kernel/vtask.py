@@ -220,11 +220,13 @@ def create_task(path):
         return
 
     csys.mkdir(path+"/.celebi")
-    # Create shared config.json with defaults
+    # Create shared config.json with only metadata
     shared_config = metadata.ConfigFile(path + "/.celebi/config.json")
     shared_config.write_variable("object_type", "task")
-    shared_config.write_variable("auto_download", True)
-    shared_config.write_variable("default_runner", "local")
+    # Create local config.local.json with default settings
+    local_config = metadata.TwoTierConfigFile(path + "/.celebi/config.json")
+    local_config.write_variable("auto_download", True)
+    local_config.write_variable("default_runner", "local")
     task = VObject(path)
 
     # Create the default celebi.yaml file

@@ -1668,6 +1668,7 @@ class TestChernVTask(unittest.TestCase):
              patch('CelebiChrono.kernel.vtask.VObject') as mock_vobject, \
              patch('CelebiChrono.kernel.vtask.csys.mkdir'), \
              patch('CelebiChrono.kernel.vtask.metadata.ConfigFile'), \
+             patch('CelebiChrono.kernel.vtask.metadata.TwoTierConfigFile'), \
              patch('CelebiChrono.kernel.vtask.metadata.YamlFile') as mock_yaml_file, \
              patch('builtins.open', mock_open()):
 

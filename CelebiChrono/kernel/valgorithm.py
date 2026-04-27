@@ -153,7 +153,7 @@ def create_algorithm(path: str, use_template: bool = False) -> None:
     descriptor = os.path.basename(os.path.normpath(path))
     os.mkdir(path)
     os.mkdir(f"{path}/.celebi")
-    # Create shared config.json with defaults
+    # Create shared config.json with only metadata
     shared_config = metadata.ConfigFile(f"{path}/.celebi/config.json")
     shared_config.write_variable("object_type", "algorithm")
     yaml_file = metadata.YamlFile(f"{path}/celebi.yaml")
