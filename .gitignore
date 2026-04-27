@@ -1,5 +1,6 @@
 .venv
 .claude
+.celebi
 *.~undo-tree~
 test
 trash
