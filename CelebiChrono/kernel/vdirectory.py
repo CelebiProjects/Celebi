@@ -71,8 +71,9 @@ def create_directory(path):
         raise Exception("create directory only under project or directory")
     csys.mkdir(path)
     csys.mkdir(path+"/.celebi")
-    config_file = metadata.ConfigFile(f"{path}/.celebi/config.json")
-    config_file.write_variable("object_type", "directory")
+    # Create shared config.json with defaults
+    shared_config = metadata.ConfigFile(f"{path}/.celebi/config.json")
+    shared_config.write_variable("object_type", "directory")
     directory = VObject(path)
 
     with open(path + "/README.md", "w", encoding="utf-8") as f:
