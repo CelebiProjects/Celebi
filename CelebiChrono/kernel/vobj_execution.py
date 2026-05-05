@@ -188,7 +188,7 @@ class ExecutionManagement(Core):
                 return status
 
         if consult_id is None:
-            consult_id = time
+            consult_id = time.time()
 
         if not self.is_task_or_algorithm():
             sub_objects = self.sub_objects()

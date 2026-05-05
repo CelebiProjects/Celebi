@@ -64,19 +64,21 @@ class ImpressionManagement(Core):
         self.config_file.write_variable("impression", impression.uuid)
         # update the impression_consult_table, since the impression is changed
         consult_table = CHERN_CACHE.impression_consult_table
-        consult_table[self.path] = (now, True)
+        mtime, _ = CHERN_CACHE.project_modification_time
+        if mtime is None:
+            mtime = csys.dir_mtime(self.project_path())
+            CHERN_CACHE.project_modification_time = (mtime, time.time())
+        consult_table[self.path] = (mtime, True)
 
     def is_impressed(self, consult_id = None): # pylint: disable=too-many-return-statements, too-many-locals, too-many-branches # UnitTest: DONE
         """ Judge whether the file is impressed
         """
         now = time.time()
-        # print(consult_id)
+        start_time = now
         if consult_id is None:
             consult_id = now
         else:
             now = consult_id
-        # count = CHERN_CACHE.count
-        # print("Impression check count: ", count, " Time: ", now)
         # CHERN_CACHE.count = count + 1
         logger.debug("VObject is_impressed in %s", self.path)
         # Check whether there is an impression already
@@ -87,13 +89,11 @@ class ImpressionManagement(Core):
             # print("No impression or impression is zombie")
             return False
 
-        # impression_count = CHERN_CACHE.impression_check_count.get(
-        #     impression.uuid, 0
-        #     )
-        # CHERN_CACHE.impression_check_count[impression.uuid] = \
-        #     impression_count + 1
-        # print("Impression UUID check count:", impression.uuid,
-        #       CHERN_CACHE.impression_check_count[impression.uuid])
+        impression_count = CHERN_CACHE.impression_check_count.get(
+            impression.uuid, 0
+            )
+        CHERN_CACHE.impression_check_count[impression.uuid] = \
+            impression_count + 1
 
         # print(f"Checking impression {impression.uuid}...")
         # print(f"Time used for getting impression: {time.time() - start_time:.6f} seconds")
@@ -217,7 +217,6 @@ class ImpressionManagement(Core):
             self.path, (-1, -1)
         )
         now, consult_id = csys.update_time(consult_id)
-        # print("Cache: ", consult_table)
         if now - last_consult_time < 1:
             # If the last consult time is less than 1 second ago,
             # we can use the cache
@@ -232,11 +231,11 @@ class ImpressionManagement(Core):
             CHERN_CACHE.project_modification_time = modification_time, now
         else:
             modification_time = modification_time_from_cache
-        if modification_time < last_consult_time:
+        if modification_time <= last_consult_time:
             return is_impressed
         is_impressed = self.is_impressed(now)
         # consult_table[self.path] = (time.time(), is_impressed)
-        consult_table[self.path] = (now, is_impressed)
+        consult_table[self.path] = (modification_time, is_impressed)
         return is_impressed
 
     def pred_impressions(self): # UnitTest: DONE

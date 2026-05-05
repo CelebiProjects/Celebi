@@ -107,9 +107,17 @@ class ArcManagementTraversal(Core):
         for pred_path in pred_str:
             pred_obj = self.get_vobject(f"{project_path}/{pred_path}", project_path)
             if pred_obj.has_predecessor_recursively(obj, consult_id):
-                consult_table[self.path] = (time(), True)
+                mtime, _ = CHERN_CACHE.project_modification_time
+                if mtime is None:
+                    mtime = csys.dir_mtime(project_path)
+                    CHERN_CACHE.project_modification_time = (mtime, time())
+                consult_table[self.path] = (mtime, True)
                 return True
         # print(f"No predecessor found for {obj}. time: {time() - start_time:.2f} seconds.")
-        consult_table[self.path] = (time(), False)
+        mtime, _ = CHERN_CACHE.project_modification_time
+        if mtime is None:
+            mtime = csys.dir_mtime(project_path)
+            CHERN_CACHE.project_modification_time = (mtime, time())
+        consult_table[self.path] = (mtime, False)
         # print(f"<<< Finished checking in {time() - start_time:.2f} seconds.")
         return False
