@@ -191,7 +191,7 @@ class TestChernVTask(unittest.TestCase):
             test_path = "/path/to/data"
             obj_tsk.send_data(test_path)
             mock_communicator.deposit_with_data.assert_called_once_with(
-                ANY, test_path
+                ANY, test_path, None
             )
 
         os.chdir("..")
@@ -690,7 +690,7 @@ class TestChernVTask(unittest.TestCase):
             mock_dir_md5.assert_called_once_with(test_path)
             mock_set_input_md5.assert_called_once_with(test_path)
             mock_impress.assert_called_once()
-            mock_send_data.assert_called_once_with(test_path)
+            mock_send_data.assert_called_once_with(test_path, None)
             mock_print.assert_called_with("The md5 of the dir is: ", test_md5)
 
         os.chdir("..")
