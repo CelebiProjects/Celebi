@@ -2,7 +2,19 @@
 Path utilities for CelebiChrono
 """
 import os
+import subprocess
+import sys
 import uuid
+
+
+NETWORK_FILESYSTEM_MARKERS = (
+    "nfs",
+    "smb",
+    "cifs",
+    "sshfs",
+    "afp",
+    "webdav",
+)
 
 
 def generate_uuid() -> str:
@@ -161,6 +173,66 @@ def dir_mtime(path):
             continue
         mtime = max(mtime, dir_mtime(os.path.join(path, sub_dir)))
     return mtime
+
+
+def filesystem_type(path: str) -> str:
+    """Best-effort filesystem type detection for the given path."""
+    path = abspath(path)
+    command = ["stat", "-f", "%T", path]
+    if sys.platform.startswith("linux"):
+        command = ["stat", "-f", "-c", "%T", path]
+    try:
+        result = subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return result.stdout.strip().lower() or "unknown"
+    except (subprocess.SubprocessError, FileNotFoundError, OSError):
+        return "unknown"
+
+
+def default_cache_invalidation_method(fs_type: str) -> str:
+    """Choose a safe default cache invalidation method for a filesystem."""
+    fs_type = (fs_type or "unknown").lower()
+    if any(marker in fs_type for marker in NETWORK_FILESYSTEM_MARKERS):
+        return "off"
+    return "mtime"
+
+
+def project_cache_invalidation_method(project_root: str) -> str:
+    """Resolve the effective project cache invalidation method."""
+    if not project_root:
+        return "mtime"
+    from . import metadata
+
+    config = metadata.TwoTierConfigFile(os.path.join(project_root, ".celebi/config.json"))
+    mode = config.read_variable("cache_invalidation_mode", "auto")
+    if mode in ("mtime", "off"):
+        return mode
+
+    fs_type = filesystem_type(project_root)
+    return default_cache_invalidation_method(fs_type)
+
+
+def configure_project_cache_policy(project_root: str) -> dict:
+    """Detect and persist the cache invalidation policy for a project."""
+    from . import metadata
+
+    config = metadata.TwoTierConfigFile(os.path.join(project_root, ".celebi/config.json"))
+    mode = config.read_variable("cache_invalidation_mode", "auto")
+    fs_type = filesystem_type(project_root)
+    method = mode if mode in ("mtime", "off") else default_cache_invalidation_method(fs_type)
+
+    config.write_variable("cache_invalidation_mode", mode)
+    config.write_variable("cache_invalidation_filesystem", fs_type)
+    config.write_variable("cache_invalidation_method", method)
+    return {
+        "mode": mode,
+        "filesystem": fs_type,
+        "method": method,
+    }
 
 
 def daemon_path():

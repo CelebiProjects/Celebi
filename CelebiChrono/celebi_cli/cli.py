@@ -68,6 +68,7 @@ cli.add_command(execution_management.engine_logs_command)
 
 # Communication commands
 cli.add_command(communication.config_command)
+cli.add_command(communication.config_cache_invalidation_mode_command)
 cli.add_command(communication.danger_command)
 cli.add_command(communication.trace_command)
 cli.add_command(communication.history_command)

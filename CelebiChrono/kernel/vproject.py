@@ -392,7 +392,13 @@ def init_project():
     os.mkdir(project_path+"/.celebi")
     create_readme(project_path)
     create_configfile(project_path, uuid)
+    cache_policy = csys.configure_project_cache_policy(project_path)
     create_hostsfile(project_path)
+    print(
+        "Cache invalidation policy:",
+        cache_policy["method"],
+        f"(mode={cache_policy['mode']}, filesystem={cache_policy['filesystem']})",
+    )
     global_config_file = metadata.ConfigFile(csys.local_config_path())
     projects_path = global_config_file.read_variable("projects_path")
     if projects_path is None:
@@ -432,6 +438,12 @@ def use_project(path):
         print("The path is not a project")
         return
     print("The project type is ", object_type)
+    cache_policy = csys.configure_project_cache_policy(project_path)
+    print(
+        "Cache invalidation policy:",
+        cache_policy["method"],
+        f"(mode={cache_policy['mode']}, filesystem={cache_policy['filesystem']})",
+    )
     os.chdir(path)
     global_config_file = metadata.ConfigFile(csys.local_config_path())
     projects_path = global_config_file.read_variable("projects_path", {})

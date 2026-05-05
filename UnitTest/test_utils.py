@@ -5,9 +5,11 @@ Tests for all utility functions in the csys module
 import unittest
 import os
 import warnings
+from unittest.mock import patch
 from colored import Fore, Style
 import CelebiChrono.utils.csys as csys
 from CelebiChrono.kernel.chern_cache import ChernCache
+from CelebiChrono.utils import metadata
 import prepare
 
 CHERN_CACHE = ChernCache.instance()
@@ -73,6 +75,54 @@ class TestChernUtils(unittest.TestCase):
             mtime = csys.dir_mtime("demo_genfit")
             self.assertIsInstance(mtime, (int, float))
             self.assertGreater(mtime, 0)
+        finally:
+            prepare.remove_chern_project("demo_genfit")
+
+    def test_default_cache_invalidation_method(self):
+        """Test filesystem-specific cache policy defaults."""
+        print(Fore.BLUE + "Testing default cache invalidation method..." + Style.RESET)
+        self.assertEqual(csys.default_cache_invalidation_method("nfs"), "off")
+        self.assertEqual(csys.default_cache_invalidation_method("smbfs"), "off")
+        self.assertEqual(csys.default_cache_invalidation_method("apfs"), "mtime")
+
+    @patch("CelebiChrono.utils.path_utils.filesystem_type", return_value="nfs")
+    def test_project_cache_policy_uses_local_config(self, _mock_filesystem_type):
+        """Test project cache policy persists to config.local.json."""
+        print(Fore.BLUE + "Testing project cache policy local config..." + Style.RESET)
+        prepare.create_chern_project("demo_genfit")
+        try:
+            project_root = os.path.abspath("demo_genfit")
+            shared_config = metadata.ConfigFile(
+                os.path.join(project_root, ".celebi", "config.json")
+            )
+            local_config = metadata.ConfigFile(
+                os.path.join(project_root, ".celebi", "config.local.json")
+            )
+
+            policy = csys.configure_project_cache_policy(project_root)
+
+            self.assertEqual(policy["filesystem"], "nfs")
+            self.assertEqual(policy["method"], "off")
+            self.assertEqual(
+                shared_config.read_variable("cache_invalidation_mode", None),
+                None,
+            )
+            self.assertEqual(
+                local_config.read_variable("cache_invalidation_mode"),
+                "auto",
+            )
+            self.assertEqual(
+                local_config.read_variable("cache_invalidation_filesystem"),
+                "nfs",
+            )
+            self.assertEqual(
+                local_config.read_variable("cache_invalidation_method"),
+                "off",
+            )
+            self.assertEqual(
+                csys.project_cache_invalidation_method(project_root),
+                "off",
+            )
         finally:
             prepare.remove_chern_project("demo_genfit")
 
@@ -309,4 +359,3 @@ class TestChernUtils(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
-

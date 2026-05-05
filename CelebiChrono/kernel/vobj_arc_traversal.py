@@ -79,9 +79,6 @@ class ArcManagementTraversal(Core):
         )
 
         now, consult_id = csys.update_time(consult_id)
-
-        if now - last_consult_time < 1:
-            return has_predecessor
         # print(f"Time stamp 3: {time() - start_time:.2f} seconds.")
 
         # project_path = self.project_path()
@@ -98,7 +95,7 @@ class ArcManagementTraversal(Core):
             modification_time = modification_time_from_cache
 
         # modification_time = csys.dir_mtime(project_path)
-        if modification_time < last_consult_time:
+        if modification_time <= last_consult_time:
             return has_predecessor
         # print(f"Time stamp 4: {time() - start_time:.2f} seconds.")
 

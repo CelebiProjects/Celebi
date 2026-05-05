@@ -217,13 +217,8 @@ class ImpressionManagement(Core):
             self.path, (-1, -1)
         )
         now, consult_id = csys.update_time(consult_id)
-        if now - last_consult_time < 1:
-            # If the last consult time is less than 1 second ago,
-            # we can use the cache
-            # But honestly, I don't remember why I set it to 1 second
-            logger.debug("Time now: %lf", now)
-            logger.debug("Last consult time: %lf", last_consult_time)
-            return is_impressed
+        if csys.project_cache_invalidation_method(self.project_path()) == "off":
+            return self.is_impressed(now)
         modification_time_from_cache, modification_consult_time = \
                 CHERN_CACHE.project_modification_time
         if modification_time_from_cache is None or now - modification_consult_time > 1:
@@ -232,6 +227,8 @@ class ImpressionManagement(Core):
         else:
             modification_time = modification_time_from_cache
         if modification_time <= last_consult_time:
+            logger.debug("Time now: %lf", now)
+            logger.debug("Last consult time: %lf", last_consult_time)
             return is_impressed
         is_impressed = self.is_impressed(now)
         # consult_table[self.path] = (time.time(), is_impressed)

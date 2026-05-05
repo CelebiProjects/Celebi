@@ -1,8 +1,10 @@
 """Communication commands for Celebi CLI."""
+import os
 import sys
 from typing import Optional, Any
 import click
 from CelebiChrono.celebi_cli.utils import format_output
+from CelebiChrono.utils import csys, metadata
 
 
 def _handle_result(result: Optional[Any]) -> None:
@@ -28,6 +30,42 @@ def config_command() -> None:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="config-cache-invalidation-mode")
+@click.argument(
+    "mode",
+    required=False,
+    type=click.Choice(["auto", "mtime", "off"], case_sensitive=False),
+)
+def config_cache_invalidation_mode_command(mode: Optional[str]) -> None:
+    """Show or set the local cache invalidation mode for the current project."""
+    project_root = csys.project_path(os.getcwd())
+    if not project_root:
+        _handle_error("Not inside a Celebi project")
+
+    config = metadata.TwoTierConfigFile(
+        os.path.join(project_root, ".celebi", "config.json")
+    )
+
+    if mode is not None:
+        mode = mode.lower()
+        config.write_variable("cache_invalidation_mode", mode)
+        policy = csys.configure_project_cache_policy(project_root)
+        print(
+            f"cache_invalidation_mode={policy['mode']} "
+            f"resolved_method={policy['method']} "
+            f"filesystem={policy['filesystem']}"
+        )
+        return
+
+    stored_mode = config.read_variable("cache_invalidation_mode", "auto")
+    policy = csys.configure_project_cache_policy(project_root)
+    print(
+        f"cache_invalidation_mode={stored_mode} "
+        f"resolved_method={policy['method']} "
+        f"filesystem={policy['filesystem']}"
+    )
 
 
 @click.command(name="danger")
