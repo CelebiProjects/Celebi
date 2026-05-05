@@ -299,7 +299,7 @@ class TestChernCommunicator(unittest.TestCase):
         status = self.comm.status(impression)
 
         mock_get.assert_called_once_with(
-            "http://localhost:8080/status/abc123", timeout=10
+            "http://localhost:8080/status/projectuuid/abc123", timeout=10
         )
         self.assertEqual(status, "connected")
 
@@ -309,7 +309,7 @@ class TestChernCommunicator(unittest.TestCase):
         status = self.comm.status(impression)
 
         mock_get.assert_called_once_with(
-            "http://localhost:8080/status/abc123", timeout=10
+            "http://localhost:8080/status/projectuuid/abc123", timeout=10
         )
         self.assertEqual(status, "unconnected")
 
@@ -349,7 +349,7 @@ class TestChernCommunicator(unittest.TestCase):
         status = self.comm.run_status(impression, machine="local")
 
         mock_get.assert_called_once_with(
-            "http://localhost:8080/run-status/abc123/local", timeout=10
+            "http://localhost:8080/run-status/projectuuid/abc123/local", timeout=10
         )
         self.assertEqual(status, "running")
 
@@ -359,7 +359,7 @@ class TestChernCommunicator(unittest.TestCase):
         status = self.comm.run_status(impression, machine="local")
 
         mock_get.assert_called_once_with(
-            "http://localhost:8080/run-status/abc123/local", timeout=10
+            "http://localhost:8080/run-status/projectuuid/abc123/local", timeout=10
         )
         self.assertEqual(status, "unconnected")
 
@@ -657,7 +657,7 @@ class TestChernCommunicator(unittest.TestCase):
         result = self.comm.sample_status(impression)
 
         mock_get.assert_called_once_with(
-            "http://localhost:8080/sample-status/abc123", timeout=10
+            "http://localhost:8080/sample-status/projectuuid/abc123", timeout=10
         )
         self.assertEqual(result, "sample_status_ok")
 

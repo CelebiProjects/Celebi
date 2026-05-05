@@ -434,8 +434,13 @@ class JobManager(Core):
         for pre in self.inputs():
             if not pre.is_impressed_fast():
                 return False, f"Preceding job {pre} is not impressed"
-            pre_status = pre.job_status()
+            # Use run_status which handles rawdata correctly (MD5 comparison)
+            # and uses the simpler /status/{project_uuid}/{uuid} endpoint
+            pre_status = pre.run_status()
+            if isinstance(pre_status, str):
+                pre_status = pre_status.strip()
             if pre_status not in ("finished", "archived"):
+                print(f"Preceding job {pre} status: {pre_status!r}")
                 return False, f"Preceding job {pre} is not finished"
             cherncc.collect(pre.impression())
         return True, ""

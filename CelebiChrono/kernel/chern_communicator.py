@@ -352,20 +352,27 @@ class ChernCommunicator():
         url = self.serverurl()
         try:
             r = requests.get(
-                f"http://{url}/status/{impression.uuid}",
+                f"http://{url}/status/{self.project_uuid}/{impression.uuid}",
                 timeout=self.timeout
             )
         except Exception as e:
             print(f"An error occurred: {e}")
             return "unconnected"
-        return r.text
+        try:
+            json_data = json.loads(r.text)
+        except json.JSONDecodeError:
+            return r.text.strip()
+        legacy_status = json_data.get("status_legacy", "unknown")
+        if legacy_status == "success":
+            return "finished"
+        return legacy_status
 
     def run_status(self, impression, machine="none"): # UnitTest: DONE
         """ Get the run status of the impression """
         url = self.serverurl()
         try:
             r = requests.get(
-                f"http://{url}/run-status/{impression.uuid}/{machine}",
+                f"http://{url}/run-status/{self.project_uuid}/{impression.uuid}/{machine}",
                 timeout=self.timeout
             )
         except Exception as e:
@@ -404,7 +411,9 @@ class ChernCommunicator():
         try:
             json_data = json.loads(r.text)
         except json.JSONDecodeError:
-            return "unconnected to DITE"
+            # Server returned plain text (legacy protocol or endpoint mismatch)
+            # Return the raw text so callers can still interpret the status
+            return r.text.strip()
         return json_data
 
     def sample_status(self, impression):
@@ -412,7 +421,7 @@ class ChernCommunicator():
         url = self.serverurl()
         try:
             r = requests.get(
-                f"http://{url}/sample-status/{impression.uuid}",
+                f"http://{url}/sample-status/{self.project_uuid}/{impression.uuid}",
                 timeout=self.timeout
             )
         except Exception as e:
