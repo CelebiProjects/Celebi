@@ -162,27 +162,37 @@ class TestChernVTask(unittest.TestCase):
             # Reset mock
             mock_communicator.reset_mock()
 
-            # Test export method - successful case
-            test_filename = "output.txt"
-            test_output_file = "exported_output.txt"
-            mock_communicator.export.return_value = (
-                "/path/to/exported_output.txt"
-            )
-
-            obj_tsk.export(test_filename, test_output_file)
-            mock_communicator.export.assert_called_once_with(
-                ANY, test_filename, test_output_file
-            )
+            # Test export method - successful case with glob pattern
+            mock_communicator.output_files.return_value = [
+                "output.root", "output.txt", "log.txt"
+            ]
+            obj_tsk.export("*.root")
+            mock_communicator.output_files.assert_called_once_with(ANY, "none")
+            # Should only export the .root file
+            mock_communicator.export.assert_called_once()
+            call_args = mock_communicator.export.call_args
+            self.assertEqual(call_args[0][1], "output.root")
+            self.assertIn("export/output.root", call_args[0][2])
 
             # Reset mock
             mock_communicator.reset_mock()
 
-            # Test export method - file not found case
-            mock_communicator.export.return_value = "NOTFOUND"
-            with patch('CelebiChrono.kernel.vtask_job.logger') as mock_logger:
-                obj_tsk.export(test_filename, test_output_file)
-                mock_logger.error.assert_called_once()
-                self.assertIn("not found", str(mock_logger.error.call_args))
+            # Test export method - no files match pattern
+            mock_communicator.output_files.return_value = [
+                "output.root", "output.txt"
+            ]
+            obj_tsk.export("*.pdf")
+            mock_communicator.export.assert_not_called()
+
+            # Reset mock
+            mock_communicator.reset_mock()
+
+            # Test export method - default pattern exports all files
+            mock_communicator.output_files.return_value = [
+                "output.root", "output.txt"
+            ]
+            obj_tsk.export()
+            self.assertEqual(mock_communicator.export.call_count, 2)
 
             # Reset mock
             mock_communicator.reset_mock()

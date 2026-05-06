@@ -1,6 +1,8 @@
 """ JobManager class for managing tasks
 """
+import fnmatch
 import os
+import shutil
 from logging import getLogger
 from typing import Tuple, Union
 
@@ -15,6 +17,19 @@ logger = getLogger("ChernLogger")
 
 class JobManager(Core):
     """Job management for task execution and Docker container orchestration."""
+
+    def _workaround_dir(self, name="", prefix="chern_tmp_"):
+        """Return path for a workaround temp dir under .celebi-workaround (no create)."""
+        base_dir = os.path.join(self.project_path(), ".celebi-workaround")
+        if name:
+            return os.path.join(base_dir, prefix + name)
+        return os.path.join(base_dir, prefix + csys.generate_uuid())
+
+    def _create_workaround_dir(self, name="", prefix="chern_tmp_"):
+        """Create and return a workaround temp dir under .celebi-workaround."""
+        target_dir = self._workaround_dir(name, prefix)
+        os.makedirs(target_dir, exist_ok=True)
+        return target_dir
 
     def docker_test(self) -> Message:
         """
@@ -406,17 +421,36 @@ class JobManager(Core):
         cherncc = ChernCommunicator.instance()
         return cherncc.impview(self.impression())
 
-    def export(self, filename, output_file):
-        """ Export the file"""
+    def export(self, pattern="*"):
+        """Export files matching glob pattern to {project_path}/export/."""
         cherncc = ChernCommunicator.instance()
-        output_file_path = cherncc.export(
-            self.impression(), filename, output_file
-            )
-        if output_file_path == "NOTFOUND":
-            logger.error(
-                "File %s not found in the job %s",
-                filename, self.impression()
-            )
+        impression = self.impression()
+
+        if impression is None:
+            logger.error("No impression available for export")
+            return
+
+        try:
+            files = cherncc.output_files(impression, "none")
+        except Exception as e:
+            logger.error("Failed to list output files: %s", e)
+            return
+
+        matched = [f for f in files if fnmatch.fnmatch(f, pattern)]
+        if not matched:
+            print(f"No files matching pattern '{pattern}' found")
+            return
+
+        export_dir = os.path.join(self.project_path(), ".celebi-workaround", "export")
+        if os.path.exists(export_dir):
+            shutil.rmtree(export_dir)
+        os.makedirs(export_dir, exist_ok=True)
+
+        for f in matched:
+            output_path = os.path.join(export_dir, f)
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            cherncc.export(impression, f, output_path)
+            print(f"Exported {f} to {output_path}")
 
     def send_data(self, path, progress_callback=None):
         """ Send data to the job with optional progress tracking.
@@ -460,11 +494,11 @@ class JobManager(Core):
         """Create the temporal directory and copy the data there"""
         for pre in self.inputs():
             if not os.path.exists(
-                csys.temp_dir(
+                self._workaround_dir(
                     name=pre.impression().uuid,
                     prefix="chernimp_"
                 )):
-                pre_temp_dir = csys.create_temp_dir(name=pre.impression().uuid, prefix="chernimp_")
+                pre_temp_dir = self._create_workaround_dir(name=pre.impression().uuid, prefix="chernimp_")
                 outputs = cherncc.output_files(pre.impression())
                 csys.mkdir(os.path.join(pre_temp_dir, "stageout"))
                 for f in outputs:
@@ -473,7 +507,7 @@ class JobManager(Core):
                     if pre.environment() != "rawdata":
                         print(f"Exported {f} to {output_path}")
             else:
-                pre_temp_dir = csys.temp_dir(name=pre.impression().uuid, prefix="chernimp_")
+                pre_temp_dir = self._workaround_dir(name=pre.impression().uuid, prefix="chernimp_")
             alias = self.path_to_alias(pre.invariant_path())
             print(f"Linking preceding job {pre} to {alias}")
             # Make a symlink
@@ -488,7 +522,7 @@ class JobManager(Core):
         if not algorithm:
             return
 
-        alg_temp_dir = csys.create_temp_dir(prefix="chernws_")
+        alg_temp_dir = self._create_workaround_dir(prefix="chernws_")
         file_list = csys.tree_excluded(algorithm.path)
         for dirpath, _, filenames in file_list:
             for f in filenames:
@@ -511,11 +545,11 @@ class JobManager(Core):
             )
         for alg_in in list(map(lambda x: self.get_task(x.path), alg_inputs)):
             if not os.path.exists(
-                csys.temp_dir(
+                self._workaround_dir(
                     name=alg_in.impression().uuid,
                     prefix="chernimp_"
                 )):
-                alg_in_temp_dir = csys.create_temp_dir(
+                alg_in_temp_dir = self._create_workaround_dir(
                     name=alg_in.impression().uuid,
                     prefix="chernimp_"
                 )
@@ -531,7 +565,7 @@ class JobManager(Core):
                         dest_path = os.path.join(alg_in_temp_dir, rel_path)
                         csys.copy(full_path, dest_path)
             else:
-                alg_in_temp_dir = csys.temp_dir(
+                alg_in_temp_dir = self._workaround_dir(
                     name=alg_in.impression().uuid,
                     prefix="chernimp_"
                 )
@@ -556,13 +590,37 @@ class JobManager(Core):
             return False, message
 
         print("All preceding jobs are finished. Preparing data...")
-        temp_dir = csys.create_temp_dir(prefix="chernws_")
+        temp_dir = self._create_workaround_dir(prefix="chernws_")
         self._prepare_data_dir(temp_dir)
 
         print("Linking preceding jobs...")
         self._link_preceding_jobs(cherncc, temp_dir)
 
         self._prepare_algorithm_code(temp_dir)
+
+        algorithm = self.algorithm()
+        if algorithm:
+            commands = algorithm.commands()
+            if commands:
+                parameters = self.parameters()
+                if parameters:
+                    for key, value in parameters[1].items():
+                        commands = [cmd.replace(f"${{{key}}}", str(value)) for cmd in commands]
+                script = "#!/bin/bash\n\n"
+                env = self.environment()
+                if env and env != "rawdata" and "/" not in env:
+                    conda_env = env.split("=", 1)[1] if env.startswith("conda_env=") else env
+                    script += (
+                        'eval "$(conda shell.bash hook)" 2>/dev/null || '
+                        'source ~/miniconda3/etc/profile.d/conda.sh 2>/dev/null || '
+                        'source ~/anaconda3/etc/profile.d/conda.sh 2>/dev/null || true\n'
+                        f'conda activate {conda_env}\n\n'
+                    )
+                script += "mkdir -p stageout\n\n" + " && ".join(commands) + "\n"
+                script_path = os.path.join(temp_dir, "exec.sh")
+                with open(script_path, "w") as f:
+                    f.write(script)
+                os.chmod(script_path, 0o755)
 
         return True, temp_dir
 
@@ -577,7 +635,7 @@ class JobManager(Core):
         if not success:
             return False, message
 
-        temp_dir = csys.create_temp_dir(prefix="chernwd_")
+        temp_dir = self._create_workaround_dir(prefix="chernwd_")
         self._prepare_data_dir(temp_dir)
 
         # The temp_dir will be mounted to the container as the workspace, and the preceding jobs
@@ -597,9 +655,9 @@ class JobManager(Core):
     def _prepare_mounting_preceding_jobs(self, cherncc, _temp_dir, mount_config):
         """Prepare the preceding jobs for mounting - generates mount guidance"""
         for pre in self.inputs():
-            pre_temp_dir = csys.temp_dir(name=pre.impression().uuid, prefix="chernimp_")
+            pre_temp_dir = self._workaround_dir(name=pre.impression().uuid, prefix="chernimp_")
             if not os.path.exists(pre_temp_dir):
-                pre_temp_dir = csys.create_temp_dir(name=pre.impression().uuid, prefix="chernimp_")
+                pre_temp_dir = self._create_workaround_dir(name=pre.impression().uuid, prefix="chernimp_")
                 outputs = cherncc.output_files(pre.impression())
                 csys.mkdir(os.path.join(pre_temp_dir, "stageout"))
                 for f in outputs:
@@ -626,7 +684,7 @@ class JobManager(Core):
         if not algorithm:
             return
 
-        alg_temp_dir = csys.create_temp_dir(prefix="chernws_")
+        alg_temp_dir = self._create_workaround_dir(prefix="chernws_")
         file_list = csys.tree_excluded(algorithm.path)
         for dirpath, _, filenames in file_list:
             for f in filenames:
@@ -653,10 +711,10 @@ class JobManager(Core):
             lambda x: (x.object_type() == "algorithm"), algorithm.predecessors()
             )
         for alg_in in list(map(lambda x: self.get_task(x.path), alg_inputs)):
-            alg_in_temp_dir = csys.temp_dir(
+            alg_in_temp_dir = self._workaround_dir(
                 name=alg_in.impression().uuid, prefix="chernimp_")
             if not os.path.exists(alg_in_temp_dir):
-                alg_in_temp_dir = csys.create_temp_dir(
+                alg_in_temp_dir = self._create_workaround_dir(
                     name=alg_in.impression().uuid, prefix="chernimp_")
                 alg_in_file_list = csys.tree_excluded(alg_in.path)
                 for dirpath, _, filenames in alg_in_file_list:

@@ -145,13 +145,9 @@ class FileCommands:
             print(f"Error moving file: {e}")
 
     def do_export(self, arg: str) -> None:
-        """Export file to output path."""
+        """Export files matching glob pattern to project/export/."""
         try:
-            args = arg.split()
-            filename = args[0]
-            output_path = args[1]
-            MANAGER.current_object().export(filename, output_path)
-        except (IndexError, ValueError) as e:
-            print(f"Error: Please provide filename and output path. {e}")
+            pattern = arg.strip() or "*"
+            MANAGER.current_object().export(pattern)
         except Exception as e:
             print(f"Error exporting: {e}")
