@@ -31,6 +31,17 @@ class ChernShellBase(cmd.Cmd):
         manager.p = VProject(current_project_path)
         manager.c = manager.p
         os.chdir(current_project_path)
+        last_cwd_path = os.path.join(
+            os.environ["HOME"], ".celebi", "last_cwd"
+        )
+        if os.path.isfile(last_cwd_path):
+            with open(last_cwd_path, "r", encoding="utf-8") as f:
+                saved_cwd = f.read().strip()
+            if (saved_cwd
+                    and os.path.isdir(saved_cwd)
+                    and csys.project_path(saved_cwd) == current_project_path):
+                manager.switch_current_object(saved_cwd)
+                os.chdir(manager.c.path)
         self.readline_file = YamlFile(
             os.path.join(os.environ["HOME"], ".celebi", "readline.yaml")
         )
@@ -134,6 +145,11 @@ class ChernShellBase(cmd.Cmd):
 
     def do_EOF(self, _: str) -> bool:  # pylint: disable=invalid-name
         """Handle EOF (Ctrl+D) to exit shell."""
+        last_cwd_path = os.path.join(
+            os.environ["HOME"], ".celebi", "last_cwd"
+        )
+        with open(last_cwd_path, "w", encoding="utf-8") as f:
+            f.write(os.getcwd())
         print("")
         print("Thank you for using Celebi")
         print(
