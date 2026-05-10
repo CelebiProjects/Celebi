@@ -1,0 +1,3 @@
+type: script
+commands:
+  - root -b -q '${code}/gendata.C(${events},"${output}/data.root")'
