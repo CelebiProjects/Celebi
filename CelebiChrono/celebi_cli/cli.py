@@ -1,13 +1,20 @@
 """Celebi CLI main entry point for command grouping."""
+import os
 import click
+from CelebiChrono.utils.debug_logging import setup_debug_logging
 from .commands import (
     navigation, file_operations, object_creation, task_configuration,
     execution_management, communication, visualization, utilities
 )
 
 @click.group()
-def cli():
+@click.option("--debug", is_flag=True, default=False,
+              help="Enable debug logging to ~/.celebi/logs/celebi.log")
+def cli(debug):
     """Celebi CLI commands for project management."""
+    if debug:
+        os.environ["CELEBI_DEBUG"] = "1"
+    setup_debug_logging()
 
 # Commands will be registered here
 cli.add_command(navigation.cd_command)

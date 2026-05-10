@@ -41,6 +41,19 @@ def _natural_sort_key(obj: 'VObject') -> tuple:
     return (type_priority, natural_key)
 
 
+def _topo_sort_key(obj: 'VObject') -> int:
+    """Sort key: objects with fewer predecessors come first.
+
+    Processing leaves (few/no predecessors) before their dependents ensures
+    that when a parent task calls is_impressed_fast() on its predecessors,
+    those results are already cached in the impression_consult_table.
+
+    Reads predecessor count from config to avoid constructing VObjects.
+    """
+    preds = obj.config_file.read_variable("predecessors", [])
+    return len(preds)
+
+
 @dataclass
 class LsParameters:
     """ Light weighted data class to store the parameters of ls
@@ -108,10 +121,11 @@ class FileManagementDisplay(Core):
         """ Printed the status of the object"""
 
         message = Message()
+        now = time.time()
 
         message.add(f"Status of : {self.invariant_path()}\n")
         if self.is_task_or_algorithm():
-            if self.status() == "impressed":
+            if self.status(now) == "impressed":
                 message.add("Impression: ")
                 message.add(f"{'['+self.impression().uuid+']'}", 'success')
                 message.add("\n")
@@ -121,7 +135,7 @@ class FileManagementDisplay(Core):
                 message.add("\n")
                 return message
         else:
-            if self.status() == "impressed":
+            if self.status(now) == "impressed":
                 message.add("All the subobjects are ")
                 message.add("[impressed]", 'success')
                 message.add(".\n")
@@ -129,25 +143,14 @@ class FileManagementDisplay(Core):
                 message.add("Some subobjects are ")
                 message.add("[not impressed]", 'normal')
                 message.add(".\n")
-                # ---- Testing the parallelization speedup ----
-                # Parallelized subobject status checks
 
                 sub_objects = self.sub_objects()
-                # Sort by type priority, then natural numeric sort of basename
-                sub_objects.sort(key=_natural_sort_key)
+                # Topological sort: leaves first, so predecessor results are cached
+                # when their dependents check is_impressed_fast()
+                sub_objects.sort(key=_topo_sort_key)
 
-                # Parallel check of subobject statuses (CPU-bound)
-                # with ProcessPoolExecutor(max_workers=8) as executor:
-                #     futures = [executor.submit(_check_sub_status, sub) for sub in sub_objects]
-                #     for fut in as_completed(futures):
-                #         name, sub_status = fut.result()
-                #         if sub_status == "new":
-                #             message.add(f"Subobject {name} is [not impressed]\n", "normal")
-                # ----------------------------------------------
-
-                # ---- Original serial subobject status checks ----
                 for sub_object in sub_objects:
-                    if sub_object.status() == "new":
+                    if sub_object.status(now) == "new":
                         message.add(f"Subobject {sub_object} is ")
                         message.add("[not impressed]", 'normal')
                         message.add("\n")
@@ -172,7 +175,6 @@ class FileManagementDisplay(Core):
                 message.add("Impression not deposited in DITE\n")
                 return message
 
-        now = time.time()
         if not self.is_task_or_algorithm():
             job_status = self.job_status(now)
             message.add(f"{'Job status':<10}: ")
@@ -180,8 +182,9 @@ class FileManagementDisplay(Core):
             message.add("\n---------------\n")
             objects = []
             sub_objects = self.sub_objects()
-            # Sort by type priority, then natural numeric sort of basename
-            sub_objects.sort(key=_natural_sort_key)
+            # Topological sort: leaves first, so predecessor job status
+            # results are cached before dependents check them
+            sub_objects.sort(key=_topo_sort_key)
             for sub_object in sub_objects:
                 # only append the base name
                 objects.append((os.path.basename(sub_object.path),

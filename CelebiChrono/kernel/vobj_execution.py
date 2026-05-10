@@ -44,6 +44,7 @@ class ExecutionManagement(Core):
 
     def submit(self, runner: str = "local") -> Message:
         """ Submit the impression to the runner. """
+        now = time.time()
         cherncc = ChernCommunicator.instance()
         # Check the connection
         dite_status = cherncc.dite_status()
@@ -56,7 +57,7 @@ class ExecutionManagement(Core):
             msg = Message()
             msg.add("Cannot submit an algorithm directly. Please submit its tasks.", "warning")
             return msg
-        self.deposit()
+        self.deposit(now)
         if not self.is_task_or_algorithm():
             sub_objects = self.sub_objects_recursively()
             for sub_object in sub_objects:
@@ -192,6 +193,11 @@ class ExecutionManagement(Core):
 
         if not self.is_task_or_algorithm():
             sub_objects = self.sub_objects()
+            # Topological sort: leaves first to warm predecessor caches.
+            # Read predecessor count from config to avoid constructing VObjects.
+            sub_objects.sort(
+                key=lambda obj: len(obj.config_file.read_variable("predecessors", []))
+            )
             pending = False
             for sub_object in sub_objects:
                 if sub_object.object_type() == "algorithm":

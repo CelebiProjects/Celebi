@@ -172,13 +172,14 @@ class ImpressionManagement(Core):
             for f in filenames:
                 current_file = f"{self.path}/{dirpath}/{f}"
                 impression_file = f"{impression_root}/{dirpath}/{f}"
-                if not filecmp.cmp(current_file, impression_file):
-                    # print("# File difference:")
-                    # print(f"cp {impression.path}/contents/{dirpath}/{f}",
-                    #       f"{self.path}/{dirpath}/{f} ",
-                    #       )
+                # Fast size check: if sizes differ, files definitely changed
+                try:
+                    if os.path.getsize(current_file) != os.path.getsize(impression_file):
+                        return False
+                except OSError:
+                    pass
+                if not filecmp.cmp(current_file, impression_file, shallow=False):
                     return False
-        # print(f"Time used for checking file contents: {time.time() - start_time:.6f} seconds")
         return True
 
     def clean_impressions(self): # UnitTest: DONE
@@ -279,7 +280,14 @@ class ImpressionManagement(Core):
                 return status
 
         if not self.is_task_or_algorithm():
-            for sub_object in self.sub_objects():
+            sub_objects = self.sub_objects()
+            # Topological sort: process leaves first so predecessor caches
+            # are warm when dependents call is_impressed_fast().
+            # Read predecessor count from config to avoid constructing VObjects.
+            sub_objects.sort(
+                key=lambda obj: len(obj.config_file.read_variable("predecessors", []))
+            )
+            for sub_object in sub_objects:
                 status = sub_object.status(consult_id)
                 if status == "new":
                     return "new"

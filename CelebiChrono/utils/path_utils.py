@@ -158,18 +158,21 @@ def project_path(path=None):
 
 def dir_mtime(path):
     """ Get the latest modified time of the directory
+
+    Skips .git, impressions, and .celebi-* auxiliary directories
+    (.celebi-env, .celebi-workspace, .celebi-workaround) since those
+    do not reflect user-data changes.  The main .celebi directory is
+    still traversed because it tracks predecessor impression UUIDs
+    and other state that must invalidate cached status.
     """
+    _skipped_dirs = {".git", "impressions", "impressions_store"}
+    if os.path.basename(path).startswith(".celebi-"):
+        return -1
     mtime = os.path.getmtime(path)
-    if path.endswith(".celebi"):
-        mtime = -1
     if not os.path.isdir(path):
         return mtime
     for sub_dir in os.listdir(path):
-        if sub_dir == ".git":
-            continue
-        if sub_dir == "impressions":
-            continue
-        if sub_dir == "impressions_store":
+        if sub_dir in _skipped_dirs or sub_dir.startswith(".celebi-"):
             continue
         mtime = max(mtime, dir_mtime(os.path.join(path, sub_dir)))
     return mtime

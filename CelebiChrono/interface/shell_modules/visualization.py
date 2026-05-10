@@ -107,12 +107,15 @@ def impress() -> Message:
     message = Message()
     current_obj = MANAGER.current_object()
     current_obj.impress()
-    impression = current_obj.impression()
-    if impression is None:
-        message.add("Impression command finished, but no impression is available.", "warning")
-        return message
-    message.add(f"Created impression [{impression.uuid}]", "success")
-    message.data["impression"] = impression.uuid
+    if current_obj.is_task_or_algorithm():
+        impression = current_obj.impression()
+        if impression is None:
+            message.add("Impression command finished, but no impression is available.", "warning")
+            return message
+        message.add(f"Created impression [{impression.uuid}]", "success")
+        message.data["impression"] = impression.uuid
+    else:
+        message.add("Impression created for all sub-objects.", "success")
     return message
 
 

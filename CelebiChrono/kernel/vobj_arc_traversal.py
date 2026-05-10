@@ -21,30 +21,71 @@ class ArcManagementTraversal(Core):
     def successors(self):
         """ The successors of the current object
         Return a list of [object]
+
+        Results are cached similarly to predecessors().
         """
-        succ_str = self.config_file.read_variable("successors", [])
-        successors = []
-        # project_path = self.project_path()
         project_path = CHERN_CACHE.project_path \
                 if CHERN_CACHE.project_path \
                 else CHERN_CACHE.use_and_cache_project_path(csys.project_path())
+
+        now = time()
+        modification_time_from_cache, modification_consult_time = \
+                CHERN_CACHE.project_modification_time
+        if modification_time_from_cache is None or now - modification_consult_time > 1:
+            modification_time = csys.dir_mtime(project_path)
+            CHERN_CACHE.project_modification_time = (modification_time, now)
+        else:
+            modification_time = modification_time_from_cache
+
+        cache_key = f"successors:{self.path}"
+        cached = CHERN_CACHE.get(cache_key)
+        if cached is not None:
+            cached_mtime, cached_succs = cached
+            if cached_mtime == modification_time:
+                return cached_succs
+
+        succ_str = self.config_file.read_variable("successors", [])
+        succs = []
         for path in succ_str:
-            successors.append(self.get_vobject(f"{project_path}/{path}", project_path))
-        return successors
+            succs.append(self.get_vobject(f"{project_path}/{path}", project_path))
+
+        CHERN_CACHE.set(cache_key, (modification_time, succs))
+        return succs
 
     def predecessors(self):
-        """ The predecessosr of the current object
+        """ The predecessors of the current object
         Return a list of [object]
+
+        Results are cached keyed by path + project modification time, matching
+        the consult_id pattern used by is_impressed_fast / status / job_status.
         """
-        pred_str = self.config_file.read_variable("predecessors", [])
-        predecessors = []
-        # project_path = self.project_path()
         project_path = CHERN_CACHE.project_path \
                 if CHERN_CACHE.project_path \
                 else CHERN_CACHE.use_and_cache_project_path(csys.project_path())
+
+        now = time()
+        modification_time_from_cache, modification_consult_time = \
+                CHERN_CACHE.project_modification_time
+        if modification_time_from_cache is None or now - modification_consult_time > 1:
+            modification_time = csys.dir_mtime(project_path)
+            CHERN_CACHE.project_modification_time = (modification_time, now)
+        else:
+            modification_time = modification_time_from_cache
+
+        cache_key = f"predecessors:{self.path}"
+        cached = CHERN_CACHE.get(cache_key)
+        if cached is not None:
+            cached_mtime, cached_preds = cached
+            if cached_mtime == modification_time:
+                return cached_preds
+
+        pred_str = self.config_file.read_variable("predecessors", [])
+        preds = []
         for path in pred_str:
-            predecessors.append(self.get_vobject(f"{project_path}/{path}", project_path))
-        return predecessors
+            preds.append(self.get_vobject(f"{project_path}/{path}", project_path))
+
+        CHERN_CACHE.set(cache_key, (modification_time, preds))
+        return preds
 
     def has_successor(self, obj):  # UnitTest: DONE
         """ Judge whether the object has the specific successor

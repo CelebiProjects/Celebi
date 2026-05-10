@@ -50,12 +50,9 @@ def start_first_time():
 
 def start_chern_command_line():
     """Start the Chern command line interface."""
+    from .utils.debug_logging import setup_debug_logging
+    setup_debug_logging()
     logger = getLogger("ChernLogger")
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter('[%(asctime)s][%(levelname)s] %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    logger.setLevel(logging.ERROR)
 
     logger.debug("def start_chern_command_line")
     print("Welcome to the CELEBI Shell environment")
@@ -104,10 +101,14 @@ def _get_command_docstring(func_name: str) -> str:
 
 
 @click.group(invoke_without_command=True)
+@click.option("--debug", is_flag=True, default=False,
+              help="Enable debug logging to ~/.celebi/logs/celebi.log")
 @click.pass_context
-def cli(ctx):
+def cli(ctx, debug):
     """ Chern command only is equal to `Chern ipython`
     """
+    if debug:
+        os.environ["CELEBI_DEBUG"] = "1"
     if is_first_time():
         start_first_time()
     if ctx.invoked_subcommand is None:
