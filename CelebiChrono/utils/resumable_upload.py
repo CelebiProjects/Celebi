@@ -26,7 +26,7 @@ import requests
 
 
 @dataclass
-class UploadState:
+class UploadState:  # pylint: disable=too-many-instance-attributes
     """Persistable upload state for resume capability.
 
     Attributes:
@@ -68,7 +68,6 @@ class UploadState:
 
 class UploadError(Exception):
     """Exception raised for upload-related errors."""
-    pass
 
 
 class ResumableUploader:
@@ -101,7 +100,7 @@ class ResumableUploader:
         self.timeout = timeout
         self.STATE_DIR.mkdir(parents=True, exist_ok=True)
 
-    def upload(
+    def upload(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         file_path: str,
         project_uuid: str,
@@ -281,7 +280,7 @@ class ResumableUploader:
 
         return None
 
-    def _create_upload(
+    def _create_upload(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         file_path: str,
         file_size: int,
@@ -402,7 +401,6 @@ class ResumableUploader:
         ]
 
         completed_count = len(state.completed_chunks)
-        total_count = state.total_chunks
 
         def upload_single(chunk_index: int) -> int:
             """Upload a single chunk and return its index."""

@@ -1121,7 +1121,7 @@ class GitMergeCoordinator:  # pylint: disable=too-many-instance-attributes
                             succ for succ in loser_succ
                             if succ != target_path
                         ]
-                        loser_obj.config_file.write_variable(
+                        loser_obj.config_file.write_variable_to_shared(
                             "successors",
                             sorted(set(loser_succ)),
                         )
@@ -1131,9 +1131,11 @@ class GitMergeCoordinator:  # pylint: disable=too-many-instance-attributes
                     has_update = True
 
             if has_update:
-                obj.config_file.write_variable("predecessors", sorted(set(predecessors)))
-                obj.config_file.write_variable("path_to_alias", path_to_alias)
-                obj.config_file.write_variable("alias_to_path", alias_to_path)
+                obj.config_file.write_variable_to_shared(
+                    "predecessors", sorted(set(predecessors))
+                )
+                obj.config_file.write_variable_to_shared("path_to_alias", path_to_alias)
+                obj.config_file.write_variable_to_shared("alias_to_path", alias_to_path)
                 update_counts["targets_updated"] += 1
 
         return update_counts

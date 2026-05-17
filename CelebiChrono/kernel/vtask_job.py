@@ -498,7 +498,9 @@ class JobManager(Core):
                     name=pre.impression().uuid,
                     prefix="chernimp_"
                 )):
-                pre_temp_dir = self._create_workaround_dir(name=pre.impression().uuid, prefix="chernimp_")
+                pre_temp_dir = self._create_workaround_dir(
+                    name=pre.impression().uuid, prefix="chernimp_"
+                )
                 outputs = cherncc.output_files(pre.impression())
                 csys.mkdir(os.path.join(pre_temp_dir, "stageout"))
                 for f in outputs:
@@ -618,7 +620,7 @@ class JobManager(Core):
                     )
                 script += "mkdir -p stageout\n\n" + " && ".join(commands) + "\n"
                 script_path = os.path.join(temp_dir, "exec.sh")
-                with open(script_path, "w") as f:
+                with open(script_path, "w", encoding="utf-8") as f:
                     f.write(script)
                 os.chmod(script_path, 0o755)
 
@@ -657,7 +659,9 @@ class JobManager(Core):
         for pre in self.inputs():
             pre_temp_dir = self._workaround_dir(name=pre.impression().uuid, prefix="chernimp_")
             if not os.path.exists(pre_temp_dir):
-                pre_temp_dir = self._create_workaround_dir(name=pre.impression().uuid, prefix="chernimp_")
+                pre_temp_dir = self._create_workaround_dir(
+                    name=pre.impression().uuid, prefix="chernimp_"
+                )
                 outputs = cherncc.output_files(pre.impression())
                 csys.mkdir(os.path.join(pre_temp_dir, "stageout"))
                 for f in outputs:

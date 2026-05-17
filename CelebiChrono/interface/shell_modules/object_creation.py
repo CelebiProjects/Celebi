@@ -15,7 +15,6 @@ from ...kernel.vtask import create_data_list
 from ...kernel.vtask import create_rawdata_task
 from ...kernel.valgorithm import create_algorithm
 from ...kernel.vdirectory import create_directory
-from ...kernel.vobject import VObject as KernelVObject
 from ...kernel.chern_communicator import ChernCommunicator
 from ._manager import MANAGER
 
@@ -199,6 +198,8 @@ def mkdir(line: str) -> Message:
 
 
 def use_data(impression_uuid: str, path_override: str = "") -> Message:
+    # pylint: disable=too-many-locals,too-many-return-statements
+    # pylint: disable=too-many-branches,too-many-statements
     """Adopt a Yuki impression as a rawdata task in the current project.
 
     Queries Yuki for the impression info (descriptor and MD5), creates a
@@ -252,7 +253,10 @@ def use_data(impression_uuid: str, path_override: str = "") -> Message:
         yaml_file = metadata.YamlFile(os.path.join(full_path, "celebi.yaml"))
         yaml_file.write_variable("uuid", data_md5)
         yaml_file.write_variable("descriptor", descriptor)
-        print(f"use-data: updated rawdata task via metadata.YamlFile.write_variable({full_path}/celebi.yaml, uuid={data_md5}, descriptor={descriptor})")
+        print(
+            f"use-data: updated rawdata task via metadata.YamlFile.write_variable("
+            f"{full_path}/celebi.yaml, uuid={data_md5}, descriptor={descriptor})"
+        )
         message.add(
             f"Updated rawdata task at {task_path} with new impression data",
             "success",
@@ -269,10 +273,13 @@ def use_data(impression_uuid: str, path_override: str = "") -> Message:
                 message.add("Not allowed to create data task here", "warning")
                 return message
             create_rawdata_task(full_path, descriptor, data_md5)
-            print(f"use-data: created rawdata task via create_rawdata_task({full_path}, {descriptor}, {data_md5})")
+            print(
+                f"use-data: created rawdata task via create_rawdata_task("
+                f"{full_path}, {descriptor}, {data_md5})"
+            )
             message.add(f"Created rawdata task at {task_path}", "success")
         else:
-            existing = KernelVObject(full_path, project_path)
+            existing = VObject(full_path, project_path)
             if existing.object_type() != "task":
                 message.add(
                     f"Path {task_path} exists but is not a task "
@@ -292,13 +299,16 @@ def use_data(impression_uuid: str, path_override: str = "") -> Message:
                 return message
             yaml_file.write_variable("uuid", data_md5)
             yaml_file.write_variable("descriptor", descriptor)
-            print(f"use-data: updated rawdata task via metadata.YamlFile.write_variable({yaml_path}, uuid={data_md5}, descriptor={descriptor})")
+            print(
+                f"use-data: updated rawdata task via metadata.YamlFile.write_variable("
+                f"{yaml_path}, uuid={data_md5}, descriptor={descriptor})"
+            )
             message.add(
                 f"Updated rawdata task at {task_path} with new impression data",
                 "success",
             )
 
-    task_obj = KernelVObject(full_path, project_path)
+    task_obj = VObject(full_path, project_path)
     task_obj.impress()
     local_uuid = task_obj.config_file.read_variable("impression", "")
 

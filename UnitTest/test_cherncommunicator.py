@@ -154,10 +154,11 @@ class TestChernCommunicator(unittest.TestCase):
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     @patch("CelebiChrono.kernel.chern_communicator.requests.post")
-    @patch("CelebiChrono.kernel.chern_communicator.open", new_callable=mock_open, read_data=b"filedata")
+    @patch("CelebiChrono.kernel.chern_communicator.open", new_callable=mock_open, read_data=b"configdata")
+    @patch("CelebiChrono.kernel.chern_communicator.ResumableUploader")
     @patch("CelebiChrono.kernel.chern_communicator.tarfile.open")
     def test_deposit_with_data(
-        self, mock_tarfile_open, mock_open_fn, mock_post, mock_get
+        self, mock_tarfile_open, mock_uploader_cls, mock_open_fn, mock_post, mock_get
     ):
         print(Fore.BLUE + "Testing Deposit With Data..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
@@ -175,14 +176,14 @@ class TestChernCommunicator(unittest.TestCase):
 
         impression = FakeImpression()
 
-        # Create fake tarfile members
+        # Two tarfile.open calls in _create_tar_with_data:
+        # 1) Output tar: tarfile.open(output_path, "w:gz") used as context manager
+        # 2) Impression tar: tarfile.open(impression_path, "r")
         fake_member = tarfile.TarInfo(name="file1.txt")
-        fake_tar = MagicMock()
-        fake_tar.getmembers.return_value = [fake_member]
-        fake_tar.extractfile.return_value = BytesIO(b"content")
-
-        # tarfile.open is called twice: once to read, once to write
-        mock_tarfile_open.side_effect = [fake_tar, MagicMock()]
+        fake_impression_tar = MagicMock()
+        fake_impression_tar.getmembers.return_value = [fake_member]
+        fake_impression_tar.extractfile.return_value = BytesIO(b"content")
+        mock_tarfile_open.side_effect = [MagicMock(), fake_impression_tar]
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
@@ -191,32 +192,39 @@ class TestChernCommunicator(unittest.TestCase):
 
         self.comm.deposit_with_data(impression, path="/some/raw/data")
 
-        # Check tarfile opening: read and write
+        # tarfile.open called twice (output write + impression read)
         self.assertEqual(mock_tarfile_open.call_count, 2)
-        mock_tarfile_open.assert_any_call("/path/to/impression.tar", "r")
         mock_tarfile_open.assert_any_call("/tmp/abc123.tar.gz", "w:gz")
+        mock_tarfile_open.assert_any_call("/path/to/impression.tar", "r")
 
-        # Check file reading (tar.gz and config.json)
-        expected_open_calls = [
-            unittest.mock.call("/tmp/abc123.tar.gz", "rb"),
-            unittest.mock.call("/path/to/impression/config.json", "rb")
-        ]
-        mock_open_fn.assert_has_calls(expected_open_calls, any_order=True)
-
-        # Check HTTP post
-        mock_post.assert_called_once()
-        args, kwargs = mock_post.call_args
-        self.assertIn("http://localhost:8080/upload", args[0])
-        self.assertEqual(kwargs["timeout"], 5*1000)
-        self.assertIn("files", kwargs)
-        self.assertEqual(
-            sorted(kwargs["data"].keys()), ["config", "project_uuid", "tarname"]
+        # ResumableUploader instantiated with server URL and timeout, then upload called
+        mock_uploader_cls.assert_called_once_with("localhost:8080", 5)
+        mock_uploader_cls.return_value.upload.assert_called_once_with(
+            file_path="/tmp/abc123.tar.gz",
+            project_uuid="projectuuid",
+            impression_uuid="abc123",
+            progress_callback=None,
+            resume=True,
         )
 
-        # Check HTTP get
+        # config.json read for separate config upload
+        mock_open_fn.assert_called_with("/path/to/impression/config.json", "rb")
+
+        # POST uploads config separately
+        mock_post.assert_called_once()
+        post_args, post_kwargs = mock_post.call_args
+        self.assertEqual(
+            post_args[0],
+            "http://localhost:8080/upload-config/projectuuid/abc123",
+        )
+        self.assertIn("files", post_kwargs)
+        self.assertEqual(post_kwargs["files"]["config"][0], "config.json")
+        self.assertEqual(post_kwargs["timeout"], 5)
+
+        # GET sets job status to archived
         mock_get.assert_called_once_with(
             "http://localhost:8080/set-job-status/projectuuid/abc123/archived",
-            timeout=5
+            timeout=5,
         )
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")

@@ -37,7 +37,8 @@ disable=fixme,
         broad-exception-raised,
         import-outside-toplevel,
         broad-exception-caught,
-        duplicate-code
+        duplicate-code,
+        cyclic-import
 
 # Enable the message, report, category or checker with the given id(s).
 enable=all

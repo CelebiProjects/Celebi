@@ -74,7 +74,6 @@ class ImpressionManagement(Core):
         """ Judge whether the file is impressed
         """
         now = time.time()
-        start_time = now
         if consult_id is None:
             consult_id = now
         else:

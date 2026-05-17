@@ -56,7 +56,6 @@ import tarfile
 import os
 from logging import getLogger
 from os.path import join
-from typing import Optional, Callable
 
 import requests
 

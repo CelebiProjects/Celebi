@@ -10,8 +10,6 @@ Note: This module requires optional dependencies:
 - pydot: For graph layout algorithms
 Install with: pip install plotly graphviz pydot
 """
-# pylint: disable=broad-exception-caught
-from ._manager import MANAGER
 
 
 class ChernShellVisualization:

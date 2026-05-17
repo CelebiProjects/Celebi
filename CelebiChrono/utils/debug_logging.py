@@ -7,13 +7,13 @@ import os
 import logging
 from logging import getLogger
 
-_logging_configured = False
+_LOGGING_CONFIGURED = False
 
 
 def setup_debug_logging():
     """Configure ChernLogger. Idempotent - safe to call multiple times."""
-    global _logging_configured
-    if _logging_configured:
+    global _LOGGING_CONFIGURED  # pylint: disable=global-statement
+    if _LOGGING_CONFIGURED:
         return
 
     logger = getLogger("ChernLogger")
@@ -36,4 +36,4 @@ def setup_debug_logging():
         )
         logger.addHandler(stream_handler)
 
-    _logging_configured = True
+    _LOGGING_CONFIGURED = True

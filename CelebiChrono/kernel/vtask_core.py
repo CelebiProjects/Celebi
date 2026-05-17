@@ -229,7 +229,7 @@ class Core(VObject):
         """ Abstract method for future implementation"""
 
     @abstractmethod
-    def send_data(self, path):
+    def send_data(self, path, progress_callback=None):
         """ Abstract method for future implementation"""
 
     @abstractmethod

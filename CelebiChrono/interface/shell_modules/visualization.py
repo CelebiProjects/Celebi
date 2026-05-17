@@ -248,7 +248,7 @@ def draw_dag_graphviz(output_file: str = "dag.pdf", exclude_algorithms: bool = F
         - Large graphs may take time to render
         - Output is always saved to ~/Downloads/
     """
-    # pylint: disable=import-outside-toplevel,too-many-locals
+    # pylint: disable=import-outside-toplevel,too-many-locals,too-many-statements
     import networkx as nx
     import graphviz
     from colorsys import hls_to_rgb, rgb_to_hls

@@ -9,7 +9,7 @@ import json
 import os
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional, Tuple
+from typing import List, Tuple
 
 from . import csys
 from . import metadata
@@ -85,7 +85,7 @@ class ConfigMigrator:
         result = MigrationResult(dry_run=dry_run)
 
         # Walk through all directories in the project
-        for root, dirs, files in os.walk(self.project_path):
+        for root, _dirs, _files in os.walk(self.project_path):
             # Check if this directory has a .celebi/config.json
             celebi_path = os.path.join(root, ".celebi")
             config_path = os.path.join(celebi_path, "config.json")
@@ -98,7 +98,7 @@ class ConfigMigrator:
                         result.skipped_count += 1
                 except Exception as e:
                     result.add_error(config_path, str(e))
-                    logger.error(f"Error migrating {config_path}: {e}")
+                    logger.error("Error migrating %s: %s", config_path, e)
 
         return result
 
@@ -120,7 +120,7 @@ class ConfigMigrator:
         local_config_path = os.path.join(config_dir, "config.local.json")
 
         if os.path.isfile(local_config_path):
-            logger.debug(f"Already migrated: {config_path}")
+            logger.debug("Already migrated: %s", config_path)
             return False
 
         # Read the old config
@@ -128,14 +128,14 @@ class ConfigMigrator:
             with open(config_path, 'r', encoding='utf-8') as f:
                 old_config = json.load(f)
         except (json.JSONDecodeError, IOError) as e:
-            raise Exception(f"Cannot read config: {e}")
+            raise Exception(f"Cannot read config: {e}") from e
 
         if not isinstance(old_config, dict):
-            raise Exception(f"Config is not a JSON object")
+            raise Exception("Config is not a JSON object")
 
         # If config is empty or only has object_type, already in new format
         if len(old_config) <= 1 and "object_type" in old_config:
-            logger.debug(f"Already in new format: {config_path}")
+            logger.debug("Already in new format: %s", config_path)
             return False
 
         # Separate fields into shared and local
@@ -164,8 +164,8 @@ class ConfigMigrator:
                     json.dump(local_config, f, indent=2)
 
         logger.info(
-            f"Migrated {config_path}: "
-            f"{len(shared_config)} shared, {len(local_config)} local"
+            "Migrated %s: %d shared, %d local",
+            config_path, len(shared_config), len(local_config),
         )
         return True
 
@@ -179,7 +179,7 @@ class ConfigMigrator:
         """
         all_valid = True
 
-        for root, dirs, files in os.walk(self.project_path):
+        for root, _dirs, _files in os.walk(self.project_path):
             config_path = os.path.join(root, ".celebi", "config.json")
 
             if os.path.isfile(config_path):
@@ -188,10 +188,10 @@ class ConfigMigrator:
                     # Try reading object_type to verify structure
                     obj_type = config.read_variable("object_type")
                     if not obj_type:
-                        logger.warning(f"Missing object_type in {config_path}")
+                        logger.warning("Missing object_type in %s", config_path)
                         all_valid = False
                 except Exception as e:
-                    logger.error(f"Verification failed for {config_path}: {e}")
+                    logger.error("Verification failed for %s: %s", config_path, e)
                     all_valid = False
 
         return all_valid
