@@ -3,6 +3,7 @@
     The core part may move to c language in the future
 """
 import os
+from .. import __version__
 from ..utils import metadata
 from ..utils import csys
 from ..utils.message import Message
@@ -350,7 +351,7 @@ def create_configfile(project_path, uuid):
     # Create shared config.json with defaults
     shared_config = metadata.ConfigFile(project_path+"/.celebi/config.json")
     shared_config.write_variable("object_type", "project")
-    shared_config.write_variable("chern_version", "0.0.0")
+    shared_config.write_variable("chern_version", __version__)
     shared_config.write_variable("project_uuid", uuid)
 
 

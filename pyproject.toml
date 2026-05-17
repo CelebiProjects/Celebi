@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "CelebiChrono"
-version = "0.0.1"  # Or dynamically load from the package
+version = "1.0.0b1"
 description = "A data analysis management toolkit for high energy physics"
 readme = "README.md"
 license = {text = "Apache License, Version 2.0"}
