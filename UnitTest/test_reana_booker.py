@@ -77,41 +77,41 @@ class TestReanaBooker(unittest.TestCase):
         self.assertFalse(result.success)
         self.assertIn("Invalid project path", str(result.messages))
 
-    @patch("CelebiChrono.kernel.reana_booker.reana_client.get_workflows")
-    def test_get_workflow_found(self, mock_get_workflows):
+    @patch("CelebiChrono.kernel.reana_booker.reana_client.get_workflow_status")
+    def test_get_workflow_found(self, mock_get_status):
         """Test finding an existing workflow."""
         print(Fore.BLUE + "Testing Get Workflow Found..." + Style.RESET)
-        mock_get_workflows.return_value = [
-            {"name": "celebi-test-project", "id": "workflow-123"}
-        ]
+        mock_get_status.return_value = {
+            "name": "celebi-test-project",
+            "id": "workflow-123",
+            "status": "created",
+        }
 
         result = self.booker._get_workflow("celebi-test-project")
 
         self.assertIsNotNone(result)
         self.assertEqual(result["name"], "celebi-test-project")
         self.assertEqual(result["id"], "workflow-123")
-        mock_get_workflows.assert_called_once()
-        call_kwargs = mock_get_workflows.call_args.kwargs
+        mock_get_status.assert_called_once()
+        call_kwargs = mock_get_status.call_args.kwargs
+        self.assertEqual(call_kwargs["workflow"], "celebi-test-project")
         self.assertEqual(call_kwargs["access_token"], "test-token")
-        self.assertEqual(call_kwargs["type"], "batch")
-        self.assertEqual(call_kwargs["search"], "celebi-test-project")
-        self.assertEqual(call_kwargs["size"], 100)
 
-    @patch("CelebiChrono.kernel.reana_booker.reana_client.get_workflows")
-    def test_get_workflow_not_found(self, mock_get_workflows):
+    @patch("CelebiChrono.kernel.reana_booker.reana_client.get_workflow_status")
+    def test_get_workflow_not_found(self, mock_get_status):
         """Test when workflow does not exist."""
         print(Fore.BLUE + "Testing Get Workflow Not Found..." + Style.RESET)
-        mock_get_workflows.return_value = []
+        mock_get_status.side_effect = Exception("Workflow does not exist")
 
         result = self.booker._get_workflow("celebi-nonexistent")
 
         self.assertIsNone(result)
 
-    @patch("CelebiChrono.kernel.reana_booker.reana_client.get_workflows")
-    def test_get_workflow_connection_error(self, mock_get_workflows):
+    @patch("CelebiChrono.kernel.reana_booker.reana_client.get_workflow_status")
+    def test_get_workflow_connection_error(self, mock_get_status):
         """Test handling connection error during workflow lookup."""
         print(Fore.BLUE + "Testing Get Workflow Connection Error..." + Style.RESET)
-        mock_get_workflows.side_effect = Exception("Connection refused")
+        mock_get_status.side_effect = Exception("Connection refused")
 
         result = self.booker._get_workflow("celebi-test")
 
@@ -241,12 +241,12 @@ class TestReanaBooker(unittest.TestCase):
 
     @patch("CelebiChrono.kernel.reana_booker.reana_client.upload_file")
     @patch("CelebiChrono.kernel.reana_booker.reana_client.create_workflow")
-    @patch("CelebiChrono.kernel.reana_booker.reana_client.get_workflows")
-    def test_book_project_existing_workflow(self, mock_get_workflows, mock_create_workflow, mock_upload_file):
+    @patch("CelebiChrono.kernel.reana_booker.reana_client.get_workflow_status")
+    def test_book_project_existing_workflow(self, mock_get_status, mock_create_workflow, mock_upload_file):
         """Test booking with existing workflow."""
         print(Fore.BLUE + "Testing Book Project Existing..." + Style.RESET)
         # Mock existing workflow
-        mock_get_workflows.return_value = [{"name": "celebi-test", "id": "wf-123"}]
+        mock_get_status.return_value = {"name": "celebi-test", "id": "wf-123", "status": "created"}
         mock_upload_file.return_value = {"message": "File uploaded"}
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -262,12 +262,12 @@ class TestReanaBooker(unittest.TestCase):
 
     @patch("CelebiChrono.kernel.reana_booker.reana_client.upload_file")
     @patch("CelebiChrono.kernel.reana_booker.reana_client.create_workflow")
-    @patch("CelebiChrono.kernel.reana_booker.reana_client.get_workflows")
-    def test_book_project_new_workflow(self, mock_get_workflows, mock_create_workflow, mock_upload_file):
+    @patch("CelebiChrono.kernel.reana_booker.reana_client.get_workflow_status")
+    def test_book_project_new_workflow(self, mock_get_status, mock_create_workflow, mock_upload_file):
         """Test booking creating new workflow."""
         print(Fore.BLUE + "Testing Book Project New..." + Style.RESET)
         # Mock no existing workflow
-        mock_get_workflows.return_value = []
+        mock_get_status.side_effect = Exception("Workflow does not exist")
         # Mock create workflow
         mock_create_workflow.return_value = {"workflow_id": "wf-456", "workflow_name": "celebi-test"}
         mock_upload_file.return_value = {"message": "File uploaded"}

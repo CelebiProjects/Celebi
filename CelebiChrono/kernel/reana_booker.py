@@ -1,3 +1,4 @@
+
 """REANA Repository Booking module.
 
 Uses the official reana_client library for correct API formatting.
@@ -120,20 +121,20 @@ class ReanaBooker:
         return message
 
     def _get_workflow(self, name: str):
-        """Get workflow by name, or None if not found."""
+        """Get workflow by name, or None if not found.
+
+        Uses get_workflow_status instead of get_workflows to avoid
+        parameters (type, search, size) that older REANA servers reject.
+        """
         try:
-            workflows = reana_client.get_workflows(
+            status = reana_client.get_workflow_status(
+                workflow=name,
                 access_token=self.access_token,
-                type="batch",
-                search=name,
-                size=100,
             )
-            for wf in workflows:
-                if wf.get("name") == name:
-                    return wf
-            return None
-        except Exception as e:
-            logger.warning("Failed to list workflows: %s", e)
+            # get_workflow_status returns a dict with workflow info
+            return status
+        except Exception:
+            # Workflow not found or other error
             return None
 
     def _create_workflow(self, name: str, project_path: str = ""):
