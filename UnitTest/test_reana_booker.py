@@ -21,10 +21,23 @@ class TestReanaBooker(unittest.TestCase):
         print(Fore.BLUE + "Testing Init..." + Style.RESET)
         self.assertEqual(self.booker.server_url, "https://reana.example.com")
         self.assertEqual(self.booker.access_token, "test-token")
-        self.assertEqual(
-            self.booker.headers["Authorization"],
-            "Bearer test-token"
-        )
+        self.assertTrue(self.booker.verify_ssl)
+
+    def test_init_insecure(self):
+        """Test initialization with verify_ssl=False."""
+        print(Fore.BLUE + "Testing Init Insecure..." + Style.RESET)
+        booker = ReanaBooker("https://reana.example.com", "test-token", verify_ssl=False)
+        self.assertFalse(booker.verify_ssl)
+
+    def test_auth_params(self):
+        """Test auth params builder includes access_token."""
+        print(Fore.BLUE + "Testing Auth Params..." + Style.RESET)
+        params = self.booker._auth_params()
+        self.assertEqual(params["access_token"], "test-token")
+
+        params = self.booker._auth_params({"search": "test"})
+        self.assertEqual(params["access_token"], "test-token")
+        self.assertEqual(params["search"], "test")
 
     def test_should_ignore_exact_matches(self):
         """Test exact pattern matching for ignore rules."""
@@ -81,6 +94,11 @@ class TestReanaBooker(unittest.TestCase):
         self.assertEqual(result["name"], "celebi-test-project")
         self.assertEqual(result["id"], "workflow-123")
         mock_get.assert_called_once()
+        # Verify access_token is in query params
+        call_kwargs = mock_get.call_args.kwargs
+        self.assertIn("params", call_kwargs)
+        self.assertEqual(call_kwargs["params"]["access_token"], "test-token")
+        self.assertEqual(call_kwargs["params"]["type"], "batch")
 
     @patch("CelebiChrono.kernel.reana_booker.requests.get")
     def test_get_workflow_not_found(self, mock_get):
@@ -120,6 +138,11 @@ class TestReanaBooker(unittest.TestCase):
 
         self.assertEqual(result["workflow_id"], "workflow-456")
         mock_post.assert_called_once()
+        # Verify workflow_name and access_token are in query params
+        call_kwargs = mock_post.call_args.kwargs
+        self.assertIn("params", call_kwargs)
+        self.assertEqual(call_kwargs["params"]["access_token"], "test-token")
+        self.assertEqual(call_kwargs["params"]["workflow_name"], "celebi-test")
 
     @patch("CelebiChrono.kernel.reana_booker.requests.post")
     def test_upload_files(self, mock_post):
@@ -145,10 +168,8 @@ class TestReanaBooker(unittest.TestCase):
         calls = mock_post.call_args_list
         uploaded_files = []
         for call in calls:
-            if call.kwargs.get("data"):
-                uploaded_files.append(call.kwargs["data"].get("file_name", ""))
-            elif len(call.args) >= 2 and isinstance(call.args[1], dict):
-                uploaded_files.append(call.args[1].get("file_name", ""))
+            params = call.kwargs.get("params", {})
+            uploaded_files.append(params.get("file_name", ""))
 
         self.assertIn("README.md", uploaded_files)
         # src/analysis.py should be uploaded (with os.sep normalization)
@@ -163,6 +184,10 @@ class TestReanaBooker(unittest.TestCase):
             all("cache.tar" not in f for f in uploaded_files),
             "cache.tar should not be uploaded"
         )
+        # Verify access_token is in query params for each upload
+        for call in calls:
+            params = call.kwargs.get("params", {})
+            self.assertEqual(params.get("access_token"), "test-token")
 
     @patch("CelebiChrono.kernel.reana_booker.requests.get")
     @patch("CelebiChrono.kernel.reana_booker.requests.post")

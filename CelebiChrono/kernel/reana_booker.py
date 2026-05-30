@@ -35,20 +35,32 @@ DEFAULT_IGNORE_PATTERNS = [
 class ReanaBooker:
     """Handles booking (uploading) a Celebi repository to REANA."""
 
-    def __init__(self, server_url: str, access_token: str):
+    def __init__(self, server_url: str, access_token: str, verify_ssl: bool = True):
         """Initialize with REANA server URL and access token.
 
         Args:
             server_url: REANA server URL (e.g., "https://reana.cern.ch")
             access_token: REANA access token for authentication
+            verify_ssl: Whether to verify SSL certificates
         """
         self.server_url = server_url.rstrip("/")
         self.access_token = access_token
-        self.headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Content-Type": "application/json",
-        }
+        self.verify_ssl = verify_ssl
         self.timeout = 30
+
+    def _auth_params(self, extra=None):
+        """Build query params with access_token.
+
+        Args:
+            extra: Additional query params to include
+
+        Returns:
+            dict: Query parameters including access_token
+        """
+        params = {"access_token": self.access_token}
+        if extra:
+            params.update(extra)
+        return params
 
     def book_project(self, project_path: str, project_name: str) -> Message:
         """Book a Celebi project to REANA.
@@ -88,7 +100,7 @@ class ReanaBooker:
             self._upload_files(workflow_id, project_path)
             message.add("Files uploaded successfully.\n", "success")
             message.add(
-                f"REANA workspace: {self.server_url}/api/workflows/{workflow_id}/workspace/\n",
+                f"REANA workspace: {self.server_url}/api/workflows/{workflow_id}/workspace\n",
                 "info",
             )
         except requests.exceptions.RequestException as e:
@@ -115,9 +127,13 @@ class ReanaBooker:
         try:
             response = requests.get(
                 f"{self.server_url}/api/workflows",
-                headers=self.headers,
-                params={"search": name, "size": 100},
+                params=self._auth_params({
+                    "search": name,
+                    "size": 100,
+                    "type": "batch",
+                }),
                 timeout=self.timeout,
+                verify=self.verify_ssl,
             )
             response.raise_for_status()
             data = response.json()
@@ -149,15 +165,15 @@ class ReanaBooker:
             reana_specification = yaml.safe_load(f)
 
         payload = {
-            "workflow_name": name,
             "reana_specification": reana_specification,
         }
 
         response = requests.post(
             f"{self.server_url}/api/workflows",
-            headers=self.headers,
+            params=self._auth_params({"workflow_name": name}),
             json=payload,
             timeout=self.timeout,
+            verify=self.verify_ssl,
         )
         response.raise_for_status()
         result = response.json()
@@ -202,11 +218,12 @@ class ReanaBooker:
 
                 try:
                     response = requests.post(
-                        f"{self.server_url}/api/workflows/{workflow_id}/workspace/",
-                        headers={"Authorization": f"Bearer {self.access_token}"},
-                        data={"file_name": relative_path},
-                        files={"file_content": (relative_path, file_content)},
+                        f"{self.server_url}/api/workflows/{workflow_id}/workspace",
+                        params=self._auth_params({"file_name": relative_path}),
+                        data=file_content,
+                        headers={"Content-Type": "application/octet-stream"},
                         timeout=self.timeout,
+                        verify=self.verify_ssl,
                     )
                     response.raise_for_status()
                 except requests.exceptions.RequestException as e:

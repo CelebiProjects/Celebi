@@ -564,7 +564,9 @@ cli.add_command(use_data_command)
               help="REANA access token (or set REANA_ACCESS_TOKEN env var)")
 @click.option("--path", "project_path", default="",
               help="Path to Celebi project (default: current directory)")
-def book_reana_command(server_url, access_token, project_path):
+@click.option("--insecure", is_flag=True, default=False,
+              help="Disable SSL certificate verification")
+def book_reana_command(server_url, access_token, project_path, insecure):
     """Book the current project to REANA as a file catalog."""
     try:
         # Resolve credentials
@@ -593,7 +595,7 @@ def book_reana_command(server_url, access_token, project_path):
         project_name = os.path.basename(os.path.normpath(project_path))
 
         # Book to REANA
-        booker = ReanaBooker(server_url, access_token)
+        booker = ReanaBooker(server_url, access_token, verify_ssl=not insecure)
         result = booker.book_project(project_path, project_name)
 
         if result.messages:

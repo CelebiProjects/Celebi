@@ -6,7 +6,11 @@ from ...utils import csys
 from ...kernel.reana_booker import ReanaBooker
 
 
-def book_reana(server_url: str = "", access_token: str = "") -> Message:
+def book_reana(
+    server_url: str = "",
+    access_token: str = "",
+    verify_ssl: bool = True
+) -> Message:
     """Book the current project to REANA.
 
     Uploads the current Celebi project files to a REANA instance
@@ -15,6 +19,7 @@ def book_reana(server_url: str = "", access_token: str = "") -> Message:
     Args:
         server_url: REANA server URL. If empty, uses REANA_SERVER_URL env var.
         access_token: REANA access token. If empty, uses REANA_ACCESS_TOKEN env var.
+        verify_ssl: Whether to verify SSL certificates.
 
     Returns:
         Message: Booking result with workflow URL or error information.
@@ -22,6 +27,7 @@ def book_reana(server_url: str = "", access_token: str = "") -> Message:
     Examples:
         book_reana()  # Uses env vars
         book_reana("https://reana.cern.ch", "my-token")
+        book_reana("https://reana.cern.ch", "my-token", verify_ssl=False)
     """
     message = Message()
 
@@ -51,7 +57,7 @@ def book_reana(server_url: str = "", access_token: str = "") -> Message:
     project_name = os.path.basename(os.path.normpath(project_path))
 
     # Book to REANA
-    booker = ReanaBooker(server_url, access_token)
+    booker = ReanaBooker(server_url, access_token, verify_ssl=verify_ssl)
     try:
         result = booker.book_project(project_path, project_name)
         return result

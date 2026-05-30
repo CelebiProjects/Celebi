@@ -218,10 +218,30 @@ class EnvironmentCommands:
         except Exception as e:
             print(f"Error removing runner: {e}")
 
-    def do_book_reana(self, _: str) -> None:
-        """Book current project to REANA."""
+    def do_book_reana(self, arg: str) -> None:
+        """Book current project to REANA.
+
+        Usage: book-reana [--server URL] [--token TOKEN] [--insecure]
+        """
         try:
-            result = shell.book_reana()
+            args = arg.split() if arg else []
+            server_url = ""
+            access_token = ""
+            verify_ssl = True
+            i = 0
+            while i < len(args):
+                if args[i] == "--server" and i + 1 < len(args):
+                    server_url = args[i + 1]
+                    i += 2
+                elif args[i] == "--token" and i + 1 < len(args):
+                    access_token = args[i + 1]
+                    i += 2
+                elif args[i] == "--insecure":
+                    verify_ssl = False
+                    i += 1
+                else:
+                    i += 1
+            result = shell.book_reana(server_url, access_token, verify_ssl)
             if result.messages:
                 print(result.colored())
         except Exception as e:
