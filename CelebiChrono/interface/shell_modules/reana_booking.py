@@ -30,10 +30,16 @@ def book_reana(server_url: str = "", access_token: str = "") -> Message:
     access_token = access_token or os.environ.get("REANA_ACCESS_TOKEN", "")
 
     if not server_url:
-        message.add("REANA server URL not set. Use --server or set REANA_SERVER_URL env var.\n", "error")
+        message.add(
+            "REANA server URL not set. Use --server or set REANA_SERVER_URL env var.\n",
+            "error"
+        )
         return message
     if not access_token:
-        message.add("REANA access token not set. Use --token or set REANA_ACCESS_TOKEN env var.\n", "error")
+        message.add(
+            "REANA access token not set. Use --token or set REANA_ACCESS_TOKEN env var.\n",
+            "error"
+        )
         return message
 
     # Get project info
