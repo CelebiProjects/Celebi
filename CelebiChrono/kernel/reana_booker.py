@@ -52,10 +52,13 @@ class ReanaBooker:
 
     def _setup_env(self):
         """Set REANA_SERVER_URL environment variable for the client."""
+        import urllib3
+
         os.environ["REANA_SERVER_URL"] = self.server_url
         # Disable SSL verification if requested
         if not self.verify_ssl:
             os.environ["REANA_CLIENT_VERIFY_SSL"] = "false"
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         elif "REANA_CLIENT_VERIFY_SSL" in os.environ:
             del os.environ["REANA_CLIENT_VERIFY_SSL"]
         # Force re-initialization of the API client singleton
