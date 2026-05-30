@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 import networkx as nx
 
 from ..utils import csys
+from ..utils.message import Message
 from .vobj_core import Core
 from .chern_cache import ChernCache
 
@@ -22,6 +23,7 @@ class ArcManagementDoctor(Core):
     def doctor(self):
         """ Try to exam and fix the repository.
         """
+        message = Message()
         queue = self.sub_objects_recursively()
         for obj in queue:
             if not obj.is_task_or_algorithm():
@@ -31,6 +33,9 @@ class ArcManagementDoctor(Core):
             self.doctor_successor(obj)
             self.doctor_alias(obj)
             self.doctor_path_to_alias(obj)
+
+        message.add("Doctor check completed", "success")
+        return message
 
     def doctor_predecessor(self, obj):
         """ Doctor the predecessors of the object

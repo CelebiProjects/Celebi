@@ -1,3 +1,4 @@
+
 # pylint: disable=broad-exception-caught
 # pylint: disable=too-many-public-methods
 # pylint: disable=consider-using-with
@@ -64,6 +65,7 @@ from ..utils import metadata
 from ..utils.pretty import colorize
 from ..utils.resumable_upload import ResumableUploader, UploadError
 from .chern_cache import ChernCache
+from ..utils.message import Message
 
 
 logger = getLogger("ChernLogger")
@@ -659,8 +661,15 @@ class ChernCommunicator():
         )
 
         response.raise_for_status()
-        print(response.json())
-        return response.json()
+        result = response.json()
+        print(result)
+        msg = Message()
+        if result.get("status") == "success":
+            msg.add(result.get("message", "Bookkeeping completed"), "success")
+        else:
+            msg.add(result.get("message", "Bookkeeping failed"), "error")
+        msg.data.update(result)
+        return msg
 
     def homekeep(self, project_uuid):
         """ Trigger homekeep on the server for a given project UUID """
