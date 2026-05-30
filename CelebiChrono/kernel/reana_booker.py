@@ -8,6 +8,7 @@ import fnmatch
 from logging import getLogger
 
 import requests
+import yaml
 
 from ..utils.message import Message
 
@@ -62,6 +63,11 @@ class ReanaBooker:
         Returns:
             Message: Success or error message with REANA workflow URL
         """
+        if not os.path.isdir(project_path):
+            message = Message()
+            message.add(f"Invalid project path: {project_path}\n", "error")
+            return message
+
         message = Message()
         workflow_name = f"celebi-{project_name}"
 
@@ -85,8 +91,11 @@ class ReanaBooker:
                 f"REANA workspace: {self.server_url}/api/workflows/{workflow_id}/workspace/\n",
                 "info",
             )
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             message.add(f"Upload failed: {e}\n", "error")
+            message.data["workflow_name"] = workflow_name
+            message.data["workflow_id"] = workflow_id
+            message.data["server_url"] = self.server_url
             return message
 
         message.data["workflow_name"] = workflow_name
@@ -118,7 +127,7 @@ class ReanaBooker:
                     return item
             return None
         except requests.exceptions.RequestException as e:
-            logger.debug("Failed to list workflows: %s", e)
+            logger.warning("Failed to list workflows: %s", e)
             return None
 
     def _create_workflow(self, name: str):
@@ -133,8 +142,6 @@ class ReanaBooker:
         Raises:
             RuntimeError: If workflow creation fails
         """
-        import yaml
-
         spec_path = os.path.join(
             os.path.dirname(__file__), "reana_booking_spec.yaml"
         )
@@ -207,16 +214,8 @@ class ReanaBooker:
         Returns:
             bool: True if path should be skipped
         """
-        # Normalize path separators for matching
         normalized = relative_path.replace(os.sep, "/")
-
         for pattern in DEFAULT_IGNORE_PATTERNS:
             if fnmatch.fnmatch(normalized, pattern):
                 return True
-            # Also check parent directory patterns
-            if pattern.endswith("/*"):
-                prefix = pattern[:-1]
-                if normalized.startswith(prefix):
-                    return True
-
         return False
