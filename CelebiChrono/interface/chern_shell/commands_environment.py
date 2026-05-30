@@ -218,6 +218,15 @@ class EnvironmentCommands:
         except Exception as e:
             print(f"Error removing runner: {e}")
 
+    def do_book_reana(self, _: str) -> None:
+        """Book current project to REANA."""
+        try:
+            result = shell.book_reana()
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error booking to REANA: {e}")
+
     def do_add_host(self, arg: str) -> None:
         """Add a host to the communicator."""
         try:
