@@ -1,4 +1,5 @@
 """Unit tests for ReanaBooker."""
+import json
 import os
 import tempfile
 import unittest
@@ -134,6 +135,37 @@ class TestReanaBooker(unittest.TestCase):
         self.assertEqual(call_kwargs["name"], "celebi-test")
         self.assertEqual(call_kwargs["access_token"], "test-token")
         self.assertIn("reana_specification", call_kwargs)
+
+    @patch("CelebiChrono.kernel.reana_booker.reana_client.create_workflow")
+    def test_create_workflow_with_repo_metadata(self, mock_create_workflow):
+        """Test creating a workflow with reana_repo metadata."""
+        print(Fore.BLUE + "Testing Create Workflow with Repo Metadata..." + Style.RESET)
+        mock_create_workflow.return_value = {
+            "workflow_id": "workflow-789",
+            "workflow_name": "celebi-test"
+        }
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create a fake task directory with config
+            task_dir = os.path.join(tmpdir, "tasks", "taskA")
+            os.makedirs(task_dir)
+            os.makedirs(os.path.join(task_dir, ".celebi"))
+            with open(os.path.join(task_dir, ".celebi", "config.json"), "w") as f:
+                json.dump({"object_type": "task"}, f)
+            with open(os.path.join(task_dir, "celebi.yaml"), "w") as f:
+                f.write("descriptor: taskA\nenvironment: alpine\n")
+
+            result = self.booker._create_workflow("celebi-test", tmpdir)
+
+        self.assertEqual(result["workflow_id"], "workflow-789")
+        mock_create_workflow.assert_called_once()
+        call_kwargs = mock_create_workflow.call_args.kwargs
+        spec = call_kwargs["reana_specification"]
+        self.assertIn("reana_repo", spec)
+        self.assertEqual(spec["reana_repo"]["project_name"], os.path.basename(tmpdir))
+        self.assertEqual(len(spec["reana_repo"]["objects"]), 1)
+        self.assertEqual(spec["reana_repo"]["objects"][0]["type"], "task")
+        self.assertEqual(spec["reana_repo"]["objects"][0]["descriptor"], "taskA")
 
     @patch("CelebiChrono.kernel.reana_booker.reana_client.upload_file")
     def test_upload_files(self, mock_upload_file):

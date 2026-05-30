@@ -2,9 +2,12 @@
 
 Uses the official reana_client library for correct API formatting.
 """
+import json
 import os
 import fnmatch
 from logging import getLogger
+
+import yaml
 
 from reana_client.api import client as reana_client
 from reana_commons.api_client import BaseAPIClient
@@ -77,7 +80,7 @@ class ReanaBooker:
         workflow = self._get_workflow(workflow_name)
         if workflow is None:
             message.add(f"Creating REANA workflow '{workflow_name}'...\n", "normal")
-            workflow = self._create_workflow(workflow_name)
+            workflow = self._create_workflow(workflow_name, project_path)
             message.add(f"Workflow created: {workflow_name}\n", "success")
         else:
             message.add(f"Using existing REANA workflow '{workflow_name}'\n", "success")
@@ -122,15 +125,17 @@ class ReanaBooker:
             logger.warning("Failed to list workflows: %s", e)
             return None
 
-    def _create_workflow(self, name: str):
+    def _create_workflow(self, name: str, project_path: str = ""):
         """Create a new minimal workflow on REANA."""
-        import yaml
-
         spec_path = os.path.join(
             os.path.dirname(__file__), "reana_booking_spec.yaml"
         )
         with open(spec_path, "r", encoding="utf-8") as f:
             reana_specification = yaml.safe_load(f)
+
+        # Inject project structure metadata if project_path is provided
+        if project_path and os.path.isdir(project_path):
+            reana_specification["reana_repo"] = self._build_repo_metadata(project_path)
 
         result = reana_client.create_workflow(
             reana_specification=reana_specification,
@@ -142,6 +147,78 @@ class ReanaBooker:
             raise RuntimeError(f"Workflow creation failed: {result}")
 
         return result
+
+    def _build_repo_metadata(self, project_path: str) -> dict:
+        """Build project structure metadata for the reana_repo field.
+
+        Walks the project directory and records Celebi objects
+        (tasks, algorithms, directories) with their metadata.
+
+        Args:
+            project_path: Path to the Celebi project directory.
+
+        Returns:
+            dict: Project structure metadata.
+        """
+        repo_metadata = {
+            "project_name": os.path.basename(os.path.normpath(project_path)),
+            "description": "Celebi project structure catalog",
+            "objects": [],
+        }
+
+        for root, dirs, _files in os.walk(project_path):
+            # Skip ignored directories
+            dirs[:] = [
+                d for d in dirs
+                if not self._should_ignore(
+                    os.path.relpath(os.path.join(root, d), project_path)
+                )
+            ]
+
+            for d in dirs:
+                dir_path = os.path.join(root, d)
+                config_path = os.path.join(dir_path, ".celebi", "config.json")
+                if not os.path.exists(config_path):
+                    continue
+
+                try:
+                    with open(config_path, "r", encoding="utf-8") as f:
+                        config = json.load(f)
+                except (json.JSONDecodeError, OSError):
+                    continue
+
+                obj_type = config.get("object_type", "")
+                if not obj_type:
+                    continue
+
+                rel_path = os.path.relpath(dir_path, project_path)
+                obj_entry = {
+                    "path": rel_path,
+                    "type": obj_type,
+                }
+
+                # Read celebi.yaml for tasks and algorithms
+                if obj_type in ("task", "algorithm"):
+                    celebi_yaml_path = os.path.join(dir_path, "celebi.yaml")
+                    if os.path.exists(celebi_yaml_path):
+                        try:
+                            with open(celebi_yaml_path, "r", encoding="utf-8") as f:
+                                celebi_meta = yaml.safe_load(f) or {}
+                            if "descriptor" in celebi_meta:
+                                obj_entry["descriptor"] = celebi_meta["descriptor"]
+                            if "environment" in celebi_meta:
+                                obj_entry["environment"] = celebi_meta["environment"]
+                            if "memory_limit" in celebi_meta:
+                                obj_entry["memory_limit"] = celebi_meta["memory_limit"]
+                        except (yaml.YAMLError, OSError):
+                            pass
+
+                repo_metadata["objects"].append(obj_entry)
+
+        # Sort by path for deterministic output
+        repo_metadata["objects"].sort(key=lambda x: x["path"])
+
+        return repo_metadata
 
     def _upload_files(self, workflow_id: str, project_path: str):
         """Upload project files to REANA workflow workspace."""
@@ -176,6 +253,84 @@ class ReanaBooker:
                     )
                 except Exception as e:
                     logger.warning("Failed to upload %s: %s", relative_path, e)
+
+    def _generate_repo_yaml(self, project_path: str) -> bytes:
+        """Generate reana_repo.yaml documenting the project structure.
+
+        Walks the project directory, identifies Celebi objects
+        (tasks, algorithms, directories), and records their metadata
+        in a YAML document for catalog/reference purposes.
+
+        Args:
+            project_path: Path to the Celebi project directory.
+
+        Returns:
+            bytes: UTF-8 encoded YAML content.
+        """
+        repo_structure = {
+            "project_name": os.path.basename(os.path.normpath(project_path)),
+            "description": "Celebi project structure catalog",
+            "objects": [],
+        }
+
+        for root, dirs, _files in os.walk(project_path):
+            # Skip ignored directories
+            dirs[:] = [
+                d for d in dirs
+                if not self._should_ignore(
+                    os.path.relpath(os.path.join(root, d), project_path)
+                )
+            ]
+
+            for d in dirs:
+                dir_path = os.path.join(root, d)
+                config_path = os.path.join(dir_path, ".celebi", "config.json")
+                if not os.path.exists(config_path):
+                    continue
+
+                try:
+                    with open(config_path, "r", encoding="utf-8") as f:
+                        config = json.load(f)
+                except (json.JSONDecodeError, OSError):
+                    continue
+
+                obj_type = config.get("object_type", "")
+                if not obj_type:
+                    continue
+
+                rel_path = os.path.relpath(dir_path, project_path)
+                obj_entry = {
+                    "path": rel_path,
+                    "type": obj_type,
+                }
+
+                # Read celebi.yaml for tasks and algorithms
+                if obj_type in ("task", "algorithm"):
+                    celebi_yaml_path = os.path.join(dir_path, "celebi.yaml")
+                    if os.path.exists(celebi_yaml_path):
+                        try:
+                            with open(celebi_yaml_path, "r", encoding="utf-8") as f:
+                                celebi_meta = yaml.safe_load(f) or {}
+                            if "descriptor" in celebi_meta:
+                                obj_entry["descriptor"] = celebi_meta["descriptor"]
+                            if "environment" in celebi_meta:
+                                obj_entry["environment"] = celebi_meta["environment"]
+                            if "memory_limit" in celebi_meta:
+                                obj_entry["memory_limit"] = celebi_meta["memory_limit"]
+                        except (yaml.YAMLError, OSError):
+                            pass
+
+                repo_structure["objects"].append(obj_entry)
+
+        # Sort by path for deterministic output
+        repo_structure["objects"].sort(key=lambda x: x["path"])
+
+        return yaml.safe_dump(
+            repo_structure,
+            default_flow_style=False,
+            sort_keys=False,
+            allow_unicode=True,
+        ).encode("utf-8")
 
     def _should_ignore(self, relative_path: str) -> bool:
         """Check if a relative path should be ignored during upload."""
