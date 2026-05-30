@@ -33,6 +33,9 @@ from .shell_modules.communication import (
 from .shell_modules.visualization import (
     view, viewurl, impress, trace, imgcat, draw_dag_graphviz
 )
+from .shell_modules.reana_booking import (
+    book_reana
+)
 from .shell_modules.utilities import (
     workaround_preshell, workaround_postshell, history,
     watermark, changes, doctor, bookkeep, bookkeep_url,
@@ -70,6 +73,8 @@ __all__ = [
     'watermark', 'changes', 'doctor', 'bookkeep', 'bookkeep_url',
     'gc_impressions', 'pack_impressions', 'migrate_impressions', 'stats_impressions',
     'danger_call', 'tree', 'error_log',
+    # REANA booking functions (from reana_booking.py)
+    'book_reana',
     # Git integration functions (from utilities.py)
     'git_merge', 'git_validate', 'git_status', 'git_enable',
     'git_disable', 'git_hooks',
