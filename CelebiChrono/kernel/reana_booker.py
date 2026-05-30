@@ -87,10 +87,18 @@ class ReanaBooker:
 
         workflow_id = workflow.get("workflow_id", workflow.get("id", workflow.get("name", workflow_name)))
 
+        # If reusing existing workflow, clear old folders first
+        if workflow is not None:
+            cleared = self._clear_old_folders(workflow_id, project_path)
+            if cleared:
+                message.add("Cleared old folders from workspace.\n", "normal")
+
         # Upload files
         message.add("Uploading project files...\n", "normal")
         try:
             self._upload_files(workflow_id, project_path)
+            # Upload reana_repo.yaml so it can be fetched on next booking
+            self._upload_repo_yaml(workflow_id, project_path)
             message.add("Files uploaded successfully.\n", "success")
             message.add(
                 f"REANA workspace: {self.server_url}/api/workflows/{workflow_id}/workspace\n",
@@ -283,83 +291,139 @@ class ReanaBooker:
                 except Exception as e:
                     logger.warning("Failed to upload %s: %s", relative_path, e)
 
-    def _generate_repo_yaml(self, project_path: str) -> bytes:
-        """Generate reana_repo.yaml documenting the project structure.
-
-        Walks the project directory, identifies Celebi objects
-        (tasks, algorithms, directories), and records their metadata
-        in a YAML document for catalog/reference purposes.
+    def _upload_repo_yaml(self, workflow_id: str, project_path: str):
+        """Upload reana_repo.yaml to workspace for future cleanup.
 
         Args:
+            workflow_id: REANA workflow ID.
             project_path: Path to the Celebi project directory.
-
-        Returns:
-            bytes: UTF-8 encoded YAML content.
         """
-        repo_structure = {
-            "project_name": os.path.basename(os.path.normpath(project_path)),
-            "description": "Celebi project structure catalog",
-            "objects": [],
-        }
-
-        for root, dirs, _files in os.walk(project_path):
-            # Skip ignored directories
-            dirs[:] = [
-                d for d in dirs
-                if not self._should_ignore(
-                    os.path.relpath(os.path.join(root, d), project_path)
-                )
-            ]
-
-            for d in dirs:
-                dir_path = os.path.join(root, d)
-                config_path = os.path.join(dir_path, ".celebi", "config.json")
-                if not os.path.exists(config_path):
-                    continue
-
-                try:
-                    with open(config_path, "r", encoding="utf-8") as f:
-                        config = json.load(f)
-                except (json.JSONDecodeError, OSError):
-                    continue
-
-                obj_type = config.get("object_type", "")
-                if not obj_type:
-                    continue
-
-                rel_path = os.path.relpath(dir_path, project_path)
-                obj_entry = {
-                    "path": rel_path,
-                    "type": obj_type,
-                }
-
-                # Read celebi.yaml for tasks and algorithms
-                if obj_type in ("task", "algorithm"):
-                    celebi_yaml_path = os.path.join(dir_path, "celebi.yaml")
-                    if os.path.exists(celebi_yaml_path):
-                        try:
-                            with open(celebi_yaml_path, "r", encoding="utf-8") as f:
-                                celebi_meta = yaml.safe_load(f) or {}
-                            if "descriptor" in celebi_meta:
-                                obj_entry["descriptor"] = celebi_meta["descriptor"]
-                            if "environment" in celebi_meta:
-                                obj_entry["environment"] = celebi_meta["environment"]
-                            if "memory_limit" in celebi_meta:
-                                obj_entry["memory_limit"] = celebi_meta["memory_limit"]
-                        except (yaml.YAMLError, OSError):
-                            pass
-
-                repo_structure["objects"].append(obj_entry)
-
-        # Sort by path for deterministic output
-        repo_structure["objects"].sort(key=lambda x: x["path"])
-
-        return yaml.safe_dump(
-            repo_structure,
+        repo_metadata = self._build_repo_metadata(project_path)
+        yaml_content = yaml.safe_dump(
+            repo_metadata,
             default_flow_style=False,
             sort_keys=False,
             allow_unicode=True,
         ).encode("utf-8")
+        try:
+            reana_client.upload_file(
+                workflow=workflow_id,
+                file_=yaml_content,
+                file_name="reana_repo.yaml",
+                access_token=self.access_token,
+            )
+        except Exception as e:
+            logger.warning("Failed to upload reana_repo.yaml: %s", e)
+
+    def _clear_old_folders(self, workflow_id: str, project_path: str) -> bool:
+        """Clear old folders from REANA workspace before re-uploading.
+
+        Downloads the existing reana_repo.yaml from the workflow workspace,
+        parses it to find old folder paths, and deletes those files.
+
+        Args:
+            workflow_id: REANA workflow ID.
+            project_path: Local project path.
+
+        Returns:
+            bool: True if old folders were cleared (or no reana_repo.yaml found).
+        """
+        try:
+            old_repo = self._download_workspace_file(workflow_id, "reana_repo.yaml")
+            if old_repo is None:
+                logger.debug("No reana_repo.yaml found in workspace, skipping cleanup")
+                return True
+
+            old_metadata = yaml.safe_load(old_repo)
+            if not old_metadata or "objects" not in old_metadata:
+                return True
+
+            # Get list of current files in workspace
+            workspace_files = self._list_workspace_files(workflow_id)
+
+            # Build set of old folder prefixes to delete
+            old_prefixes = set()
+            for obj in old_metadata["objects"]:
+                old_path = obj.get("path", "")
+                if old_path:
+                    sanitized = self._sanitize_upload_path(old_path)
+                    old_prefixes.add(sanitized)
+
+            # Delete files that belong to old folders
+            deleted_count = 0
+            for file_info in workspace_files:
+                file_name = file_info.get("name", "")
+                if any(
+                    file_name == prefix or file_name.startswith(prefix + "/")
+                    for prefix in old_prefixes
+                ):
+                    try:
+                        self._delete_workspace_file(workflow_id, file_name)
+                        deleted_count += 1
+                    except Exception as e:
+                        logger.warning("Failed to delete %s: %s", file_name, e)
+
+            logger.debug("Deleted %d old files from workspace", deleted_count)
+            return True
+
+        except Exception as e:
+            logger.warning("Failed to clear old folders: %s", e)
+            return False
+
+    def _download_workspace_file(self, workflow_id: str, file_name: str):
+        """Download a file from REANA workflow workspace.
+
+        Args:
+            workflow_id: REANA workflow ID.
+            file_name: Name/path of the file to download.
+
+        Returns:
+            str or None: File content as string, or None if not found.
+        """
+        try:
+            content, _filename, _is_zip = reana_client.download_file(
+                workflow=workflow_id,
+                file_name=file_name,
+                access_token=self.access_token,
+            )
+            if isinstance(content, bytes):
+                return content.decode("utf-8")
+            return content
+        except Exception:
+            return None
+
+    def _list_workspace_files(self, workflow_id: str) -> list:
+        """List files in REANA workflow workspace.
+
+        Args:
+            workflow_id: REANA workflow ID.
+
+        Returns:
+            list: List of file info dicts with 'name' keys.
+        """
+        try:
+            return reana_client.list_files(
+                workflow=workflow_id,
+                access_token=self.access_token,
+            ) or []
+        except Exception:
+            return []
+
+    def _delete_workspace_file(self, workflow_id: str, file_name: str):
+        """Delete a file from REANA workflow workspace.
+
+        Args:
+            workflow_id: REANA workflow ID.
+            file_name: Name/path of the file to delete.
+
+        Raises:
+            Exception: On deletion failure.
+        """
+        reana_client.delete_file(
+            workflow=workflow_id,
+            file_name=file_name,
+            access_token=self.access_token,
+        )
 
     def _should_ignore(self, relative_path: str) -> bool:
         """Check if a relative path should be ignored during upload."""
