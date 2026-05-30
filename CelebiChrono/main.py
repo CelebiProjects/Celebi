@@ -29,6 +29,7 @@ from logging import getLogger
 import click
 
 from .kernel import vproject
+from .kernel.reana_booker import ReanaBooker
 from .utils import csys
 from .utils import metadata
 from .interface.ChernShell import ChernShell
@@ -554,6 +555,52 @@ def git_config(key, value):
         print(f"Error setting configuration: {e}")
 
 cli.add_command(use_data_command)
+
+
+@cli.command(name="book-reana")
+@click.option("--server", "server_url", default="",
+              help="REANA server URL (or set REANA_SERVER_URL env var)")
+@click.option("--token", "access_token", default="",
+              help="REANA access token (or set REANA_ACCESS_TOKEN env var)")
+@click.option("--path", "project_path", default="",
+              help="Path to Celebi project (default: current directory)")
+def book_reana_command(server_url, access_token, project_path):
+    """Book the current project to REANA as a file catalog."""
+    try:
+        # Resolve credentials
+        server_url = server_url or os.environ.get("REANA_SERVER_URL", "")
+        access_token = access_token or os.environ.get("REANA_ACCESS_TOKEN", "")
+
+        if not server_url:
+            print("Error: REANA server URL not set.")
+            print("Use --server or set REANA_SERVER_URL environment variable.")
+            return
+        if not access_token:
+            print("Error: REANA access token not set.")
+            print("Use --token or set REANA_ACCESS_TOKEN environment variable.")
+            return
+
+        # Resolve project path
+        if project_path:
+            project_path = os.path.abspath(project_path)
+        else:
+            project_path = csys.project_path(os.getcwd())
+
+        if not project_path:
+            print("Error: Not inside a Celebi project.")
+            return
+
+        project_name = os.path.basename(os.path.normpath(project_path))
+
+        # Book to REANA
+        booker = ReanaBooker(server_url, access_token)
+        result = booker.book_project(project_path, project_name)
+
+        if result.messages:
+            print(result.colored())
+
+    except Exception as e:
+        print(f"Error: {e}")
 
 
 def main():
