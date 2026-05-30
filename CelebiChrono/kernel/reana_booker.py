@@ -220,6 +220,34 @@ class ReanaBooker:
 
         return repo_metadata
 
+    def _sanitize_upload_path(self, relative_path: str) -> str:
+        """Convert hidden directory names to readable names for REANA upload.
+
+        REANA's REST API may have issues with hidden file paths (e.g., .celebi).
+        This method prefixes hidden directory names with "dot_" so they remain
+        identifiable while being REST-API friendly.
+
+        Args:
+            relative_path: Original relative path from project root.
+
+        Returns:
+            str: Sanitized path with hidden directory names prefixed by dot_.
+
+        Examples:
+            .celebi/config.json -> dot_celebi/config.json
+            tasks/.hidden/file.txt -> tasks/dot_hidden/file.txt
+            src/main.py -> src/main.py
+        """
+        parts = relative_path.replace(os.sep, "/").split("/")
+        sanitized = []
+        for part in parts[:-1]:  # All but the file name
+            if part.startswith(".") and len(part) > 1:
+                sanitized.append(f"dot_{part[1:]}")
+            else:
+                sanitized.append(part)
+        sanitized.append(parts[-1])  # Keep file name unchanged
+        return "/".join(sanitized)
+
     def _upload_files(self, workflow_id: str, project_path: str):
         """Upload project files to REANA workflow workspace."""
         for root, dirs, files in os.walk(project_path):
@@ -244,11 +272,12 @@ class ReanaBooker:
                     logger.warning("Skipping unreadable file %s: %s", file_path, e)
                     continue
 
+                upload_name = self._sanitize_upload_path(relative_path)
                 try:
                     reana_client.upload_file(
                         workflow=workflow_id,
                         file_=file_content,
-                        file_name=relative_path,
+                        file_name=upload_name,
                         access_token=self.access_token,
                     )
                 except Exception as e:

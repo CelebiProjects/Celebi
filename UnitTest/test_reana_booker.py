@@ -167,6 +167,33 @@ class TestReanaBooker(unittest.TestCase):
         self.assertEqual(spec["reana_repo"]["objects"][0]["type"], "task")
         self.assertEqual(spec["reana_repo"]["objects"][0]["descriptor"], "taskA")
 
+    def test_sanitize_upload_path(self):
+        """Test hidden directory name sanitization."""
+        print(Fore.BLUE + "Testing Sanitize Upload Path..." + Style.RESET)
+        # Hidden directory -> dot_ prefix
+        self.assertEqual(
+            self.booker._sanitize_upload_path(".celebi/config.json"),
+            "dot_celebi/config.json"
+        )
+        self.assertEqual(
+            self.booker._sanitize_upload_path("tasks/.hidden/file.txt"),
+            "tasks/dot_hidden/file.txt"
+        )
+        # Normal paths unchanged
+        self.assertEqual(
+            self.booker._sanitize_upload_path("src/main.py"),
+            "src/main.py"
+        )
+        self.assertEqual(
+            self.booker._sanitize_upload_path("README.md"),
+            "README.md"
+        )
+        # Nested hidden dirs
+        self.assertEqual(
+            self.booker._sanitize_upload_path(".a/.b/file.txt"),
+            "dot_a/dot_b/file.txt"
+        )
+
     @patch("CelebiChrono.kernel.reana_booker.reana_client.upload_file")
     def test_upload_files(self, mock_upload_file):
         """Test uploading files to workflow workspace."""
@@ -180,6 +207,10 @@ class TestReanaBooker(unittest.TestCase):
             os.makedirs(os.path.join(tmpdir, "src"))
             with open(os.path.join(tmpdir, "src", "analysis.py"), "w") as f:
                 f.write("print('hello')")
+            # Create file in hidden dir (should be sanitized)
+            os.makedirs(os.path.join(tmpdir, ".celebi"))
+            with open(os.path.join(tmpdir, ".celebi", "config.json"), "w") as f:
+                f.write('{"test": true}')
             # Create ignored file
             os.makedirs(os.path.join(tmpdir, ".celebi", "impressions"))
             with open(os.path.join(tmpdir, ".celebi", "impressions", "cache.tar"), "w") as f:
@@ -187,7 +218,6 @@ class TestReanaBooker(unittest.TestCase):
 
             self.booker._upload_files("workflow-123", tmpdir)
 
-        # Should upload README.md and src/analysis.py, but not cache.tar
         calls = mock_upload_file.call_args_list
         uploaded_files = []
         for call in calls:
@@ -195,14 +225,10 @@ class TestReanaBooker(unittest.TestCase):
             uploaded_files.append(kwargs.get("file_name", ""))
 
         self.assertIn("README.md", uploaded_files)
-        # src/analysis.py should be uploaded (with os.sep normalization)
-        src_path = os.path.join("src", "analysis.py")
-        self.assertTrue(
-            any(src_path in f or f.replace(os.sep, "/") == src_path.replace(os.sep, "/")
-                for f in uploaded_files),
-            f"Expected {src_path} in uploaded files, got {uploaded_files}"
-        )
-        # cache.tar should NOT be uploaded
+        self.assertIn("src/analysis.py", uploaded_files)
+        # .celebi/config.json should be sanitized to dot_celebi/config.json
+        self.assertIn("dot_celebi/config.json", uploaded_files)
+        # cache.tar should NOT be uploaded (ignored)
         self.assertTrue(
             all("cache.tar" not in f for f in uploaded_files),
             "cache.tar should not be uploaded"
