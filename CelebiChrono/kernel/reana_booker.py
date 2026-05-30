@@ -258,6 +258,28 @@ class ReanaBooker:
 
     def _upload_files(self, workflow_id: str, project_path: str):
         """Upload project files to REANA workflow workspace."""
+        # First pass: count total files to upload
+        total_files = 0
+        for root, dirs, files in os.walk(project_path):
+            dirs[:] = [
+                d for d in dirs
+                if not self._should_ignore(
+                    os.path.relpath(os.path.join(root, d), project_path)
+                )
+            ]
+            for filename in files:
+                relative_path = os.path.relpath(os.path.join(root, filename), project_path)
+                if not self._should_ignore(relative_path):
+                    total_files += 1
+
+        if total_files == 0:
+            print("No files to upload.")
+            return
+
+        print(f"Uploading {total_files} files...")
+        uploaded_count = 0
+        failed_count = 0
+
         for root, dirs, files in os.walk(project_path):
             dirs[:] = [
                 d for d in dirs
@@ -278,6 +300,7 @@ class ReanaBooker:
                         file_content = f.read()
                 except OSError as e:
                     logger.warning("Skipping unreadable file %s: %s", file_path, e)
+                    failed_count += 1
                     continue
 
                 upload_name = self._sanitize_upload_path(relative_path)
@@ -288,8 +311,14 @@ class ReanaBooker:
                         file_name=upload_name,
                         access_token=self.access_token,
                     )
+                    uploaded_count += 1
+                    if uploaded_count % 10 == 0 or uploaded_count == total_files:
+                        print(f"  Progress: {uploaded_count}/{total_files} files uploaded...")
                 except Exception as e:
                     logger.warning("Failed to upload %s: %s", relative_path, e)
+                    failed_count += 1
+
+        print(f"Upload complete: {uploaded_count} succeeded, {failed_count} failed.")
 
     def _upload_repo_yaml(self, workflow_id: str, project_path: str):
         """Upload reana_repo.yaml to workspace for future cleanup.
@@ -305,6 +334,7 @@ class ReanaBooker:
             sort_keys=False,
             allow_unicode=True,
         ).encode("utf-8")
+        print("Uploading reana_repo.yaml...")
         try:
             reana_client.upload_file(
                 workflow=workflow_id,
@@ -312,6 +342,7 @@ class ReanaBooker:
                 file_name="reana_repo.yaml",
                 access_token=self.access_token,
             )
+            print("reana_repo.yaml uploaded successfully.")
         except Exception as e:
             logger.warning("Failed to upload reana_repo.yaml: %s", e)
 
@@ -329,17 +360,22 @@ class ReanaBooker:
             bool: True if old folders were cleared (or no reana_repo.yaml found).
         """
         try:
+            print("Checking for existing reana_repo.yaml in workspace...")
             old_repo = self._download_workspace_file(workflow_id, "reana_repo.yaml")
             if old_repo is None:
-                logger.debug("No reana_repo.yaml found in workspace, skipping cleanup")
+                print("No previous reana_repo.yaml found. Skipping cleanup.")
                 return True
 
+            print("Found reana_repo.yaml. Parsing old folder list...")
             old_metadata = yaml.safe_load(old_repo)
             if not old_metadata or "objects" not in old_metadata:
+                print("No old folders recorded. Skipping cleanup.")
                 return True
 
             # Get list of current files in workspace
+            print("Listing current workspace files...")
             workspace_files = self._list_workspace_files(workflow_id)
+            print(f"Found {len(workspace_files)} files in workspace.")
 
             # Build set of old folder prefixes to delete
             old_prefixes = set()
@@ -350,20 +386,30 @@ class ReanaBooker:
                     old_prefixes.add(sanitized)
 
             # Delete files that belong to old folders
-            deleted_count = 0
+            files_to_delete = []
             for file_info in workspace_files:
                 file_name = file_info.get("name", "")
                 if any(
                     file_name == prefix or file_name.startswith(prefix + "/")
                     for prefix in old_prefixes
                 ):
-                    try:
-                        self._delete_workspace_file(workflow_id, file_name)
-                        deleted_count += 1
-                    except Exception as e:
-                        logger.warning("Failed to delete %s: %s", file_name, e)
+                    files_to_delete.append(file_name)
 
-            logger.debug("Deleted %d old files from workspace", deleted_count)
+            if not files_to_delete:
+                print("No old files to delete.")
+                return True
+
+            print(f"Deleting {len(files_to_delete)} old files...")
+            deleted_count = 0
+            for idx, file_name in enumerate(files_to_delete, 1):
+                try:
+                    print(f"  [{idx}/{len(files_to_delete)}] Deleting {file_name}...")
+                    self._delete_workspace_file(workflow_id, file_name)
+                    deleted_count += 1
+                except Exception as e:
+                    logger.warning("Failed to delete %s: %s", file_name, e)
+
+            print(f"Deleted {deleted_count}/{len(files_to_delete)} old files.")
             return True
 
         except Exception as e:
