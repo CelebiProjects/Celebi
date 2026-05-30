@@ -193,17 +193,24 @@ class ReanaBooker:
                 if self._should_ignore(relative_path):
                     continue
 
-                with open(file_path, "rb") as f:
-                    file_content = f.read()
+                try:
+                    with open(file_path, "rb") as f:
+                        file_content = f.read()
+                except OSError as e:
+                    logger.warning("Skipping unreadable file %s: %s", file_path, e)
+                    continue
 
-                response = requests.post(
-                    f"{self.server_url}/api/workflows/{workflow_id}/workspace/",
-                    headers={"Authorization": f"Bearer {self.access_token}"},
-                    data={"file_name": relative_path},
-                    files={"file_content": (relative_path, file_content)},
-                    timeout=self.timeout,
-                )
-                response.raise_for_status()
+                try:
+                    response = requests.post(
+                        f"{self.server_url}/api/workflows/{workflow_id}/workspace/",
+                        headers={"Authorization": f"Bearer {self.access_token}"},
+                        data={"file_name": relative_path},
+                        files={"file_content": (relative_path, file_content)},
+                        timeout=self.timeout,
+                    )
+                    response.raise_for_status()
+                except requests.exceptions.RequestException as e:
+                    logger.warning("Failed to upload %s: %s", relative_path, e)
 
     def _should_ignore(self, relative_path: str) -> bool:
         """Check if a relative path should be ignored during upload.
