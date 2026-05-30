@@ -1,14 +1,13 @@
 """REANA Repository Booking module.
 
-Handles direct communication with REANA REST API to upload
-Celebi project files as a workspace catalog entry.
+Uses the official reana_client library for correct API formatting.
 """
 import os
 import fnmatch
 from logging import getLogger
 
-import requests
-import yaml
+from reana_client.api import client as reana_client
+from reana_commons.api_client import BaseAPIClient
 
 from ..utils.message import Message
 
@@ -48,33 +47,22 @@ class ReanaBooker:
         self.verify_ssl = verify_ssl
         self.timeout = 30
 
-    def _auth_params(self, extra=None):
-        """Build query params with access_token.
-
-        Args:
-            extra: Additional query params to include
-
-        Returns:
-            dict: Query parameters including access_token
-        """
-        params = {"access_token": self.access_token}
-        if extra:
-            params.update(extra)
-        return params
+    def _setup_env(self):
+        """Set REANA_SERVER_URL environment variable for the client."""
+        os.environ["REANA_SERVER_URL"] = self.server_url
+        # Disable SSL verification if requested
+        if not self.verify_ssl:
+            os.environ["REANA_CLIENT_VERIFY_SSL"] = "false"
+        elif "REANA_CLIENT_VERIFY_SSL" in os.environ:
+            del os.environ["REANA_CLIENT_VERIFY_SSL"]
+        # Force re-initialization of the API client singleton
+        try:
+            BaseAPIClient("reana-server")
+        except Exception:
+            pass
 
     def book_project(self, project_path: str, project_name: str) -> Message:
-        """Book a Celebi project to REANA.
-
-        Uploads all project files to a REANA workflow named
-        'celebi-{project_name}'. Creates the workflow if it does not exist.
-
-        Args:
-            project_path: Absolute path to the Celebi project directory
-            project_name: Name of the project
-
-        Returns:
-            Message: Success or error message with REANA workflow URL
-        """
+        """Book a Celebi project to REANA."""
         if not os.path.isdir(project_path):
             message = Message()
             message.add(f"Invalid project path: {project_path}\n", "error")
@@ -82,6 +70,8 @@ class ReanaBooker:
 
         message = Message()
         workflow_name = f"celebi-{project_name}"
+
+        self._setup_env()
 
         # Check if workflow exists
         workflow = self._get_workflow(workflow_name)
@@ -92,7 +82,7 @@ class ReanaBooker:
         else:
             message.add(f"Using existing REANA workflow '{workflow_name}'\n", "success")
 
-        workflow_id = workflow.get("id", workflow.get("name", workflow_name))
+        workflow_id = workflow.get("workflow_id", workflow.get("id", workflow.get("name", workflow_name)))
 
         # Upload files
         message.add("Uploading project files...\n", "normal")
@@ -103,7 +93,7 @@ class ReanaBooker:
                 f"REANA workspace: {self.server_url}/api/workflows/{workflow_id}/workspace\n",
                 "info",
             )
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             message.add(f"Upload failed: {e}\n", "error")
             message.data["workflow_name"] = workflow_name
             message.data["workflow_id"] = workflow_id
@@ -116,85 +106,46 @@ class ReanaBooker:
         return message
 
     def _get_workflow(self, name: str):
-        """Get workflow by name, or None if not found.
-
-        Args:
-            name: Workflow name to search for
-
-        Returns:
-            dict or None: Workflow dict if found, None otherwise
-        """
+        """Get workflow by name, or None if not found."""
         try:
-            response = requests.get(
-                f"{self.server_url}/api/workflows",
-                params=self._auth_params({
-                    "search": name,
-                    "size": 100,
-                    "type": "batch",
-                }),
-                timeout=self.timeout,
-                verify=self.verify_ssl,
+            workflows = reana_client.get_workflows(
+                access_token=self.access_token,
+                type="batch",
+                search=name,
+                size=100,
             )
-            response.raise_for_status()
-            data = response.json()
-            items = data.get("items", [])
-            for item in items:
-                if item.get("name") == name:
-                    return item
+            for wf in workflows:
+                if wf.get("name") == name:
+                    return wf
             return None
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             logger.warning("Failed to list workflows: %s", e)
             return None
 
     def _create_workflow(self, name: str):
-        """Create a new minimal workflow on REANA.
+        """Create a new minimal workflow on REANA."""
+        import yaml
 
-        Args:
-            name: Name for the new workflow
-
-        Returns:
-            dict: Created workflow information
-
-        Raises:
-            RuntimeError: If workflow creation fails
-        """
         spec_path = os.path.join(
             os.path.dirname(__file__), "reana_booking_spec.yaml"
         )
         with open(spec_path, "r", encoding="utf-8") as f:
             reana_specification = yaml.safe_load(f)
 
-        payload = {
-            "reana_specification": reana_specification,
-        }
-
-        response = requests.post(
-            f"{self.server_url}/api/workflows",
-            params=self._auth_params({"workflow_name": name}),
-            json=payload,
-            timeout=self.timeout,
-            verify=self.verify_ssl,
+        result = reana_client.create_workflow(
+            reana_specification=reana_specification,
+            name=name,
+            access_token=self.access_token,
         )
-        response.raise_for_status()
-        result = response.json()
 
-        if not result.get("workflow_id") and not result.get("name"):
+        if not result.get("workflow_id") and not result.get("workflow_name"):
             raise RuntimeError(f"Workflow creation failed: {result}")
 
         return result
 
     def _upload_files(self, workflow_id: str, project_path: str):
-        """Upload project files to REANA workflow workspace.
-
-        Args:
-            workflow_id: REANA workflow ID
-            project_path: Path to project directory
-
-        Raises:
-            requests.exceptions.RequestException: On upload failure
-        """
+        """Upload project files to REANA workflow workspace."""
         for root, dirs, files in os.walk(project_path):
-            # Filter out ignored directories to avoid descending into them
             dirs[:] = [
                 d for d in dirs
                 if not self._should_ignore(
@@ -217,27 +168,17 @@ class ReanaBooker:
                     continue
 
                 try:
-                    response = requests.post(
-                        f"{self.server_url}/api/workflows/{workflow_id}/workspace",
-                        params=self._auth_params({"file_name": relative_path}),
-                        data=file_content,
-                        headers={"Content-Type": "application/octet-stream"},
-                        timeout=self.timeout,
-                        verify=self.verify_ssl,
+                    reana_client.upload_file(
+                        workflow=workflow_id,
+                        file_=file_content,
+                        file_name=relative_path,
+                        access_token=self.access_token,
                     )
-                    response.raise_for_status()
-                except requests.exceptions.RequestException as e:
+                except Exception as e:
                     logger.warning("Failed to upload %s: %s", relative_path, e)
 
     def _should_ignore(self, relative_path: str) -> bool:
-        """Check if a relative path should be ignored during upload.
-
-        Args:
-            relative_path: Path relative to project root
-
-        Returns:
-            bool: True if path should be skipped
-        """
+        """Check if a relative path should be ignored during upload."""
         normalized = relative_path.replace(os.sep, "/")
         for pattern in DEFAULT_IGNORE_PATTERNS:
             if fnmatch.fnmatch(normalized, pattern):
