@@ -1,0 +1,11 @@
+version: 0.8.0
+inputs:
+  files: []
+workflow:
+  type: serial
+  specification:
+    steps:
+      - name: booking-placeholder
+        environment: 'reanahub/reana-env-alpine'
+        commands:
+          - echo "Celebi booking placeholder"
