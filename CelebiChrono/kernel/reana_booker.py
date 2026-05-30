@@ -116,7 +116,7 @@ class ReanaBooker:
             response = requests.get(
                 f"{self.server_url}/api/workflows",
                 headers=self.headers,
-                params={"search": name, "size": 1},
+                params={"search": name, "size": 100},
                 timeout=self.timeout,
             )
             response.raise_for_status()
