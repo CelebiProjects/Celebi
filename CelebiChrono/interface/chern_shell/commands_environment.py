@@ -218,16 +218,55 @@ class EnvironmentCommands:
         except Exception as e:
             print(f"Error removing runner: {e}")
 
+    def do_booking_server(self, arg: str) -> None:
+        """Check the registered booking server URL and status.
+
+        Usage: booking-server
+        """
+        try:
+            result = shell.check_booking_server()
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error checking booking server: {e}")
+
+    def do_register_booking_server(self, arg: str) -> None:
+        """Register REANA server and token with Yuki.
+
+        Usage: register-booking-server [--server URL] [--token TOKEN]
+        """
+        try:
+            args = arg.split() if arg else []
+            server_url = ""
+            access_token = ""
+            i = 0
+            while i < len(args):
+                if args[i] == "--server" and i + 1 < len(args):
+                    server_url = args[i + 1]
+                    i += 2
+                elif args[i] == "--token" and i + 1 < len(args):
+                    access_token = args[i + 1]
+                    i += 2
+                else:
+                    i += 1
+            result = shell.register_booking_server(server_url, access_token)
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error registering booking server: {e}")
+
     def do_book_reana(self, arg: str) -> None:
         """Book current project to REANA.
 
-        Usage: book-reana [--server URL] [--token TOKEN] [--insecure]
+        Usage: book-reana [--server URL] [--token TOKEN] [--insecure] [--stageout] [--no-stream]
         """
         try:
             args = arg.split() if arg else []
             server_url = ""
             access_token = ""
             verify_ssl = True
+            stageout = False
+            stream = True
             i = 0
             while i < len(args):
                 if args[i] == "--server" and i + 1 < len(args):
@@ -239,10 +278,22 @@ class EnvironmentCommands:
                 elif args[i] == "--insecure":
                     verify_ssl = False
                     i += 1
+                elif args[i] == "--stageout":
+                    stageout = True
+                    i += 1
+                elif args[i] == "--no-stream":
+                    stream = False
+                    i += 1
                 else:
                     i += 1
-            result = shell.book_reana(server_url, access_token, verify_ssl)
-            if result.messages:
+            result = shell.book_reana(
+                server_url, access_token, verify_ssl,
+                stageout=stageout, stream=stream
+            )
+            # In streaming mode, messages were already printed live.
+            if stream:
+                pass
+            elif result.messages:
                 print(result.colored())
         except Exception as e:
             print(f"Error booking to REANA: {e}")

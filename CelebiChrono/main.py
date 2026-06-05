@@ -29,7 +29,7 @@ from logging import getLogger
 import click
 
 from .kernel import vproject
-from .kernel.reana_booker import ReanaBooker
+from .interface.shell_modules.reana_booking import book_reana
 from .utils import csys
 from .utils import metadata
 from .interface.ChernShell import ChernShell
@@ -557,50 +557,78 @@ def git_config(key, value):
 cli.add_command(use_data_command)
 
 
-@cli.command(name="book-reana")
+@cli.command(name="booking-server")
+def booking_server_command():
+    """Check the registered booking server URL and status."""
+    try:
+        from .interface.shell_modules.reana_booking import check_booking_server
+
+        result = check_booking_server()
+        if result.messages:
+            print(result.colored())
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+@cli.command(name="register-booking-server")
 @click.option("--server", "server_url", default="",
               help="REANA server URL (or set REANA_SERVER_URL env var)")
 @click.option("--token", "access_token", default="",
               help="REANA access token (or set REANA_ACCESS_TOKEN env var)")
+def register_booking_server_command(server_url, access_token):
+    """Register REANA server and token with Yuki for booking.
+
+    Stores the credentials in Yuki's config so that 'book-reana'
+    can be run without specifying --server and --token.
+    """
+    try:
+        from .interface.shell_modules.reana_booking import register_booking_server
+
+        result = register_booking_server(
+            server_url=server_url,
+            access_token=access_token,
+        )
+        if result.messages:
+            print(result.colored())
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+@cli.command(name="book-reana")
+@click.option("--server", "server_url", default="",
+              help="REANA server URL (overrides stored credentials)")
+@click.option("--token", "access_token", default="",
+              help="REANA access token (overrides stored credentials)")
 @click.option("--path", "project_path", default="",
               help="Path to Celebi project (default: current directory)")
 @click.option("--insecure", is_flag=True, default=False,
               help="Disable SSL certificate verification")
-def book_reana_command(server_url, access_token, project_path, insecure):
-    """Book the current project to REANA as a file catalog."""
+@click.option("--stageout", is_flag=True, default=False,
+              help="Also upload stageout files from Yuki storage")
+@click.option("--no-stream", is_flag=True, default=False,
+              help="Disable live streaming; wait for all output before printing")
+def book_reana_command(server_url, access_token, project_path, insecure, stageout, no_stream):
+    """Book the current project to REANA as a file catalog via Yuki.
+
+    If --server and --token are not provided, Yuki will use credentials
+    previously registered via 'register-booking-server'.
+    """
     try:
-        # Resolve credentials
-        server_url = server_url or os.environ.get("REANA_SERVER_URL", "")
-        access_token = access_token or os.environ.get("REANA_ACCESS_TOKEN", "")
-
-        if not server_url:
-            print("Error: REANA server URL not set.")
-            print("Use --server or set REANA_SERVER_URL environment variable.")
-            return
-        if not access_token:
-            print("Error: REANA access token not set.")
-            print("Use --token or set REANA_ACCESS_TOKEN environment variable.")
-            return
-
-        # Resolve project path
-        if project_path:
-            project_path = os.path.abspath(project_path)
-        else:
-            project_path = csys.project_path(os.getcwd())
-
-        if not project_path:
-            print("Error: Not inside a Celebi project.")
-            return
-
-        project_name = os.path.basename(os.path.normpath(project_path))
-
-        # Book to REANA
-        booker = ReanaBooker(server_url, access_token, verify_ssl=not insecure)
-        result = booker.book_project(project_path, project_name)
-
-        if result.messages:
+        result = book_reana(
+            server_url=server_url,
+            access_token=access_token,
+            verify_ssl=not insecure,
+            project_path=project_path,
+            stageout=stageout,
+            stream=not no_stream,
+        )
+        # In streaming mode, messages were already printed live.
+        # Only print any remaining messages that weren't emitted.
+        if not no_stream:
+            # Messages already printed during streaming; nothing more to do
+            pass
+        elif result.messages:
             print(result.colored())
-
     except Exception as e:
         print(f"Error: {e}")
 

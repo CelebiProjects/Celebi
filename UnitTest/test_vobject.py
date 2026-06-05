@@ -296,6 +296,64 @@ class TestChernProject(unittest.TestCase):
         prepare.remove_chern_project("demo_complex")
         CHERN_CACHE.__init__()
 
+    def test_move_task_with_external_successors(self):
+        """Regression test: moving a single task with external successors.
+
+        Before the fix, this raised:
+            Error moving object: list.remove(x): x not in list
+        because move_to_deal_with_arcs removed the same arc twice:
+        once in the second pass (succ_object.remove_arc_from(obj))
+        and again in the third pass (obj.remove_arc_to(succ_object)).
+        """
+        print(Fore.BLUE + "Testing move task with external successors..." + Style.RESET)
+        prepare.create_chern_project("demo_complex")
+        os.chdir("demo_complex")
+
+        # Create a destination directory (use distinct name to avoid
+        # case-insensitive filesystem conflicts with existing 'tasks/')
+        os.makedirs("Moved/.celebi", exist_ok=True)
+        with open("Moved/.celebi/config.json", "w", encoding="utf-8") as f:
+            f.write('{"object_type": "directory"}')
+
+        # Impress all tasks so move_to is allowed
+        for task in ["tasks/taskGen", "tasks/taskAna1", "tasks/taskAna2", "tasks/taskQA"]:
+            vobj.VObject(task).impress()
+
+        obj_taskGen = vobj.VObject("tasks/taskGen")
+        # taskGen has successors taskAna1 and taskAna2, which will be
+        # external after moving taskGen into Moved/
+        self.assertEqual(
+            sorted(obj.invariant_path() for obj in obj_taskGen.successors()),
+            sorted(["tasks/taskAna1", "tasks/taskAna2"])
+        )
+
+        # This must not raise
+        result = obj_taskGen.move_to("Moved/taskGen")
+        self.assertFalse(result.messages)  # No error messages
+
+        # Verify the new object exists
+        self.assertFalse(vobj.VObject("Moved/taskGen").is_zombie())
+
+        # Verify external successors now point to the new location
+        obj_new = vobj.VObject("Moved/taskGen")
+        self.assertEqual(
+            sorted(obj.invariant_path() for obj in obj_new.successors()),
+            sorted(["tasks/taskAna1", "tasks/taskAna2"])
+        )
+
+        # Verify external predecessors still point correctly
+        self.assertEqual(
+            sorted(obj.invariant_path() for obj in obj_new.predecessors()),
+            sorted(["code/gen"])
+        )
+
+        # Verify the old location is gone
+        self.assertTrue(vobj.VObject("tasks/taskGen").is_zombie())
+
+        os.chdir("..")
+        prepare.remove_chern_project("demo_complex")
+        CHERN_CACHE.__init__()
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

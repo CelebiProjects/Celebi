@@ -4,7 +4,7 @@ import click
 from CelebiChrono.utils.debug_logging import setup_debug_logging
 from .commands import (
     navigation, file_operations, object_creation, task_configuration,
-    execution_management, communication, visualization, utilities
+    execution_management, communication, visualization, utilities, booking
 )
 
 @click.group()
@@ -105,3 +105,8 @@ cli.add_command(utilities.gc_impressions_command)
 cli.add_command(utilities.pack_impressions_command)
 cli.add_command(utilities.migrate_impressions_command)
 cli.add_command(utilities.stats_impressions_command)
+
+# Booking commands
+cli.add_command(booking.booking_server_command)
+cli.add_command(booking.register_booking_server_command)
+cli.add_command(booking.book_reana_command)
