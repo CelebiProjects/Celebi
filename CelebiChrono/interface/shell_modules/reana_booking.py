@@ -329,6 +329,13 @@ def _book_reana_streaming(
                 if not chunk.get("success"):
                     error_text = chunk.get("error", "Booking failed on Yuki server.")
                     message.add(f"{error_text}\n", "error")
+                    # Print traceback for debugging if present
+                    tb = chunk.get("traceback", "")
+                    if tb:
+                        import sys
+                        print("\n--- Server traceback ---", file=sys.stderr)
+                        print(tb, file=sys.stderr)
+                        print("--- End traceback ---\n", file=sys.stderr)
                 break
 
             text = chunk.get("text", "")
