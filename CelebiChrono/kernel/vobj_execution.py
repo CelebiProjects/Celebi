@@ -206,7 +206,7 @@ class ExecutionManagement(Core):
                 if status == "failed":
                     consult_table[self.path] = (consult_id, "failed")
                     return "failed"
-                if status not in ("finished", "archived"):
+                if status not in ("finished", "archived", "coda"):
                     pending = True
             if pending:
                 consult_table[self.path] = (consult_id, "pending")
