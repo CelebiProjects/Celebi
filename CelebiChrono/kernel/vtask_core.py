@@ -11,6 +11,7 @@ from typing import Tuple, List, Optional, TYPE_CHECKING
 
 from . import helpme
 from ..utils.message import Message
+from ..utils import metadata
 from .vobject import VObject
 from .vobj_file import LsParameters
 
@@ -41,6 +42,21 @@ class Core(VObject):
 
             if self.algorithm() is not None:
                 message.append(self.show_algorithm())
+
+            # Show APD token status for LHCb AP data list tasks
+            yaml_file = metadata.YamlFile(os.path.join(self.path, "celebi.yaml"))
+            if yaml_file.read_variable("environment", "") == "lhcb_ap_datalist":
+                local_config = metadata.ConfigFile(
+                    os.path.join(self.path, ".celebi", "config.local.json")
+                )
+                token = local_config.read_variable("apd_token", None)
+                message.add("temp_apd_token: ")
+                if token:
+                    message.add("[set]", "success")
+                else:
+                    message.add("[not set]", "warning")
+                message.add("\n")
+
             return message
 
         return message

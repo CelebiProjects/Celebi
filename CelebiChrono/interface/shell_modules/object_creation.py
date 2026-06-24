@@ -12,6 +12,7 @@ from ...kernel.vobject import VObject
 from ...kernel.vtask import create_task
 from ...kernel.vtask import create_data
 from ...kernel.vtask import create_data_list
+from ...kernel.vtask import create_lhcb_ap_data_list
 from ...kernel.vtask import create_rawdata_task
 from ...kernel.valgorithm import create_algorithm
 from ...kernel.vdirectory import create_directory
@@ -159,6 +160,37 @@ def mkdatalist(line: str) -> Message:
         message.add("Not allowed to create data list here", "warning")
         return message
     create_data_list(line)
+    message.add("Created successfully", "success")
+    return message
+
+
+def create_lhcb_ap_list(line: str) -> Message:
+    """Create a new LHCb AP data list object.
+
+    Creates a new LHCb AP data list object within the current project. This task type
+    dynamically generates dataList.txt by querying the LHCb Analysis Productions (AP)
+    tool. The ap_config field in celebi.yaml is initialized with empty values — the
+    user fills in the AP query parameters later.
+
+    Args:
+        line (str): Path where the LHCb AP data list object should be created. Must be
+            within a valid directory or project location.
+
+    Returns:
+        Message: A Message object containing success or warning information
+
+    Examples:
+        create_lhcb_ap_list my_ap_list       # Create at my_ap_list/
+        create_lhcb_ap_list path/to/ap_list  # Create at specific path
+    """
+    line = csys.refine_path(line, MANAGER.current_object().path)
+    message = Message()
+    parent_path = os.path.abspath(line+"/..")
+    object_type = VObject(parent_path).object_type()
+    if object_type not in ("directory", "project"):
+        message.add("Not allowed to create LHCb AP data list here", "warning")
+        return message
+    create_lhcb_ap_data_list(line)
     message.add("Created successfully", "success")
     return message
 

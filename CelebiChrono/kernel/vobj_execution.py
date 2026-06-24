@@ -170,7 +170,7 @@ class ExecutionManagement(Core):
             self.impress()
         for obj in self.predecessors():
             obj.deposit_with_dependencies(consult_id)
-        cherncc.deposit(self.impression())
+        cherncc.deposit(self.impression(), self.path)
         consult_table[self.path] = (consult_id, True)
 
     def is_deposited(self) -> bool:

@@ -172,13 +172,16 @@ class ChernCommunicator():
             timeout=self.timeout
         )
 
-    def deposit(self, impression):
+    def deposit(self, impression, obj_path=""):
         """ Deposit the impression to the server """
         tarname = self._resolve_impression_tarfile(impression)
         files = {
             f"{impression.uuid}.tar.gz": open(tarname, "rb").read(),
             "config.json": open(impression.path + "/config.json", "rb").read()
         }
+        local_config_path = os.path.join(obj_path, ".celebi", "config.local.json")
+        if obj_path and os.path.exists(local_config_path):
+            files["config.local.json"] = open(local_config_path, "rb").read()
         url = self.serverurl()
         requests.post(
             f"http://{url}/upload",

@@ -132,7 +132,7 @@ class SettingManager(Core):
         """
         Check whether the environment is validated or not
         """
-        if self.environment() == "rawdata":
+        if self.environment() in ("rawdata", "datalist", "lhcb_ap_datalist"):
             return True
         if self.algorithm() is not None:
             if self.algorithm().environment() == "script":

@@ -306,3 +306,45 @@ def create_data_list(path):
     yaml_file = metadata.YamlFile(join(path, "celebi.yaml"))
     yaml_file.write_variable("environment", "datalist")
     yaml_file.write_variable("datalist", [])
+
+
+def create_lhcb_ap_data_list(path):
+    """ Create an LHCb AP data list
+
+    Creates a task that dynamically generates dataList.txt by querying the
+    LHCb Analysis Productions (AP) tool (lb-ap / apd Python module).
+    The ap_config is pre-populated with example fields — edit celebi.yaml
+    to set the actual AP query parameters.
+    """
+    path = csys.strip_path_string(path)
+    parent_path = os.path.abspath(path+"/..")
+    object_type = VObject(parent_path).object_type()
+    if object_type not in ("project", "directory"):
+        return
+
+    csys.mkdir(path+"/.celebi")
+    config_file = metadata.ConfigFile(path + "/.celebi/config.json")
+    config_file.write_variable("object_type", "task")
+    task = VObject(path)
+
+    with open(path + "/README.md", "w", encoding="utf-8") as f:
+        f.write(f"Please write README for task {task.invariant_path()}")
+
+    yaml_file = metadata.YamlFile(join(path, "celebi.yaml"))
+    yaml_file.write_variable("environment", "lhcb_ap_datalist")
+    yaml_file.write_variable("cvmfs", ["lhcb.cern.ch"])
+    yaml_file.write_variable("ap_config", {
+        "get_analysis_data": {
+            "args": ["sl", "rds_hadronic"],
+            "kwargs": {
+                "polarity": ["magdown", "magup"]
+            }
+        },
+        "datasets": {
+            "kwargs": {
+                "eventtype": 13563002,
+                "datatype": 2012,
+                "sign": "rs"
+            }
+        }
+    })

@@ -579,3 +579,48 @@ commands:
   - echo 'Hello, world!'""")
     subprocess.call([editor, f"{MANAGER.current_object().path}/celebi.yaml"])
     return message
+
+
+def add_apd_token(token: str) -> Message:
+    """Add an APD token to the current LHCb AP data list task.
+
+    Stores the token in .celebi/config.local.json and syncs it to
+    celebi.yaml so it propagates to Yuki/REANA when submitted.
+    The token is used by the LHCb AP data list generator to authenticate
+    with the LHCb Analysis Productions service.
+
+    Args:
+        token (str): The APD access token string.
+
+    Returns:
+        Message: A Message object containing success or warning information
+
+    Examples:
+        add-apd-token abc123xyz
+    """
+    from os.path import join
+
+    message = Message()
+    obj = MANAGER.current_object()
+
+    if obj.object_type() != "task":
+        message.add("add-apd-token can only be used on a task.", "error")
+        return message
+
+    # Verify this is an lhcb_ap_datalist task
+    yaml_file = metadata.YamlFile(join(obj.path, "celebi.yaml"))
+    environment = yaml_file.read_variable("environment", "")
+    if environment != "lhcb_ap_datalist":
+        message.add(
+            "add-apd-token can only be used on an LHCb AP data list task "
+            f"(environment: {environment}).",
+            "error",
+        )
+        return message
+
+    # Store in .celebi/config.local.json (local reference, gitignored)
+    local_config = metadata.ConfigFile(join(obj.path, ".celebi", "config.local.json"))
+    local_config.write_variable("apd_token", token)
+
+    message.add("APD token stored successfully.", "success")
+    return message

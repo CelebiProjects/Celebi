@@ -121,6 +121,31 @@ class TaskCommands:
         except Exception as e:
             print(f"Error creating data list: {e}")
 
+    def do_create_lhcb_ap_list(self, arg: str) -> None:
+        """Create a new LHCb AP data list object."""
+        try:
+            obj = arg.split()[0]
+            result = shell.create_lhcb_ap_list(obj)
+            if result.messages:
+                print(result.colored())
+        except (IndexError, ValueError) as e:
+            print(f"Error: Please provide a data list name. {e}")
+        except Exception as e:
+            print(f"Error creating LHCb AP data list: {e}")
+
+    def do_add_apd_token(self, arg: str) -> None:
+        """Add an APD token to the current LHCb AP data list task."""
+        try:
+            token = arg.split()[0]
+            result = shell.add_apd_token(token)
+            if result.messages:
+                print(result.colored())
+        except (IndexError, ValueError) as e:
+            print(f"Error: Please provide a token. {e}")
+        except Exception as e:
+            print(f"Error adding APD token: {e}")
+
+
 
 
 

@@ -148,3 +148,20 @@ def hosts_command():
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
+
+@click.command(name="add-apd-token")
+@click.argument("token", type=str)
+def add_apd_token_command(token):
+    """Add an APD access token to the current LHCb AP data list task.
+
+    Stores the token in .celebi/config.local.json and writes
+    lbapi_key.json to the task directory for REANA submission.
+    """
+    try:
+        from CelebiChrono.interface.shell import add_apd_token
+        result = add_apd_token(token)
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")

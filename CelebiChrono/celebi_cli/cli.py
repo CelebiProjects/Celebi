@@ -45,6 +45,7 @@ cli.add_command(object_creation.create_data_command)
 cli.add_command(object_creation.create_data_list_command)
 cli.add_command(object_creation.mkdir_command)
 cli.add_command(object_creation.use_data_command)
+cli.add_command(object_creation.create_lhcb_ap_list_command)
 
 # Task configuration commands (9 commands)
 cli.add_command(task_configuration.remove_input_command)
@@ -57,6 +58,7 @@ cli.add_command(task_configuration.set_mem_command)
 cli.add_command(task_configuration.set_descriptor_command)
 cli.add_command(task_configuration.add_host_command)
 cli.add_command(task_configuration.hosts_command)
+cli.add_command(task_configuration.add_apd_token_command)
 
 # Execution management commands
 cli.add_command(execution_management.runners_command)

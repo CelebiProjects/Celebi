@@ -68,6 +68,23 @@ def create_data_list_command(name):
     except Exception as e:
         _handle_error(f"Command failed: {e}")
 
+@click.command(name="create-lhcb-ap-list")
+@click.argument("name", type=str)
+def create_lhcb_ap_list_command(name):
+    """Create an LHCb AP data list.
+
+    Creates a new lhcb_ap_datalist task with empty ap_config.
+    Edit celebi.yaml to fill in the AP query parameters.
+    """
+    try:
+        from CelebiChrono.interface.shell import create_lhcb_ap_list
+        result = create_lhcb_ap_list(name)
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
 @click.command(name="mkdir")
 @click.argument("name", type=str)
 def mkdir_command(name):
