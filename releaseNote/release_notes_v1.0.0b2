@@ -1,0 +1,11 @@
+## v1.0.0b2
++ Add LHCb Analysis Productions (AP) data list task type (`lhcb_ap_datalist`).
+  - `create-lhcb-ap-list` command creates the task with example AP configuration.
+  - `add-apd-token` command stores the APD token in `.celebi/config.local.json`.
+  - `ls` shows `temp_apd_token` status for these tasks.
++ Deposit uploads `.celebi/config.local.json` alongside the impression so Yuki can generate `lbapi_key.json` server-side.
++ Mark `datalist` and `lhcb_ap_datalist` tasks as validated without requiring an algorithm.
++ Bump version to 1.0.0b2.
+
+## v1.0.0b1
++ Initial beta release of CelebiChrono.
