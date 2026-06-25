@@ -166,6 +166,33 @@ class TestChernProject(unittest.TestCase):
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()
 
+    def test_arc_cache_invalidation(self):
+        print(Fore.BLUE + "Testing Arc Cache Invalidation..." + Style.RESET)
+        prepare.create_chern_project("demo_genfit_new")
+        os.chdir("demo_genfit_new")
+        obj_gen = vobj.VObject("Gen")
+        obj_genTask = vobj.VObject("GenTask")
+        obj_fit = vobj.VObject("Fit")
+        obj_fitTask = vobj.VObject("FitTask")
+
+        # Read predecessors to populate the cache
+        initial_preds = [p.invariant_path() for p in obj_fitTask.predecessors()]
+        self.assertIn("GenTask", initial_preds)
+
+        # Remove the arc; the cache should be invalidated
+        obj_fitTask.remove_input("gen")
+        preds_after_remove = [p.invariant_path() for p in obj_fitTask.predecessors()]
+        self.assertNotIn("GenTask", preds_after_remove)
+
+        # Add the arc back; the cache should be invalidated again
+        obj_fitTask.add_arc_from(obj_genTask)
+        preds_after_add = [p.invariant_path() for p in obj_fitTask.predecessors()]
+        self.assertIn("GenTask", preds_after_add)
+
+        os.chdir("..")
+        prepare.remove_chern_project("demo_genfit_new")
+        CHERN_CACHE.__init__()
+
     def test_core(self):
         print(Fore.BLUE + "Testing Core Commands..." + Style.RESET)
         prepare.create_chern_project("demo_complex")

@@ -8,6 +8,8 @@
 + Add runner management utilities.
   - `update-runner <name>` command to modify runner settings (URL, token, backend type, Kerberos, EOS mount point).
   - `runners` command now displays full runner configuration.
++ Fix arc cache invalidation so `add-algorithm`/`remove-input` changes are visible immediately in `ls`.
++ Add unit test for arc cache invalidation.
 + Bump version to 1.0.0b2.
 
 ## v1.0.0b1

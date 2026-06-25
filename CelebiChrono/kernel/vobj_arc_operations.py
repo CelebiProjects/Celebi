@@ -35,6 +35,11 @@ class ArcManagementOperations(Core):
         pred_str.append(obj.invariant_path())
         self.config_file.write_variable_to_shared("predecessors", pred_str)
 
+        # Invalidate cached predecessor/successor lists so subsequent reads
+        # see the updated arcs immediately.
+        CHERN_CACHE.set(f"predecessors:{self.path}", None)
+        CHERN_CACHE.set(f"successors:{obj.path}", None)
+
     def remove_arc_from(self, obj, single=False):
         """
         Remove a link from the object contained in `path`.
@@ -60,6 +65,10 @@ class ArcManagementOperations(Core):
         pred_str.remove(obj.invariant_path())
         self.config_file.write_variable_to_shared("predecessors", pred_str)
 
+        # Invalidate cached predecessor/successor lists.
+        CHERN_CACHE.set(f"predecessors:{self.path}", None)
+        CHERN_CACHE.set(f"successors:{obj.path}", None)
+
     def add_arc_to(self, obj):
         """
         Add a link from this object to the object contained in `path`.
@@ -78,6 +87,10 @@ class ArcManagementOperations(Core):
         succ_str = self.config_file.read_variable("successors", [])
         succ_str.append(obj.invariant_path())
         self.config_file.write_variable_to_shared("successors", succ_str)
+
+        # Invalidate cached predecessor/successor lists.
+        CHERN_CACHE.set(f"successors:{self.path}", None)
+        CHERN_CACHE.set(f"predecessors:{obj.path}", None)
 
     def remove_arc_to(self, obj, single=False):
         """
@@ -103,3 +116,7 @@ class ArcManagementOperations(Core):
         succ_str = self.config_file.read_variable("successors", [])
         succ_str.remove(obj.invariant_path())
         self.config_file.write_variable_to_shared("successors", succ_str)
+
+        # Invalidate cached predecessor/successor lists.
+        CHERN_CACHE.set(f"successors:{self.path}", None)
+        CHERN_CACHE.set(f"predecessors:{obj.path}", None)
