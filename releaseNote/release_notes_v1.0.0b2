@@ -5,6 +5,9 @@
   - `ls` shows `temp_apd_token` status for these tasks.
 + Deposit uploads `.celebi/config.local.json` alongside the impression so Yuki can generate `lbapi_key.json` server-side.
 + Mark `datalist` and `lhcb_ap_datalist` tasks as validated without requiring an algorithm.
++ Add runner management utilities.
+  - `update-runner <name>` command to modify runner settings (URL, token, backend type, Kerberos, EOS mount point).
+  - `runners` command now displays full runner configuration.
 + Bump version to 1.0.0b2.
 
 ## v1.0.0b1

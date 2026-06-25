@@ -218,6 +218,70 @@ class EnvironmentCommands:
         except Exception as e:
             print(f"Error removing runner: {e}")
 
+    def do_update_runner(self, arg: str) -> None:
+        """Update settings for an existing runner.
+
+        Usage: update-runner <name> [--url URL] [--token TOKEN]
+               [--backend-type TYPE] [--use-kerberos] [--no-use-kerberos]
+               [--eos-mount-point PATH]
+        """
+        usage = (
+            "Usage: update-runner <name> [--url URL] [--token TOKEN] "
+            "[--backend-type TYPE] [--use-kerberos] [--no-use-kerberos] "
+            "[--eos-mount-point PATH]"
+        )
+        try:
+            parts = arg.split()
+            if not parts:
+                print("Error: Please provide a runner name.")
+                print(usage)
+                return
+
+            # Extract options first, leaving the runner name as the first non-option argument
+            kwargs = {}
+            name = None
+            i = 0
+            while i < len(parts):
+                if parts[i] == "--url" and i + 1 < len(parts):
+                    kwargs["url"] = parts[i + 1]
+                    i += 2
+                elif parts[i] == "--token" and i + 1 < len(parts):
+                    kwargs["token"] = parts[i + 1]
+                    i += 2
+                elif parts[i] == "--backend-type" and i + 1 < len(parts):
+                    kwargs["backend_type"] = parts[i + 1]
+                    i += 2
+                elif parts[i] == "--use-kerberos":
+                    kwargs["use_kerberos"] = True
+                    i += 1
+                elif parts[i] == "--no-use-kerberos":
+                    kwargs["use_kerberos"] = False
+                    i += 1
+                elif parts[i] == "--eos-mount-point" and i + 1 < len(parts):
+                    kwargs["eos_mount_point"] = parts[i + 1]
+                    i += 2
+                elif parts[i].startswith("--"):
+                    i += 1
+                elif name is None:
+                    name = parts[i]
+                    i += 1
+                else:
+                    i += 1
+
+            if name is None:
+                print("Error: Please provide a runner name.")
+                print(usage)
+                return
+            if not kwargs:
+                print("Error: No settings provided to update.")
+                print(usage)
+                return
+            result = shell.update_runner(name, **kwargs)
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error updating runner: {e}")
+
     def do_booking_server(self, arg: str) -> None:
         """Check the registered booking server URL and status.
 

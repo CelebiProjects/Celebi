@@ -171,16 +171,30 @@ def runners() -> Message:
     runner_list = cherncc.runners()
     message.add(f"Number of runners: {len(runner_list)}\n", "title0")
     if runner_list:
+        configs = cherncc.runners_config() or []
+        config_map = {cfg.get("name", ""): cfg for cfg in configs}
         urls = cherncc.runners_url()
         for runner, url in zip(runner_list, urls):
-            message.add(f"{runner:<20}{url:20}", "normal")
+            cfg = config_map.get(runner, {})
+            message.add(f"{'Name: ':<20}{runner}", "normal")
+            message.add(f"\n{'URL: ':<20}{url}", "normal")
+            backend_type = cfg.get("backend_type", "reana")
+            message.add(f"\n{'Backend: ':<20}{backend_type}", "normal")
+            use_kerberos = cfg.get("use_kerberos", False)
+            message.add(f"\n{'Kerberos: ':<20}{use_kerberos}", "normal")
+            eos_mount = cfg.get("eos_mount_point", "")
+            if eos_mount:
+                message.add(f"\n{'EOS mount: ':<20}{eos_mount}", "normal")
+            cvmfs_list = cfg.get("cvmfs", [])
+            if cvmfs_list:
+                message.add(f"\n{'CVMFS: ':<20}{', '.join(cvmfs_list)}", "normal")
             message.add("\n")
             info = cherncc.runner_connection(runner)
             message.add(f"{'Status: ':<20}", "info")
             if info['status'] == "Connected":
-                message.add(f"{info['status']:20}\n", "success" )
+                message.add(f"{info['status']}\n", "success" )
             else:
-                message.add(f"{info['status']:20}\n", "warning" )
+                message.add(f"{info['status']}\n", "warning" )
             message.add("------------\n")
     return message
 
@@ -248,6 +262,48 @@ def remove_runner(runner: str) -> Message:
     cherncc = ChernCommunicator.instance()
     cherncc.remove_runner(runner)
     message.add(f"Runner '{runner}' removed", "success")
+    return message
+
+
+def update_runner(runner: str, **kwargs) -> Message:
+    """Update settings for an existing runner.
+
+    Modifies runner configuration stored in DITE without removing and
+    re-registering the runner. Only the provided settings are changed.
+
+    Args:
+        runner (str): Name of the runner to update.
+        **kwargs: Settings to update. Supported keys:
+            url (str): Runner service URL.
+            token (str): Authentication token.
+            backend_type (str): Execution backend type (e.g. "reana", "native").
+            use_kerberos (bool): Whether to use Kerberos authentication.
+            eos_mount_point (str): EOS mount point path.
+            cvmfs (list): List of CVMFS repository names.
+
+    Returns:
+        Message: Formatted message confirming the update.
+
+    Examples:
+        update_runner cern --use-kerberos
+        update_runner cern --eos-mount-point /eos/home-m/mzhao
+        update_runner cern --url https://new-reana.example.com --token abc123
+
+    Note:
+        - Runner must already be registered with DITE
+        - Settings not provided remain unchanged
+    """
+    message = Message()
+    cherncc = ChernCommunicator.instance()
+    settings = {k: v for k, v in kwargs.items() if v is not None}
+    if not settings:
+        message.add("No settings provided to update.", "warning")
+        return message
+    try:
+        result = cherncc.update_runner(runner, settings)
+        message.add(result.get("message", f"Runner '{runner}' updated"), "success")
+    except (ConnectionError, RuntimeError) as e:
+        message.add(str(e), "error")
     return message
 
 

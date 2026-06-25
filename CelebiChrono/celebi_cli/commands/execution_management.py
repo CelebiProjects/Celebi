@@ -124,6 +124,38 @@ def remove_runner_command(runner: str) -> None:
         _handle_error(f"Command failed: {e}")
 
 
+@click.command(name="update-runner")
+@click.argument("name", type=str)
+@click.option("--url", type=str, default=None, help="Runner service URL")
+@click.option("--token", type=str, default=None, help="Authentication token")
+@click.option("--backend-type", type=str, default=None, help="Backend type (reana/native)")
+@click.option("--use-kerberos/--no-use-kerberos", default=None, help="Enable/disable Kerberos")
+@click.option("--eos-mount-point", type=str, default=None, help="EOS mount point path")
+def update_runner_command(name, url, token, backend_type, use_kerberos, eos_mount_point):
+    """Update settings for an existing runner.
+
+    NAME is the runner to update. Only the provided options are changed.
+    """
+    try:
+        from CelebiChrono.interface.shell import update_runner
+        settings = {}
+        if url is not None:
+            settings["url"] = url
+        if token is not None:
+            settings["token"] = token
+        if backend_type is not None:
+            settings["backend_type"] = backend_type
+        if use_kerberos is not None:
+            settings["use_kerberos"] = use_kerberos
+        if eos_mount_point is not None:
+            settings["eos_mount_point"] = eos_mount_point
+        _handle_result(update_runner(name, **settings))
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
 @click.command(name="submit")
 @click.argument("runner", type=str, default="local", required=False)
 def submit_command(runner: str) -> None:

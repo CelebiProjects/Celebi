@@ -539,6 +539,21 @@ class ChernCommunicator():
             return ["unconnected to DITE"]
         return r.text.split()
 
+    def runners_config(self):
+        """ Get full configuration for all registered runners """
+        url = self.serverurl()
+        try:
+            r = requests.get(
+                f"http://{url}/runners-config",
+                timeout=self.timeout
+            )
+            if r.status_code == 404:
+                return None
+            r.raise_for_status()
+            return r.json()
+        except Exception:
+            return None
+
     def register_runner(self, runner, runner_url, token, backend_type):
         """ Register a runner to the server """
         url = self.serverurl()
@@ -558,6 +573,20 @@ class ChernCommunicator():
         if r.text != "successful":
             raise RuntimeError(f"Runner registration failed: {r.text}")
         return True
+
+    def update_runner(self, runner, settings):
+        """ Update settings for an existing runner on the server """
+        url = self.serverurl()
+        try:
+            r = requests.patch(
+                f"http://{url}/update-runner/{runner}",
+                json=settings,
+                timeout=self.timeout
+            )
+            r.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        return r.json()
 
     def remove_runner(self, runner):
         """ Remove a runner from the server """

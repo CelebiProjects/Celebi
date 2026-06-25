@@ -27,7 +27,7 @@ from .shell_modules.execution_management import (
     collect, collect_outputs, collect_logs, engine_logs
 )
 from .shell_modules.communication import (
-    dite, set_dite, add_host, hosts, runners, register_runner,
+    dite, set_dite, add_host, hosts, runners, register_runner, update_runner,
     remove_runner, request_runner, search_impression
 )
 from .shell_modules.visualization import (
@@ -64,7 +64,7 @@ __all__ = [
     'submit', 'purge', 'purge_old_impressions', 'test',
     'collect', 'collect_outputs', 'collect_logs', 'engine_logs',
     # Communication functions (from communication.py)
-    'dite', 'set_dite', 'add_host', 'hosts', 'runners', 'register_runner',
+    'dite', 'set_dite', 'add_host', 'hosts', 'runners', 'register_runner', 'update_runner',
     'remove_runner', 'request_runner', 'search_impression',
     # Visualization functions (from visualization.py)
     'view', 'viewurl', 'impress', 'trace', 'imgcat', 'draw_dag_graphviz',

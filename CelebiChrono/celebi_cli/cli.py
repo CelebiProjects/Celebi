@@ -63,6 +63,7 @@ cli.add_command(task_configuration.add_apd_token_command)
 # Execution management commands
 cli.add_command(execution_management.runners_command)
 cli.add_command(execution_management.register_runner_command)
+cli.add_command(execution_management.update_runner_command)
 cli.add_command(execution_management.remove_runner_command)
 cli.add_command(execution_management.submit_command)
 cli.add_command(execution_management.collect_command)
