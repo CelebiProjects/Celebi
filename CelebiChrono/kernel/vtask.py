@@ -126,8 +126,8 @@ class VTask(InputManager, SettingManager, FileManager, JobManager):
         rows = cherncc.file_status(self.impression(), runner, "stageout")
         message.add("Stageout files:\n", "title0")
         if not rows:
-            message.add("    (no files reported by runner; "
-                        "use 'collect' then check again)\n")
+            message.add("    (nothing to show yet — run 'collect', "
+                        "or the runner may be unreachable)\n")
             return message
         message.add(f"    {'NAME':<28}{'SIZE':>10}  {'TYPE':<6} IN YUKI\n")
         for r in rows:
