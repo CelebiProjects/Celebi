@@ -5,6 +5,7 @@ import os
 
 import filecmp
 import time
+from datetime import datetime, timezone
 from logging import getLogger
 
 from ..utils import csys
@@ -62,6 +63,7 @@ class ImpressionManagement(Core):
         impression.create(self)
         # print(f"Time used for creating impression: {time() - start_time:.6f} seconds")
         self.config_file.write_variable("impression", impression.uuid)
+        self._record_impression_history(impression)
         # update the impression_consult_table, since the impression is changed
         consult_table = CHERN_CACHE.impression_consult_table
         mtime, _ = CHERN_CACHE.project_modification_time
@@ -69,6 +71,43 @@ class ImpressionManagement(Core):
             mtime = csys.dir_mtime(self.project_path())
             CHERN_CACHE.project_modification_time = (mtime, time.time())
         consult_table[self.path] = (mtime, True)
+
+    def _record_impression_history(self, impression):
+        """Append a record of the given impression to the object-level history list.
+
+        The record is written to the object's local config (.celebi/config.local.json).
+        Failures are logged and swallowed so that history bookkeeping never blocks
+        impress().
+
+        Args:
+            impression: VImpression object that was just created.
+        """
+        try:
+            descriptor = impression.get_descriptor()
+        except Exception:  # pylint: disable=broad-except
+            descriptor = ""
+
+        try:
+            timestamp = datetime.now(timezone.utc).isoformat()
+        except Exception:  # pylint: disable=broad-except
+            timestamp = ""
+
+        try:
+            history = self.config_file.read_variable("impressions", [])
+            if not isinstance(history, list):
+                history = []
+            history.append({
+                "uuid": impression.uuid,
+                "timestamp": timestamp,
+                "descriptor": descriptor,
+            })
+            self.config_file.write_variable("impressions", history)
+        except Exception:  # pylint: disable=broad-except
+            logger.debug(
+                "Failed to record impression history for %s",
+                impression.uuid,
+                exc_info=True,
+            )
 
     def is_impressed(self, consult_id = None): # pylint: disable=too-many-return-statements, too-many-locals, too-many-branches # UnitTest: DONE
         """ Judge whether the file is impressed
