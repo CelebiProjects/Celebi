@@ -50,11 +50,14 @@ def register_booking_server_command(server_url, access_token):
               help="Path to Celebi project (default: current directory)")
 @click.option("--insecure", is_flag=True, default=False,
               help="Disable SSL certificate verification")
+@click.option("--upload", default="plots+logs",
+              help="What to upload: plots+logs (default), plots, data, all, or a glob")
 @click.option("--stageout", is_flag=True, default=False,
-              help="Also upload stageout files from Yuki storage")
+              help="[deprecated] alias for --upload all")
 @click.option("--no-stream", is_flag=True, default=False,
               help="Disable live streaming; wait for all output before printing")
-def book_reana_command(server_url, access_token, project_path, insecure, stageout, no_stream):
+def book_reana_command(server_url, access_token, project_path,
+                       insecure, stageout, upload, no_stream):
     """Book the current project to REANA as a file catalog via Yuki.
 
     If --server and --token are not provided, Yuki will use credentials
@@ -67,6 +70,7 @@ def book_reana_command(server_url, access_token, project_path, insecure, stageou
             verify_ssl=not insecure,
             project_path=project_path,
             stageout=stageout,
+            upload=upload,
             stream=not no_stream,
         )
         # In streaming mode, messages were already printed live.

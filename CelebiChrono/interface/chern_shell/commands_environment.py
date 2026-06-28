@@ -322,7 +322,7 @@ class EnvironmentCommands:
     def do_book_reana(self, arg: str) -> None:
         """Book current project to REANA.
 
-        Usage: book-reana [--server URL] [--token TOKEN] [--insecure] [--stageout] [--no-stream]
+        Usage: book-reana [--server URL] [--token TOKEN] [--insecure] [--upload MODE] [--stageout] [--no-stream]
         """
         try:
             args = arg.split() if arg else []
@@ -330,6 +330,7 @@ class EnvironmentCommands:
             access_token = ""
             verify_ssl = True
             stageout = False
+            upload = "plots+logs"
             stream = True
             i = 0
             while i < len(args):
@@ -342,6 +343,9 @@ class EnvironmentCommands:
                 elif args[i] == "--insecure":
                     verify_ssl = False
                     i += 1
+                elif args[i] == "--upload" and i + 1 < len(args):
+                    upload = args[i + 1]
+                    i += 2
                 elif args[i] == "--stageout":
                     stageout = True
                     i += 1
@@ -352,7 +356,7 @@ class EnvironmentCommands:
                     i += 1
             result = shell.book_reana(
                 server_url, access_token, verify_ssl,
-                stageout=stageout, stream=stream
+                stageout=stageout, upload=upload, stream=stream
             )
             # In streaming mode, messages were already printed live.
             if stream:

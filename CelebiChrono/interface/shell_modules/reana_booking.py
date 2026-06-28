@@ -378,6 +378,7 @@ def book_reana(
     verify_ssl: bool = True,
     project_path: str = "",
     stageout: bool = False,
+    upload: str = "plots+logs",
     stream: bool = True,
 ) -> Message:
     """Book the current project to REANA via Yuki.
@@ -440,11 +441,14 @@ def book_reana(
         message.add(f"Failed to pack project: {e}\n", "error")
         return message
 
-    # Prepare request data
+    # --stageout is a legacy alias meaning "include the large data too".
+    if stageout:
+        upload = "all"
     data = {
         "project_name": project_name,
         "verify_ssl": "true" if verify_ssl else "false",
-        "stageout": "true" if stageout else "false",
+        "stageout": "true" if (stageout or upload == "all") else "false",
+        "upload": upload,
     }
     # Only include credentials if explicitly provided
     if server_url:
