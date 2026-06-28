@@ -120,19 +120,34 @@ class JobManager(Core):
         return cherncc.status(self.impression())
 
     # Communicator Interaction Methods
-    def collect(self, contents="all"):
-        """ Collect the results of the job"""
+    def collect(self, selector=""):
+        """Collect job results by selector.
+
+        "" -> plots+logs (light); "all" -> outputs+logs; "plots"/"data" ->
+        typed stageout; "logs" -> logs; otherwise a glob/name pattern.
+        """
         msg = Message()
-        if contents not in ("all", "outputs", "logs"):
-            raise ValueError(f"Invalid contents parameter: {contents}")
         cherncc = ChernCommunicator.instance()
-        if contents == "all":
-            cherncc.collect(self.impression())
-        elif contents == "outputs":
-            cherncc.collect_outputs(self.impression())
-        elif contents == "logs":
-            cherncc.collect_logs(self.impression())
-        msg.add(f"Collected {contents} of impression {self.impression()}")
+        impression = self.impression()
+        selector = (selector or "").strip()
+        if selector in ("", "outputs"):
+            # "outputs" kept as deprecated alias for the light default's data path
+            if selector == "outputs":
+                cherncc.collect_outputs(impression)
+            else:
+                cherncc.collect(impression)
+        elif selector == "all":
+            cherncc.collect_outputs(impression)
+            cherncc.collect_logs(impression)
+        elif selector in ("plots", "data"):
+            cherncc.collect_files(impression, kind="stageout", spec_type=selector)
+        elif selector == "logs":
+            cherncc.collect_logs(impression)
+        elif any(ch in selector for ch in "*?["):
+            cherncc.collect_files(impression, kind="stageout", pattern=selector)
+        else:
+            cherncc.collect_files(impression, kind="stageout", names=[selector])
+        msg.add(f"Collected '{selector or 'plots+logs'}' of impression {impression}")
         return msg
 
     def error_log(self, error_index=0):
@@ -476,7 +491,7 @@ class JobManager(Core):
             if pre_status not in ("finished", "archived", "coda"):
                 print(f"Preceding job {pre} status: {pre_status!r}")
                 return False, f"Preceding job {pre} is not finished"
-            cherncc.collect(pre.impression())
+            cherncc.collect_outputs(pre.impression())
         return True, ""
 
     def _prepare_data_dir(self, temp_dir):
