@@ -58,3 +58,45 @@ def test_glob_pattern():
     with p:
         jm.collect("*.root")
     assert cc.collect_files.call_args.kwargs["pattern"] == "*.root"
+
+
+def test_data_keyword():
+    jm = _jm(); p, cc = _patch_cc()
+    with p:
+        jm.collect("data")
+    assert cc.collect_files.call_args.kwargs["spec_type"] == "data"
+
+
+def test_logs_keyword():
+    jm = _jm(); p, cc = _patch_cc()
+    with p:
+        jm.collect("logs")
+    cc.collect_logs.assert_called_once()
+
+
+def test_literal_name_routes_to_names():
+    jm = _jm(); p, cc = _patch_cc()
+    with p:
+        jm.collect("mass.png")
+    assert cc.collect_files.call_args.kwargs["names"] == ["mass.png"]
+
+
+def test_outputs_alias_collects_full_stageout():
+    jm = _jm(); p, cc = _patch_cc()
+    with p:
+        jm.collect("outputs")
+    cc.collect_outputs.assert_called_once()
+
+
+def test_check_preceding_jobs_collects_full_stageout():
+    jm = FakeJobManager.__new__(FakeJobManager)
+    pre = mock.Mock()
+    pre.is_impressed_fast.return_value = True
+    pre.run_status.return_value = "finished"
+    pre.impression.return_value = mock.Mock(uuid="pre")
+    jm.inputs = lambda: [pre]
+    cc = mock.Mock()
+    ok, _msg = jm._check_preceding_jobs(cc)
+    assert ok is True
+    cc.collect_outputs.assert_called_once_with(pre.impression())
+    cc.collect.assert_not_called()
