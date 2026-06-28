@@ -177,19 +177,12 @@ def submit_command(runner: str) -> None:
 
 
 @click.command(name="collect")
-@click.argument("contents", type=str, default="all", required=False)
+@click.argument("contents", type=str, default="", required=False)
 def collect_command(contents: str) -> None:
-    """Collect task execution results.
-
-    Retrieves outputs, logs, or both from a completed task execution.
-    Results are gathered from the runner and made available locally.
-
-    CONTENTS specifies what to collect: "all", "outputs", or "logs" (default: "all").
-    """
+    """Collect task results: [all|plots|data|logs|<glob>|<name>] (default: plots+logs)."""
     try:
         from CelebiChrono.interface.shell import collect
-        result = collect(contents)
-        _handle_result(result)
+        _handle_result(collect(contents))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:

@@ -86,41 +86,9 @@ def purge_old_impressions() -> Message:
     return message
 
 
-def collect(contents: str = "all") -> Message:
-    """Collect task execution results.
-
-    Retrieves outputs, logs, or both from a completed task execution.
-    Results are gathered from the runner and made available locally.
-
-    Args:
-        contents (str, optional): What to collect: "all", "outputs", or "logs".
-            Defaults to "all".
-
-    Examples:
-        collect              # Collect both outputs and logs
-        collect outputs      # Collect only outputs
-        collect logs         # Collect only logs
-
-    Returns:
-        Message containing collection success/failure status, list of retrieved
-        files, and any download or transfer statistics.
-
-    Note:
-        - The current object must be a task
-        - Task must have been submitted and completed
-        - Collection may download files from remote runners
-        - Convenience functions: `collect_outputs()` for only outputs,
-          `collect_logs()` for only logs
-    """
-    # Validate contents parameter
-    valid_contents = {"all", "outputs", "logs"}
-    if contents not in valid_contents:
-        print(f"Error: contents must be one of {sorted(valid_contents)}, got '{contents}'")
-        # Return an error message instead of raising exception to maintain API consistency
-        msg = Message()
-        msg.add(f"Invalid contents parameter: '{contents}'", "error")
-        return msg
-
+def collect(contents: str = "") -> Message:
+    """Collect task results. contents: '', 'all', 'plots', 'data', 'logs',
+    or a glob/filename. Default ('') collects plots + logs."""
     return MANAGER.current_object().collect(contents)
 
 

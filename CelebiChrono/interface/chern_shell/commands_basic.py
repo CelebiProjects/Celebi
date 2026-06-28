@@ -46,19 +46,9 @@ class BasicCommands:
             print(f"Error listing predecessors: {e}")
 
     def do_collect(self, arg: str) -> None:
-        """Collect data for current object."""
+        """Collect results. Usage: collect [all|plots|data|logs|<glob>|<name>]"""
         try:
-            if not arg:
-                result = shell.collect()
-            elif arg == "all":
-                result = shell.collect()
-            elif arg == "outputs":
-                result = shell.collect_outputs()
-            elif arg == "logs":
-                result = shell.collect_logs()
-            else:
-                print("Error: Invalid argument for collect command.")
-                return
+            result = shell.collect(arg.strip())
             if result.messages:
                 print(result.colored())
         except Exception as e:

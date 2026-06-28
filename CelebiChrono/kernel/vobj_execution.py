@@ -295,7 +295,7 @@ class ExecutionManagement(Core):
         msg.add("Docker test executed for task.", "info")
         return msg
 
-    def collect(self, contents="all") -> Message:
+    def collect(self, contents="") -> Message:
         """ Collect the results from the runner. """
         cherncc = ChernCommunicator.instance()
         # Check the connection
