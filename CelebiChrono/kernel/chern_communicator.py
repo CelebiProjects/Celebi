@@ -500,6 +500,36 @@ class ChernCommunicator():
         )
         return r.text
 
+    def collect_files(self, impression, kind="stageout",
+                      spec_type=None, pattern=None, names=None):
+        """Collect a subset of files matching a type, glob, or name list."""
+        url = self.serverurl()
+        params = f"kind={kind}"
+        if spec_type:
+            params += f"&type={spec_type}"
+        elif pattern:
+            params += f"&pattern={pattern}"
+        elif names:
+            params += f"&names={','.join(names)}"
+        r = requests.get(
+            f"http://{url}/collect-files/{self.project_uuid}/{impression.uuid}?{params}",
+            timeout=self.timeout * 1000,
+        )
+        return r.text
+
+    def file_status(self, impression, machine="none", kind="stageout"):
+        """Return merged runner+Storage file listing for an impression."""
+        url = self.serverurl()
+        imp = impression.uuid if hasattr(impression, "uuid") else impression
+        try:
+            r = requests.get(
+                f"http://{url}/file-status/{self.project_uuid}/{imp}/{machine}?kind={kind}",
+                timeout=self.timeout,
+            )
+            return r.json()
+        except Exception:
+            return []
+
     def watermark(self, impression):
         """ Set the water mark to the png files"""
         url = self.serverurl()
