@@ -98,6 +98,7 @@ from .vtask_input import InputManager
 from .vtask_setting import SettingManager
 from .vtask_file import FileManager
 from .vtask_job import JobManager
+from ..utils.message import Message
 
 CHERN_CACHE = ChernCache.instance()
 logger = getLogger("ChernLogger")
@@ -111,6 +112,30 @@ class VTask(InputManager, SettingManager, FileManager, JobManager):
         """ [unused]
         """
         return []
+
+    @staticmethod
+    def _human_size(num):
+        for unit in ("B", "KB", "MB", "GB", "TB"):
+            if num < 1024 or unit == "TB":
+                return f"{num:.0f} {unit}" if unit == "B" else f"{num:.1f} {unit}"
+            num /= 1024
+
+    def _stageout_table(self, cherncc, runner):
+        """Build a Message listing stageout files: name, size, type, in-Yuki."""
+        message = Message()
+        rows = cherncc.file_status(self.impression(), runner, "stageout")
+        message.add("Stageout files:\n", "title0")
+        if not rows:
+            message.add("    (no files reported by runner; "
+                        "use 'collect' then check again)\n")
+            return message
+        message.add(f"    {'NAME':<28}{'SIZE':>10}  {'TYPE':<6} IN YUKI\n")
+        for r in rows:
+            mark = "✓" if r.get("in_yuki") else "✗"
+            message.add(
+                f"    {r['name']:<28}{self._human_size(r.get('size', 0)):>10}  "
+                f"{r.get('type', ''):<6} {mark}\n")
+        return message
 
     def get_file(self, filename):
         """ Get file from ChernCommunicator
@@ -187,9 +212,7 @@ class VTask(InputManager, SettingManager, FileManager, JobManager):
             message.add("\n")
 
             files = cherncc.output_files(self.impression(), runner)
-            message.add("Output files (collected on DIET):\n", "title0")
-            for f in files:
-                message.add(f"    {f}\n")
+            message.messages.extend(self._stageout_table(cherncc, runner).messages)
         return message
 
     def get_task(self, path):
