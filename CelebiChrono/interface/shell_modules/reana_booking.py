@@ -1,6 +1,8 @@
 """REANA booking functions for shell interface."""
 import io
+import json
 import os
+import sys
 import tarfile
 from logging import getLogger
 
@@ -9,8 +11,16 @@ import requests
 from ...utils.message import Message
 from ...utils import csys
 from ...utils import metadata
+from ...utils.pretty import colorize
 
 logger = getLogger("ChernLogger")
+
+
+def _flush_message(msg: Message) -> None:
+    """Print all accumulated messages and clear the list."""
+    if msg.messages:
+        print(msg.colored(), end="", flush=True)
+        msg.messages = []
 
 
 def _get_yuki_server_url() -> str:
@@ -184,7 +194,7 @@ def check_booking_server() -> Message:
 
         ping_status = result.get("ping_status", "unknown")
         if ping_status == "ok":
-            message.add(f"  Ping:        OK\n", "success")
+            message.add("  Ping:        OK\n", "success")
         else:
             message.add(f"  Ping:        {ping_status}\n", "error")
 
@@ -202,9 +212,75 @@ def check_booking_server() -> Message:
     return message
 
 
+def _add_connection_error(message: Message, yuki_url: str,
+                          connection_established: bool) -> None:
+    """Add an appropriate connection-error message.
+
+    Distinguishes between failing to open the connection and losing it
+    after data has already been exchanged.
+    """
+    if connection_established:
+        message.add(
+            f"Connection to Yuki server at {yuki_url} was lost.\n"
+            "Make sure Yuki is still running or update the server URL with 'add-host'.\n",
+            "error"
+        )
+    else:
+        message.add(
+            f"Could not connect to Yuki server at {yuki_url}.\n"
+            "Make sure Yuki is running or update the server URL with 'add-host'.\n",
+            "error"
+        )
+
+
+def _consume_ndjson_stream(response, message: Message) -> int:
+    """Consume an NDJSON streaming response, updating message in place.
+
+    Returns the number of non-empty lines processed.
+    """
+    line_count = 0
+    for line in response.iter_lines():
+        if not line:
+            continue
+        line_count += 1
+        try:
+            chunk = json.loads(line.decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            # Non-JSON line — may be an HTML error page or old response format
+            if line_count == 1:
+                preview = line[:200].decode("utf-8", errors="replace")
+                message.add(
+                    f"Unexpected response from server (not NDJSON): {preview}\n",
+                    "error"
+                )
+                _flush_message(message)
+            continue
+
+        if chunk.get("done"):
+            # Final message with result data
+            message.data.update(chunk.get("data", {}))
+            if not chunk.get("success"):
+                error_text = chunk.get("error", "Booking failed on Yuki server.")
+                message.add(f"{error_text}\n", "error")
+                # Print traceback for debugging if present
+                tb = chunk.get("traceback", "")
+                if tb:
+                    print("\n--- Server traceback ---", file=sys.stderr)
+                    print(tb, file=sys.stderr)
+                    print("--- End traceback ---\n", file=sys.stderr)
+            break
+
+        text = chunk.get("text", "")
+        status = chunk.get("status", "normal")
+        # Print immediately for live feedback (don't accumulate — already shown)
+        print(colorize(text, status), end="", flush=True)
+
+    return line_count
+
+
 def _book_reana_sync(
     yuki_url: str,
-    project_name: str,
+    _project_name: str,
     tar_buf,
     data: dict,
     message: Message,
@@ -237,11 +313,7 @@ def _book_reana_sync(
                 message.add(f"{error_text}\n", "error")
 
     except requests.exceptions.ConnectionError:
-        message.add(
-            f"Could not connect to Yuki server at {yuki_url}.\n"
-            "Make sure Yuki is running or update the server URL with 'add-host'.\n",
-            "error"
-        )
+        _add_connection_error(message, yuki_url, connection_established=False)
     except requests.exceptions.Timeout:
         message.add("Request to Yuki server timed out.\n", "error")
     except Exception as e:
@@ -264,18 +336,13 @@ def _book_reana_streaming(
     unavailable. All output is handled internally; callers should
     not print the returned message in streaming mode.
     """
-    import json
-    from CelebiChrono.utils.pretty import colorize
-
     files = {
         "project_tar": ("project.tar.gz", tar_buf, "application/gzip"),
     }
 
-    def _flush_message(msg: Message) -> None:
-        """Print all accumulated messages and clear the list."""
-        if msg.messages:
-            print(msg.colored(), end="", flush=True)
-            msg.messages = []
+    # Distinguish between failing to open the connection and losing it
+    # after we have already started receiving streamed progress messages.
+    connection_established = False
 
     try:
         # Print any pre-existing messages (e.g. "Packing...", "Sending...")
@@ -304,47 +371,11 @@ def _book_reana_streaming(
 
         response.raise_for_status()
 
-        # Stream NDJSON lines
-        line_count = 0
-        for line in response.iter_lines():
-            if not line:
-                continue
-            line_count += 1
-            try:
-                chunk = json.loads(line.decode("utf-8"))
-            except (json.JSONDecodeError, UnicodeDecodeError):
-                # Non-JSON line — may be an HTML error page or old response format
-                if line_count == 1:
-                    preview = line[:200].decode("utf-8", errors="replace")
-                    message.add(
-                        f"Unexpected response from server (not NDJSON): {preview}\n",
-                        "error"
-                    )
-                    _flush_message(message)
-                continue
+        # From this point on we have an active streaming connection.
+        connection_established = True
 
-            if chunk.get("done"):
-                # Final message with result data
-                message.data.update(chunk.get("data", {}))
-                if not chunk.get("success"):
-                    error_text = chunk.get("error", "Booking failed on Yuki server.")
-                    message.add(f"{error_text}\n", "error")
-                    # Print traceback for debugging if present
-                    tb = chunk.get("traceback", "")
-                    if tb:
-                        import sys
-                        print("\n--- Server traceback ---", file=sys.stderr)
-                        print(tb, file=sys.stderr)
-                        print("--- End traceback ---\n", file=sys.stderr)
-                break
-
-            text = chunk.get("text", "")
-            status = chunk.get("status", "normal")
-            # Print immediately for live feedback (don't accumulate —
-            # already shown)
-            print(colorize(text, status), end="", flush=True)
-
-        if line_count == 0:
+        line_count = _consume_ndjson_stream(response, message)
+        if not line_count:
             message.add(
                 "Server returned empty stream. "
                 "The Yuki server may need to be restarted to load the new endpoint.\n",
@@ -353,11 +384,7 @@ def _book_reana_streaming(
             _flush_message(message)
 
     except requests.exceptions.ConnectionError:
-        message.add(
-            f"Could not connect to Yuki server at {yuki_url}.\n"
-            "Make sure Yuki is running or update the server URL with 'add-host'.\n",
-            "error"
-        )
+        _add_connection_error(message, yuki_url, connection_established)
         _flush_message(message)
     except requests.exceptions.Timeout:
         message.add("Request to Yuki server timed out.\n", "error")
@@ -372,6 +399,8 @@ def _book_reana_streaming(
     return message
 
 
+# Public CLI/shell entry point; arguments mirror the user-facing flags.
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 def book_reana(
     server_url: str = "",
     access_token: str = "",
@@ -461,5 +490,4 @@ def book_reana(
 
     if stream:
         return _book_reana_streaming(yuki_url, project_name, tar_buf, data, message)
-    else:
-        return _book_reana_sync(yuki_url, project_name, tar_buf, data, message)
+    return _book_reana_sync(yuki_url, project_name, tar_buf, data, message)

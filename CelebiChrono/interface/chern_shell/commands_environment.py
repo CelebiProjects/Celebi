@@ -12,8 +12,47 @@ from ...interface.ChernManager import get_manager
 MANAGER = get_manager()
 
 
+def _parse_update_runner_args(arg: str):
+    """Parse update-runner shell argument into (name, kwargs).
+
+    Returns (name, kwargs). Either may be None/empty to signal a user error.
+    """
+    parts = arg.split()
+    kwargs = {}
+    name = None
+    i = 0
+    while i < len(parts):
+        if parts[i] == "--url" and i + 1 < len(parts):
+            kwargs["url"] = parts[i + 1]
+            i += 2
+        elif parts[i] == "--token" and i + 1 < len(parts):
+            kwargs["token"] = parts[i + 1]
+            i += 2
+        elif parts[i] == "--backend-type" and i + 1 < len(parts):
+            kwargs["backend_type"] = parts[i + 1]
+            i += 2
+        elif parts[i] == "--use-kerberos":
+            kwargs["use_kerberos"] = True
+            i += 1
+        elif parts[i] == "--no-use-kerberos":
+            kwargs["use_kerberos"] = False
+            i += 1
+        elif parts[i] == "--eos-mount-point" and i + 1 < len(parts):
+            kwargs["eos_mount_point"] = parts[i + 1]
+            i += 2
+        elif parts[i].startswith("--"):
+            i += 1
+        elif name is None:
+            name = parts[i]
+            i += 1
+        else:
+            i += 1
+    return name, kwargs
+
+
 class EnvironmentCommands:
     """Mixin class providing environment and execution command handlers."""
+    # pylint: disable=too-many-public-methods
 
     def do_set_environment(self, arg: str) -> None:
         """Set environment for current object."""
@@ -231,42 +270,7 @@ class EnvironmentCommands:
             "[--eos-mount-point PATH]"
         )
         try:
-            parts = arg.split()
-            if not parts:
-                print("Error: Please provide a runner name.")
-                print(usage)
-                return
-
-            # Extract options first, leaving the runner name as the first non-option argument
-            kwargs = {}
-            name = None
-            i = 0
-            while i < len(parts):
-                if parts[i] == "--url" and i + 1 < len(parts):
-                    kwargs["url"] = parts[i + 1]
-                    i += 2
-                elif parts[i] == "--token" and i + 1 < len(parts):
-                    kwargs["token"] = parts[i + 1]
-                    i += 2
-                elif parts[i] == "--backend-type" and i + 1 < len(parts):
-                    kwargs["backend_type"] = parts[i + 1]
-                    i += 2
-                elif parts[i] == "--use-kerberos":
-                    kwargs["use_kerberos"] = True
-                    i += 1
-                elif parts[i] == "--no-use-kerberos":
-                    kwargs["use_kerberos"] = False
-                    i += 1
-                elif parts[i] == "--eos-mount-point" and i + 1 < len(parts):
-                    kwargs["eos_mount_point"] = parts[i + 1]
-                    i += 2
-                elif parts[i].startswith("--"):
-                    i += 1
-                elif name is None:
-                    name = parts[i]
-                    i += 1
-                else:
-                    i += 1
+            name, kwargs = _parse_update_runner_args(arg)
 
             if name is None:
                 print("Error: Please provide a runner name.")
@@ -282,7 +286,7 @@ class EnvironmentCommands:
         except Exception as e:
             print(f"Error updating runner: {e}")
 
-    def do_booking_server(self, arg: str) -> None:
+    def do_booking_server(self, _arg: str) -> None:
         """Check the registered booking server URL and status.
 
         Usage: booking-server
@@ -322,7 +326,8 @@ class EnvironmentCommands:
     def do_book_reana(self, arg: str) -> None:
         """Book current project to REANA.
 
-        Usage: book-reana [--server URL] [--token TOKEN] [--insecure] [--upload MODE] [--stageout] [--no-stream]
+        Usage: book-reana [--server URL] [--token TOKEN] [--insecure]
+                          [--upload MODE] [--stageout] [--no-stream]
         """
         try:
             args = arg.split() if arg else []

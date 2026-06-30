@@ -56,6 +56,8 @@ def register_booking_server_command(server_url, access_token):
               help="[deprecated] alias for --upload all")
 @click.option("--no-stream", is_flag=True, default=False,
               help="Disable live streaming; wait for all output before printing")
+# Click options mirror the public CLI; number of options is expected.
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 def book_reana_command(server_url, access_token, project_path,
                        insecure, stageout, upload, no_stream):
     """Book the current project to REANA as a file catalog via Yuki.

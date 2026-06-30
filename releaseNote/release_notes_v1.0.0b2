@@ -11,6 +11,10 @@
 + Fix arc cache invalidation so `add-algorithm`/`remove-input` changes are visible immediately in `ls`.
 + Add unit test for arc cache invalidation.
 + Bump version to 1.0.0b2.
++ Fix `book-reana` streaming error message so a connection lost mid-upload is reported as "Connection to Yuki server ... was lost" instead of "Could not connect to Yuki server".
++ Add unit tests for streaming connection-loss scenarios (initial failure vs. mid-stream drop).
++ Refactor `CelebiChrono/interface/shell_modules/reana_booking.py` to reduce complexity and improve maintainability.
++ Resolve all remaining non-informational pylint warnings across `CelebiChrono`, bringing the full-project pylint score to 10.00/10.
 
 ## v1.0.0b1
 + Initial beta release of CelebiChrono.

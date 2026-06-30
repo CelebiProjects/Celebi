@@ -500,6 +500,8 @@ class ChernCommunicator():
         )
         return r.text
 
+    # Multiple mutually-exclusive filter arguments for file selection.
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def collect_files(self, impression, kind="stageout",
                       spec_type=None, pattern=None, names=None):
         """Collect a subset of files matching a type, glob, or name list."""

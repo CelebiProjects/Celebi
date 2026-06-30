@@ -115,10 +115,13 @@ class VTask(InputManager, SettingManager, FileManager, JobManager):
 
     @staticmethod
     def _human_size(num):
+        result = ""
         for unit in ("B", "KB", "MB", "GB", "TB"):
             if num < 1024 or unit == "TB":
-                return f"{num:.0f} {unit}" if unit == "B" else f"{num:.1f} {unit}"
+                result = f"{num:.0f} {unit}" if unit == "B" else f"{num:.1f} {unit}"
+                break
             num /= 1024
+        return result
 
     def _stageout_table(self, cherncc, runner):
         """Build a Message listing stageout files: name, size, type, in-Yuki."""

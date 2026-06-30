@@ -120,12 +120,13 @@ class JobManager(Core):
         return cherncc.status(self.impression())
 
     # Communicator Interaction Methods
-    def collect(self, selector=""):
+    def collect(self, contents=""):
         """Collect job results by selector.
 
         "" -> plots+logs (light); "all" -> outputs+logs; "plots"/"data" ->
         typed stageout; "logs" -> logs; otherwise a glob/name pattern.
         """
+        selector = contents
         msg = Message()
         cherncc = ChernCommunicator.instance()
         impression = self.impression()

@@ -131,6 +131,8 @@ def remove_runner_command(runner: str) -> None:
 @click.option("--backend-type", type=str, default=None, help="Backend type (reana/native)")
 @click.option("--use-kerberos/--no-use-kerberos", default=None, help="Enable/disable Kerberos")
 @click.option("--eos-mount-point", type=str, default=None, help="EOS mount point path")
+# Click options mirror the public CLI; number of options is expected.
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 def update_runner_command(name, url, token, backend_type, use_kerberos, eos_mount_point):
     """Update settings for an existing runner.
 
