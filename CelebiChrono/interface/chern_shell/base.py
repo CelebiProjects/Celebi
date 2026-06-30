@@ -40,8 +40,13 @@ class ChernShellBase(cmd.Cmd):
             if (saved_cwd
                     and os.path.isdir(saved_cwd)
                     and csys.project_path(saved_cwd) == current_project_path):
-                manager.switch_current_object(saved_cwd)
-                os.chdir(manager.c.path)
+                try:
+                    manager.switch_current_object(saved_cwd)
+                    os.chdir(manager.c.path)
+                except Exception:
+                    # Saved cwd is not a valid Celebi object (e.g. a temp
+                    # workaround directory). Stay at the project root.
+                    pass
         self.readline_file = YamlFile(
             os.path.join(os.environ["HOME"], ".celebi", "readline.yaml")
         )
