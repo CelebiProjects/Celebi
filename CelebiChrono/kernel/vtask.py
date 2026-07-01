@@ -174,8 +174,8 @@ class VTask(InputManager, SettingManager, FileManager, JobManager):
             message.add("Job status: ")
             message.add(f"[{job_status}]\n")
             return message
-        musical_status = job_status["status"]
-        real_status = job_status["status"]
+        musical_status = job_status.get("status_musical", job_status["status"])
+        real_status = job_status.get("status_legacy", job_status["status"])
         if musical_status in ("created", "queued", "pending", "running"):
             musical_status = "in movement"
         if musical_status == "finished":

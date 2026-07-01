@@ -15,6 +15,7 @@
 + Add unit tests for streaming connection-loss scenarios (initial failure vs. mid-stream drop).
 + Refactor `CelebiChrono/interface/shell_modules/reana_booking.py` to reduce complexity and improve maintainability.
 + Resolve all remaining non-informational pylint warnings across `CelebiChrono`, bringing the full-project pylint score to 10.00/10.
++ Fix `status` display to use `status_musical` and `status_legacy` fields from the Yuki server, showing `[coda][finished]` for completed workflows instead of `[coda][coda]`.
 
 ## v1.0.0b1
 + Initial beta release of CelebiChrono.
