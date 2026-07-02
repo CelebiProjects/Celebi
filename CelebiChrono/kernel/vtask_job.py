@@ -11,6 +11,7 @@ import yaml
 
 from ..utils.container_manager import ContainerManager
 from .chern_communicator import ChernCommunicator
+from ..kernel import valgorithm as valg
 from ..utils import csys
 from ..utils.message import Message
 from .vtask_core import Core
@@ -682,6 +683,32 @@ class JobManager(Core):
                 os.chmod(script_path, 0o755)
 
         return True, temp_dir
+
+    def workaround_prepare_reference(self, temp_dir, reference_path):
+        """Copy a reference algorithm into the workaround space.
+
+        The reference algorithm is copied into a `reference/` subdirectory
+        under the workaround temp dir so its code can be inspected alongside
+        the task's own algorithm.
+        """
+        reference_alg = valg.VAlgorithm(reference_path)
+        if not os.path.isdir(reference_alg.path):
+            print(f"Reference algorithm not found: {reference_path}")
+            return
+
+        ref_temp_dir = os.path.join(temp_dir, "reference")
+        file_list = csys.tree_excluded(reference_alg.path)
+        for dirpath, _, filenames in file_list:
+            for f in filenames:
+                full_path = os.path.join(
+                    self.project_path(),
+                    reference_alg.invariant_path(),
+                    dirpath, f
+                )
+                rel_path = os.path.relpath(full_path, reference_alg.path)
+                dest_path = os.path.join(ref_temp_dir, rel_path)
+                csys.copy(full_path, dest_path)
+        print(f"Reference algorithm copied to {ref_temp_dir}")
 
     def pre_docker_test(self) -> Tuple[bool, Union[str, dict]]:
         """ Pre-docker workaround - returns mounting guidance for Docker"""

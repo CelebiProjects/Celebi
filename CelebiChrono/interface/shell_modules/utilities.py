@@ -8,7 +8,7 @@ from ...utils.message import Message
 from ._manager import MANAGER
 
 
-def workaround_preshell() -> Message:
+def workaround_preshell(reference: str = "") -> Message:
     """Execute pre-shell workaround for the current task.
 
     Runs pre-execution workaround code for task preparation. Workarounds
@@ -16,10 +16,12 @@ def workaround_preshell() -> Message:
     to handle special cases or environment setup.
 
     Args:
-        None: Function takes no parameters.
+        reference (str, optional): Path to a reference algorithm to copy
+            into the workaround space under a `reference/` directory.
 
     Examples:
         workaround_preshell()  # Execute pre-shell workaround
+        workaround_preshell("path/to/reference_algorithm")
 
     Returns:
         Message: Message with success/error status and path data.
@@ -38,6 +40,8 @@ def workaround_preshell() -> Message:
     if not status:
         message.add(path, "error")
         return message
+    if reference:
+        MANAGER.current_object().workaround_prepare_reference(path, reference)
     message.add(path, "success")
     message.data["path"] = path
     return message

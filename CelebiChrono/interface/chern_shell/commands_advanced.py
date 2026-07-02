@@ -89,17 +89,27 @@ class AdvancedCommands:
         Parameters
         ----------
         arg : str
-            Optional argument. If 'docker', runs task in Docker container.
+            Optional argument.
+            - If 'docker', runs task in a Docker container.
+            - If '--reference <algorithm_path>', copies the reference algorithm
+              into the workaround space under a `reference/` directory.
         """
         try:
-            result = shell.workaround_preshell()
+            parts = arg.split()
+            reference = ""
+            if "--reference" in parts:
+                ref_idx = parts.index("--reference")
+                if ref_idx + 1 < len(parts):
+                    reference = parts[ref_idx + 1]
+
+            result = shell.workaround_preshell(reference)
             if not result.success:
                 print(result.colored())
                 return
             info = result.data["path"]
             # Remember the current path
             path = os.getcwd()
-            # Switch to the ~
+            # Switch to the workaround workspace
             os.chdir(info)
             # use docker if arg is docker
             if arg.strip() == "docker":
