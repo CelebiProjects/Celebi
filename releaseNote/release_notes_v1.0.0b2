@@ -1,4 +1,5 @@
 ## v1.0.0b2
++ Add filelist manifest for the workaround workflow. `workaround_preshell` records the initial algorithm files to `filelist.yaml`, and `workaround_postshell` copies files in the manifest to origin while deleting files in origin that are not listed.
 + Add LHCb Analysis Productions (AP) data list task type (`lhcb_ap_datalist`).
   - `create-lhcb-ap-list` command creates the task with example AP configuration.
   - `add-apd-token` command stores the APD token in `.celebi/config.local.json`.

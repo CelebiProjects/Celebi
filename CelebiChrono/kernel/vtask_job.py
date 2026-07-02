@@ -1,3 +1,4 @@
+
 """ JobManager class for managing tasks
 """
 import fnmatch
@@ -5,6 +6,8 @@ import os
 import shutil
 from logging import getLogger
 from typing import Tuple, Union
+
+import yaml
 
 from ..utils.container_manager import ContainerManager
 from .chern_communicator import ChernCommunicator
@@ -595,6 +598,41 @@ class JobManager(Core):
             )
 
     # pylint: disable=too-many-locals
+    def _generate_workaround_filelist(self, temp_dir):
+        """Generate a YAML manifest of files in the workaround code directory.
+
+        Records relative paths, mtime, and size for each file. This is used
+        at the end of the workaround to determine which files were modified,
+        created, or deleted.
+        """
+        code_dir = os.path.join(temp_dir, "code")
+        if not os.path.isdir(code_dir):
+            return
+
+        # Resolve symlink so os.walk dirpath and code_dir share the same base
+        code_dir = os.path.realpath(code_dir)
+
+        file_records = []
+        for dirpath, _, filenames in os.walk(code_dir):
+            for f in filenames:
+                full_path = os.path.join(dirpath, f)
+                rel_path = os.path.relpath(full_path, code_dir)
+                try:
+                    stat = os.stat(full_path)
+                    file_records.append({
+                        "rel_path": rel_path,
+                        "mtime": stat.st_mtime,
+                        "size": stat.st_size,
+                    })
+                except OSError:
+                    continue
+
+        filelist_path = os.path.join(temp_dir, "filelist.yaml")
+        with open(filelist_path, "w", encoding="utf-8") as f:
+            yaml.dump({"files": file_records}, f)
+
+        print(f"Filelist generated: {len(file_records)} files recorded.")
+
     def workaround_preshell(self) -> tuple[bool, str]:
         """ Pre-shell workaround"""
         print("Start constructing workaround environment...")
@@ -615,6 +653,9 @@ class JobManager(Core):
         self._link_preceding_jobs(cherncc, temp_dir)
 
         self._prepare_algorithm_code(temp_dir)
+
+        # Generate filelist for later comparison in workaround_postshell
+        self._generate_workaround_filelist(temp_dir)
 
         algorithm = self.algorithm()
         if algorithm:
@@ -760,21 +801,52 @@ class JobManager(Core):
             })
 
     def workaround_postshell(self, path) -> bool:
-        """ Post-shell workaround"""
+        """ Post-shell workaround - sync files according to filelist
+
+        The filelist.yaml is the authority: files listed in it are copied from
+        the workaround to origin; files in origin but not in the filelist are
+        deleted. The user may edit filelist.yaml during the workaround to add
+        new files they want to keep or remove files they want to discard.
+        """
         algorithm = self.algorithm()
-        print("Post shell DEBUG")
-        if algorithm:
-            alg_temp_dir = os.path.join(path, "code")
-            print(alg_temp_dir)
-            file_list = csys.tree_excluded(algorithm.path)
-            for dirpath, _, filenames in file_list:
-                for f in filenames:
-                    full_path = os.path.join(
-                            self.project_path(),
-                            algorithm.invariant_path(),
-                            dirpath, f
-                    )
-                    rel_path = os.path.relpath(full_path, algorithm.path)
-                    dest_path = os.path.join(alg_temp_dir, rel_path)
-                    csys.copy(dest_path, full_path)
+        if not algorithm:
+            return True
+
+        alg_temp_dir = os.path.join(path, "code")
+        if not os.path.isdir(alg_temp_dir):
+            return True
+
+        # Resolve symlink so os.walk dirpath and alg_temp_dir share the same base
+        alg_temp_dir = os.path.realpath(alg_temp_dir)
+
+        # Load the filelist (user may have edited it to add/remove entries)
+        filelist_entries = set()
+        filelist_path = os.path.join(path, "filelist.yaml")
+        if os.path.exists(filelist_path):
+            with open(filelist_path, "r", encoding="utf-8") as f:
+                data = yaml.load(f, Loader=yaml.Loader)
+                if data:
+                    for record in data.get("files", []):
+                        filelist_entries.add(record["rel_path"])
+
+        # Copy files from workaround to origin according to filelist
+        for rel_path in filelist_entries:
+            workaround_path = os.path.join(alg_temp_dir, rel_path)
+            origin_path = os.path.join(algorithm.path, rel_path)
+            if os.path.isfile(workaround_path):
+                csys.copy(workaround_path, origin_path)
+                print(f"Copied: {rel_path}")
+            else:
+                print(f"Warning: {rel_path} listed in filelist but not found")
+
+        # Delete files from origin that are NOT in the filelist
+        origin_tree = csys.tree_excluded(algorithm.path)
+        for dirpath, _, filenames in origin_tree:
+            for f in filenames:
+                full_path = os.path.join(algorithm.path, dirpath, f)
+                rel_path = os.path.relpath(full_path, algorithm.path)
+                if rel_path not in filelist_entries:
+                    os.remove(full_path)
+                    print(f"Deleted: {rel_path}")
+
         return True
