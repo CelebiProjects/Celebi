@@ -119,6 +119,45 @@ def impress() -> Message:
     return message
 
 
+def impress_objects(object_names: list[str]) -> Message:
+    """Create impressions for named sub-objects of the current object.
+
+    Resolves each name relative to the current working directory, then calls
+    impress_objects() on the current object so the selected objects share a
+    single consult id (matching the behaviour of impress in a directory).
+
+    Args:
+        object_names: List of sub-object names or relative paths.
+
+    Returns:
+        Message containing the results for each impressed object.
+    """
+    message = Message()
+    objects = []
+    for name in object_names:
+        try:
+            objects.append(MANAGER.sub_object(name))
+        except Exception as e:  # pylint: disable=broad-except
+            message.add(f"Error resolving {name}: {e}", "error")
+            return message
+
+    MANAGER.current_object().impress_objects(objects)
+
+    for obj in objects:
+        if obj.is_task_or_algorithm():
+            impression = obj.impression()
+            if impression is None:
+                message.add(
+                    f"Impression command finished for {obj.path}, but no impression is available.",
+                    "warning"
+                )
+                continue
+            message.add(f"Created impression [{impression.uuid}] for {obj.path}", "success")
+        else:
+            message.add(f"Impression created for {obj.path}", "success")
+    return message
+
+
 def trace(impression: str) -> Message:
     """Trace back to the task or algorithm that generated the impression.
 

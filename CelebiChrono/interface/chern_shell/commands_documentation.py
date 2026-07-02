@@ -57,10 +57,14 @@ class DocumentationCommands:
         except Exception as e:
             print(f"Error getting help: {e}")
 
-    def do_impress(self, _: str) -> None:
-        """Create impression of current object."""
+    def do_impress(self, arg: str) -> None:
+        """Create impression of current object or named sub-objects."""
         try:
-            result = shell.impress()
+            if not arg.strip():
+                result = shell.impress()
+            else:
+                object_names = arg.split()
+                result = shell.impress_objects(object_names)
             if result and result.messages:
                 print(result.colored())
         except Exception as e:

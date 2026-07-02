@@ -23,7 +23,7 @@ from .shell_modules.task_configuration import (
     jobs, status, get_script_path, config, add_apd_token
 )
 from .shell_modules.execution_management import (
-    submit, purge, purge_old_impressions, test,
+    submit, submit_objects, purge, purge_old_impressions, test,
     collect, collect_outputs, collect_logs, engine_logs
 )
 from .shell_modules.communication import (
@@ -31,7 +31,7 @@ from .shell_modules.communication import (
     remove_runner, request_runner, search_impression
 )
 from .shell_modules.visualization import (
-    view, viewurl, impress, trace, imgcat, draw_dag_graphviz
+    view, viewurl, impress, impress_objects, trace, imgcat, draw_dag_graphviz
 )
 from .shell_modules.reana_booking import (
     book_reana, register_booking_server, check_booking_server
@@ -61,13 +61,13 @@ __all__ = [
     'set_environment', 'set_memory_limit', 'set_descriptor', 'rm_parameter', 'remove_input',
     'jobs', 'status', 'get_script_path', 'config', 'add_apd_token',
     # Execution management functions (from execution_management.py)
-    'submit', 'purge', 'purge_old_impressions', 'test',
+    'submit', 'submit_objects', 'purge', 'purge_old_impressions', 'test',
     'collect', 'collect_outputs', 'collect_logs', 'engine_logs',
     # Communication functions (from communication.py)
     'dite', 'set_dite', 'add_host', 'hosts', 'runners', 'register_runner', 'update_runner',
     'remove_runner', 'request_runner', 'search_impression',
     # Visualization functions (from visualization.py)
-    'view', 'viewurl', 'impress', 'trace', 'imgcat', 'draw_dag_graphviz',
+    'view', 'viewurl', 'impress', 'impress_objects', 'trace', 'imgcat', 'draw_dag_graphviz',
     # Utilities functions (from utilities.py)
     'workaround_preshell', 'workaround_postshell', 'history',
     'watermark', 'changes', 'doctor', 'bookkeep', 'bookkeep_url',

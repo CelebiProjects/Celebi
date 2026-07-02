@@ -50,6 +50,27 @@ def _parse_update_runner_args(arg: str):
     return name, kwargs
 
 
+def _parse_submit_args(arg: str):
+    """Parse submit shell argument into (runner, object_names).
+
+    Syntax:
+        submit                     -> runner="local", object_names=[]
+        submit --runner cern       -> runner="cern", object_names=[]
+        submit --runner cern a b   -> runner="cern", object_names=["a", "b"]
+        submit a b                 -> runner="local", object_names=["a", "b"]
+
+    The --runner flag is optional. Any positional arguments after the
+    runner (if provided) are treated as object names.
+    """
+    parts = arg.split()
+    if "--runner" in parts:
+        ridx = parts.index("--runner")
+        runner = parts[ridx + 1] if ridx + 1 < len(parts) else "local"
+        object_names = parts[:ridx] + parts[ridx + 2:]
+        return runner, object_names
+    return "local", parts
+
+
 class EnvironmentCommands:
     """Mixin class providing environment and execution command handlers."""
     # pylint: disable=too-many-public-methods
@@ -158,13 +179,20 @@ class EnvironmentCommands:
             print(f"Error accessing config: {e}")
 
     def do_submit(self, arg: str) -> None:
-        """Submit current object."""
+        """Submit current object or named sub-objects.
+
+        Usage:
+            submit
+            submit --runner cern
+            submit --runner cern a b
+            submit a b
+        """
         try:
-            if not arg:
-                result = shell.submit()
+            runner, object_names = _parse_submit_args(arg)
+            if not object_names:
+                result = shell.submit(runner)
             else:
-                obj = arg.split()[0]
-                result = shell.submit(obj)
+                result = shell.submit_objects(object_names, runner)
             if result.messages:
                 print(result.colored())
         except Exception as e:

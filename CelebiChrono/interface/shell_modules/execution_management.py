@@ -36,6 +36,32 @@ def submit(runner: str = "local") -> Message:
     return message
 
 
+def submit_objects(object_names: list[str], runner: str = "local") -> Message:
+    """Submit named sub-objects of the current object for execution.
+
+    Resolves each name relative to the current working directory, then calls
+    submit_objects() on the current object so the selected tasks are deposited,
+    validated and submitted in one batch (matching the behaviour of submit in
+    a directory).
+
+    Args:
+        object_names: List of sub-object names or relative paths.
+        runner (str, optional): Name of the runner to use. Defaults to "local".
+
+    Returns:
+        Message containing submission confirmation for each object.
+    """
+    message = Message()
+    objects = []
+    for name in object_names:
+        try:
+            objects.append(MANAGER.sub_object(name))
+        except Exception as e:  # pylint: disable=broad-except
+            message.add(f"Error resolving {name}: {e}", "error")
+            return message
+    return MANAGER.current_object().submit_objects(objects, runner)
+
+
 def purge() -> Message:
     """Purge temporary files and cleanup current object.
 

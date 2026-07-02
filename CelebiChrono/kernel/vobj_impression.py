@@ -72,6 +72,16 @@ class ImpressionManagement(Core):
             CHERN_CACHE.project_modification_time = (mtime, time.time())
         consult_table[self.path] = (mtime, True)
 
+    def impress_objects(self, objects, consult_id=None):
+        """Create impressions for multiple objects sharing a consult id."""
+        now = time.time()
+        if consult_id is None:
+            consult_id = now
+        else:
+            now = consult_id
+        for obj in objects:
+            obj.impress(now)
+
     def _record_impression_history(self, impression):
         """Append a record of the given impression to the object-level history list.
 

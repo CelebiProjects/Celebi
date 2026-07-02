@@ -95,6 +95,63 @@ class ExecutionManagement(Core):
         msg.add(f"Impressions {impressions} submitted to {runner}.", "info")
         return msg
 
+    def submit_objects(self, objects, runner: str = "local") -> Message:
+        """ Submit multiple objects collectively.
+
+        Similar to submit() on a directory, but only processes the given
+        objects and their recursive sub-tasks.
+        """
+        now = time.time()
+        cherncc = ChernCommunicator.instance()
+        # Check the connection
+        dite_status = cherncc.dite_status()
+        if dite_status != "connected":
+            msg = Message()
+            msg.add("DITE is not connected. Please check the connection.", "warning")
+            return msg
+
+        # Collect all tasks recursively from the given objects
+        tasks = []
+        for obj in objects:
+            if obj.is_algorithm():
+                continue
+            if obj.is_task():
+                tasks.append(self.get_vtask(obj.path))
+            elif not obj.is_task_or_algorithm():
+                for sub_object in obj.sub_objects_recursively():
+                    if sub_object.is_task():
+                        tasks.append(self.get_vtask(sub_object.path))
+
+        if not tasks:
+            msg = Message()
+            msg.add("No tasks to submit.", "warning")
+            return msg
+
+        # Deposit all tasks and validate runner
+        for task in tasks:
+            task.deposit(now)
+            if task.default_runner() != runner:
+                default_runner = task.default_runner()
+                msg = Message()
+                msg.add(
+                    f"Runner mismatch: object target runner is"
+                    f" {default_runner}, but submit to {runner}.",
+                    "warning"
+                )
+                return msg
+
+        # Collect use_eos and impressions
+        use_eos = {}
+        impressions = []
+        for task in tasks:
+            use_eos[task.impression().uuid] = task.use_eos()
+            impressions.append(task.impression().uuid)
+
+        cherncc.execute(impressions, use_eos, runner)
+        msg = Message()
+        msg.add(f"Impressions {impressions} submitted to {runner}.", "info")
+        return msg
+
     def purge(self, _: str = "local") -> Message:
         """ Submit the impression to the runner. """
         cherncc = ChernCommunicator.instance()
