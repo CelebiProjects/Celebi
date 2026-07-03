@@ -93,16 +93,25 @@ class AdvancedCommands:
             - If 'docker', runs task in a Docker container.
             - If '--reference <algorithm_path>', copies the reference algorithm
               into the workaround space under a `reference/` directory.
+            - If '--skip-input <task_path>', skips mounting the impression of
+              the specified input task.
         """
         try:
             parts = arg.split()
             reference = ""
-            if "--reference" in parts:
-                ref_idx = parts.index("--reference")
-                if ref_idx + 1 < len(parts):
-                    reference = parts[ref_idx + 1]
+            skip_inputs = []
+            i = 0
+            while i < len(parts):
+                if parts[i] == "--reference" and i + 1 < len(parts):
+                    reference = parts[i + 1]
+                    i += 2
+                elif parts[i] == "--skip-input" and i + 1 < len(parts):
+                    skip_inputs.append(parts[i + 1])
+                    i += 2
+                else:
+                    i += 1
 
-            result = shell.workaround_preshell(reference)
+            result = shell.workaround_preshell(reference, skip_inputs)
             if not result.success:
                 print(result.colored())
                 return

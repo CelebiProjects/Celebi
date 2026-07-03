@@ -8,7 +8,7 @@ from ...utils.message import Message
 from ._manager import MANAGER
 
 
-def workaround_preshell(reference: str = "") -> Message:
+def workaround_preshell(reference: str = "", skip_inputs: list[str] = None) -> Message:
     """Execute pre-shell workaround for the current task.
 
     Runs pre-execution workaround code for task preparation. Workarounds
@@ -18,10 +18,13 @@ def workaround_preshell(reference: str = "") -> Message:
     Args:
         reference (str, optional): Path to a reference algorithm to copy
             into the workaround space under a `reference/` directory.
+        skip_inputs (list[str], optional): List of input task paths whose
+            impressions should not be mounted into the workaround space.
 
     Examples:
         workaround_preshell()  # Execute pre-shell workaround
         workaround_preshell("path/to/reference_algorithm")
+        workaround_preshell(skip_inputs=["path/to/input_task"])
 
     Returns:
         Message: Message with success/error status and path data.
@@ -36,7 +39,17 @@ def workaround_preshell(reference: str = "") -> Message:
     if not MANAGER.current_object().is_task():
         message.add("Not able to call workaround if you are not in a task.", "error")
         return message
-    status, path = MANAGER.current_object().workaround_preshell()
+
+    skip_input_objects = []
+    if skip_inputs:
+        for input_path in skip_inputs:
+            try:
+                skip_input_objects.append(MANAGER.sub_object(input_path))
+            except Exception as e:  # pylint: disable=broad-except
+                message.add(f"Error resolving skip-input {input_path}: {e}", "error")
+                return message
+
+    status, path = MANAGER.current_object().workaround_preshell(skip_inputs=skip_input_objects)
     if not status:
         message.add(path, "error")
         return message

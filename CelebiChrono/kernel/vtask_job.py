@@ -510,26 +510,32 @@ class JobManager(Core):
                 dest_path = os.path.join(temp_dir, rel_path)
                 csys.copy(full_path, dest_path)
 
-    def _link_preceding_jobs(self, cherncc, temp_dir):
+    def _link_preceding_jobs(self, cherncc, temp_dir, skip_inputs=None):
         """Create the temporal directory and copy the data there"""
+        skip_inputs = skip_inputs or []
+        skip_uuids = {pre.impression().uuid for pre in skip_inputs if pre.impression()}
         for pre in self.inputs():
+            impression = pre.impression()
+            if impression and impression.uuid in skip_uuids:
+                print(f"Skipping preceding job {pre}")
+                continue
             if not os.path.exists(
                 self._workaround_dir(
-                    name=pre.impression().uuid,
+                    name=impression.uuid,
                     prefix="chernimp_"
                 )):
                 pre_temp_dir = self._create_workaround_dir(
-                    name=pre.impression().uuid, prefix="chernimp_"
+                    name=impression.uuid, prefix="chernimp_"
                 )
-                outputs = cherncc.output_files(pre.impression())
+                outputs = cherncc.output_files(impression)
                 csys.mkdir(os.path.join(pre_temp_dir, "stageout"))
                 for f in outputs:
                     output_path = os.path.join(pre_temp_dir, "stageout", f)
-                    cherncc.export(pre.impression(), f"{f}", output_path)
+                    cherncc.export(impression, f"{f}", output_path)
                     if pre.environment() != "rawdata":
                         print(f"Exported {f} to {output_path}")
             else:
-                pre_temp_dir = self._workaround_dir(name=pre.impression().uuid, prefix="chernimp_")
+                pre_temp_dir = self._workaround_dir(name=impression.uuid, prefix="chernimp_")
             alias = self.path_to_alias(pre.invariant_path())
             print(f"Linking preceding job {pre} to {alias}")
             # Make a symlink
@@ -634,7 +640,7 @@ class JobManager(Core):
 
         print(f"Filelist generated: {len(file_records)} files recorded.")
 
-    def workaround_preshell(self) -> tuple[bool, str]:
+    def workaround_preshell(self, skip_inputs=None) -> tuple[bool, str]:
         """ Pre-shell workaround"""
         print("Start constructing workaround environment...")
         cherncc = ChernCommunicator.instance()
@@ -651,7 +657,7 @@ class JobManager(Core):
         self._prepare_data_dir(temp_dir)
 
         print("Linking preceding jobs...")
-        self._link_preceding_jobs(cherncc, temp_dir)
+        self._link_preceding_jobs(cherncc, temp_dir, skip_inputs=skip_inputs)
 
         self._prepare_algorithm_code(temp_dir)
 
