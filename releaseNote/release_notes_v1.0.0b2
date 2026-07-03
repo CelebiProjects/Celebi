@@ -1,6 +1,6 @@
 ## v1.0.0b2
 + Add selective impress/submit by object names. In the shell, `impress a b` operates only on the named sub-objects while the no-argument form continues to process all sub-objects collectively. `submit` accepts an optional `--runner <name>` flag and any remaining positional arguments as object names, e.g. `submit --runner cern a b` or `submit a b`.
-+ Add `--reference <algorithm>` option to the shell `workaround` command. It copies the referenced algorithm into a `reference/` subdirectory of the workaround space for side-by-side code inspection. Add `--skip-input <task>` option to skip mounting the impression of a specified input task.
++ Add `--reference <algorithm>` option to the shell `workaround` command. It copies the referenced algorithm into a `reference/` subdirectory of the workaround space for side-by-side code inspection. Add `--skip-input <task>` option to skip mounting the impression of a specified input task. Both options have tab-completion support in the shell.
 + Add filelist manifest for the workaround workflow. `workaround_preshell` records the initial algorithm files to `filelist.yaml`, and `workaround_postshell` copies files in the manifest to origin while deleting files in origin that are not listed.
 + Add LHCb Analysis Productions (AP) data list task type (`lhcb_ap_datalist`).
   - `create-lhcb-ap-list` command creates the task with example AP configuration.

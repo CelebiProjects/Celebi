@@ -608,9 +608,9 @@ class JobManager(Core):
     def _generate_workaround_filelist(self, temp_dir):
         """Generate a YAML manifest of files in the workaround code directory.
 
-        Records relative paths, mtime, and size for each file. This is used
-        at the end of the workaround to determine which files were modified,
-        created, or deleted.
+        Records just the relative paths of files. This is used at the end of
+        the workaround to determine which files to copy to origin and which
+        files in origin should be deleted.
         """
         code_dir = os.path.join(temp_dir, "code")
         if not os.path.isdir(code_dir):
@@ -624,15 +624,7 @@ class JobManager(Core):
             for f in filenames:
                 full_path = os.path.join(dirpath, f)
                 rel_path = os.path.relpath(full_path, code_dir)
-                try:
-                    stat = os.stat(full_path)
-                    file_records.append({
-                        "rel_path": rel_path,
-                        "mtime": stat.st_mtime,
-                        "size": stat.st_size,
-                    })
-                except OSError:
-                    continue
+                file_records.append({"rel_path": rel_path})
 
         filelist_path = os.path.join(temp_dir, "filelist.yaml")
         with open(filelist_path, "w", encoding="utf-8") as f:

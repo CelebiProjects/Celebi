@@ -297,8 +297,21 @@ class ChernShellCompletions:
     # ====================================================================
 
     def complete_workaround(
-        self, text: str, _line: str, _begidx: int, _endidx: int
+        self, text: str, line: str, _begidx: int, _endidx: int
     ) -> list:
-        """Complete workaround command with docker option."""
-        options = ["docker"]
+        """Complete workaround command with options and paths."""
+        parts = line.strip().split()
+        # The word just before the cursor
+        prev_token = parts[-2] if len(parts) >= 2 else ""
+
+        if prev_token == "--reference":
+            current_path = MANAGER.c.path
+            return self.get_completions(current_path, text, line)
+
+        if prev_token == "--skip-input":
+            current_path = MANAGER.c.path
+            return self.get_completions(current_path, text, line)
+
+        # Suggest flags and the docker option
+        options = ["docker", "--reference", "--skip-input"]
         return [opt for opt in options if opt.startswith(text)]
