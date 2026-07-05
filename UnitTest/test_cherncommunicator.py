@@ -402,6 +402,9 @@ class TestChernCommunicator(unittest.TestCase):
         mock_get.reset_mock()
         mock_response = MagicMock()
         mock_response.text = "collected"
+        mock_response.status_code = 200
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json.side_effect = ValueError("not json")
         mock_get.return_value = mock_response
 
         # Call the collect method
@@ -410,7 +413,70 @@ class TestChernCommunicator(unittest.TestCase):
         mock_get.assert_called_once_with(
             "http://localhost:8080/collect/projectuuid/abc123", timeout=10000
         )
-        self.assertEqual(result, "collected")
+        self.assertEqual(result, {"success": True, "message": "collected"})
+
+        os.chdir("..")
+        prepare.remove_chern_project("demo_genfit_new")
+        CHERN_CACHE.__init__()
+
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
+    def test_collect_parses_json_report(self, mock_get):
+        """collect should parse a JSON report returned by newer Yuki servers."""
+        print(Fore.BLUE + "Testing Collect JSON report..." + Style.RESET)
+        prepare.create_chern_project("demo_genfit_new")
+        os.chdir("demo_genfit_new")
+
+        self.comm = ChernCommunicator()
+        self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
+
+        class FakeImpression:
+            uuid = "abc123"
+            tarfile = "/path/to/impression.tar"
+            path = "/path/to/impression"
+
+        mock_response = MagicMock()
+        report = {
+            "local": {
+                "collected": ["plot.png"],
+                "skipped": [{"file": "old.png", "reason": "already in Yuki"}],
+                "failed": [],
+            }
+        }
+        mock_response.json.return_value = report
+        mock_response.status_code = 200
+        mock_response.raise_for_status = MagicMock()
+        mock_get.return_value = mock_response
+
+        result = self.comm.collect(FakeImpression())
+        self.assertEqual(result, {"success": True, "message": report})
+
+        os.chdir("..")
+        prepare.remove_chern_project("demo_genfit_new")
+        CHERN_CACHE.__init__()
+
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
+    def test_collect_reports_request_error(self, mock_get):
+        """collect should surface network/HTTP errors instead of returning text."""
+        print(Fore.BLUE + "Testing Collect error handling..." + Style.RESET)
+        prepare.create_chern_project("demo_genfit_new")
+        os.chdir("demo_genfit_new")
+
+        self.comm = ChernCommunicator()
+        self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
+
+        class FakeImpression:
+            uuid = "abc123"
+            tarfile = "/path/to/impression.tar"
+            path = "/path/to/impression"
+
+        from requests import ConnectionError as RequestsConnectionError
+        mock_get.side_effect = RequestsConnectionError("server unreachable")
+        result = self.comm.collect(FakeImpression())
+
+        self.assertEqual(result["success"], False)
+        self.assertIn("server unreachable", result["message"])
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")

@@ -1,4 +1,10 @@
 ## v1.0.0b2
++ Improve `collect` feedback and error reporting.
+  - Print a `Collecting '<selector>' from impression <id>...` start message.
+  - Surface HTTP/connection errors instead of silently returning the error body.
+  - Warn when no files are currently collected.
+  - Report the number of files now in Yuki after a successful collect.
+  - Display skipped and failed files with reasons when the Yuki server returns a collect report.
 + Add selective impress/submit by object names. In the shell, `impress a b` operates only on the named sub-objects while the no-argument form continues to process all sub-objects collectively. `submit` accepts an optional `--runner <name>` flag and any remaining positional arguments as object names, e.g. `submit --runner cern a b` or `submit a b`.
 + Add `--reference <algorithm>` option to the shell `workaround` command. It copies the referenced algorithm into a `reference/` subdirectory of the workaround space for side-by-side code inspection. Add `--skip-input <task>` option to skip mounting the impression of a specified input task. Both options have tab-completion support in the shell.
 + Add filelist manifest for the workaround workflow. `workaround_preshell` records the initial algorithm files to `filelist.yaml`, and `workaround_postshell` copies files in the manifest to origin while deleting files in origin that are not listed.

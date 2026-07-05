@@ -124,35 +124,141 @@ class JobManager(Core):
         return cherncc.status(self.impression())
 
     # Communicator Interaction Methods
+    def _dispatch_collect(self, cherncc, impression, selector):
+        """Return a list of (label, result) tuples for the given selector."""
+        calls = []
+        if selector in ("", "outputs"):
+            if selector == "outputs":
+                calls.append(("outputs", cherncc.collect_outputs(impression)))
+            else:
+                calls.append(("plots+logs", cherncc.collect(impression)))
+        elif selector == "all":
+            calls.append(("outputs", cherncc.collect_outputs(impression)))
+            calls.append(("logs", cherncc.collect_logs(impression)))
+        elif selector in ("plots", "data"):
+            calls.append((selector, cherncc.collect_files(
+                impression, kind="stageout", spec_type=selector)))
+        elif selector == "logs":
+            calls.append(("logs", cherncc.collect_logs(impression)))
+        elif any(ch in selector for ch in "*?["):
+            calls.append((selector, cherncc.collect_files(
+                impression, kind="stageout", pattern=selector)))
+        else:
+            calls.append((selector, cherncc.collect_files(
+                impression, kind="stageout", names=[selector])))
+        return calls
+
+    def _count_collected_files(self, cherncc, impression):
+        """Count files already present in Yuki storage across stageout and logs."""
+        total = 0
+        for kind in ("stageout", "logs"):
+            try:
+                rows = cherncc.file_status(impression, machine="none", kind=kind)
+                total += sum(1 for row in rows if row.get("in_yuki"))
+            except Exception:  # pragma: no cover - file_status already swallows most errors
+                pass
+        return total
+
+    def _extract_skipped_failed(self, report):
+        """Flatten a Yuki collect report into skipped/failed file tuples.
+
+        report may be:
+          - {runner: {collected, skipped, failed}}
+          - {spec/name: {runner: {collected, skipped, failed}}}
+
+        Returns (skipped, failed) where each item is (runner, file, reason).
+        """
+        skipped = []
+        failed = []
+        if not isinstance(report, dict):
+            return skipped, failed
+        # Detect {runner: report} vs {spec: {runner: report}}
+        is_runner_level = all(
+            isinstance(v, dict) and {"collected", "skipped", "failed"} <= set(v.keys())
+            for v in report.values()
+        )
+        if is_runner_level:
+            for runner, runner_report in report.items():
+                for entry in runner_report.get("skipped", []):
+                    skipped.append((runner, entry.get("file", "?"), entry.get("reason", "")))
+                for entry in runner_report.get("failed", []):
+                    failed.append((runner, entry.get("file", "?"), entry.get("reason", "")))
+        else:
+            for _spec, spec_report in report.items():
+                if not isinstance(spec_report, dict):
+                    continue
+                for runner, runner_report in spec_report.items():
+                    if not isinstance(runner_report, dict):
+                        continue
+                    for entry in runner_report.get("skipped", []):
+                        skipped.append((runner, entry.get("file", "?"), entry.get("reason", "")))
+                    for entry in runner_report.get("failed", []):
+                        failed.append((runner, entry.get("file", "?"), entry.get("reason", "")))
+        return skipped, failed
+
+    def _request_errors(self, results):
+        """Return list of (label, error) for failed collect requests."""
+        return [(name, res.get("message", "unknown error"))
+                for name, res in results if not res.get("success")]
+
+    def _aggregate_skipped_failed(self, results):
+        """Aggregate skipped/failed files across all collect request results."""
+        skipped = []
+        failed = []
+        for _name, res in results:
+            s, f = self._extract_skipped_failed(res.get("message"))
+            skipped.extend(s)
+            failed.extend(f)
+        return skipped, failed
+
+    def _append_skipped_failed(self, msg, skipped, failed):
+        """Append formatted skipped/failed file lists to a Message."""
+        if skipped:
+            msg.add(f"Skipped {len(skipped)} file(s):\n", "warning")
+            for runner, filename, reason in skipped:
+                msg.add(f"    [{runner}] {filename}: {reason}\n")
+        if failed:
+            msg.add(f"Failed {len(failed)} file(s):\n", "error")
+            for runner, filename, reason in failed:
+                msg.add(f"    [{runner}] {filename}: {reason}\n")
+
     def collect(self, contents=""):
         """Collect job results by selector.
 
         "" -> plots+logs (light); "all" -> outputs+logs; "plots"/"data" ->
         typed stageout; "logs" -> logs; otherwise a glob/name pattern.
         """
-        selector = contents
+        selector = (contents or "").strip()
+        label = selector or "plots+logs"
         msg = Message()
         cherncc = ChernCommunicator.instance()
         impression = self.impression()
-        selector = (selector or "").strip()
-        if selector in ("", "outputs"):
-            # "outputs" kept as deprecated alias for the light default's data path
-            if selector == "outputs":
-                cherncc.collect_outputs(impression)
-            else:
-                cherncc.collect(impression)
-        elif selector == "all":
-            cherncc.collect_outputs(impression)
-            cherncc.collect_logs(impression)
-        elif selector in ("plots", "data"):
-            cherncc.collect_files(impression, kind="stageout", spec_type=selector)
-        elif selector == "logs":
-            cherncc.collect_logs(impression)
-        elif any(ch in selector for ch in "*?["):
-            cherncc.collect_files(impression, kind="stageout", pattern=selector)
+
+        msg.add(f"Collecting '{label}' from impression {impression}...\n", "info")
+        results = self._dispatch_collect(cherncc, impression, selector)
+
+        request_errors = self._request_errors(results)
+        if request_errors:
+            for name, err in request_errors:
+                msg.add(f"Failed to collect '{name}': {err}\n", "error")
+            return msg
+
+        total_files = self._count_collected_files(cherncc, impression)
+        if not total_files:
+            msg.add(
+                "No files are currently collected. "
+                "The job may not be finished or may have produced no matching files.\n",
+                "warning",
+            )
         else:
-            cherncc.collect_files(impression, kind="stageout", names=[selector])
-        msg.add(f"Collected '{selector or 'plots+logs'}' of impression {impression}")
+            msg.add(
+                f"Finished collecting '{label}' of impression {impression}: "
+                f"{total_files} file(s) now in Yuki.\n",
+                "info",
+            )
+
+        skipped, failed = self._aggregate_skipped_failed(results)
+        self._append_skipped_failed(msg, skipped, failed)
         return msg
 
     def error_log(self, error_index=0):

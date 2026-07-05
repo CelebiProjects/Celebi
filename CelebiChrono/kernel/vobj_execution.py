@@ -364,19 +364,21 @@ class ExecutionManagement(Core):
             return msg
         if not self.is_task_or_algorithm():
             sub_objects = self.sub_objects_recursively()
+            msg = Message()
             for sub_object in sub_objects:
                 if not sub_object.is_task():
                     continue
-                sub_object.collect(contents)
-            msg = Message()
-            msg.add("Results of sub-tasks collected.", "info")
+                sub_msg = sub_object.collect(contents)
+                if sub_msg:
+                    msg.append(sub_msg)
+            if not msg.messages:
+                msg.add("No task results to collect.", "info")
+            else:
+                msg.add("Results of sub-tasks collected.", "info")
             return msg
         if self.is_task():
             task = self.get_vtask(self.path)
-            task.collect(contents)
-            msg = Message()
-            msg.add(f"Results of task {self.path} collected.", "info")
-            return msg
+            return task.collect(contents)
         # It's an algorithm
         msg = Message()
         msg.add(f"Algorithm {self.path} doesn't have results to collect.", "info")
