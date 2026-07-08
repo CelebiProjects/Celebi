@@ -197,15 +197,31 @@ class ChernShellBase(cmd.Cmd):
     ) -> list:
         """Get command completions for file paths."""
 
+        # Expand bare "@" to "@/" so users can tab-complete project-root paths.
+        if filepath == "@":
+            return ["@/"]
+
+        # Handle project-root-relative paths (@/...).
+        if filepath.startswith("@/"):
+            base_path = csys.project_path(current_path)
+            if not base_path:
+                return []
+            project_prefix = "@/"
+            effective_path = filepath[2:]
+        else:
+            project_prefix = ""
+            effective_path = filepath
+            base_path = current_path
+
         # Only special-case bare "." or ".."
-        if filepath in (".", ".."):
+        if effective_path in (".", ".."):
             return [filepath + os.sep]
 
-        full_search_path = os.path.normpath(os.path.join(current_path, filepath))
-        user_dir = os.path.dirname(filepath)
+        full_search_path = os.path.normpath(os.path.join(base_path, effective_path))
+        user_dir = os.path.dirname(effective_path)
 
-        # Trailing slash → list that directory
-        if filepath.endswith(os.sep):
+        # Empty path or trailing slash → list that directory
+        if not effective_path or effective_path.endswith(os.sep):
             dirname = full_search_path
             basename = ""
         else:
@@ -213,7 +229,7 @@ class ChernShellBase(cmd.Cmd):
             basename = os.path.basename(full_search_path)
 
         if not dirname:
-            dirname = current_path
+            dirname = base_path
 
         if not os.path.isdir(dirname):
             return []
@@ -238,9 +254,9 @@ class ChernShellBase(cmd.Cmd):
             results.append(m)
 
         if user_dir:
-            return [os.path.join(user_dir, r) for r in results]
+            return [project_prefix + os.path.join(user_dir, r) for r in results]
 
-        return results
+        return [project_prefix + r for r in results]
 
     def get_completions_out(self, abspath: str, line: str) -> list:
         """Get command completions for absolute paths."""
