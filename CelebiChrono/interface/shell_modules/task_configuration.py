@@ -19,8 +19,10 @@ def _resolve_project_path(path: str) -> str:
     A path starting with "@/" or equal to "@" is interpreted as relative
     to the current Celebi project root. Other paths are returned unchanged.
     """
-    if path.startswith("@/") or path == "@":
-        return os.path.normpath(os.path.join(csys.project_path(), path.strip("@")))
+    if path.startswith("@/"):
+        return os.path.normpath(os.path.join(csys.project_path(), path[2:]))
+    if path == "@":
+        return os.path.normpath(csys.project_path())
     return path
 
 
