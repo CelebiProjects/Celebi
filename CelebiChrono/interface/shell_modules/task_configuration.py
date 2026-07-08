@@ -7,9 +7,21 @@ import os
 import subprocess
 
 from ...kernel.vobject import VObject
+from ...utils import csys
 from ...utils import metadata
 from ...utils.message import Message
 from ._manager import MANAGER
+
+
+def _resolve_project_path(path: str) -> str:
+    """Resolve a path that may be project-relative (@/... or @).
+
+    A path starting with "@/" or equal to "@" is interpreted as relative
+    to the current Celebi project root. Other paths are returned unchanged.
+    """
+    if path.startswith("@/") or path == "@":
+        return os.path.normpath(os.path.join(csys.project_path(), path.strip("@")))
+    return path
 
 
 def jobs(_: str) -> Message:
@@ -102,6 +114,7 @@ def add_input(path: str, alias: str) -> Message:  # pylint: disable=too-many-bra
         - Aliases must be unique within the task/algorithm
     """
     message = Message()
+    path = _resolve_project_path(path)
     if MANAGER.current_object().object_type() == "directory":
         destination_path = MANAGER.current_object().relative_path(path)
         dest_obj = VObject(os.path.join(MANAGER.current_object().path, destination_path))
@@ -176,6 +189,7 @@ def add_algorithm(path: str) -> Message:
         - Algorithms are referenced by their object path within the task
     """
     message = Message()
+    path = _resolve_project_path(path)
     if MANAGER.current_object().object_type() == "directory":
         sub_objects = MANAGER.current_object().sub_objects()
         for obj in sub_objects:
@@ -266,6 +280,7 @@ def add_parameter_subtask(dirname: str, par: str, value: str) -> Message:
     if MANAGER.current_object().object_type() not in ("directory", "project"):
         message.add("Unable to call add_parameter_subtask if you are not in a dir", "error")
         return message
+    dirname = _resolve_project_path(dirname)
     obj = MANAGER.sub_object(dirname)
     if not obj.is_task():
         message.add("Unable to call add_parameter if you are not in a task.", "error")
