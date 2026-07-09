@@ -1,4 +1,5 @@
 ## v1.0.0b2
++ Add project-root-relative path support in the Chern shell. Paths starting with `@/` (or bare `@`) in `add-input`, `add-algorithm`, and `add-parameter-subtask` are resolved relative to the current project root, making it easier to reference objects from anywhere in the project. Tab completion also understands `@/` prefixes.
 + Improve `collect` feedback and error reporting.
   - Print a `Collecting '<selector>' from impression <id>...` start message.
   - Surface HTTP/connection errors instead of silently returning the error body.
