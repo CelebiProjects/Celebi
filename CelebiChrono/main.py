@@ -103,8 +103,10 @@ def _get_command_docstring(func_name: str) -> str:
 @click.group(invoke_without_command=True)
 @click.option("--debug", is_flag=True, default=False,
               help="Enable debug logging to ~/.celebi/logs/celebi.log")
+@click.option("--workon", "workon_project", type=str, default=None,
+              help="Switch to PROJECT and start the Chern shell.")
 @click.pass_context
-def cli(ctx, debug):
+def cli(ctx, debug, workon_project):
     """ Chern command only is equal to `Chern ipython`
     """
     if debug:
@@ -116,6 +118,17 @@ def cli(ctx, debug):
             config_file = metadata.ConfigFile(
                 csys.local_config_dir() + "/config.json"
             )
+
+            # If --workon is specified, switch project first
+            if workon_project:
+                projects_list = config_file.read_variable("projects_path")
+                if workon_project in projects_list:
+                    config_file.write_variable("current_project", workon_project)
+                    print("Switch to project:", workon_project)
+                else:
+                    print(f"Project '{workon_project}' not found")
+                    return
+
             current_project = config_file.read_variable("current_project", "")
             print("Current project: ", current_project)
             if (
