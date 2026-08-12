@@ -666,24 +666,19 @@ class TestChernVTask(unittest.TestCase):
         test_md5 = "source_md5_hash_12345"
 
         with patch('CelebiChrono.utils.csys.dir_md5') as mock_dir_md5, \
-             patch('CelebiChrono.utils.metadata.ConfigFile') as mock_config_file, \
-             patch.object(obj_tsk, 'impress') as mock_impress:
+             patch.object(obj_tsk, 'set_input_md5') as mock_set_input_md5, \
+             patch.object(obj_tsk, 'impress') as mock_impress, \
+             patch('builtins.print') as mock_print:
 
             mock_dir_md5.return_value = test_md5
-            mock_config_instance = MagicMock()
-            mock_config_file.return_value = mock_config_instance
 
             obj_tsk.add_source(test_path)
 
             # Verify method calls
             mock_dir_md5.assert_called_once_with(test_path)
-            mock_config_file.assert_called_once_with(
-                os.path.join(obj_tsk.path, "data.json")
-            )
-            mock_config_instance.write_variable.assert_called_once_with(
-                "md5", test_md5
-            )
+            mock_set_input_md5.assert_called_once_with(test_path)
             mock_impress.assert_called_once()
+            mock_print.assert_called_with("The md5 of the dir is: ", test_md5)
 
         # Test send method
         with patch('CelebiChrono.utils.csys.dir_md5') as mock_dir_md5, \

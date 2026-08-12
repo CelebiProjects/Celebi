@@ -1,9 +1,7 @@
 """ Input manager for VTask
 """
-from os.path import join
 from logging import getLogger
 
-from ..utils import metadata
 from ..utils import csys
 from .vtask_core import Core
 from . import valgorithm as valg
@@ -14,12 +12,20 @@ class InputManager(Core):
     """ Input manager for VTask"""
 
     def add_source(self, path):
-        """ After add source, the status of the task should be done
+        """ Register an external directory as the source/output of the task.
+
+        The directory's MD5 is stored in the task metadata (celebi.yaml) and
+        a new impression is created, leaving the task in the impressed state.
+        This mirrors the rawdata workflow used by Yuki's ``yuki-create-data``
+        and ``use-data`` commands, but operates on a local path instead of a
+        Yuki impression UUID.
+
+        Args:
+            path: Path to the source directory.
         """
-        # FIXME: out-dated code
         md5 = csys.dir_md5(path)
-        data_file = metadata.ConfigFile(join(self.path, "data.json"))
-        data_file.write_variable("md5", md5)
+        print("The md5 of the dir is: ", md5)
+        self.set_input_md5(path)
         self.impress()
 
     def send(self, path, progress_callback=None):
