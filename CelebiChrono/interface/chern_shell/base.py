@@ -58,8 +58,8 @@ class ChernShellBase(cmd.Cmd):
         # Get the default delimiters
         delims = readline.get_completer_delims()
 
-        # Remove characters that appear inside environment names
-        for char in ['-', ':', '/', '.']:
+        # Remove characters that should stay inside a single path token.
+        for char in ['-', ':', '/', '.', '@']:
             delims = delims.replace(char, '')
         readline.set_completer_delims(delims)
 
@@ -213,15 +213,20 @@ class ChernShellBase(cmd.Cmd):
             effective_path = filepath
             base_path = current_path
 
-        # Only special-case bare "." or ".."
-        if effective_path in (".", ".."):
+        # Keep ".." as a directory-walk shortcut, but let "." act as a
+        # hidden-prefix search in the current directory.
+        if effective_path == "..":
             return [filepath + os.sep]
 
         full_search_path = os.path.normpath(os.path.join(base_path, effective_path))
         user_dir = os.path.dirname(effective_path)
 
         # Empty path or trailing slash → list that directory
-        if not effective_path or effective_path.endswith(os.sep):
+        if effective_path == ".":
+            dirname = base_path
+            basename = "."
+            user_dir = "." if filepath.endswith(os.sep) else ""
+        elif not effective_path or effective_path.endswith(os.sep):
             dirname = full_search_path
             basename = ""
         else:
@@ -234,10 +239,27 @@ class ChernShellBase(cmd.Cmd):
         if not os.path.isdir(dirname):
             return []
 
+        typed_segment = (
+            effective_path.rstrip(os.sep).rsplit(os.sep, 1)[-1]
+            if effective_path
+            else ""
+        )
+        show_hidden = typed_segment.startswith(".")
+
         candidates = [
             f for f in os.listdir(dirname)
             if not f.startswith(".celebi")
         ]
+        if not show_hidden:
+            candidates = [f for f in candidates if not f.startswith(".")]
+
+        if project_prefix and not show_hidden:
+            candidates = [
+                f for f in candidates
+                if not os.path.relpath(
+                    os.path.join(dirname, f), base_path
+                ).startswith("..")
+            ]
 
         # Prefix filtering only when basename exists
         matches = (
@@ -262,7 +284,11 @@ class ChernShellBase(cmd.Cmd):
         """Get command completions for absolute paths."""
         if csys.exists(abspath):
             listdir = os.listdir(abspath)
+            typed_segment = os.path.basename(abspath)
+            show_hidden = typed_segment.startswith(".")
             if line.endswith("/"):
+                if not show_hidden:
+                    listdir = [f for f in listdir if not f.startswith(".")]
                 return listdir
             return []
 
@@ -270,6 +296,8 @@ class ChernShellBase(cmd.Cmd):
         dirname = os.path.dirname(abspath)
         if csys.exists(dirname):
             listdir = os.listdir(dirname)
+            if not basename.startswith("."):
+                listdir = [f for f in listdir if not f.startswith(".")]
             completions = [f for f in listdir if f.startswith(basename)]
             return completions
         return []
