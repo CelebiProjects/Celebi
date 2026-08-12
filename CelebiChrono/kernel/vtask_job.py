@@ -634,9 +634,9 @@ class JobManager(Core):
                     name=impression.uuid, prefix="chernimp_"
                 )
                 outputs = cherncc.output_files(impression)
-                csys.mkdir(os.path.join(pre_temp_dir, "stageout"))
                 for f in outputs:
                     output_path = os.path.join(pre_temp_dir, "stageout", f)
+                    csys.mkdir(os.path.dirname(output_path))
                     cherncc.export(impression, f"{f}", output_path)
                     if pre.environment() != "rawdata":
                         print(f"Exported {f} to {output_path}")
@@ -851,9 +851,9 @@ class JobManager(Core):
                     name=pre.impression().uuid, prefix="chernimp_"
                 )
                 outputs = cherncc.output_files(pre.impression())
-                csys.mkdir(os.path.join(pre_temp_dir, "stageout"))
                 for f in outputs:
                     output_path = os.path.join(pre_temp_dir, "stageout", f)
+                    csys.mkdir(os.path.dirname(output_path))
                     cherncc.export(pre.impression(), f"{f}", output_path)
                     if pre.environment() != "rawdata":
                         print(f"Exported {f} to {output_path}")
