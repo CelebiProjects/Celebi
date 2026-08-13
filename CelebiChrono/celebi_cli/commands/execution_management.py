@@ -20,6 +20,39 @@ def _handle_error(error: str) -> None:
     sys.exit(1)
 
 
+_RUNNER_SETTING_OPTIONS = [
+    click.option("--ssh-host", type=str, default=None, help="SSH host (ssh backend)"),
+    click.option("--ssh-user", type=str, default=None, help="SSH user (ssh backend)"),
+    click.option("--ssh-key-path", type=str, default=None, help="SSH private key path"),
+    click.option("--ssh-port", type=int, default=None, help="SSH port"),
+    click.option("--remote-workdir", type=str, default=None,
+                 help="Remote working directory (ssh backend)"),
+    click.option("--workdir", type=str, default=None,
+                 help="Local working directory (native backend)"),
+    click.option("--cores", type=int, default=None, help="Snakemake cores"),
+    click.option("--mem-mb", type=int, default=None, help="Snakemake memory (MB)"),
+    click.option("--conda-path", type=str, default=None,
+                 help="Path to conda executable"),
+    click.option("--snakemake-path", type=str, default=None,
+                 help="Path to snakemake executable"),
+]
+
+_SETTING_KEYS = ("ssh_host", "ssh_user", "ssh_key_path", "ssh_port",
+                 "remote_workdir", "workdir", "cores", "mem_mb",
+                 "conda_path", "snakemake_path")
+
+
+def _runner_setting_options(func):
+    for option in reversed(_RUNNER_SETTING_OPTIONS):
+        func = option(func)
+    return func
+
+
+def _collect_cli_settings(kwargs):
+    return {key: kwargs[key] for key in _SETTING_KEYS
+            if kwargs.get(key) is not None}
+
+
 @click.command(name="test")
 def test_command() -> None:
     """Test execution management functions.
@@ -71,7 +104,9 @@ def runners_command() -> None:
 @click.argument("url", type=str)
 @click.argument("secret", type=str)
 @click.argument("backend_type", type=str)
-def register_runner_command(name: str, url: str, secret: str, backend_type: str) -> None:
+@_runner_setting_options
+def register_runner_command(name: str, url: str, secret: str,
+                            backend_type: str, **kwargs) -> None:
     """Register a new runner with DITE.
 
     Registers a task execution runner with the Distributed Task Execution
@@ -83,6 +118,9 @@ def register_runner_command(name: str, url: str, secret: str, backend_type: str)
     SECRET: Authentication secret or token for runner access.
     BACKEND_TYPE: Type of execution backend (e.g., "docker", "slurm").
 
+    Additional runner settings (SSH connection, workdir, snakemake
+    resources, conda/snakemake paths) can be supplied as options.
+
     Note:
         - Runner names must be unique within DITE
         - URL must be accessible from DITE server
@@ -91,7 +129,8 @@ def register_runner_command(name: str, url: str, secret: str, backend_type: str)
     """
     try:
         from CelebiChrono.interface.shell import register_runner
-        _handle_result(register_runner(name, url, secret, backend_type))
+        _handle_result(register_runner(name, url, secret, backend_type,
+                                       **_collect_cli_settings(kwargs)))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
@@ -131,9 +170,11 @@ def remove_runner_command(runner: str) -> None:
 @click.option("--backend-type", type=str, default=None, help="Backend type (reana/native)")
 @click.option("--use-kerberos/--no-use-kerberos", default=None, help="Enable/disable Kerberos")
 @click.option("--eos-mount-point", type=str, default=None, help="EOS mount point path")
+@_runner_setting_options
 # Click options mirror the public CLI; number of options is expected.
 # pylint: disable=too-many-arguments,too-many-positional-arguments
-def update_runner_command(name, url, token, backend_type, use_kerberos, eos_mount_point):
+def update_runner_command(name, url, token, backend_type, use_kerberos,
+                          eos_mount_point, **kwargs):
     """Update settings for an existing runner.
 
     NAME is the runner to update. Only the provided options are changed.
@@ -151,7 +192,25 @@ def update_runner_command(name, url, token, backend_type, use_kerberos, eos_moun
             settings["use_kerberos"] = use_kerberos
         if eos_mount_point is not None:
             settings["eos_mount_point"] = eos_mount_point
+        settings.update(_collect_cli_settings(kwargs))
         _handle_result(update_runner(name, **settings))
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="test-runner")
+@click.argument("runner", type=str)
+def test_runner_command(runner: str) -> None:
+    """Probe a runner's capabilities (snakemake/conda/workdir) via DITE.
+
+    RUNNER is the name of the registered runner to test. Results are stored
+    on the server and shown in 'celebi-cli runners'.
+    """
+    try:
+        from CelebiChrono.interface.shell import test_runner
+        _handle_result(test_runner(runner))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
