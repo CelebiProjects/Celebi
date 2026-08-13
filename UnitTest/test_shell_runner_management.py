@@ -39,6 +39,15 @@ class TestShellRunnerManagement(unittest.TestCase):
         self.assertIn("8.1.0", text)
         self.assertIn("not found in PATH", text)
 
+    def test_test_runner_shows_error_message(self):
+        cc = self._cherncc(test_runner=mock.MagicMock(return_value={
+            "status": "error",
+            "message": "Runner 'ghost' not found"}))
+        with mock.patch.object(communication, "ChernCommunicator") as cls:
+            cls.instance.return_value = cc
+            message = communication.test_runner("ghost")
+        self.assertIn("Runner 'ghost' not found", str(message))
+
     def test_runners_writes_completion_cache(self):
         tmp = tempfile.mkdtemp()
         cc = self._cherncc(

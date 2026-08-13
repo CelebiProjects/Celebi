@@ -752,6 +752,31 @@ class TestChernCommunicator(unittest.TestCase):
         CHERN_CACHE.__init__()
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
+    def test_test_runner_404_unknown_runner(self, mock_get):
+        prepare.create_chern_project("demo_genfit_new")
+        os.chdir("demo_genfit_new")
+        self.comm = ChernCommunicator()
+        self.comm.serverurl = MagicMock(return_value="localhost:8080")
+
+        # New server: 404 with JSON error body means unknown runner
+        mock_get.return_value = MagicMock(
+            status_code=404,
+            json=MagicMock(return_value={"error": "Runner 'ghost' not found"}))
+        result = self.comm.test_runner("ghost")
+        self.assertEqual(result, {"status": "error",
+                                  "message": "Runner 'ghost' not found"})
+
+        # Old server: 404 with non-JSON body means missing route
+        mock_get.return_value = MagicMock(
+            status_code=404,
+            json=MagicMock(side_effect=ValueError("No JSON")))
+        result = self.comm.test_runner("ghost")
+        self.assertEqual(result["status"], "unsupported")
+        os.chdir("..")
+        prepare.remove_chern_project("demo_genfit_new")
+        CHERN_CACHE.__init__()
+
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_sample_status(self, mock_get):
         print(Fore.BLUE + "Testing Sample Status..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")

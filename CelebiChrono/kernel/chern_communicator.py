@@ -655,6 +655,12 @@ class ChernCommunicator():
         except requests.exceptions.RequestException as e:
             raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
         if r.status_code == 404:
+            try:
+                body = r.json()
+            except ValueError:
+                body = None
+            if isinstance(body, dict) and "error" in body:
+                return {"status": "error", "message": body["error"]}
             return {"status": "unsupported",
                     "message": "DITE server does not support runner testing "
                                "(upgrade Yuki)"}

@@ -276,10 +276,11 @@ def test_runner(runner: str) -> Message:
         message.add(str(e), "error")
         return message
     status = result.get("status", "unknown")
-    tag = {"ok": "success", "failed": "error"}.get(status, "warning")
+    tag = {"ok": "success", "failed": "error", "error": "error"}.get(
+        status, "warning")
     message.add(f"Runner '{runner}': {status}", tag)
-    if status == "unsupported":
-        message.add(result.get("message", ""), "warning")
+    if status != "ok" and result.get("message"):
+        message.add(result["message"], tag if tag == "warning" else "error")
         return message
     for name, check in result.get("checks", {}).items():
         if check.get("ok"):
