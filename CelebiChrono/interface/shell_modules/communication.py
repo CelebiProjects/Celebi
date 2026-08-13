@@ -144,7 +144,7 @@ def set_dite(url: str = "") -> Message:
     return message
 
 
-def runners() -> Message:
+def runners() -> Message:  # pylint: disable=too-many-locals
     """Display all available runners.
 
     Retrieves and displays information about all task execution runners
