@@ -1,0 +1,44 @@
+## v1.0.0b3
++ Add `--workon <project>` option to the `celebi` CLI entry point. It switches the current project before starting the Chern shell, e.g. `celebi --workon my-analysis`. Unknown project names are reported and the shell is not started.
++ Improve path completion in the Chern shell.
+  - `@` is no longer a word delimiter, so `@/` project-root paths complete as a single token.
+  - Dotfiles and dot-directories are hidden by default and appear once the typed segment starts with a dot.
+  - Bare `.` acts as a hidden-prefix search in the current directory instead of a directory shortcut; `..` still walks up.
+  - `@/` completion results are restricted to the project root.
++ Fix stageout export for predecessor outputs with nested paths (e.g. `subdir/file.root`). The parent directory is now created per output file instead of assuming a flat `stageout/` directory, so nested outputs no longer fail to export.
++ Refactor `add_source` to store the source MD5 via `set_input_md5` instead of writing `data.json` directly, matching the rawdata workflow used by Yuki's `use-data` command.
++ Add regression tests for nested stageout directory creation and shell path completion.
++ Add a command naming review report (`COMMAND_NAMING_REVIEW.md`) covering the `celebi`, `celebi-cli`, `celebi-git`, and Chern shell command surfaces.
++ Bump version to 1.0.0b3.
+
+## v1.0.0b2
++ Add project-root-relative path support in the Chern shell. Paths starting with `@/` (or bare `@`) in `add-input`, `add-algorithm`, and `add-parameter-subtask` are resolved relative to the current project root, making it easier to reference objects from anywhere in the project. Tab completion also understands `@/` prefixes.
++ Improve `collect` feedback and error reporting.
+  - Print a `Collecting '<selector>' from impression <id>...` start message.
+  - Surface HTTP/connection errors instead of silently returning the error body.
+  - Warn when no files are currently collected.
+  - Report the number of files now in Yuki after a successful collect.
+  - Display skipped and failed files with reasons when the Yuki server returns a collect report.
++ Add selective impress/submit by object names. In the shell, `impress a b` operates only on the named sub-objects while the no-argument form continues to process all sub-objects collectively. `submit` accepts an optional `--runner <name>` flag and any remaining positional arguments as object names, e.g. `submit --runner cern a b` or `submit a b`.
++ Add `--reference <algorithm>` option to the shell `workaround` command. It copies the referenced algorithm into a `reference/` subdirectory of the workaround space for side-by-side code inspection. Add `--skip-input <task>` option to skip mounting the impression of a specified input task. Both options have tab-completion support in the shell.
++ Add filelist manifest for the workaround workflow. `workaround_preshell` records the initial algorithm files to `filelist.yaml`, and `workaround_postshell` copies files in the manifest to origin while deleting files in origin that are not listed.
++ Add LHCb Analysis Productions (AP) data list task type (`lhcb_ap_datalist`).
+  - `create-lhcb-ap-list` command creates the task with example AP configuration.
+  - `add-apd-token` command stores the APD token in `.celebi/config.local.json`.
+  - `ls` shows `temp_apd_token` status for these tasks.
++ Deposit uploads `.celebi/config.local.json` alongside the impression so Yuki can generate `lbapi_key.json` server-side.
++ Mark `datalist` and `lhcb_ap_datalist` tasks as validated without requiring an algorithm.
++ Add runner management utilities.
+  - `update-runner <name>` command to modify runner settings (URL, token, backend type, Kerberos, EOS mount point).
+  - `runners` command now displays full runner configuration.
++ Fix arc cache invalidation so `add-algorithm`/`remove-input` changes are visible immediately in `ls`.
++ Add unit test for arc cache invalidation.
++ Bump version to 1.0.0b2.
++ Fix `book-reana` streaming error message so a connection lost mid-upload is reported as "Connection to Yuki server ... was lost" instead of "Could not connect to Yuki server".
++ Add unit tests for streaming connection-loss scenarios (initial failure vs. mid-stream drop).
++ Refactor `CelebiChrono/interface/shell_modules/reana_booking.py` to reduce complexity and improve maintainability.
++ Resolve all remaining non-informational pylint warnings across `CelebiChrono`, bringing the full-project pylint score to 10.00/10.
++ Fix `status` display to use `status_musical` and `status_legacy` fields from the Yuki server, showing `[coda][finished]` for completed workflows instead of `[coda][coda]`.
+
+## v1.0.0b1
++ Initial beta release of CelebiChrono.
