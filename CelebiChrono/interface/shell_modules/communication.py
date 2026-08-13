@@ -12,6 +12,12 @@ from ...kernel.chern_communicator import ChernCommunicator
 from ._manager import MANAGER
 
 
+def _update_runner_completion_cache(runner_names):
+    """Persist runner names for interactive-shell tab completion."""
+    cache_path = os.path.join(os.environ["HOME"], ".celebi", "readline.yaml")
+    metadata.YamlFile(cache_path).write_variable("runners", runner_names)
+
+
 def add_host(host: str, url: str) -> Message:
     """Add a host to the communicator.
 
@@ -37,7 +43,7 @@ def add_host(host: str, url: str) -> Message:
     """
     message = Message()
     cherncc = ChernCommunicator.instance()
-    cherncc.add_host(host, url)
+    cherncc.add_host(url)
     message.add(f"Host '{host}' added with URL: {url}", "success")
     return message
 
@@ -195,11 +201,28 @@ def runners() -> Message:
                 message.add(f"{info['status']}\n", "success" )
             else:
                 message.add(f"{info['status']}\n", "warning" )
+            health = cfg.get("health", {})
+            health_status = health.get("status", "untested")
+            health_tag = {"ok": "success", "failed": "error"}.get(
+                health_status, "normal")
+            checked_at = health.get("checked_at", "")
+            suffix = f" ({checked_at})" if checked_at else ""
+            message.add(f"{'Health: ':<20}{health_status}{suffix}\n", health_tag)
+            settings = cfg.get("settings", {})
+            if settings.get("workdir"):
+                message.add(f"{'Workdir: ':<20}{settings['workdir']}\n", "normal")
+            if settings.get("cores"):
+                message.add(f"{'Cores: ':<20}{settings['cores']}\n", "normal")
             message.add("------------\n")
+    try:
+        _update_runner_completion_cache(runner_list)
+    except Exception:
+        pass
     return message
 
 
-def register_runner(runner: str, url: str, secret: str, backend_type: str) -> Message:
+def register_runner(runner: str, url: str, secret: str, backend_type: str,
+                    **kwargs) -> Message:
     """Register a runner with DITE.
 
     Registers a new task execution runner with the Distributed Task Execution
@@ -211,6 +234,8 @@ def register_runner(runner: str, url: str, secret: str, backend_type: str) -> Me
         url (str): Network address where the runner service is accessible.
         secret (str): Authentication secret or token for runner access.
         backend_type (str): Type of execution backend (e.g., "docker", "slurm").
+        **kwargs: Optional runner settings (e.g. workdir, cores, mem_mb),
+            forwarded to DITE as the runner's settings.
 
     Examples:
         register_runner local-runner http://localhost:8080 secret123 docker
@@ -228,10 +253,40 @@ def register_runner(runner: str, url: str, secret: str, backend_type: str) -> Me
     message = Message()
     cherncc = ChernCommunicator.instance()
     try:
-        cherncc.register_runner(runner, url, secret, backend_type)
+        cherncc.register_runner(runner, url, secret, backend_type,
+                                settings=kwargs or None)
         message.add(f"Runner '{runner}' registered", "success")
     except (ConnectionError, RuntimeError) as e:
         message.add(str(e), "error")
+        return message
+    try:
+        _update_runner_completion_cache(cherncc.runners())
+    except Exception:
+        pass
+    return message
+
+
+def test_runner(runner: str) -> Message:
+    """Probe a runner's capabilities (snakemake/conda/workdir) via DITE."""
+    message = Message()
+    cherncc = ChernCommunicator.instance()
+    try:
+        result = cherncc.test_runner(runner)
+    except ConnectionError as e:
+        message.add(str(e), "error")
+        return message
+    status = result.get("status", "unknown")
+    tag = {"ok": "success", "failed": "error"}.get(status, "warning")
+    message.add(f"Runner '{runner}': {status}", tag)
+    if status == "unsupported":
+        message.add(result.get("message", ""), "warning")
+        return message
+    for name, check in result.get("checks", {}).items():
+        if check.get("ok"):
+            detail = check.get("version") or check.get("path") or "ok"
+            message.add(f"\n  {name:<20}{detail}", "success")
+        else:
+            message.add(f"\n  {name:<20}{check.get('error', 'failed')}", "error")
     return message
 
 
@@ -280,6 +335,16 @@ def update_runner(runner: str, **kwargs) -> Message:
             use_kerberos (bool): Whether to use Kerberos authentication.
             eos_mount_point (str): EOS mount point path.
             cvmfs (list): List of CVMFS repository names.
+            workdir (str): Working directory on the runner.
+            cores (int): Number of cores to use.
+            mem_mb (int): Memory limit in megabytes.
+            conda_path (str): Path to the conda installation.
+            snakemake_path (str): Path to the snakemake executable.
+            ssh_host (str): SSH host for remote runners.
+            ssh_user (str): SSH user for remote runners.
+            ssh_key_path (str): Path to the SSH private key.
+            ssh_port (int): SSH port for remote runners.
+            remote_workdir (str): Working directory on the remote host.
 
     Returns:
         Message: Formatted message confirming the update.
