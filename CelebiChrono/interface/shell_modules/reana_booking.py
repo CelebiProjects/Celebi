@@ -34,8 +34,8 @@ def _get_yuki_server_url() -> str:
         hosts_path = os.path.join(project_path, ".celebi", "hosts.json")
         if os.path.exists(hosts_path):
             config_file = metadata.ConfigFile(hosts_path)
-            return config_file.read_variable("serverurl", "localhost:5000")
-    return "localhost:5000"
+            return config_file.read_variable("serverurl", "127.0.0.1:3315")
+    return "127.0.0.1:3315"
 
 
 def _pack_project_to_tar(project_path: str) -> io.BytesIO:
