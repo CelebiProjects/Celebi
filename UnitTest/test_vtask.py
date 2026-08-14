@@ -168,6 +168,7 @@ class TestChernVTask(unittest.TestCase):
             ]
             obj_tsk.export("*.root")
             mock_communicator.output_files.assert_called_once_with(ANY, "none")
+
             # Should only export the .root file
             mock_communicator.export.assert_called_once()
             call_args = mock_communicator.export.call_args
@@ -1657,6 +1658,68 @@ class TestChernVTask(unittest.TestCase):
             mock_communicator.dite_status.assert_called_once()
             mock_communicator.job_status.assert_called_once_with(ANY)
             self.assertEqual(result, mock_message)
+
+        os.chdir("..")
+        prepare.remove_chern_project("demo_complex")
+        CHERN_CACHE.__init__()
+
+    def test_printed_status_rawdata_shows_file_table(self):
+        """rawdata status shows the stageout table (runner files, in-Yuki marks)."""
+        prepare.create_chern_project("demo_complex")
+        os.chdir("demo_complex")
+        from CelebiChrono.kernel.vtask import create_rawdata_task
+        create_rawdata_task("tasks/mydata", "mydata", "md5abc")
+        obj_tsk = vtsk.VTask(os.getcwd() + "/tasks/mydata")
+        obj_tsk.impress()
+
+        with patch.object(ChernCommunicator, 'instance') as mock_instance, \
+             patch('CelebiChrono.kernel.vobject.VObject.printed_status') as mock_super:
+            mock_communicator = MagicMock()
+            mock_instance.return_value = mock_communicator
+            mock_communicator.dite_status.return_value = "connected"
+            mock_communicator.job_status.return_value = {
+                "status": "archived", "musical_status": "archived",
+                "legacy_status": "archived", "detailed_status": ""}
+            mock_communicator.file_status.return_value = [
+                {"name": "a.txt", "size": 10, "type": "data",
+                 "in_runner": True, "in_yuki": False}]
+            mock_message = MagicMock()
+            mock_super.return_value = mock_message
+
+            obj_tsk.printed_status()
+
+            mock_communicator.file_status.assert_called_once_with(
+                ANY, "none", "stageout")
+
+        os.chdir("..")
+        prepare.remove_chern_project("demo_complex")
+        CHERN_CACHE.__init__()
+
+    def test_printed_status_rawdata_falls_back_to_sample_files(self):
+        """rawdata status falls back to Sample files when no table rows."""
+        prepare.create_chern_project("demo_complex")
+        os.chdir("demo_complex")
+        from CelebiChrono.kernel.vtask import create_rawdata_task
+        create_rawdata_task("tasks/mydata", "mydata", "md5abc")
+        obj_tsk = vtsk.VTask(os.getcwd() + "/tasks/mydata")
+        obj_tsk.impress()
+
+        with patch.object(ChernCommunicator, 'instance') as mock_instance, \
+             patch('CelebiChrono.kernel.vobject.VObject.printed_status') as mock_super:
+            mock_communicator = MagicMock()
+            mock_instance.return_value = mock_communicator
+            mock_communicator.dite_status.return_value = "connected"
+            mock_communicator.job_status.return_value = {
+                "status": "archived", "musical_status": "archived",
+                "legacy_status": "archived", "detailed_status": ""}
+            mock_communicator.file_status.return_value = []
+            mock_communicator.output_files.return_value = ["s1.txt"]
+            mock_message = MagicMock()
+            mock_super.return_value = mock_message
+
+            obj_tsk.printed_status()
+
+            mock_communicator.output_files.assert_called_once_with(ANY, "none")
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")

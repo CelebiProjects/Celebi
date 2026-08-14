@@ -123,10 +123,11 @@ class VTask(InputManager, SettingManager, FileManager, JobManager):
             num /= 1024
         return result
 
-    def _stageout_table(self, cherncc, runner):
+    def _stageout_table(self, cherncc, runner, rows=None):
         """Build a Message listing stageout files: name, size, type, in-Yuki."""
         message = Message()
-        rows = cherncc.file_status(self.impression(), runner, "stageout")
+        if rows is None:
+            rows = cherncc.file_status(self.impression(), runner, "stageout")
         message.add("Stageout files:\n", "title0")
         if not rows:
             message.add("    (nothing to show yet — run 'collect', "
@@ -192,10 +193,16 @@ class VTask(InputManager, SettingManager, FileManager, JobManager):
 
         environment = self.environment()
         if environment == "rawdata":
-            files = cherncc.output_files(self.impression(), "none")
-            message.add("Sample files (collected on DIET):\n", "title0")
-            for f in files:
-                message.add(f"    {f}\n")
+            rows = cherncc.file_status(self.impression(), "none", "stageout")
+            if rows:
+                # Same table as normal tasks: name/size/type/in-Yuki marks.
+                message.messages.extend(
+                    self._stageout_table(cherncc, "none", rows=rows).messages)
+            else:
+                files = cherncc.output_files(self.impression(), "none")
+                message.add("Sample files (collected on DIET):\n", "title0")
+                for f in files:
+                    message.add(f"    {f}\n")
             return message
 
         workflow_check = cherncc.workflow(self.impression())
