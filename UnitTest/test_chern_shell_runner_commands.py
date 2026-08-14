@@ -3,9 +3,11 @@ import unittest
 from unittest import mock
 
 from CelebiChrono.interface.chern_shell import commands_environment
+from CelebiChrono.interface.chern_shell import commands_task
 from CelebiChrono.interface.chern_shell.commands_environment import (
     EnvironmentCommands, _parse_update_runner_args,
 )
+from CelebiChrono.interface.chern_shell.commands_task import TaskCommands
 from CelebiChrono.interface.chern_shell.completions import ChernShellCompletions
 
 
@@ -104,6 +106,36 @@ class TestRunnerCompletions(unittest.TestCase):
         self.assertEqual(self.comp.complete_runner_envs("", "runner_envs ", 0, 0),
                          ["cern", "local", "pkufarm212"])
 
+    def test_complete_register_data(self):
+        self.assertEqual(self.comp.complete_register_data("p", "register_data p", 0, 0),
+                         ["pkufarm212"])
+
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestRegisterDataShellCommand(unittest.TestCase):
+
+    def setUp(self):
+        self.cmds = TaskCommands.__new__(TaskCommands)
+
+    def test_do_register_data_parses_args(self):
+        with mock.patch.object(commands_task, "shell") as shell:
+            shell.register_data.return_value = mock.MagicMock(messages=[])
+            self.cmds.do_register_data("pkufarm212 /data/dir --descriptor mydata")
+        shell.register_data.assert_called_once_with(
+            "pkufarm212", "/data/dir", "mydata")
+
+    def test_do_register_data_defaults_descriptor(self):
+        with mock.patch.object(commands_task, "shell") as shell:
+            shell.register_data.return_value = mock.MagicMock(messages=[])
+            self.cmds.do_register_data("pkufarm212 /data/dir")
+        shell.register_data.assert_called_once_with("pkufarm212", "/data/dir", "")
+
+    def test_do_register_data_requires_args(self):
+        with mock.patch.object(commands_task, "shell") as shell, \
+                mock.patch("builtins.print") as pr:
+            self.cmds.do_register_data("")
+        shell.register_data.assert_not_called()
+        self.assertTrue(pr.called)

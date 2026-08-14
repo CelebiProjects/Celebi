@@ -282,6 +282,16 @@ class ChernShellCompletions:
         runners = self.readline_file.read_variable("runners", [])
         return [r for r in runners if r.startswith(text)]
 
+    def complete_register_data(
+        self, text: str, line: str, _begidx: int, _endidx: int
+    ) -> list:
+        """Complete register_data's runner argument with existing runners."""
+        parts = line.split()
+        if len(parts) == 1 or (len(parts) == 2 and not line.endswith(" ")):
+            runners = self.readline_file.read_variable("runners", [])
+            return [r for r in runners if r.startswith(text)]
+        return []
+
     # ====================================================================
     # Script and Documentation Completions
     # ====================================================================

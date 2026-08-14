@@ -311,3 +311,26 @@ class TaskCommands:
                 print(result.colored())
         except Exception as e:
             print(f"Error attaching impression: {e}")
+
+    def do_register_data(self, arg: str) -> None:
+        """Register data living on an ssh runner (MD5 + managed staging).
+
+        Usage: register_data <runner> <remote_path> [--descriptor DESC]
+        """
+        try:
+            args = arg.split()
+            if len(args) < 2:
+                print("Error: Please provide a runner name and a remote path.")
+                return
+            runner = args[0]
+            remote_path = args[1]
+            descriptor = ""
+            if "--descriptor" in args:
+                idx = args.index("--descriptor")
+                if idx + 1 < len(args):
+                    descriptor = args[idx + 1]
+            result = shell.register_data(runner, remote_path, descriptor)
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error registering data: {e}")
