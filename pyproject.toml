@@ -29,6 +29,7 @@ dependencies = [
     # "PyYAML>=5.1,<6.0",
     "PyYAML>=5.1",
     "requests",
+    "tqdm",
     "networkx",
     "graphviz",
     "plotly",
