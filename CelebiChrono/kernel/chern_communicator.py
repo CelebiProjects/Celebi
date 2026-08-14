@@ -678,6 +678,25 @@ class ChernCommunicator():
             return {"status": "untested"}
         return r.json()
 
+    def runner_envs(self, runner):
+        """ List conda environments available on a runner (ssh/native) """
+        url = self.serverurl()
+        try:
+            r = requests.get(f"http://{url}/runner-envs/{runner}", timeout=60)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        if r.status_code == 404:
+            try:
+                body = r.json()
+            except ValueError:
+                body = None
+            if isinstance(body, dict) and "error" in body:
+                return {"envs": [], "error": body["error"]}
+            return {"envs": [],
+                    "error": "DITE server does not support listing runner "
+                             "environments (upgrade Yuki)"}
+        return r.json()
+
     # === File Operations ===
     def output_files(self, impression, machine="none"): # UnitTest: DONE
         """ Get the output files of the impression """

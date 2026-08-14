@@ -217,6 +217,23 @@ def test_runner_command(runner: str) -> None:
         _handle_error(f"Command failed: {e}")
 
 
+@click.command(name="runner-envs")
+@click.argument("runner", type=str)
+def runner_envs_command(runner: str) -> None:
+    """List conda environments available on a runner (ssh/native).
+
+    RUNNER is the name of the registered runner. The list is fetched live
+    from the runner via the DITE server.
+    """
+    try:
+        from CelebiChrono.interface.shell import runner_envs
+        _handle_result(runner_envs(runner))
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
 @click.command(name="submit")
 @click.argument("runner", type=str, default="local", required=False)
 def submit_command(runner: str) -> None:

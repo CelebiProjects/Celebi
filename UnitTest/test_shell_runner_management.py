@@ -75,3 +75,25 @@ class TestShellRunnerManagement(unittest.TestCase):
             cls.instance.return_value = cc
             communication.add_host("myhost", "127.0.0.1:3315")
         cc.add_host.assert_called_once_with("127.0.0.1:3315")
+
+    def test_runner_envs_renders_list(self):
+        cc = self._cherncc(runner_envs=mock.MagicMock(return_value={
+            "envs": [
+                {"name": "base", "path": "/opt/conda", "active": True},
+                {"name": "celebi", "path": "/opt/conda/envs/celebi", "active": False},
+            ], "error": None}))
+        with mock.patch.object(communication, "ChernCommunicator") as cls:
+            cls.instance.return_value = cc
+            message = communication.runner_envs("cluster")
+        text = str(message)
+        self.assertIn("base", text)
+        self.assertIn("celebi", text)
+        self.assertIn("/opt/conda/envs/celebi", text)
+
+    def test_runner_envs_shows_error(self):
+        cc = self._cherncc(runner_envs=mock.MagicMock(return_value={
+            "envs": [], "error": "conda not found in PATH"}))
+        with mock.patch.object(communication, "ChernCommunicator") as cls:
+            cls.instance.return_value = cc
+            message = communication.runner_envs("local")
+        self.assertIn("conda not found", str(message))

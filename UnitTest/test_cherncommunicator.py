@@ -777,6 +777,43 @@ class TestChernCommunicator(unittest.TestCase):
         CHERN_CACHE.__init__()
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
+    def test_runner_envs(self, mock_get):
+        prepare.create_chern_project("demo_genfit_new")
+        os.chdir("demo_genfit_new")
+        self.comm = ChernCommunicator()
+        self.comm.serverurl = MagicMock(return_value="localhost:8080")
+
+        # Success
+        mock_get.return_value = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={
+                "envs": [{"name": "base", "path": "/opt/conda", "active": True}],
+                "error": None}))
+        result = self.comm.runner_envs("cluster")
+        self.assertEqual(result["envs"][0]["name"], "base")
+        mock_get.assert_called_once_with(
+            "http://localhost:8080/runner-envs/cluster", timeout=60)
+
+        # New server, unknown runner: 404 with JSON error
+        mock_get.reset_mock()
+        mock_get.return_value = MagicMock(
+            status_code=404,
+            json=MagicMock(return_value={"error": "Runner 'ghost' not found"}))
+        result = self.comm.runner_envs("ghost")
+        self.assertEqual(result["envs"], [])
+        self.assertIn("not found", result["error"])
+
+        # Old server: 404 without JSON body -> unsupported
+        mock_get.return_value = MagicMock(
+            status_code=404,
+            json=MagicMock(side_effect=ValueError("No JSON")))
+        result = self.comm.runner_envs("ghost")
+        self.assertIn("upgrade Yuki", result["error"])
+        os.chdir("..")
+        prepare.remove_chern_project("demo_genfit_new")
+        CHERN_CACHE.__init__()
+
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_sample_status(self, mock_get):
         print(Fore.BLUE + "Testing Sample Status..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")

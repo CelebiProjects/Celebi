@@ -373,6 +373,38 @@ def update_runner(runner: str, **kwargs) -> Message:
     return message
 
 
+def runner_envs(runner: str) -> Message:
+    """List conda environments available on a runner (ssh/native).
+
+    Args:
+        runner (str): Name of the registered runner.
+
+    Examples:
+        runner_envs pkufarm212
+        runner_envs local
+
+    Returns:
+        Message: Formatted list of conda environments with paths.
+    """
+    message = Message()
+    cherncc = ChernCommunicator.instance()
+    try:
+        result = cherncc.runner_envs(runner)
+    except ConnectionError as e:
+        message.add(str(e), "error")
+        return message
+    if result.get("error"):
+        message.add(result["error"], "error")
+        return message
+    envs = result.get("envs", [])
+    message.add(f"Conda environments on '{runner}' ({len(envs)}):\n", "title0")
+    for env in envs:
+        marker = "*" if env.get("active") else " "
+        name = env.get("name") or "(unnamed)"
+        message.add(f"{marker} {name:<30}{env.get('path', '')}\n", "normal")
+    return message
+
+
 def request_runner(runner: str) -> Message:
     """Set the requested runner for current task.
 

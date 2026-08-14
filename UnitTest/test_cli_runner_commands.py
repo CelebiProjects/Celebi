@@ -5,7 +5,8 @@ from unittest import mock
 from click.testing import CliRunner
 
 from CelebiChrono.celebi_cli.commands.execution_management import (
-    register_runner_command, test_runner_command, update_runner_command,
+    register_runner_command, runner_envs_command, test_runner_command,
+    update_runner_command,
 )
 
 
@@ -54,3 +55,9 @@ class TestCliRunnerCommands(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_runner_envs_command(self):
+        with mock.patch("CelebiChrono.interface.shell.runner_envs") as fn:
+            result = self.runner.invoke(runner_envs_command, ["cluster"])
+        self.assertEqual(result.exit_code, 0, result.output)
+        fn.assert_called_once_with("cluster")
