@@ -697,6 +697,41 @@ class ChernCommunicator():
                              "environments (upgrade Yuki)"}
         return r.json()
 
+    def register_remote_data(self, runner, remote_path, project_uuid,
+                             descriptor=None):
+        """ Register data living on an ssh runner (hashing/copy run on Yuki) """
+        url = self.serverurl()
+        data = {'runner': runner, 'remote_path': remote_path,
+                'project_uuid': project_uuid}
+        if descriptor:
+            data['descriptor'] = descriptor
+        try:
+            r = requests.post(f"http://{url}/register-remote-data",
+                              json=data, timeout=self.timeout)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        if r.status_code != 200:
+            try:
+                body = r.json()
+            except ValueError:
+                body = None
+            if isinstance(body, dict) and "error" in body:
+                return {"error": body["error"]}
+            return {"error": f"register failed (HTTP {r.status_code})"}
+        return r.json()
+
+    def register_remote_data_status(self, job_id):
+        """ Poll a remote data registration job's state """
+        url = self.serverurl()
+        try:
+            r = requests.get(f"http://{url}/register-remote-data/{job_id}",
+                             timeout=self.timeout)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        if r.status_code == 404:
+            return {"status": "unknown", "error": "job not found"}
+        return r.json()
+
     # === File Operations ===
     def output_files(self, impression, machine="none"): # UnitTest: DONE
         """ Get the output files of the impression """
