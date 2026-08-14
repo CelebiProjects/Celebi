@@ -374,6 +374,7 @@ def attach_data(impression_uuid: str, path_override: str = "") -> Message:
 
 
 def register_data(runner: str, remote_path: str, descriptor: str = "") -> Message:
+    # pylint: disable=too-many-return-statements
     """Register data living on an ssh runner into Yuki's managed staging.
 
     Computes the data MD5 and copies it into the runner's managed
@@ -404,9 +405,21 @@ def register_data(runner: str, remote_path: str, descriptor: str = "") -> Messag
         return message
     job_id = resp["job_id"]
     print(f"register-data: job {job_id[:8]}... started on '{runner}'")
+    consecutive_unknowns = 0
     while True:
         state = cherncc.register_remote_data_status(job_id)
         status = state.get("status", "unknown")
+        if status == "unknown":
+            consecutive_unknowns += 1
+            if consecutive_unknowns >= 10:
+                message.add(
+                    f"Registration job {job_id[:8]}... status 'unknown' "
+                    f"{consecutive_unknowns} times in a row (job not found on "
+                    "the server); aborting after ~30s. The server may have "
+                    "restarted or dropped the job.", "error")
+                return message
+        else:
+            consecutive_unknowns = 0
         if status == "done":
             result = state["result"]
             message.add(

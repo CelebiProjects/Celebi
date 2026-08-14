@@ -39,6 +39,10 @@ File Operations:
 - GET /imp-view/{uuid} - View impression in browser interface
 - GET /set-job-status/{uuid}/archived - Set job status to archived
 
+Data Registration:
+- POST /register-remote-data - Register data hosted on an ssh runner
+- GET /register-remote-data/{job_id} - Poll a remote data registration job
+
 All requests use configurable timeout (default: 10s) and support both local and remote execution.
 
 Method Usage Status:

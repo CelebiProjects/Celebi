@@ -61,6 +61,28 @@ class TestRegisterData(unittest.TestCase):
         fill.assert_not_called()
         self.assertTrue(any("boom" in str(m) for m in message.messages))
 
+    def test_unknown_status_bails_after_10_consecutive(self):
+        """A vanished job (404 -> 'unknown') must not be polled forever."""
+        current = self._make_current("project")
+        cc = mock.MagicMock()
+        cc.register_remote_data.return_value = {"job_id": "job-1"}
+        cc.register_remote_data_status.return_value = {
+            "status": "unknown", "error": "job not found"}
+        with mock.patch.object(object_creation, "MANAGER") as manager, \
+                mock.patch.object(object_creation, "ChernCommunicator") as cccls, \
+                mock.patch.object(object_creation.time, "sleep") as sleep:
+            manager.current_object.return_value = current
+            cccls.instance.return_value = cc
+            message = object_creation.register_data("cluster", "/src/data")
+
+        # 10 polls, then an error instead of an unbounded loop
+        self.assertEqual(cc.register_remote_data_status.call_count, 10)
+        self.assertEqual(sleep.call_count, 9)
+        sleep.assert_called_with(3)
+        self.assertTrue(
+            any("unknown" in str(m) and "aborting" in str(m)
+                for m in message.messages))
+
     def test_server_error_returned(self):
         current = self._make_current("project")
         cc = mock.MagicMock()

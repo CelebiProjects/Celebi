@@ -986,6 +986,14 @@ class TestChernCommunicator(unittest.TestCase):
             json=MagicMock(return_value={"error": "Runner 'cluster' not found"}))
         result = self.comm.register_remote_data("cluster", "/src/data", "projectuuid")
         self.assertIn("not found", result["error"])
+        # without a descriptor the payload must not carry the key at all
+        payload = mock_post.call_args.kwargs["json"]
+        self.assertNotIn("descriptor", payload)
+        mock_post.assert_called_with(
+            "http://localhost:8080/register-remote-data",
+            json={'runner': 'cluster', 'remote_path': '/src/data',
+                  'project_uuid': 'projectuuid'},
+            timeout=10)
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()
