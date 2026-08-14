@@ -460,7 +460,7 @@ def register_data(runner: str, remote_path: str, descriptor: str = "") -> Messag
             result = state["result"]
             message.add(
                 f"Registered: md5={result['uuid']} "
-                f"impression={result['impression_uuid']}", "success")
+                f"impression={result['impression_uuid']}\n", "success")
             message.messages.extend(_fill_registered_data(
                 project_path, current_obj, result["descriptor"],
                 result["uuid"], "register-data").messages)

@@ -1690,6 +1690,8 @@ class TestChernVTask(unittest.TestCase):
 
             mock_communicator.file_status.assert_called_once_with(
                 ANY, "none", "stageout")
+            mock_message.add.assert_any_call("[coda]")
+            mock_message.add.assert_any_call("[archived]")
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")

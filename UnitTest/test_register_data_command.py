@@ -57,7 +57,9 @@ class TestRegisterData(unittest.TestCase):
 
         fill.assert_called_once_with(
             "/proj", current, "d", "md5abc", "", "register-data")
-        self.assertTrue(any("Registered" in str(m) for m in message.messages))
+        registered = [m for m in message.messages if "Registered" in str(m)]
+        self.assertTrue(registered)
+        self.assertTrue(registered[0][0].endswith("\n"))
 
     def test_failed_job_reports_error(self):
         current = self._make_current("project")

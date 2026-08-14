@@ -179,7 +179,7 @@ class VTask(InputManager, SettingManager, FileManager, JobManager):
         real_status = job_status.get("status_legacy", job_status["status"])
         if musical_status in ("created", "queued", "pending", "running"):
             musical_status = "in movement"
-        if musical_status == "finished":
+        if musical_status in ("finished", "archived"):
             musical_status = "coda"
         if real_status in ("prelude", "orchestrating"):
             real_status = "undecided"
