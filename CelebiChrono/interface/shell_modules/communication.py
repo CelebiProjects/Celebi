@@ -221,6 +221,33 @@ def runners() -> Message:  # pylint: disable=too-many-locals
     return message
 
 
+def _resolve_ssh_key(settings: dict, resolve_default: bool) -> None:
+    """Resolve the ssh private key for upload, in-place on settings.
+
+    If ssh_key_path points at an existing CLIENT-side file, its content is
+    moved into ssh_key_data (the server stores it and decides the path).
+    A client-side-missing path passes through as a server-side path.
+    With resolve_default (registration), a missing ssh_key_path falls back
+    to ~/.ssh/id_rsa then ~/.ssh/id_ed25519 when they exist.
+    """
+    key_path = settings.get("ssh_key_path")
+    if key_path is None and resolve_default:
+        for candidate in ("~/.ssh/id_rsa", "~/.ssh/id_ed25519"):
+            expanded = os.path.expanduser(candidate)
+            if os.path.exists(expanded):
+                key_path = expanded
+                break
+    if not key_path:
+        return
+    expanded = os.path.expanduser(key_path)
+    if os.path.exists(expanded):
+        with open(expanded, "r", encoding="utf-8") as f:
+            settings["ssh_key_data"] = f.read()
+        settings.pop("ssh_key_path", None)
+    else:
+        settings["ssh_key_path"] = expanded
+
+
 def register_runner(runner: str, url: str, secret: str, backend_type: str,
                     **kwargs) -> Message:
     """Register a runner with DITE.
@@ -252,6 +279,8 @@ def register_runner(runner: str, url: str, secret: str, backend_type: str,
     """
     message = Message()
     cherncc = ChernCommunicator.instance()
+    if backend_type == "ssh":
+        _resolve_ssh_key(kwargs, resolve_default=True)
     try:
         cherncc.register_runner(runner, url, secret, backend_type,
                                 settings=kwargs or None)
@@ -365,6 +394,7 @@ def update_runner(runner: str, **kwargs) -> Message:
     if not settings:
         message.add("No settings provided to update.", "warning")
         return message
+    _resolve_ssh_key(settings, resolve_default=False)
     try:
         result = cherncc.update_runner(runner, settings)
         message.add(result.get("message", f"Runner '{runner}' updated"), "success")

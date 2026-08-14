@@ -97,3 +97,60 @@ class TestShellRunnerManagement(unittest.TestCase):
             cls.instance.return_value = cc
             message = communication.runner_envs("local")
         self.assertIn("conda not found", str(message))
+
+    def test_register_ssh_default_key_resolution(self):
+        """ssh register without --ssh-key-path uploads ~/.ssh/id_rsa."""
+        tmp = tempfile.mkdtemp()
+        ssh_dir = os.path.join(tmp, ".ssh")
+        os.makedirs(ssh_dir)
+        with open(os.path.join(ssh_dir, "id_rsa"), "w", encoding="utf-8") as f:
+            f.write("default-key")
+        cc = self._cherncc()
+        with mock.patch.object(communication, "ChernCommunicator") as cls, \
+                mock.patch.dict(os.environ, {"HOME": tmp}):
+            cls.instance.return_value = cc
+            communication.register_runner("cluster", "", "", "ssh",
+                                          ssh_host="h", ssh_user="u")
+        settings = cc.register_runner.call_args[1]["settings"]
+        self.assertEqual(settings["ssh_key_data"], "default-key")
+        self.assertNotIn("ssh_key_path", settings)
+
+    def test_register_ssh_explicit_key_uploaded(self):
+        tmp = tempfile.mkdtemp()
+        key = os.path.join(tmp, "mykey")
+        with open(key, "w", encoding="utf-8") as f:
+            f.write("explicit-key")
+        cc = self._cherncc()
+        with mock.patch.object(communication, "ChernCommunicator") as cls:
+            cls.instance.return_value = cc
+            communication.register_runner("cluster", "", "", "ssh",
+                                          ssh_host="h", ssh_key_path=key)
+        settings = cc.register_runner.call_args[1]["settings"]
+        self.assertEqual(settings["ssh_key_data"], "explicit-key")
+
+    def test_register_ssh_missing_key_passthrough(self):
+        """A client-side-missing path is treated as a server-side path."""
+        cc = self._cherncc()
+        with mock.patch.object(communication, "ChernCommunicator") as cls:
+            cls.instance.return_value = cc
+            communication.register_runner(
+                "cluster", "", "", "ssh",
+                ssh_host="h", ssh_key_path="/server/side/key")
+        settings = cc.register_runner.call_args[1]["settings"]
+        self.assertEqual(settings["ssh_key_path"], "/server/side/key")
+        self.assertNotIn("ssh_key_data", settings)
+
+    def test_update_runner_no_default_key_resolution(self):
+        """update without --ssh-key-path must NOT auto-upload the default key."""
+        tmp = tempfile.mkdtemp()
+        ssh_dir = os.path.join(tmp, ".ssh")
+        os.makedirs(ssh_dir)
+        with open(os.path.join(ssh_dir, "id_rsa"), "w", encoding="utf-8") as f:
+            f.write("default-key")
+        cc = self._cherncc(update_runner=mock.MagicMock(return_value={"message": "ok"}))
+        with mock.patch.object(communication, "ChernCommunicator") as cls, \
+                mock.patch.dict(os.environ, {"HOME": tmp}):
+            cls.instance.return_value = cc
+            communication.update_runner("cluster", cores=8)
+        settings = cc.update_runner.call_args[0][1]
+        self.assertNotIn("ssh_key_data", settings)
