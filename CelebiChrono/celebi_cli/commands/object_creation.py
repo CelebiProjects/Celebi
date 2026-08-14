@@ -112,3 +112,25 @@ def use_data_command(impression_uuid, path):
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="register-data")
+@click.argument("runner", type=str)
+@click.argument("remote_path", type=str)
+@click.option("--descriptor", type=str, default="",
+              help="Task descriptor (defaults to remote path basename)")
+def register_data_command(runner: str, remote_path: str, descriptor: str) -> None:
+    """Register data living on an ssh runner (MD5 + managed staging).
+
+    RUNNER is an ssh runner; REMOTE_PATH is a directory on that runner.
+    The data is copied into Yuki's managed impressions area on the runner
+    and registered as an impression; a local rawdata pointer task is
+    created or filled.
+    """
+    try:
+        from CelebiChrono.interface.shell import register_data
+        _handle_result(register_data(runner, remote_path, descriptor))
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")

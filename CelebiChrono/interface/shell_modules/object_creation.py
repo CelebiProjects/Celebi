@@ -4,6 +4,7 @@ Object creation functions for shell interface.
 Functions for creating new algorithms, tasks, data objects, and directories.
 """
 import os
+import time
 
 from ...utils import csys
 from ...utils import metadata
@@ -18,6 +19,52 @@ from ...kernel.valgorithm import create_algorithm
 from ...kernel.vdirectory import create_directory
 from ...kernel.chern_communicator import ChernCommunicator
 from ._manager import MANAGER
+
+
+def _is_rawdata_task(obj_path):
+    """Return True if the object at obj_path is a rawdata task."""
+    yaml_path = os.path.join(obj_path, "celebi.yaml")
+    if not os.path.exists(yaml_path):
+        return False
+    yaml_file = metadata.YamlFile(yaml_path)
+    return yaml_file.read_variable("environment", "") == "rawdata"
+
+
+def _fill_or_create_pointer_task(project_path, current_obj, descriptor,
+                                 data_md5, path_override, origin):
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    """Fill an existing rawdata task or create a pointer task (shared tail
+    of attach-data and register-data)."""
+    message = Message()
+    task_path = path_override if path_override else descriptor
+    task_path = csys.refine_path(task_path, current_obj.path)
+    full_path = os.path.join(current_obj.path, task_path)
+    if not os.path.exists(full_path):
+        parent_path = os.path.abspath(full_path + "/..")
+        object_type = VObject(parent_path).object_type()
+        if object_type not in ("directory", "project"):
+            message.add("Not allowed to create data task here", "warning")
+            return message
+        create_rawdata_task(full_path, descriptor, data_md5)
+        message.add(f"Created rawdata task at {task_path}", "success")
+        return message
+    existing = VObject(full_path, project_path)
+    if existing.object_type() != "task":
+        message.add(f"Path {task_path} exists but is not a task "
+                    f"(type: {existing.object_type()})", "error")
+        return message
+    yaml_path = os.path.join(full_path, "celebi.yaml")
+    yaml_file = metadata.YamlFile(yaml_path)
+    env = yaml_file.read_variable("environment", "")
+    if env != "rawdata":
+        message.add(f"Path {task_path} exists but is not a rawdata task "
+                    f"(environment: {env})", "error")
+        return message
+    yaml_file.write_variable("uuid", data_md5)
+    yaml_file.write_variable("descriptor", descriptor)
+    message.add(f"Updated rawdata task at {task_path} "
+                f"({origin}) with new impression data", "success")
+    return message
 
 
 def mkalgorithm(line: str, use_template: bool = False) -> Message:
@@ -230,8 +277,6 @@ def mkdir(line: str) -> Message:
 
 
 def use_data(impression_uuid: str, path_override: str = "") -> Message:
-    # pylint: disable=too-many-locals,too-many-return-statements
-    # pylint: disable=too-many-branches,too-many-statements
     """Adopt a Yuki impression as a rawdata task in the current project.
 
     Queries Yuki for the impression info (descriptor and MD5), creates a
@@ -272,13 +317,6 @@ def use_data(impression_uuid: str, path_override: str = "") -> Message:
         )
         return message
 
-    def _is_rawdata_task(obj_path):
-        yaml_path = os.path.join(obj_path, "celebi.yaml")
-        if not os.path.exists(yaml_path):
-            return False
-        yaml_file = metadata.YamlFile(yaml_path)
-        return yaml_file.read_variable("environment", "") == "rawdata"
-
     if current_obj.object_type() == "task" and _is_rawdata_task(current_obj.path):
         full_path = current_obj.path
         task_path = current_obj.invariant_path()
@@ -297,48 +335,17 @@ def use_data(impression_uuid: str, path_override: str = "") -> Message:
         task_path = path_override if path_override else descriptor
         task_path = csys.refine_path(task_path, current_obj.path)
         full_path = os.path.join(current_obj.path, task_path)
-
-        if not os.path.exists(full_path):
-            parent_path = os.path.abspath(full_path + "/..")
-            object_type = VObject(parent_path).object_type()
-            if object_type not in ("directory", "project"):
-                message.add("Not allowed to create data task here", "warning")
-                return message
-            create_rawdata_task(full_path, descriptor, data_md5)
-            print(
-                f"use-data: created rawdata task via create_rawdata_task("
-                f"{full_path}, {descriptor}, {data_md5})"
-            )
-            message.add(f"Created rawdata task at {task_path}", "success")
-        else:
-            existing = VObject(full_path, project_path)
-            if existing.object_type() != "task":
-                message.add(
-                    f"Path {task_path} exists but is not a task "
-                    f"(type: {existing.object_type()})",
-                    "error",
-                )
-                return message
-            yaml_path = os.path.join(full_path, "celebi.yaml")
-            yaml_file = metadata.YamlFile(yaml_path)
-            env = yaml_file.read_variable("environment", "")
-            if env != "rawdata":
-                message.add(
-                    f"Path {task_path} exists but is not a rawdata task "
-                    f"(environment: {env})",
-                    "error",
-                )
-                return message
-            yaml_file.write_variable("uuid", data_md5)
-            yaml_file.write_variable("descriptor", descriptor)
-            print(
-                f"use-data: updated rawdata task via metadata.YamlFile.write_variable("
-                f"{yaml_path}, uuid={data_md5}, descriptor={descriptor})"
-            )
-            message.add(
-                f"Updated rawdata task at {task_path} with new impression data",
-                "success",
-            )
+        result = _fill_or_create_pointer_task(
+            project_path, current_obj, descriptor, data_md5,
+            path_override, "use-data")
+        message.append(result)
+        if any(msg_type in ("warning", "error")
+               for _, msg_type in result.messages):
+            return message
+        print(
+            f"use-data: created or updated rawdata task via "
+            f"_fill_or_create_pointer_task({full_path})"
+        )
 
     task_obj = VObject(full_path, project_path)
     task_obj.impress()
@@ -364,3 +371,53 @@ def use_data(impression_uuid: str, path_override: str = "") -> Message:
             "warning",
         )
     return message
+
+
+def register_data(runner: str, remote_path: str, descriptor: str = "") -> Message:
+    """Register data living on an ssh runner into Yuki's managed staging.
+
+    Computes the data MD5 and copies it into the runner's managed
+    impressions area (hashing/copying run as a background job on Yuki).
+    On success, fills or creates the local rawdata pointer task.
+    """
+    message = Message()
+    current_obj = MANAGER.current_object()
+    if current_obj is None:
+        message.add("No current object selected", "error")
+        return message
+    project_path = current_obj.project_path()
+    if not project_path:
+        message.add("No current project selected", "error")
+        return message
+    if current_obj.object_type() == "task" and \
+            not _is_rawdata_task(current_obj.path):
+        message.add("Current task is not a rawdata task; run register-data "
+                    "from a rawdata task or outside a task", "error")
+        return message
+
+    cherncc = ChernCommunicator.instance()
+    resp = cherncc.register_remote_data(runner, remote_path,
+                                        current_obj.project_uuid(),
+                                        descriptor or None)
+    if "error" in resp:
+        message.add(resp["error"], "error")
+        return message
+    job_id = resp["job_id"]
+    print(f"register-data: job {job_id[:8]}... started on '{runner}'")
+    while True:
+        state = cherncc.register_remote_data_status(job_id)
+        status = state.get("status", "unknown")
+        if status == "done":
+            result = state["result"]
+            message.add(
+                f"Registered: md5={result['uuid']} "
+                f"impression={result['impression_uuid']}", "success")
+            message.messages.extend(_fill_or_create_pointer_task(
+                project_path, current_obj, result["descriptor"],
+                result["uuid"], "", "register-data").messages)
+            return message
+        if status == "failed":
+            message.add(f"Registration failed: {state.get('error')}", "error")
+            return message
+        print(f"register-data: {status}...")
+        time.sleep(3)
