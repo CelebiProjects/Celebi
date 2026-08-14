@@ -29,7 +29,7 @@ __all__ = [
     'mv_file',
     'import_file',
     'add_source',
-    'send'
+    'upload_data'
 ]
 
 
@@ -550,8 +550,8 @@ def add_source(line: str) -> Message:
     return message
 
 
-def send(path: str) -> Message:
-    """Send a path to current object.
+def upload_data(path: str) -> Message:
+    """Upload a local path to DITE (was send).
 
     Transfers a file or directory path to the current object for processing.
     For tasks, this uploads data with a progress bar showing upload status.
@@ -559,11 +559,11 @@ def send(path: str) -> Message:
     depending on the object type and context.
 
     Args:
-        path (str): Filesystem path to send to the current object.
+        path (str): Filesystem path to upload to the current object.
 
     Examples:
-        send data/input.txt
-        send results/output.csv
+        upload_data data/input.txt
+        upload_data results/output.csv
 
     Returns:
         Message: Empty message after executing path transfer operation.

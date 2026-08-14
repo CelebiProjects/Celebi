@@ -223,12 +223,12 @@ class ChernShellCompletions:
         current_path = MANAGER.c.path
         return self.get_completions(current_path, text, line)
 
-    def complete_send(
+    def complete_upload_data(
         self, _: str, line: str, _begidx: int, _endidx: int
     ) -> list:
-        """Complete send command with available paths."""
+        """Complete upload_data command with available paths."""
         current_path = MANAGER.c.path
-        filepath = csys.strip_path_string(line[5:])
+        filepath = csys.strip_path_string(line[12:])
         return self.get_completions(current_path, filepath, line)
 
     # ====================================================================

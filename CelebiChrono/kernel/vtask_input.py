@@ -17,7 +17,7 @@ class InputManager(Core):
         The directory's MD5 is stored in the task metadata (celebi.yaml) and
         a new impression is created, leaving the task in the impressed state.
         This mirrors the rawdata workflow used by Yuki's ``yuki-create-data``
-        and ``use-data`` commands, but operates on a local path instead of a
+        and ``attach-data`` commands, but operates on a local path instead of a
         Yuki impression UUID.
 
         Args:

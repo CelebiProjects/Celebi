@@ -16,24 +16,24 @@ MANAGER = get_manager()
 class AdvancedCommands:
     """Mixin class providing advanced and developer command handlers."""
 
-    def do_send(self, arg: str) -> None:
+    def do_upload_data(self, arg: str) -> None:
         """
-        Send a file or path.
+        Upload a local path's data to DITE (registers an impression on the server).
 
         Parameters
         ----------
         arg : str
-            Path to the file or directory to send.
+            Path to the file or directory to upload.
         """
         try:
             obj = arg.split()[0]
-            result = shell.send(obj)
+            result = shell.upload_data(obj)
             if result.messages:
                 print(result.colored())
         except (IndexError, ValueError) as e:
-            print(f"Error: Please provide a path to send. {e}")
+            print(f"Error: Please provide a path to upload. {e}")
         except Exception as e:
-            print(f"Error sending: {e}")
+            print(f"Error uploading data: {e}")
 
     def do_dite(self, _: str) -> None:
         """
