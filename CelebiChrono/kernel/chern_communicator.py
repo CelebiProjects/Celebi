@@ -103,7 +103,7 @@ class ChernCommunicator():
 
     def serverurl(self):
         """ Get the serverurl """
-        return self.config_file.read_variable("serverurl", "localhost:5000")
+        return self.config_file.read_variable("serverurl", "127.0.0.1:3315")
 
     @staticmethod
     def _resolve_impression_tarfile(impression):
@@ -560,10 +560,7 @@ class ChernCommunicator():
         return r.text.split()
 
     def runners_url(self):
-        """ Get the list of runner URLs
-
-        ✗ UNUSED METHOD - No references found in codebase
-        """
+        """ Get the list of runner URLs """
         url = self.serverurl()
         try:
             r = requests.get(
@@ -590,19 +587,17 @@ class ChernCommunicator():
         except Exception:
             return None
 
-    def register_runner(self, runner, runner_url, token, backend_type):
+    def register_runner(self, runner, runner_url, token, backend_type,
+                        settings=None):
         """ Register a runner to the server """
         url = self.serverurl()
+        data = {'runner': runner, 'url': runner_url, 'token': token,
+                'backend_type': backend_type}
+        if settings:
+            data.update(settings)
         try:
-            r = requests.post(
-                f"http://{url}/register-runner",
-                data={'runner': runner,
-                      'url': runner_url,
-                      'token': token,
-                      'backend_type': backend_type,
-                      },
-                timeout=self.timeout
-            )
+            r = requests.post(f"http://{url}/register-runner",
+                              data=data, timeout=self.timeout)
             r.raise_for_status()
         except requests.exceptions.RequestException as e:
             raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
@@ -651,6 +646,37 @@ class ChernCommunicator():
             print(f"An error occurred: {e}")
             return {"status": "unconnected to DITE"}
         return json.loads(r.text)
+
+    def test_runner(self, runner):
+        """ Ask the server to probe a runner's capabilities (snakemake/conda) """
+        url = self.serverurl()
+        try:
+            r = requests.get(f"http://{url}/test-runner/{runner}", timeout=30)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        if r.status_code == 404:
+            try:
+                body = r.json()
+            except ValueError:
+                body = None
+            if isinstance(body, dict) and "error" in body:
+                return {"status": "error", "message": body["error"]}
+            return {"status": "unsupported",
+                    "message": "DITE server does not support runner testing "
+                               "(upgrade Yuki)"}
+        return r.json()
+
+    def runner_health(self, runner):
+        """ Get the persisted health of a runner without re-probing """
+        url = self.serverurl()
+        try:
+            r = requests.get(f"http://{url}/runner-health/{runner}",
+                             timeout=self.timeout)
+        except Exception:
+            return {"status": "untested"}
+        if r.status_code == 404:
+            return {"status": "untested"}
+        return r.json()
 
     # === File Operations ===
     def output_files(self, impression, machine="none"): # UnitTest: DONE
