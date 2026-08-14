@@ -99,6 +99,18 @@ def mkdir_command(name):
         _handle_error(f"Command failed: {e}")
 
 
+@click.command(name="verify-data")
+def verify_data_command() -> None:
+    """Verify the current data task: recompute md5 vs registered uuid."""
+    try:
+        from CelebiChrono.interface.shell import verify_data
+        _handle_result(verify_data())
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
 @click.command(name="attach-data")
 @click.argument("impression_uuid", type=str)
 @click.option("--path", type=str, default=None, help="Optional task path override")

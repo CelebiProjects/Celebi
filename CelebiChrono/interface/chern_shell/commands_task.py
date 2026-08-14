@@ -312,6 +312,15 @@ class TaskCommands:
         except Exception as e:
             print(f"Error attaching impression: {e}")
 
+    def do_verify_data(self, _: str) -> None:
+        """Verify the current data task: recompute md5 vs registered uuid."""
+        try:
+            result = shell.verify_data()
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error verifying data: {e}")
+
     def do_register_data(self, arg: str) -> None:
         """Register data living on an ssh runner (MD5 + managed staging).
 

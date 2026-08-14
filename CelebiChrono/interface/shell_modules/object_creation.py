@@ -276,6 +276,43 @@ def mkdir(line: str) -> Message:
     return message
 
 
+def verify_data() -> Message:
+    """Verify the current data task: recompute its md5 against the
+    registered uuid (remote-hosted data is hashed on the host runner)."""
+    message = Message()
+    current_obj = MANAGER.current_object()
+    if current_obj is None:
+        message.add("No current object selected", "error")
+        return message
+    if current_obj.object_type() != "task" or \
+            current_obj.environment() != "rawdata":
+        message.add("verify-data works on rawdata tasks", "error")
+        return message
+    impression = current_obj.impression()
+    if impression is None:
+        message.add("Task not impressed yet; run 'impress' first", "error")
+        return message
+    cherncc = ChernCommunicator.instance()
+    try:
+        result = cherncc.verify_data(current_obj.project_uuid(),
+                                     impression.uuid)
+    except ConnectionError as e:
+        message.add(str(e), "error")
+        return message
+    if result.get("error"):
+        message.add(result["error"], "error")
+        return message
+    if result["match"]:
+        message.add(f"Data verified: md5 matches "
+                    f"({result['expected']}) "
+                    f"on {result['location']}\n", "success")
+    else:
+        message.add(f"Data mismatch on {result['location']}:\n", "error")
+        message.add(f"  expected: {result['expected']}\n")
+        message.add(f"  actual:   {result['actual']}\n")
+    return message
+
+
 def attach_data(impression_uuid: str, path_override: str = "") -> Message:
     """Attach a Yuki impression to a rawdata task in the current project.
 

@@ -736,6 +736,29 @@ class ChernCommunicator():
             return {"status": "unknown", "error": "job not found"}
         return r.json()
 
+    def verify_data(self, project_uuid, impression_uuid):
+        """ Recompute the data md5 on Yuki and compare with the registered uuid """
+        url = self.serverurl()
+        try:
+            r = requests.get(
+                f"http://{url}/verify-data/{project_uuid}/{impression_uuid}",
+                timeout=3600)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        if r.status_code == 404:
+            try:
+                body = r.json()
+            except ValueError:
+                body = None
+            if isinstance(body, dict) and "error" in body:
+                return {"match": False, "expected": "", "actual": "",
+                        "location": "", "error": body["error"]}
+            return {"match": False, "expected": "", "actual": "",
+                    "location": "",
+                    "error": "DITE server does not support verify-data "
+                             "(upgrade Yuki)"}
+        return r.json()
+
     # === File Operations ===
     def output_files(self, impression, machine="none"): # UnitTest: DONE
         """ Get the output files of the impression """
