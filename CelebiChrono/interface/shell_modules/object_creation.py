@@ -373,13 +373,34 @@ def attach_data(impression_uuid: str, path_override: str = "") -> Message:
     return message
 
 
+def _fill_registered_data(project_path, current_obj, descriptor, data_md5,
+                          origin):
+    """Dual-mode tail of register-data: fill the current rawdata task, or
+    create/update a pointer task via the shared tail."""
+    message = Message()
+    if current_obj.object_type() == "task" and _is_rawdata_task(current_obj.path):
+        task_path = current_obj.invariant_path()
+        yaml_file = metadata.YamlFile(
+            os.path.join(current_obj.path, "celebi.yaml"))
+        yaml_file.write_variable("uuid", data_md5)
+        yaml_file.write_variable("descriptor", descriptor)
+        message.add(
+            f"Updated rawdata task at {task_path} ({origin}) with new "
+            "impression data", "success")
+        return message
+    message.messages.extend(_fill_or_create_pointer_task(
+        project_path, current_obj, descriptor, data_md5, "", origin).messages)
+    return message
+
+
 def register_data(runner: str, remote_path: str, descriptor: str = "") -> Message:
     # pylint: disable=too-many-return-statements
     """Register data living on an ssh runner into Yuki's managed staging.
 
     Computes the data MD5 and copies it into the runner's managed
     impressions area (hashing/copying run as a background job on Yuki).
-    On success, fills or creates the local rawdata pointer task.
+    On success, fills the current rawdata task (or creates a pointer task)
+    with the registered impression.
     """
     message = Message()
     current_obj = MANAGER.current_object()
@@ -403,6 +424,21 @@ def register_data(runner: str, remote_path: str, descriptor: str = "") -> Messag
     if "error" in resp:
         message.add(resp["error"], "error")
         return message
+    if "result" in resp:
+        # Idempotent re-registration: the impression already exists, so the
+        # server returned the final result without starting a job.
+        result = resp["result"]
+        message.add(
+            f"Registered: md5={result['uuid']} "
+            f"impression={result['impression_uuid']}", "success")
+        message.messages.extend(_fill_registered_data(
+            project_path, current_obj, result["descriptor"],
+            result["uuid"], "register-data").messages)
+        return message
+    if "job_id" not in resp:
+        message.add("Registration failed: server returned neither a job id "
+                    "nor a result", "error")
+        return message
     job_id = resp["job_id"]
     print(f"register-data: job {job_id[:8]}... started on '{runner}'")
     consecutive_unknowns = 0
@@ -425,9 +461,9 @@ def register_data(runner: str, remote_path: str, descriptor: str = "") -> Messag
             message.add(
                 f"Registered: md5={result['uuid']} "
                 f"impression={result['impression_uuid']}", "success")
-            message.messages.extend(_fill_or_create_pointer_task(
+            message.messages.extend(_fill_registered_data(
                 project_path, current_obj, result["descriptor"],
-                result["uuid"], "", "register-data").messages)
+                result["uuid"], "register-data").messages)
             return message
         if status == "failed":
             message.add(f"Registration failed: {state.get('error')}", "error")
