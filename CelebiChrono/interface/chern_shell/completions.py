@@ -268,6 +268,20 @@ class ChernShellCompletions:
         runners = self.readline_file.read_variable("runners", [])
         return [r for r in runners if r.startswith(text)]
 
+    def complete_test_runner(
+        self, text: str, _line: str, _begidx: int, _endidx: int
+    ) -> list:
+        """Complete test_runner command with existing runners."""
+        runners = self.readline_file.read_variable("runners", [])
+        return [r for r in runners if r.startswith(text)]
+
+    def complete_runner_envs(
+        self, text: str, _line: str, _begidx: int, _endidx: int
+    ) -> list:
+        """Complete runner_envs command with existing runners."""
+        runners = self.readline_file.read_variable("runners", [])
+        return [r for r in runners if r.startswith(text)]
+
     # ====================================================================
     # Script and Documentation Completions
     # ====================================================================

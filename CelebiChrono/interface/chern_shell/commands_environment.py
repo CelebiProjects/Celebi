@@ -17,33 +17,49 @@ def _parse_update_runner_args(arg: str):
 
     Returns (name, kwargs). Either may be None/empty to signal a user error.
     """
+    value_options = {
+        "--url": "url",
+        "--token": "token",
+        "--backend-type": "backend_type",
+        "--eos-mount-point": "eos_mount_point",
+        "--workdir": "workdir",
+        "--conda-path": "conda_path",
+        "--snakemake-path": "snakemake_path",
+        "--ssh-host": "ssh_host",
+        "--ssh-user": "ssh_user",
+        "--ssh-key-path": "ssh_key_path",
+        "--remote-workdir": "remote_workdir",
+    }
+    int_options = {
+        "--cores": "cores",
+        "--mem-mb": "mem_mb",
+        "--ssh-port": "ssh_port",
+    }
     parts = arg.split()
     kwargs = {}
     name = None
     i = 0
     while i < len(parts):
-        if parts[i] == "--url" and i + 1 < len(parts):
-            kwargs["url"] = parts[i + 1]
+        part = parts[i]
+        if part in value_options and i + 1 < len(parts):
+            kwargs[value_options[part]] = parts[i + 1]
             i += 2
-        elif parts[i] == "--token" and i + 1 < len(parts):
-            kwargs["token"] = parts[i + 1]
+        elif part in int_options and i + 1 < len(parts):
+            try:
+                kwargs[int_options[part]] = int(parts[i + 1])
+            except ValueError:
+                pass
             i += 2
-        elif parts[i] == "--backend-type" and i + 1 < len(parts):
-            kwargs["backend_type"] = parts[i + 1]
-            i += 2
-        elif parts[i] == "--use-kerberos":
+        elif part == "--use-kerberos":
             kwargs["use_kerberos"] = True
             i += 1
-        elif parts[i] == "--no-use-kerberos":
+        elif part == "--no-use-kerberos":
             kwargs["use_kerberos"] = False
             i += 1
-        elif parts[i] == "--eos-mount-point" and i + 1 < len(parts):
-            kwargs["eos_mount_point"] = parts[i + 1]
-            i += 2
-        elif parts[i].startswith("--"):
+        elif part.startswith("--"):
             i += 1
         elif name is None:
-            name = parts[i]
+            name = part
             i += 1
         else:
             i += 1
@@ -243,28 +259,34 @@ class EnvironmentCommands:
             print(f"Error showing runners: {e}")
 
     def do_register_runner(self, _: str) -> None:
-        """Register a runner with default values if input is empty."""
-
-        # Define your defaults here
-        defaults = {
-            "runner": "default-runner",
-            "url": "http://localhost:8080",
-            "secret": "fallback-secret-123",
-            "backend_type": "reana"
-        }
-
+        """Register a runner (interactive prompts, ssh-aware)."""
         try:
-            # Prompt user: if they press Enter without typing, it uses the default
-            runner = input(f"Enter runner name [{defaults['runner']}]: ").strip() \
-                        or defaults['runner']
-            url = input(f"Enter URL [{defaults['url']}]: ").strip() \
-                    or defaults['url']
-            secret = input(f"Enter secret [{defaults['secret']}]: ").strip() \
-                    or defaults['secret']
-            backend_type = input("Enter backend type [optional]: ").strip() \
-                    or defaults['backend_type']
+            backend_type = input(
+                "Backend type (reana/native/ssh/dry) [reana]: ").strip() or "reana"
+            runner = input("Runner name [default-runner]: ").strip() \
+                or "default-runner"
 
-            result = shell.register_runner(runner, url, secret, backend_type)
+            if backend_type == "ssh":
+                ssh_host = input("SSH host: ").strip()
+                ssh_user = input("SSH user: ").strip()
+                ssh_key = input(
+                    "SSH key path [default: ~/.ssh/id_rsa]: ").strip()
+                ssh_port = input("SSH port [22]: ").strip() or "22"
+                remote_workdir = input(
+                    "Remote workdir [/tmp/yuki-workflows]: ").strip()
+                kwargs = {"ssh_host": ssh_host, "ssh_user": ssh_user,
+                          "ssh_port": int(ssh_port)}
+                if ssh_key:
+                    kwargs["ssh_key_path"] = ssh_key
+                if remote_workdir:
+                    kwargs["remote_workdir"] = remote_workdir
+                result = shell.register_runner(runner, "", "", backend_type,
+                                               **kwargs)
+            else:
+                url = input("URL [http://localhost:8080]: ").strip() \
+                    or "http://localhost:8080"
+                secret = input("Secret []: ").strip()
+                result = shell.register_runner(runner, url, secret, backend_type)
             if result.messages:
                 print(result.colored())
 
@@ -272,6 +294,34 @@ class EnvironmentCommands:
             print("\nOperation cancelled.")
         except Exception as e:
             print(f"Error: {e}")
+
+    def do_test_runner(self, arg: str) -> None:
+        """Probe a runner's capabilities (snakemake/conda/workdir)."""
+        try:
+            runner = arg.split()[0]
+        except IndexError:
+            print("Error: Please provide a runner name.")
+            return
+        try:
+            result = shell.test_runner(runner)
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error testing runner: {e}")
+
+    def do_runner_envs(self, arg: str) -> None:
+        """List conda environments available on a runner (ssh/native)."""
+        try:
+            runner = arg.split()[0]
+        except IndexError:
+            print("Error: Please provide a runner name.")
+            return
+        try:
+            result = shell.runner_envs(runner)
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error listing runner envs: {e}")
 
     def do_remove_runner(self, arg: str) -> None:
         """Remove a runner."""
@@ -293,9 +343,12 @@ class EnvironmentCommands:
                [--eos-mount-point PATH]
         """
         usage = (
-            "Usage: update-runner <name> [--url URL] [--token TOKEN] "
+            "Usage: update_runner <name> [--url URL] [--token TOKEN] "
             "[--backend-type TYPE] [--use-kerberos] [--no-use-kerberos] "
-            "[--eos-mount-point PATH]"
+            "[--eos-mount-point PATH] [--workdir DIR] [--cores N] "
+            "[--mem-mb MB] [--conda-path PATH] [--snakemake-path PATH] "
+            "[--ssh-host H] [--ssh-user U] [--ssh-key-path K] "
+            "[--ssh-port P] [--remote-workdir DIR]"
         )
         try:
             name, kwargs = _parse_update_runner_args(arg)
