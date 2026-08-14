@@ -77,7 +77,7 @@ class TestConfigMigrator(unittest.TestCase):
             "object_type": "task",
             "auto_download": True,
             "default_runner": "local",
-            "use_eos": False,
+            "cache_on_runner": False,
             "predecessors": ["task1"],
         }
         self._create_config(config_path, old_config)

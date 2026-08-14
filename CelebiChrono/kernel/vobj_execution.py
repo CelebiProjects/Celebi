@@ -82,15 +82,15 @@ class ExecutionManagement(Core):
                         "warning"
                         )
                 return msg
-        use_eos = {}
+        cache_on_runner = {}
         sub_objects = self.sub_objects_recursively()
         for sub_object in sub_objects:
             if not sub_object.is_task():
                 continue
             task = self.get_vtask(sub_object.path)
-            use_eos[task.impression().uuid] = task.use_eos()
+            cache_on_runner[task.impression().uuid] = task.cache_on_runner()
         impressions = self.get_impressions()
-        cherncc.execute(impressions, use_eos, runner)
+        cherncc.execute(impressions, cache_on_runner, runner)
         msg = Message()
         msg.add(f"Impressions {impressions} submitted to {runner}.", "info")
         return msg
@@ -140,14 +140,14 @@ class ExecutionManagement(Core):
                 )
                 return msg
 
-        # Collect use_eos and impressions
-        use_eos = {}
+        # Collect cache_on_runner and impressions
+        cache_on_runner = {}
         impressions = []
         for task in tasks:
-            use_eos[task.impression().uuid] = task.use_eos()
+            cache_on_runner[task.impression().uuid] = task.cache_on_runner()
             impressions.append(task.impression().uuid)
 
-        cherncc.execute(impressions, use_eos, runner)
+        cherncc.execute(impressions, cache_on_runner, runner)
         msg = Message()
         msg.add(f"Impressions {impressions} submitted to {runner}.", "info")
         return msg
@@ -292,16 +292,16 @@ class ExecutionManagement(Core):
         consult_table[self.path] = (consult_id, job_status)
         return job_status
 
-    def set_use_eos(self, use_eos: bool) -> None:
+    def set_cache_on_runner(self, cache_on_runner: bool) -> None:
         """ Set whether to use EOS for this task. """
         if not self.is_task_or_algorithm():
             sub_objects = self.sub_objects()
             for sub_object in sub_objects:
-                sub_object.set_use_eos(use_eos)
+                sub_object.set_cache_on_runner(cache_on_runner)
             return
         if not self.is_task():
             return
-        self.config_file.write_variable("use_eos", use_eos)
+        self.config_file.write_variable("cache_on_runner", cache_on_runner)
 
     def set_default_runner(self, runner):
         """ Set the default runner for this object """

@@ -25,7 +25,7 @@ SHARED_FIELDS = {
 }
 
 LOCAL_FIELDS = {
-    "auto_download", "default_runner", "use_eos"
+    "auto_download", "default_runner", "cache_on_runner"
 }
 
 

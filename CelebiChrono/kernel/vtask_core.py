@@ -143,16 +143,16 @@ class Core(VObject):
             message.add(f"{validated_str}")
             message.add("\n")
 
+            message.add("Cache on runner: ", "title0")
+            message.add(f"{self.cache_on_runner()}", "message")
+            message.add("\n")
+
         # message.add("Auto download: ", "title0")
         # message.add(f"{self.auto_download()}")
         # message.add("\n")
 
         message.add("Default runner: ", "title0")
         message.add(f"{self.default_runner()}")
-        message.add("\n")
-
-        message.add("Use EOS: ", "title0")
-        message.add(f"{self.use_eos()}", "message")
         message.add("\n")
 
         return message
@@ -242,7 +242,7 @@ class Core(VObject):
         """ Abstract method for future implementation"""
 
     @abstractmethod
-    def use_eos(self) -> str:
+    def cache_on_runner(self) -> str:
         """ Abstract method for future implementation"""
 
     @abstractmethod

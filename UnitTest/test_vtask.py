@@ -1737,7 +1737,7 @@ class TestChernVTask(unittest.TestCase):
              patch.object(vtsk.VTask, 'memory_limit', return_value="256Mi"), \
              patch.object(vtsk.VTask, 'validated', return_value=True), \
              patch.object(vtsk.VTask, 'default_runner', return_value="local"), \
-             patch.object(vtsk.VTask, 'use_eos', return_value=False):
+             patch.object(vtsk.VTask, 'cache_on_runner', return_value=False):
             message = vtsk.VTask.show_parameters(obj_tsk)
         text = "".join(str(m) for m in message.messages)
         self.assertIn("Input data:", text)

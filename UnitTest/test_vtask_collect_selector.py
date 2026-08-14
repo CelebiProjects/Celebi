@@ -14,7 +14,7 @@ class FakeJobManager(JobManager):
     def output_files(self): return []
     def parameters(self): return ([], {})
     def set_input_md5(self, path): pass
-    def use_eos(self): return False
+    def cache_on_runner(self): return False
     def validated(self): return True
 
 

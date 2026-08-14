@@ -67,11 +67,11 @@ class SettingManager(Core):
         """
         return self.config_file.read_variable("default_runner", "local")
 
-    def use_eos(self):
+    def cache_on_runner(self):
         """
-        Return whether use eos to store results
+        Return whether to cache results on the runner
         """
-        return self.config_file.read_variable("use_eos", False)
+        return self.config_file.read_variable("cache_on_runner", False)
 
     # Modifying Settings
     def add_parameter(self, parameter, value):
@@ -107,11 +107,12 @@ class SettingManager(Core):
         """
         self.config_file.write_variable("default_runner", runner)
 
-    def set_use_eos(self, use_eos):
+    def set_cache_on_runner(self, use):
         """
-        Set whether to use eos to store results
+        Set whether to cache results on the runner (EOS on reana,
+        the runner's impressions dir on ssh)
         """
-        self.config_file.write_variable("use_eos", use_eos)
+        self.config_file.write_variable("cache_on_runner", use)
 
     def set_environment(self, environment):
         """

@@ -158,14 +158,14 @@ class EnvironmentCommands:
         except Exception as e:
             print(f"Error setting auto download: {e}")
 
-    def do_use_eos(self,  arg: str) -> None:
+    def do_cache_on_runner(self,  arg: str) -> None:
         """Enable or disable EOS usage."""
         try:
-            use_eos = arg.split()[0]
-            if use_eos == "on":
-                MANAGER.current_object().set_use_eos(True)
-            elif use_eos == "off":
-                MANAGER.current_object().set_use_eos(False)
+            setting = arg.split()[0]
+            if setting == "on":
+                MANAGER.current_object().set_cache_on_runner(True)
+            elif setting == "off":
+                MANAGER.current_object().set_cache_on_runner(False)
             else:
                 print("please input on or off")
         except (IndexError, ValueError) as e:

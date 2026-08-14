@@ -51,7 +51,7 @@ class FakeJobManager(JobManager):
     def set_input_md5(self, path):
         pass
 
-    def use_eos(self):
+    def cache_on_runner(self):
         return False
 
     def validated(self):
