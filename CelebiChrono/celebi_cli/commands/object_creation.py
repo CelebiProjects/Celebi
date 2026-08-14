@@ -99,14 +99,14 @@ def mkdir_command(name):
         _handle_error(f"Command failed: {e}")
 
 
-@click.command(name="use-data")
+@click.command(name="attach-data")
 @click.argument("impression_uuid", type=str)
 @click.option("--path", type=str, default=None, help="Optional task path override")
-def use_data_command(impression_uuid, path):
-    """Adopt a Yuki impression as a rawdata task in the current project."""
+def attach_data_command(impression_uuid, path):
+    """Attach a Yuki impression to a rawdata task in the current project."""
     try:
-        from CelebiChrono.interface.shell import use_data
-        result = use_data(impression_uuid, path or "")
+        from CelebiChrono.interface.shell import attach_data
+        result = attach_data(impression_uuid, path or "")
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")

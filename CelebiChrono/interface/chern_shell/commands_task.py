@@ -102,7 +102,7 @@ class TaskCommands:
                         print(result.colored())
                         continue
                     shell.cd(item)
-                    shell.send(item_path)
+                    shell.upload_data(item_path)
                     shell.cd("..")
             else:
                 print(f"Error: The path {base_path} is not a valid directory.")
@@ -297,8 +297,8 @@ class TaskCommands:
         except Exception as e:
             print(f"Error adding parameter to subtask: {e}")
 
-    def do_use_data(self, arg: str) -> None:
-        """Adopt a Yuki impression as a rawdata task."""
+    def do_attach_data(self, arg: str) -> None:
+        """Attach a Yuki impression to a rawdata task."""
         try:
             args = arg.split()
             if not args:
@@ -306,8 +306,8 @@ class TaskCommands:
                 return
             impression_uuid = args[0]
             path_override = args[1] if len(args) > 1 else ""
-            result = shell.use_data(impression_uuid, path_override)
+            result = shell.attach_data(impression_uuid, path_override)
             if result.messages:
                 print(result.colored())
         except Exception as e:
-            print(f"Error adopting impression: {e}")
+            print(f"Error attaching impression: {e}")

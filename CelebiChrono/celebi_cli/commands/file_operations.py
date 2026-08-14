@@ -113,13 +113,13 @@ def import_command(path: str) -> None:
         _handle_error(f"Command failed: {e}")
 
 
-@click.command(name="send")
+@click.command(name="upload-data")
 @click.argument("path", type=str)
-def send_command(path: str) -> None:
-    """Send file."""
+def upload_data_command(path: str) -> None:
+    """Upload a local path's data to DITE (registers an impression on the server)."""
     try:
-        from CelebiChrono.interface.shell import send
-        _handle_result(send(path))
+        from CelebiChrono.interface.shell import upload_data
+        _handle_result(upload_data(path))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:

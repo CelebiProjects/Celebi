@@ -276,8 +276,8 @@ def mkdir(line: str) -> Message:
     return message
 
 
-def use_data(impression_uuid: str, path_override: str = "") -> Message:
-    """Adopt a Yuki impression as a rawdata task in the current project.
+def attach_data(impression_uuid: str, path_override: str = "") -> Message:
+    """Attach a Yuki impression to a rawdata task in the current project.
 
     Queries Yuki for the impression info (descriptor and MD5), creates a
     matching canonical rawdata task, impresses it to generate the same UUID,
@@ -289,8 +289,8 @@ def use_data(impression_uuid: str, path_override: str = "") -> Message:
             path based on the descriptor.
 
     Examples:
-        use_data abc123...
-        use_data abc123... --path my_custom_data
+        attach_data abc123...
+        attach_data abc123... --path my_custom_data
 
     Returns:
         Message: Status message for the operation.
@@ -324,7 +324,7 @@ def use_data(impression_uuid: str, path_override: str = "") -> Message:
         yaml_file.write_variable("uuid", data_md5)
         yaml_file.write_variable("descriptor", descriptor)
         print(
-            f"use-data: updated rawdata task via metadata.YamlFile.write_variable("
+            f"attach-data: updated rawdata task via metadata.YamlFile.write_variable("
             f"{full_path}/celebi.yaml, uuid={data_md5}, descriptor={descriptor})"
         )
         message.add(
@@ -337,13 +337,13 @@ def use_data(impression_uuid: str, path_override: str = "") -> Message:
         full_path = os.path.join(current_obj.path, task_path)
         result = _fill_or_create_pointer_task(
             project_path, current_obj, descriptor, data_md5,
-            path_override, "use-data")
+            path_override, "attach-data")
         message.append(result)
         if any(msg_type in ("warning", "error")
                for _, msg_type in result.messages):
             return message
         print(
-            f"use-data: created or updated rawdata task via "
+            f"attach-data: created or updated rawdata task via "
             f"_fill_or_create_pointer_task({full_path})"
         )
 

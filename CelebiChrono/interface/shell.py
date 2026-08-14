@@ -12,11 +12,11 @@ from .shell_modules.navigation import (
 from .shell_modules.file_operations import (
     _normalize_paths, _validate_copy_operation, _adjust_destination_path,
     mv, cp, ls, predecessors, successors, short_ls, rm, rm_file, mv_file,
-    import_file, add_source, send
+    import_file, add_source, upload_data
 )
 from .shell_modules.object_creation import (
-    mkalgorithm, mktask, mkdata, mkdatalist, create_lhcb_ap_list, mkdir, use_data,
-    register_data
+    mkalgorithm, mktask, mkdata, mkdatalist, create_lhcb_ap_list, mkdir,
+    attach_data, register_data
 )
 from .shell_modules.task_configuration import (
     add_input, add_algorithm, add_parameter, add_parameter_subtask,
@@ -55,9 +55,9 @@ __all__ = [
     # File operations functions
     '_normalize_paths', '_validate_copy_operation', '_adjust_destination_path',
     'mv', 'cp', 'ls', 'predecessors', 'successors', 'short_ls', 'rm', 'rm_file', 'mv_file',
-    'import_file', 'add_source', 'send',
+    'import_file', 'add_source', 'upload_data',
     # Object creation functions (from object_creation.py)
-    'mkalgorithm', 'mktask', 'mkdata', 'mkdatalist', 'create_lhcb_ap_list', 'mkdir', 'use_data',
+    'mkalgorithm', 'mktask', 'mkdata', 'mkdatalist', 'create_lhcb_ap_list', 'mkdir', 'attach_data',
     'register_data',
     # Task configuration functions (from task_configuration.py)
     'add_input', 'add_algorithm', 'add_parameter', 'add_parameter_subtask',

@@ -268,7 +268,7 @@ def create_task(path):
 def create_rawdata_task(path: str, descriptor: str, data_md5: str) -> None:
     """Create a canonical rawdata task directory with a given descriptor and MD5.
 
-    This helper is used by `use-data` to create a task that matches a Yuki
+    This helper is used by `attach-data` to create a task that matches a Yuki
     impression created by `yuki-create-data`.
     """
     path = csys.strip_path_string(path)

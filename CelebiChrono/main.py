@@ -33,7 +33,7 @@ from .interface.shell_modules.reana_booking import book_reana
 from .utils import csys
 from .utils import metadata
 from .interface.ChernShell import ChernShell
-from .celebi_cli.commands.object_creation import use_data_command
+from .celebi_cli.commands.object_creation import attach_data_command
 
 
 def is_first_time():
@@ -567,7 +567,7 @@ def git_config(key, value):
     except Exception as e:
         print(f"Error setting configuration: {e}")
 
-cli.add_command(use_data_command)
+cli.add_command(attach_data_command)
 
 
 @cli.command(name="booking-server")
