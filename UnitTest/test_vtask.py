@@ -1727,6 +1727,23 @@ class TestChernVTask(unittest.TestCase):
         prepare.remove_chern_project("demo_complex")
         CHERN_CACHE.__init__()
 
+    def test_show_parameters_rawdata_hides_memory_and_validated(self):
+        """rawdata ls must not show Memory limit / Validated."""
+        obj_tsk = vtsk.VTask.__new__(vtsk.VTask)
+        obj_tsk.path = "/tmp/demo_complex/tasks/mydata"
+        with patch.object(vtsk.VTask, 'environment', return_value="rawdata"), \
+             patch.object(vtsk.VTask, 'input_md5', return_value="md5abc"), \
+             patch.object(vtsk.VTask, 'parameters', return_value=([], {})), \
+             patch.object(vtsk.VTask, 'memory_limit', return_value="256Mi"), \
+             patch.object(vtsk.VTask, 'validated', return_value=True), \
+             patch.object(vtsk.VTask, 'default_runner', return_value="local"), \
+             patch.object(vtsk.VTask, 'use_eos', return_value=False):
+            message = vtsk.VTask.show_parameters(obj_tsk)
+        text = "".join(str(m) for m in message.messages)
+        self.assertIn("Input data:", text)
+        self.assertNotIn("Memory limit:", text)
+        self.assertNotIn("Validated:", text)
+
     def test_create_task_writes_descriptor(self):
         """Test create_task writes default descriptor to celebi.yaml."""
         test_path = "tasks/new_task"

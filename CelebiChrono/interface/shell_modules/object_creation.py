@@ -31,10 +31,15 @@ def _is_rawdata_task(obj_path):
 
 
 def _fill_or_create_pointer_task(project_path, current_obj, descriptor,
-                                 data_md5, path_override, origin):
+                                 data_md5, path_override, origin,
+                                 default_runner=None):
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     """Fill an existing rawdata task or create a pointer task (shared tail
-    of attach-data and register-data)."""
+    of attach-data and register-data).
+
+    With default_runner set (register-data), the task's default runner is
+    pointed at the runner hosting the data.
+    """
     message = Message()
     task_path = path_override if path_override else descriptor
     task_path = csys.refine_path(task_path, current_obj.path)
@@ -46,6 +51,10 @@ def _fill_or_create_pointer_task(project_path, current_obj, descriptor,
             message.add("Not allowed to create data task here", "warning")
             return message
         create_rawdata_task(full_path, descriptor, data_md5)
+        if default_runner:
+            metadata.ConfigFile(
+                os.path.join(full_path, ".celebi", "config.json")
+            ).write_variable("default_runner", default_runner)
         message.add(f"Created rawdata task at {task_path}", "success")
         return message
     existing = VObject(full_path, project_path)
@@ -62,6 +71,10 @@ def _fill_or_create_pointer_task(project_path, current_obj, descriptor,
         return message
     yaml_file.write_variable("uuid", data_md5)
     yaml_file.write_variable("descriptor", descriptor)
+    if default_runner:
+        metadata.ConfigFile(
+            os.path.join(full_path, ".celebi", "config.json")
+        ).write_variable("default_runner", default_runner)
     message.add(f"Updated rawdata task at {task_path} "
                 f"({origin}) with new impression data", "success")
     return message
@@ -411,7 +424,7 @@ def attach_data(impression_uuid: str, path_override: str = "") -> Message:
 
 
 def _fill_registered_data(project_path, current_obj, descriptor, data_md5,
-                          origin):
+                          origin, default_runner=None):
     """Dual-mode tail of register-data: fill the current rawdata task, or
     create/update a pointer task via the shared tail."""
     message = Message()
@@ -421,12 +434,15 @@ def _fill_registered_data(project_path, current_obj, descriptor, data_md5,
             os.path.join(current_obj.path, "celebi.yaml"))
         yaml_file.write_variable("uuid", data_md5)
         yaml_file.write_variable("descriptor", descriptor)
+        if default_runner:
+            current_obj.set_default_runner(default_runner)
         message.add(
             f"Updated rawdata task at {task_path} ({origin}) with new "
             "impression data", "success")
         return message
     message.messages.extend(_fill_or_create_pointer_task(
-        project_path, current_obj, descriptor, data_md5, "", origin).messages)
+        project_path, current_obj, descriptor, data_md5, "", origin,
+        default_runner=default_runner).messages)
     return message
 
 
@@ -470,7 +486,8 @@ def register_data(runner: str, remote_path: str, descriptor: str = "") -> Messag
             f"impression={result['impression_uuid']}", "success")
         message.messages.extend(_fill_registered_data(
             project_path, current_obj, result["descriptor"],
-            result["uuid"], "register-data").messages)
+            result["uuid"], "register-data",
+            default_runner=runner).messages)
         return message
     if "job_id" not in resp:
         message.add("Registration failed: server returned neither a job id "
@@ -500,7 +517,8 @@ def register_data(runner: str, remote_path: str, descriptor: str = "") -> Messag
                 f"impression={result['impression_uuid']}\n", "success")
             message.messages.extend(_fill_registered_data(
                 project_path, current_obj, result["descriptor"],
-                result["uuid"], "register-data").messages)
+                result["uuid"], "register-data",
+            default_runner=runner).messages)
             return message
         if status == "failed":
             message.add(f"Registration failed: {state.get('error')}", "error")

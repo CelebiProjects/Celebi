@@ -56,7 +56,8 @@ class TestRegisterData(unittest.TestCase):
             message = object_creation.register_data("cluster", "/src/data", "d")
 
         fill.assert_called_once_with(
-            "/proj", current, "d", "md5abc", "", "register-data")
+            "/proj", current, "d", "md5abc", "", "register-data",
+            default_runner="cluster")
         registered = [m for m in message.messages if "Registered" in str(m)]
         self.assertTrue(registered)
         self.assertTrue(registered[0][0].endswith("\n"))
@@ -127,7 +128,8 @@ class TestRegisterData(unittest.TestCase):
 
         cc.register_remote_data_status.assert_not_called()
         fill.assert_called_once_with(
-            "/proj", current, "d", "md5abc", "", "register-data")
+            "/proj", current, "d", "md5abc", "", "register-data",
+            default_runner="cluster")
         self.assertTrue(any("Registered" in str(m) for m in message.messages))
 
     def test_done_fills_current_rawdata_task(self):
@@ -192,3 +194,45 @@ class TestRegisterData(unittest.TestCase):
                                          "--descriptor", "d"])
         self.assertEqual(result.exit_code, 0, result.output)
         fn.assert_called_once_with("cluster", "/src/data", "d")
+
+    def test_done_path_sets_default_runner(self):
+        current = self._make_current("directory", path="/proj/dir")
+        states = iter([
+            {"status": "done",
+             "result": {"uuid": "md5abc", "impression_uuid": "imp-1",
+                        "descriptor": "d"}},
+        ])
+        cc = mock.MagicMock()
+        cc.register_remote_data.return_value = {"job_id": "job-1"}
+        cc.register_remote_data_status.side_effect = lambda j: next(states)
+        with mock.patch.object(object_creation, "MANAGER") as manager, \
+                mock.patch.object(object_creation, "ChernCommunicator") as cccls, \
+                mock.patch.object(object_creation.time, "sleep"), \
+                mock.patch.object(object_creation, "_fill_or_create_pointer_task",
+                                  return_value=mock.MagicMock(messages=[])) as fill:
+            manager.current_object.return_value = current
+            cccls.instance.return_value = cc
+            object_creation.register_data("cluster", "/src/data", "d")
+        fill.assert_called_once_with(
+            "/proj", current, "d", "md5abc", "", "register-data",
+            default_runner="cluster")
+
+    def test_rawdata_context_sets_default_runner(self):
+        tmp = tempfile.mkdtemp()
+        os.makedirs(os.path.join(tmp, ".celebi"))
+        current = self._make_current("task", path=tmp, env="rawdata")
+        with open(os.path.join(tmp, "celebi.yaml"), "w", encoding="utf-8") as f:
+            f.write("environment: rawdata\nuuid: \ndescriptor: d\n")
+        cc = mock.MagicMock()
+        cc.register_remote_data.return_value = {"job_id": "job-1"}
+        cc.register_remote_data_status.return_value = {
+            "status": "done",
+            "result": {"uuid": "md5abc", "impression_uuid": "imp-1",
+                       "descriptor": "d"}}
+        with mock.patch.object(object_creation, "MANAGER") as manager, \
+                mock.patch.object(object_creation, "ChernCommunicator") as cccls, \
+                mock.patch.object(object_creation.time, "sleep"):
+            manager.current_object.return_value = current
+            cccls.instance.return_value = cc
+            object_creation.register_data("cluster", "/src/data", "d")
+        current.set_default_runner.assert_called_once_with("cluster")

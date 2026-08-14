@@ -133,14 +133,15 @@ class Core(VObject):
         message.add(f"{self.environment()}")
         message.add("\n")
 
-        message.add("Memory limit: ", "title0")
-        message.add(f"{self.memory_limit()}")
-        message.add("\n")
+        if self.environment() != "rawdata":
+            message.add("Memory limit: ", "title0")
+            message.add(f"{self.memory_limit()}")
+            message.add("\n")
 
-        validated_str = "True" if self.validated() else "False"
-        message.add("Validated: ", "title0")
-        message.add(f"{validated_str}")
-        message.add("\n")
+            validated_str = "True" if self.validated() else "False"
+            message.add("Validated: ", "title0")
+            message.add(f"{validated_str}")
+            message.add("\n")
 
         # message.add("Auto download: ", "title0")
         # message.add(f"{self.auto_download()}")
