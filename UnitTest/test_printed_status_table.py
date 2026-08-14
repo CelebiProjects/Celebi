@@ -1,8 +1,10 @@
+"""Test printed status table."""
 from unittest import mock
 from CelebiChrono.kernel.vtask import VTask
 
 
 def test_status_table_lists_runner_and_downloaded():
+    """Test status table lists runner and downloaded."""
     t = VTask.__new__(VTask)
     t.impression = lambda: mock.Mock(uuid="abc")
     rows = [
@@ -10,8 +12,9 @@ def test_status_table_lists_runner_and_downloaded():
         {"name": "ntuple.root", "size": 3221225472, "type": "data",
          "in_runner": True, "in_yuki": False},
     ]
-    cc = mock.Mock(); cc.file_status.return_value = rows
-    msg = t._stageout_table(cc, "runner")     # helper under test
+    cc = mock.Mock()
+    cc.file_status.return_value = rows
+    msg = t._stageout_table(cc, "runner")     # helper under test  # pylint: disable=protected-access
     text = "".join(m[0] for m in msg.messages)
     assert "mass.png" in text and "ntuple.root" in text
     assert "ROOT" not in text  # sanity: not echoing junk

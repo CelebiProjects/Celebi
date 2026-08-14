@@ -15,6 +15,7 @@ class ImpressionStore:
     """A local content-addressed store for impressions."""
 
     def __init__(self, project_path: Optional[str] = None) -> None:
+        """Init."""
         self.project_path = project_path or csys.project_path()
         self.store_root = os.path.join(self.project_path, ".celebi", "impressions_store")
         self.blob_root = os.path.join(self.store_root, "objects", "blobs")
@@ -32,19 +33,24 @@ class ImpressionStore:
 
     @staticmethod
     def _sha256_bytes(data: bytes) -> str:
+        """Sha256 bytes."""
         return hashlib.sha256(data).hexdigest()
 
     def _blob_path(self, blob_hash: str) -> str:
+        """Blob path."""
         return os.path.join(self.blob_root, blob_hash)
 
     def _tree_path(self, tree_hash: str) -> str:
+        """Tree path."""
         return os.path.join(self.tree_root, f"{tree_hash}.json")
 
     def _ref_path(self, impression_uuid: str) -> str:
+        """Ref path."""
         return os.path.join(self.ref_root, f"{impression_uuid}.json")
 
     @contextmanager
     def _write_lock(self):
+        """Write lock."""
         csys.mkdir(self.store_root)
         with open(self.lock_path, "a", encoding="utf-8") as lock_file:
             fcntl.flock(lock_file, fcntl.LOCK_EX)
@@ -55,6 +61,7 @@ class ImpressionStore:
 
     @staticmethod
     def _atomic_write_bytes(path: str, data: bytes) -> None:
+        """Atomic write bytes."""
         directory = os.path.dirname(path)
         csys.mkdir(directory)
         fd, temp_path = tempfile.mkstemp(prefix=".tmp_", dir=directory)
@@ -70,6 +77,7 @@ class ImpressionStore:
 
     @classmethod
     def _canonical_json_bytes(cls, payload: Any) -> bytes:
+        """Canonical json bytes."""
         return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
     def put_blob(self, content: bytes) -> str:

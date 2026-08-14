@@ -43,12 +43,14 @@ _SETTING_KEYS = ("ssh_host", "ssh_user", "ssh_key_path", "ssh_port",
 
 
 def _runner_setting_options(func):
+    """Runner setting options."""
     for option in reversed(_RUNNER_SETTING_OPTIONS):
         func = option(func)
     return func
 
 
 def _collect_cli_settings(kwargs):
+    """Collect cli settings."""
     return {key: kwargs[key] for key in _SETTING_KEYS
             if kwargs.get(key) is not None}
 

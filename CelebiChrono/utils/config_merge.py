@@ -28,6 +28,7 @@ class ConfigMerger:
     """Merges Celebi configuration files with semantic conflict resolution."""
 
     def __init__(self, prefer_local: bool = True):
+        """Init."""
         self.prefer_local = prefer_local
         self.conflicts: List[Dict] = []
 

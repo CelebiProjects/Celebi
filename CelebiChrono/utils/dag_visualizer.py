@@ -25,6 +25,7 @@ class DAGVisualizer:
     """Visualizes DAGs and merge conflicts in ASCII/Unicode format."""
 
     def __init__(self, use_unicode: bool = True):
+        """Init."""
         self.use_unicode = use_unicode
         self.node_labels: Dict[Any, str] = {}
         self.edge_types: Dict[Tuple[Any, Any], EdgeType] = {}

@@ -12,25 +12,29 @@ class TestResolveProjectPath(unittest.TestCase):
 
     @patch.object(task_configuration, "csys")
     def test_at_slash_resolves_to_project_root(self, mock_csys):
+        """Test at slash resolves to project root."""
         mock_csys.project_path.return_value = "/project"
-        result = task_configuration._resolve_project_path("@/tasks/foo")
+        result = task_configuration._resolve_project_path("@/tasks/foo")  # pylint: disable=protected-access
         self.assertEqual(result, "/project/tasks/foo")
 
     @patch.object(task_configuration, "csys")
     def test_at_alone_resolves_to_project_root(self, mock_csys):
+        """Test at alone resolves to project root."""
         mock_csys.project_path.return_value = "/project"
-        result = task_configuration._resolve_project_path("@")
+        result = task_configuration._resolve_project_path("@")  # pylint: disable=protected-access
         self.assertEqual(result, "/project")
 
     @patch.object(task_configuration, "csys")
     def test_plain_relative_path_unchanged(self, mock_csys):
-        result = task_configuration._resolve_project_path("tasks/foo")
+        """Test plain relative path unchanged."""
+        result = task_configuration._resolve_project_path("tasks/foo")  # pylint: disable=protected-access
         self.assertEqual(result, "tasks/foo")
         mock_csys.project_path.assert_not_called()
 
     @patch.object(task_configuration, "csys")
     def test_absolute_path_unchanged(self, mock_csys):
-        result = task_configuration._resolve_project_path("/abs/path")
+        """Test absolute path unchanged."""
+        result = task_configuration._resolve_project_path("/abs/path")  # pylint: disable=protected-access
         self.assertEqual(result, "/abs/path")
         mock_csys.project_path.assert_not_called()
 
@@ -41,6 +45,7 @@ class TestAddInputPathResolution(unittest.TestCase):
     @patch.object(task_configuration, "csys")
     @patch.object(MANAGER, "current_object")
     def test_add_input_resolves_at_slash_path(self, mock_current_object, mock_csys):
+        """Test add input resolves at slash path."""
         mock_csys.project_path.return_value = "/project"
         mock_task = MagicMock()
         mock_task.object_type.return_value = "task"
@@ -55,6 +60,7 @@ class TestAddInputPathResolution(unittest.TestCase):
     @patch.object(task_configuration, "csys")
     @patch.object(MANAGER, "current_object")
     def test_add_input_keeps_plain_path(self, mock_current_object, mock_csys):
+        """Test add input keeps plain path."""
         mock_task = MagicMock()
         mock_task.object_type.return_value = "task"
         mock_current_object.return_value = mock_task
@@ -71,6 +77,7 @@ class TestAddAlgorithmPathResolution(unittest.TestCase):
     @patch.object(task_configuration, "csys")
     @patch.object(MANAGER, "current_object")
     def test_add_algorithm_resolves_at_slash_path(self, mock_current_object, mock_csys):
+        """Test add algorithm resolves at slash path."""
         mock_csys.project_path.return_value = "/project"
         mock_task = MagicMock()
         mock_task.object_type.return_value = "task"
@@ -83,6 +90,7 @@ class TestAddAlgorithmPathResolution(unittest.TestCase):
     @patch.object(task_configuration, "csys")
     @patch.object(MANAGER, "current_object")
     def test_add_algorithm_keeps_plain_path(self, mock_current_object, mock_csys):
+        """Test add algorithm keeps plain path."""
         mock_task = MagicMock()
         mock_task.object_type.return_value = "task"
         mock_current_object.return_value = mock_task
@@ -102,6 +110,7 @@ class TestAddParameterSubtaskPathResolution(unittest.TestCase):
     def test_add_parameter_subtask_resolves_at_slash_path(
         self, mock_sub_object, mock_current_object, mock_csys
     ):
+        """Test add parameter subtask resolves at slash path."""
         mock_csys.project_path.return_value = "/project"
         mock_dir = MagicMock()
         mock_dir.object_type.return_value = "directory"
@@ -121,6 +130,7 @@ class TestAddParameterSubtaskPathResolution(unittest.TestCase):
     def test_add_parameter_subtask_keeps_plain_path(
         self, mock_sub_object, mock_current_object, mock_csys
     ):
+        """Test add parameter subtask keeps plain path."""
         mock_dir = MagicMock()
         mock_dir.object_type.return_value = "directory"
         mock_current_object.return_value = mock_dir

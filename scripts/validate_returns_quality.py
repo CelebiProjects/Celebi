@@ -80,7 +80,9 @@ def analyze_returns_section(docstring: str) -> Dict[str, Any]:
     if is_generic:
         suggestions.append('Returns section is too generic - describe specific content/meaning')
     if word_count < 5:
-        suggestions.append('Returns section may be too brief - add more detail about what is returned')
+        suggestions.append(
+            'Returns section may be too brief - add more detail about what is returned'
+        )
 
     return {
         'has_returns': True,
@@ -94,7 +96,7 @@ def check_all_functions() -> List[Tuple[str, Dict[str, Any]]]:
     """Check Returns section quality for all public functions."""
     shell_py_path = '/Users/zhaomr/workdir/Chern/Celebi/CelebiChrono/interface/shell.py'
 
-    with open(shell_py_path, 'r') as f:
+    with open(shell_py_path, 'r', encoding='utf-8') as f:
         content = f.read()
 
     tree = ast.parse(content)
@@ -108,7 +110,7 @@ def check_all_functions() -> List[Tuple[str, Dict[str, Any]]]:
 
     return results
 
-def print_results(results: List[Tuple[str, Dict[str, Any]]]) -> None:
+def print_results(results: List[Tuple[str, Dict[str, Any]]]) -> None:  # pylint: disable=too-many-branches, too-many-locals, too-many-statements
     """Print formatted analysis results."""
     print("=" * 80)
     print("RETURNS SECTION QUALITY ANALYSIS")
@@ -123,7 +125,7 @@ def print_results(results: List[Tuple[str, Dict[str, Any]]]) -> None:
 
     # We need to re-parse to check return types
     shell_py_path = '/Users/zhaomr/workdir/Chern/Celebi/CelebiChrono/interface/shell.py'
-    with open(shell_py_path, 'r') as f:
+    with open(shell_py_path, 'r', encoding='utf-8') as f:
         content = f.read()
     tree = ast.parse(content)
 
@@ -206,7 +208,7 @@ def print_results(results: List[Tuple[str, Dict[str, Any]]]) -> None:
     print(f"⚠ Needs improvement: {len(needs_improvement)}")
     print(f"○ No Returns needed (returns None): {len(no_returns_needed)}")
 
-    if len(needs_improvement) == 0:
+    if not needs_improvement:
         print("\n✅ SUCCESS: All Returns sections meet quality requirements!")
     else:
         print(f"\n❌ ISSUES: {len(needs_improvement)} functions need Returns section improvements")

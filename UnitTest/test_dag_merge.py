@@ -199,7 +199,7 @@ class TestDAGMerger(unittest.TestCase):
         # Should not raise
         try:
             self.merger.merged_graph = dag
-            self.merger._validate_merged_dag()
+            self.merger._validate_merged_dag()  # pylint: disable=protected-access
         except ValueError:
             self.fail("Valid DAG should not raise validation error")
 
@@ -210,7 +210,7 @@ class TestDAGMerger(unittest.TestCase):
         # Should raise
         with self.assertRaises(ValueError):
             self.merger.merged_graph = cyclic_dag
-            self.merger._validate_merged_dag()
+            self.merger._validate_merged_dag()  # pylint: disable=protected-access
 
 
 if __name__ == '__main__':

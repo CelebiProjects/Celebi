@@ -379,6 +379,7 @@ def init_project():
     forbidden_names = ["config", "new", "projects", "start", "", "."]
 
     def check_project_failed(forbidden_names):
+        """Check project failed."""
         message = "The following project names are forbidden:"
         message += "\n    "
         for name in forbidden_names:
@@ -424,6 +425,7 @@ def use_project(path):
     # Check the forbidden name
     forbidden_names = ["config", "new", "projects", "start", "", "."]
     def check_project_failed(forbidden_names):
+        """Check project failed."""
         message = "The following project names are forbidden:"
         message += "\n    "
         for name in forbidden_names:

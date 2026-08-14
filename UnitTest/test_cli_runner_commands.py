@@ -12,10 +12,13 @@ from CelebiChrono.celebi_cli.commands.execution_management import (
 
 class TestCliRunnerCommands(unittest.TestCase):
 
+    """Test Cli Runner Commands."""
     def setUp(self):
+        """Set Up."""
         self.runner = CliRunner()
 
     def test_register_runner_passes_settings(self):
+        """Test register runner passes settings."""
         with mock.patch("CelebiChrono.interface.shell.register_runner") as fn:
             result = self.runner.invoke(register_runner_command, [
                 "local", "", "", "native",
@@ -26,6 +29,7 @@ class TestCliRunnerCommands(unittest.TestCase):
                                    workdir="/data", cores=8)
 
     def test_register_runner_ssh_options(self):
+        """Test register runner ssh options."""
         with mock.patch("CelebiChrono.interface.shell.register_runner") as fn:
             result = self.runner.invoke(register_runner_command, [
                 "cluster", "", "", "ssh",
@@ -38,6 +42,7 @@ class TestCliRunnerCommands(unittest.TestCase):
                                    remote_workdir="/remote")
 
     def test_update_runner_passes_settings(self):
+        """Test update runner passes settings."""
         with mock.patch("CelebiChrono.interface.shell.update_runner") as fn:
             result = self.runner.invoke(update_runner_command, [
                 "local", "--cores", "16", "--conda-path", "/opt/conda/bin/conda",
@@ -47,6 +52,7 @@ class TestCliRunnerCommands(unittest.TestCase):
                                    conda_path="/opt/conda/bin/conda")
 
     def test_test_runner_command(self):
+        """Test test runner command."""
         with mock.patch("CelebiChrono.interface.shell.test_runner") as fn:
             result = self.runner.invoke(test_runner_command, ["local"])
         self.assertEqual(result.exit_code, 0, result.output)
@@ -57,6 +63,7 @@ if __name__ == "__main__":
     unittest.main()
 
     def test_runner_envs_command(self):
+        """Test the runner envs command."""
         with mock.patch("CelebiChrono.interface.shell.runner_envs") as fn:
             result = self.runner.invoke(runner_envs_command, ["cluster"])
         self.assertEqual(result.exit_code, 0, result.output)

@@ -11,6 +11,7 @@ class ChernCache:  # pylint: disable=too-many-instance-attributes
     ins = None  # Singleton instance
 
     def __init__(self): # UnitTest: DONE
+        """Init."""
         self.local_config_path = csys.local_config_path()
         self.consult_table = {}
         self.impression_consult_table = {}

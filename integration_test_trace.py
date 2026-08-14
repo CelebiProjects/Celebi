@@ -11,16 +11,16 @@ import os
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-from CelebiChrono.utils.format_utils import (
+from CelebiChrono.utils.format_utils import (  # pylint: disable=wrong-import-position  # requires sys.path setup above
     format_uuid_short,
     format_node_display,
     format_edge_display
 )
-from CelebiChrono.utils.message import Message
-from CelebiChrono.kernel.vobj_impression import ImpressionManagement
+from CelebiChrono.utils.message import Message  # pylint: disable=wrong-import-position
+from CelebiChrono.kernel.vobj_impression import ImpressionManagement  # pylint: disable=wrong-import-position
 
 
-def demonstrate_complete_workflow():
+def demonstrate_complete_workflow():  # pylint: disable=too-many-branches, too-many-locals, too-many-statements
     """Demonstrate the complete trace readability workflow."""
     print("="*70)
     print("TRACE OUTPUT READABILITY - INTEGRATION DEMONSTRATION")
@@ -114,7 +114,7 @@ def demonstrate_complete_workflow():
     sig = inspect.signature(trace_method)
     return_annotation = sig.return_annotation
 
-    print(f"   ✓ trace() method exists in ImpressionManagement")
+    print("   ✓ trace() method exists in ImpressionManagement")
     print(f"   ✓ Returns: {return_annotation}")
     print(f"   ✓ Parameters: {list(sig.parameters.keys())}")
 

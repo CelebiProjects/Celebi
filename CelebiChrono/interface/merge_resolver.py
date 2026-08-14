@@ -28,6 +28,7 @@ class MergeResolver:
     """Interactive resolver for merge conflicts."""
 
     def __init__(self, use_color: bool = True):
+        """Init."""
         self.use_color = use_color and sys.stdout.isatty()
         self.visualizer = DAGVisualizer(use_unicode=True)
         self.resolved_conflicts = []

@@ -7,7 +7,9 @@ from click.testing import CliRunner
 
 class TestDataCommandRenames(unittest.TestCase):
 
+    """Test Data Command Renames."""
     def test_upload_data_command_exists(self):
+        """Test upload data command exists."""
         from CelebiChrono.celebi_cli.commands.file_operations import (
             upload_data_command)
         with mock.patch("CelebiChrono.interface.shell.upload_data") as fn:
@@ -16,6 +18,7 @@ class TestDataCommandRenames(unittest.TestCase):
         fn.assert_called_once_with("/data/dir")
 
     def test_attach_data_command_exists(self):
+        """Test attach data command exists."""
         from CelebiChrono.celebi_cli.commands.object_creation import (
             attach_data_command)
         with mock.patch("CelebiChrono.interface.shell.attach_data") as fn:
@@ -24,6 +27,7 @@ class TestDataCommandRenames(unittest.TestCase):
         fn.assert_called_once_with("imp-uuid", "")
 
     def test_old_cli_names_removed(self):
+        """Test old cli names removed."""
         from CelebiChrono.celebi_cli.cli import cli
         result = CliRunner().invoke(cli, ["send", "/x"])
         self.assertNotEqual(result.exit_code, 0)
@@ -33,6 +37,7 @@ class TestDataCommandRenames(unittest.TestCase):
         self.assertIn("No such command", result.output)
 
     def test_chern_shell_renames(self):
+        """Test chern shell renames."""
         from CelebiChrono.interface.chern_shell.commands_advanced import (
             AdvancedCommands)
         from CelebiChrono.interface.chern_shell.commands_task import (

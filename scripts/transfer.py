@@ -1,10 +1,11 @@
+"""Transfer."""
 import os
 import shutil
 
 # Root directory to start the search
-root_dir = "."
+ROOT_DIR = "."
 
-for dirpath, dirnames, filenames in os.walk(root_dir, topdown=False):
+for dirpath, dirnames, filenames in os.walk(ROOT_DIR, topdown=False):
     # Move README.md from .chern folders
     if ".chern" in dirnames:
         chern_path = os.path.join(dirpath, ".chern")
@@ -25,4 +26,3 @@ for dirpath, dirnames, filenames in os.walk(root_dir, topdown=False):
             new_yaml = os.path.join(dirpath, "celebi.yaml")
             os.rename(old_yaml, new_yaml)
             print(f"Renamed {old_yaml} -> {new_yaml}")
-

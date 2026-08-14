@@ -10,6 +10,7 @@ class ImpressionMaterializer:  # pylint: disable=too-few-public-methods
     """Reconstructs a snapshot tree from impression CAS metadata."""
 
     def __init__(self, project_path: Optional[str] = None) -> None:
+        """Init."""
         self.store = ImpressionStore(project_path)
 
     def materialize_impression(self, impression_uuid: str, target_dir: str) -> str:

@@ -24,6 +24,7 @@ class VImpression:  # pylint: disable=too-many-instance-attributes,too-many-publ
     uuid: Optional[str] = None
 
     def __init__(self, uuid: Optional[str] = None) -> None:
+        """Init."""
         if uuid is None:
             self.uuid = ""
         else:
@@ -252,6 +253,7 @@ class VImpression:  # pylint: disable=too-many-instance-attributes,too-many-publ
         return alias_to_imp.get(alias, "")
 
     def _build_cas_tree(self, obj: "VObject", file_list: List[List[Any]]) -> str:
+        """Build cas tree."""
         entries = []
         for dirpath, _, filenames in file_list:
             for filename in filenames:

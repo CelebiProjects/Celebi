@@ -9,13 +9,16 @@ from CelebiChrono.interface.shell_modules import communication
 
 class TestShellRunnerManagement(unittest.TestCase):
 
+    """Test Shell Runner Management."""
     def _cherncc(self, **attrs):
+        """Cherncc."""
         cc = mock.MagicMock()
         for key, value in attrs.items():
             setattr(cc, key, value)
         return cc
 
     def test_register_runner_forwards_settings(self):
+        """Test register runner forwards settings."""
         cc = self._cherncc(register_runner=mock.MagicMock(return_value=True))
         with mock.patch.object(communication, "ChernCommunicator") as cls:
             cls.instance.return_value = cc
@@ -26,6 +29,7 @@ class TestShellRunnerManagement(unittest.TestCase):
             settings={"workdir": "/data", "cores": 8})
 
     def test_test_runner_renders_checks(self):
+        """Test test runner renders checks."""
         cc = self._cherncc(test_runner=mock.MagicMock(return_value={
             "status": "failed",
             "checks": {
@@ -40,6 +44,7 @@ class TestShellRunnerManagement(unittest.TestCase):
         self.assertIn("not found in PATH", text)
 
     def test_test_runner_shows_error_message(self):
+        """Test test runner shows error message."""
         cc = self._cherncc(test_runner=mock.MagicMock(return_value={
             "status": "error",
             "message": "Runner 'ghost' not found"}))
@@ -49,6 +54,7 @@ class TestShellRunnerManagement(unittest.TestCase):
         self.assertIn("Runner 'ghost' not found", str(message))
 
     def test_runners_writes_completion_cache(self):
+        """Test runners writes completion cache."""
         tmp = tempfile.mkdtemp()
         cc = self._cherncc(
             dite_status=mock.MagicMock(return_value="connected"),
@@ -70,6 +76,7 @@ class TestShellRunnerManagement(unittest.TestCase):
         self.assertIn("ok", str(message))
 
     def test_add_host_calls_communicator(self):
+        """Test add host calls communicator."""
         cc = self._cherncc()
         with mock.patch.object(communication, "ChernCommunicator") as cls:
             cls.instance.return_value = cc
@@ -77,6 +84,7 @@ class TestShellRunnerManagement(unittest.TestCase):
         cc.add_host.assert_called_once_with("127.0.0.1:3315")
 
     def test_runner_envs_renders_list(self):
+        """Test runner envs renders list."""
         cc = self._cherncc(runner_envs=mock.MagicMock(return_value={
             "envs": [
                 {"name": "base", "path": "/opt/conda", "active": True},
@@ -91,6 +99,7 @@ class TestShellRunnerManagement(unittest.TestCase):
         self.assertIn("/opt/conda/envs/celebi", text)
 
     def test_runner_envs_shows_error(self):
+        """Test runner envs shows error."""
         cc = self._cherncc(runner_envs=mock.MagicMock(return_value={
             "envs": [], "error": "conda not found in PATH"}))
         with mock.patch.object(communication, "ChernCommunicator") as cls:
@@ -116,6 +125,7 @@ class TestShellRunnerManagement(unittest.TestCase):
         self.assertNotIn("ssh_key_path", settings)
 
     def test_register_ssh_explicit_key_uploaded(self):
+        """Test register ssh explicit key uploaded."""
         tmp = tempfile.mkdtemp()
         key = os.path.join(tmp, "mykey")
         with open(key, "w", encoding="utf-8") as f:

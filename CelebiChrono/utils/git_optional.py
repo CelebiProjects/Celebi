@@ -16,6 +16,7 @@ class GitOptionalIntegration:
     """Manages optional git integration features."""
 
     def __init__(self, project_path: Optional[str] = None):
+        """Init."""
         self.project_path = project_path or os.getcwd()
         self.config_path = os.path.join(self.project_path, '.celebi', 'git_config.json')
         self.config = self._load_config()

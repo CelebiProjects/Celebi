@@ -8,7 +8,9 @@ from CelebiChrono.celebi_cli.commands.object_creation import verify_data_command
 
 class TestVerifyData(unittest.TestCase):
 
+    """Test Verify Data."""
     def _make_current(self, env="rawdata", impressed=True, obj_type="task"):
+        """Make current."""
         current = mock.MagicMock()
         current.object_type.return_value = obj_type
         current.environment.return_value = env
@@ -20,6 +22,7 @@ class TestVerifyData(unittest.TestCase):
         return current
 
     def test_match_renders_success(self):
+        """Test match renders success."""
         current = self._make_current()
         cc = mock.MagicMock()
         cc.verify_data.return_value = {
@@ -35,6 +38,7 @@ class TestVerifyData(unittest.TestCase):
                             for m in message.messages))
 
     def test_mismatch_renders_error(self):
+        """Test mismatch renders error."""
         current = self._make_current()
         cc = mock.MagicMock()
         cc.verify_data.return_value = {
@@ -50,6 +54,7 @@ class TestVerifyData(unittest.TestCase):
         self.assertIn("xyz", text)
 
     def test_non_rawdata_rejected(self):
+        """Test non rawdata rejected."""
         current = self._make_current(env="reanahub/x")
         with mock.patch.object(object_creation, "MANAGER") as manager, \
                 mock.patch.object(object_creation, "ChernCommunicator") as cccls:
@@ -60,6 +65,7 @@ class TestVerifyData(unittest.TestCase):
                             for m in message.messages))
 
     def test_not_impressed_rejected(self):
+        """Test not impressed rejected."""
         current = self._make_current(impressed=False)
         with mock.patch.object(object_creation, "MANAGER") as manager, \
                 mock.patch.object(object_creation, "ChernCommunicator") as cccls:
@@ -70,6 +76,7 @@ class TestVerifyData(unittest.TestCase):
                             for m in message.messages))
 
     def test_server_error_surfaced(self):
+        """Test server error surfaced."""
         current = self._make_current()
         cc = mock.MagicMock()
         cc.verify_data.return_value = {
@@ -84,6 +91,7 @@ class TestVerifyData(unittest.TestCase):
                             for m in message.messages))
 
     def test_cli_command(self):
+        """Test cli command."""
         from click.testing import CliRunner
         with mock.patch("CelebiChrono.interface.shell.verify_data") as fn:
             result = CliRunner().invoke(verify_data_command, [])

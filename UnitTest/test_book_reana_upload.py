@@ -20,6 +20,7 @@ def test_data_dict_includes_upload(monkeypatch):
     captured = {}
 
     def fake_sync(_yuki_url, _project_name, _tar_buf, data, message):
+        """Fake sync."""
         captured.update(data)
         return message
 
@@ -36,6 +37,7 @@ class _MockStreamResponse:
     """Fake requests.Response that yields NDJSON lines then raises."""
 
     def __init__(self, lines, raise_after):
+        """Init."""
         self._lines = lines
         self._raise_after = raise_after
         self.status_code = 200
@@ -54,6 +56,7 @@ def test_streaming_reports_connection_lost_not_could_not_connect(monkeypatch, ca
 
     def mock_post(_url, **_kwargs):
         # Simulate Yuki streaming some progress, then the connection drops.
+        """Mock post."""
         lines = [
             b'{"text": "Packing project files...\\n", "status": "normal"}',
             b'{"text": "Uploading stageout files...\\n", "status": "normal"}',
@@ -84,6 +87,7 @@ def test_streaming_initial_connection_failure_still_reports_could_not_connect(
     """If the very first POST fails, 'could not connect' is still accurate."""
 
     def mock_post(_url, **_kwargs):
+        """Mock post."""
         raise requests.exceptions.ConnectionError("Connection refused")
 
     monkeypatch.setattr(reana_booking.requests, "post", mock_post)

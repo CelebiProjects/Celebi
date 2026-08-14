@@ -192,7 +192,7 @@ class ChernShellBase(cmd.Cmd):
 
     #     return []
 
-    def get_completions(
+    def get_completions(  # pylint: disable=too-many-branches, too-many-locals
         self, current_path: str, filepath: str, _line: str
     ) -> list:
         """Get command completions for file paths."""

@@ -10,9 +10,11 @@ class ImpressionGC:  # pylint: disable=too-few-public-methods
     """Mark-and-sweep style cleanup for loose CAS objects."""
 
     def __init__(self, project_path: str = "") -> None:
+        """Init."""
         self.store = ImpressionStore(project_path or None)
 
     def _collect_live_hashes(self) -> Set[str]:
+        """Collect live hashes."""
         live_hashes: Set[str] = set()
         stack = list(self.store.iter_referenced_hashes())
         while stack:
@@ -45,6 +47,7 @@ class ImpressionGC:  # pylint: disable=too-few-public-methods
         unreachable_count = 0
 
         def sweep_dir(directory: str, suffix: str = "") -> None:
+            """Sweep dir."""
             nonlocal deleted_count, deleted_bytes, unreachable_count
             if not os.path.exists(directory):
                 return

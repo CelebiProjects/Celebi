@@ -1,3 +1,5 @@
+"""Sphinx configuration for the Celebi documentation."""
+# pylint: disable=invalid-name,redefined-builtin  # Sphinx requires lowercase config names
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full
@@ -16,7 +18,6 @@
 
 
 # -- Project information -----------------------------------------------------
-
 project = "Celebi: an analysis management project"
 copyright = "2026, Mingrui Zhao"
 author = "Mingrui Zhao"

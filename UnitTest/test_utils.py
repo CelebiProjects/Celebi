@@ -7,15 +7,15 @@ import os
 import warnings
 from unittest.mock import patch
 from colored import Fore, Style
-import CelebiChrono.utils.csys as csys
+import prepare
+from CelebiChrono.utils import csys
 from CelebiChrono.kernel.chern_cache import ChernCache
 from CelebiChrono.utils import metadata
-import prepare
 
 CHERN_CACHE = ChernCache.instance()
 
 
-class TestChernUtils(unittest.TestCase):
+class TestChernUtils(unittest.TestCase):  # pylint: disable=too-many-public-methods
     """Test class for Chern utilities"""
 
     def setUp(self):
@@ -142,12 +142,12 @@ class TestChernUtils(unittest.TestCase):
         import tempfile
         print(Fore.BLUE + "Testing dir_md5 excludes hidden..." + Style.RESET)
         with tempfile.TemporaryDirectory() as tmpdir:
-            with open(os.path.join(tmpdir, "visible.txt"), "w") as f:
+            with open(os.path.join(tmpdir, "visible.txt"), "w", encoding="utf-8") as f:
                 f.write("hello")
-            with open(os.path.join(tmpdir, ".hidden.txt"), "w") as f:
+            with open(os.path.join(tmpdir, ".hidden.txt"), "w", encoding="utf-8") as f:
                 f.write("secret")
             os.mkdir(os.path.join(tmpdir, ".hidden_dir"))
-            with open(os.path.join(tmpdir, ".hidden_dir", "file.txt"), "w") as f:
+            with open(os.path.join(tmpdir, ".hidden_dir", "file.txt"), "w", encoding="utf-8") as f:
                 f.write("nested")
 
             md5_default = csys.dir_md5(tmpdir)

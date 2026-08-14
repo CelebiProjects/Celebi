@@ -3,7 +3,7 @@ import unittest
 import os
 import tempfile
 import shutil
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 from CelebiChrono.utils.git_optional import GitOptionalIntegration
 from CelebiChrono.utils.git_merge_coordinator import GitMergeCoordinator, MergeStrategy
@@ -225,7 +225,7 @@ CONFLICT (rename/delete): file.txt deleted in HEAD and renamed in feature
 Automatic merge failed; fix conflicts and then commit the result.
 """
 
-        conflicts = self.coordinator._parse_git_conflicts(git_output)
+        conflicts = self.coordinator._parse_git_conflicts(git_output)  # pylint: disable=protected-access
 
         self.assertEqual(len(conflicts), 2)
         self.assertEqual(conflicts[0]['type'], 'content')
@@ -245,17 +245,17 @@ Automatic merge failed; fix conflicts and then commit the result.
         os.makedirs(git_dir)
 
         # Test backup creation
-        backup_info = self.coordinator._create_backup()
+        backup_info = self.coordinator._create_backup()  # pylint: disable=protected-access
         self.assertIsNotNone(backup_info)
         self.assertIn('backup_dir', backup_info)
         self.assertIn('files', backup_info)
 
         # Test backup restore
-        self.coordinator._restore_backup(backup_info)
+        self.coordinator._restore_backup(backup_info)  # pylint: disable=protected-access
         mock_copytree.assert_called()
 
         # Test backup cleanup
-        self.coordinator._cleanup_backup(backup_info)
+        self.coordinator._cleanup_backup(backup_info)  # pylint: disable=protected-access
         mock_rmtree.assert_called()
 
     def test_merge_strategy_enum(self):
@@ -306,7 +306,7 @@ Automatic merge failed; fix conflicts and then commit the result.
 
         local_snapshot = {'B': {'shared': ['A1']}}
         remote_snapshot = {'B': {'shared': ['A2']}}
-        updates = self.coordinator._apply_alias_collision_policy(
+        updates = self.coordinator._apply_alias_collision_policy(  # pylint: disable=protected-access
             strategy=MergeStrategy.LOCAL,
             local_snapshot=local_snapshot,
             remote_snapshot=remote_snapshot,
@@ -334,7 +334,7 @@ Automatic merge failed; fix conflicts and then commit the result.
 
         local_snapshot = {'B': {'shared': ['A1']}}
         remote_snapshot = {'B': {'shared': ['A2']}}
-        updates = self.coordinator._apply_alias_collision_policy(
+        updates = self.coordinator._apply_alias_collision_policy(  # pylint: disable=protected-access
             strategy=MergeStrategy.REMOTE,
             local_snapshot=local_snapshot,
             remote_snapshot=remote_snapshot,
@@ -357,7 +357,7 @@ Automatic merge failed; fix conflicts and then commit the result.
 
         local_snapshot = {'B': {'shared': ['A1']}}
         remote_snapshot = {'B': {'shared': ['A2']}}
-        updates = self.coordinator._apply_alias_collision_policy(
+        updates = self.coordinator._apply_alias_collision_policy(  # pylint: disable=protected-access
             strategy=MergeStrategy.AUTO,
             local_snapshot=local_snapshot,
             remote_snapshot=remote_snapshot,
@@ -384,7 +384,7 @@ Automatic merge failed; fix conflicts and then commit the result.
 
         local_snapshot = {'B': {'shared': ['A1']}}
         remote_snapshot = {'B': {'shared': ['A2']}}
-        updates = self.coordinator._apply_alias_collision_policy(
+        updates = self.coordinator._apply_alias_collision_policy(  # pylint: disable=protected-access
             strategy=MergeStrategy.LOCAL,
             local_snapshot=local_snapshot,
             remote_snapshot=remote_snapshot,
@@ -431,7 +431,7 @@ Automatic merge failed; fix conflicts and then commit the result.
         remote_snapshot = {'B': {'gen': ['GenTask']}}
         rename_map = {'GenTask': ['GenTask1', 'GenTask2']}
 
-        updates = self.coordinator._apply_alias_collision_policy(
+        updates = self.coordinator._apply_alias_collision_policy(  # pylint: disable=protected-access
             strategy=MergeStrategy.LOCAL,
             local_snapshot=local_snapshot,
             remote_snapshot=remote_snapshot,
@@ -476,7 +476,7 @@ Automatic merge failed; fix conflicts and then commit the result.
         self.coordinator.doctor.reconcile_arc_relations()
         self.assertIn('GenTask2', b_config.read_variable('predecessors'))
 
-        updates = self.coordinator._apply_alias_collision_policy(
+        updates = self.coordinator._apply_alias_collision_policy(  # pylint: disable=protected-access
             strategy=MergeStrategy.LOCAL,
             local_snapshot={'B': {'gen': ['A2']}},
             remote_snapshot={'B': {'gen': ['GenTask2']}},

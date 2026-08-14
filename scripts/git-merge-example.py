@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=invalid-name  # module name uses dashes
 """
 Example script demonstrating Celebi git merge functionality.
 
@@ -7,10 +8,8 @@ project structure and merge scenario.
 """
 import os
 import tempfile
-import shutil
 import json
 import yaml
-from pathlib import Path
 
 
 def create_example_project(project_dir):
@@ -31,7 +30,7 @@ def create_example_project(project_dir):
         'created': '2024-01-01'
     }
 
-    with open(os.path.join(project_dir, '.celebi', 'config.json'), 'w') as f:
+    with open(os.path.join(project_dir, '.celebi', 'config.json'), 'w', encoding='utf-8') as f:
         json.dump(project_config, f, indent=2)
 
     # Create a simple task
@@ -47,7 +46,7 @@ def create_example_project(project_dir):
     task_dir = os.path.join(project_dir, 'tasks', 'data-processing')
     os.makedirs(task_dir, exist_ok=True)
 
-    with open(os.path.join(task_dir, 'config.json'), 'w') as f:
+    with open(os.path.join(task_dir, 'config.json'), 'w', encoding='utf-8') as f:
         json.dump(task_config, f, indent=2)
 
     # Create YAML version (human-readable)
@@ -60,14 +59,14 @@ def create_example_project(project_dir):
         'dependencies': []
     }
 
-    with open(os.path.join(task_dir, 'config.yaml'), 'w') as f:
+    with open(os.path.join(task_dir, 'config.yaml'), 'w', encoding='utf-8') as f:
         yaml.dump(yaml_config, f, default_flow_style=False)
 
     print("  Created example project with 1 task")
     return project_dir
 
 
-def simulate_git_merge_scenario():
+def simulate_git_merge_scenario():  # pylint: disable=too-many-locals, too-many-statements
     """Simulate a git merge scenario with conflicts."""
     print("\n" + "="*80)
     print("SIMULATING GIT MERGE SCENARIO")
@@ -226,7 +225,6 @@ def main():
 
     # Check if Celebi is available
     try:
-        import CelebiChrono
         print("✓ Celebi package found")
     except ImportError:
         print("✗ Celebi package not found")

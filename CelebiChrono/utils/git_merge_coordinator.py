@@ -39,6 +39,7 @@ class GitMergeCoordinator:  # pylint: disable=too-many-instance-attributes
     """Coordinates git merge with Celebi validation and repair."""
 
     def __init__(self, project_path: Optional[str] = None):
+        """Init."""
         self.project_path = project_path or os.getcwd()
         self.git_dir = os.path.join(self.project_path, '.git')
         self.is_git_repo = os.path.exists(self.git_dir)

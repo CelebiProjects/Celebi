@@ -107,12 +107,12 @@ class SettingManager(Core):
         """
         self.config_file.write_variable("default_runner", runner)
 
-    def set_cache_on_runner(self, use):
+    def set_cache_on_runner(self, cache_on_runner):
         """
         Set whether to cache results on the runner (EOS on reana,
         the runner's impressions dir on ssh)
         """
-        self.config_file.write_variable("cache_on_runner", use)
+        self.config_file.write_variable("cache_on_runner", cache_on_runner)
 
     def set_environment(self, environment):
         """

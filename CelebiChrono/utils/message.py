@@ -12,6 +12,7 @@ class Message:
     """
 
     def __init__(self) -> None:
+        """Init."""
         self.messages: List[Tuple[str, str]] = []
         self.data: dict = {}
 

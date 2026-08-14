@@ -12,7 +12,9 @@ from CelebiChrono.utils.metadata import YamlFile
 
 class TestRegisterData(unittest.TestCase):
 
+    """Test Register Data."""
     def _make_current(self, obj_type="project", path="/proj", env=None):
+        """Make current."""
         current = mock.MagicMock()
         current.object_type.return_value = obj_type
         current.path = path
@@ -34,6 +36,7 @@ class TestRegisterData(unittest.TestCase):
         return current
 
     def test_polls_until_done_and_creates_pointer_task(self):
+        """Test polls until done and creates pointer task."""
         current = self._make_current("directory", path="/proj/dir")
         states = iter([
             {"status": "hashing"},
@@ -63,6 +66,7 @@ class TestRegisterData(unittest.TestCase):
         self.assertTrue(registered[0][0].endswith("\n"))
 
     def test_failed_job_reports_error(self):
+        """Test failed job reports error."""
         current = self._make_current("project")
         states = iter([{"status": "failed", "error": "remote md5 failed: boom"}])
         cc = mock.MagicMock()
@@ -101,6 +105,7 @@ class TestRegisterData(unittest.TestCase):
                 for m in message.messages))
 
     def test_server_error_returned(self):
+        """Test server error returned."""
         current = self._make_current("project")
         cc = mock.MagicMock()
         cc.register_remote_data.return_value = {"error": "requires an ssh runner"}
@@ -179,7 +184,7 @@ class TestRegisterData(unittest.TestCase):
                 mock.patch.object(object_creation, "_fill_or_create_pointer_task") as fill:
             manager.current_object.return_value = current
             cccls.instance.return_value = cc
-            message = object_creation.register_data("cluster", "/src/data", "d")
+            _message = object_creation.register_data("cluster", "/src/data", "d")
 
         cc.register_remote_data_status.assert_not_called()
         fill.assert_not_called()
@@ -187,6 +192,7 @@ class TestRegisterData(unittest.TestCase):
         self.assertEqual(yaml_file.read_variable("uuid", ""), "md5abc")
 
     def test_cli_command(self):
+        """Test cli command."""
         from click.testing import CliRunner
         with mock.patch("CelebiChrono.interface.shell.register_data") as fn:
             result = CliRunner().invoke(register_data_command,
@@ -196,6 +202,7 @@ class TestRegisterData(unittest.TestCase):
         fn.assert_called_once_with("cluster", "/src/data", "d")
 
     def test_done_path_sets_default_runner(self):
+        """Test done path sets default runner."""
         current = self._make_current("directory", path="/proj/dir")
         states = iter([
             {"status": "done",
@@ -218,6 +225,7 @@ class TestRegisterData(unittest.TestCase):
             default_runner="cluster")
 
     def test_rawdata_context_sets_default_runner(self):
+        """Test rawdata context sets default runner."""
         tmp = tempfile.mkdtemp()
         os.makedirs(os.path.join(tmp, ".celebi"))
         current = self._make_current("task", path=tmp, env="rawdata")

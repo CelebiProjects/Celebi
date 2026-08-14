@@ -3,10 +3,10 @@ import os
 import unittest
 from datetime import datetime
 from colored import Fore, Style
+import prepare
 import CelebiChrono.kernel.vobject as vobj
 from CelebiChrono.kernel.chern_cache import ChernCache
 from CelebiChrono.utils import metadata
-import prepare
 
 CHERN_CACHE = ChernCache.instance()
 
@@ -15,9 +15,11 @@ class TestImpressionHistory(unittest.TestCase):
     """Test object-level impressions history recording."""
 
     def setUp(self):
+        """Set Up."""
         self.cwd = os.getcwd()
 
     def tearDown(self):
+        """Tear Down."""
         os.chdir(self.cwd)
 
     def test_impress_records_history_entry(self):
@@ -26,15 +28,15 @@ class TestImpressionHistory(unittest.TestCase):
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
         try:
-            obj_fitTask = vobj.VObject("FitTask")
-            obj_fitTask.impress()
+            obj_fit_task = vobj.VObject("FitTask")
+            obj_fit_task.impress()
 
             local_config = metadata.ConfigFile(
-                os.path.join(obj_fitTask.path, ".celebi", "config.local.json")
+                os.path.join(obj_fit_task.path, ".celebi", "config.local.json")
             )
             history = local_config.read_variable("impressions", [])
             self.assertEqual(len(history), 1)
-            self.assertEqual(history[0]["uuid"], str(obj_fitTask.impression()))
+            self.assertEqual(history[0]["uuid"], str(obj_fit_task.impression()))
 
             # Timestamp is ISO-8601 with timezone offset and is parseable.
             ts = history[0]["timestamp"]
@@ -46,7 +48,7 @@ class TestImpressionHistory(unittest.TestCase):
         finally:
             os.chdir("..")
             prepare.remove_chern_project("demo_genfit_new")
-            CHERN_CACHE.__init__()
+            CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_multiple_impresses_append_chronologically(self):
         """Each impress appends a new entry; entries are ordered oldest-first."""
@@ -54,12 +56,12 @@ class TestImpressionHistory(unittest.TestCase):
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
         try:
-            obj_fitTask = vobj.VObject("FitTask")
-            obj_fitTask.impress()
-            first_uuid = str(obj_fitTask.impression())
+            obj_fit_task = vobj.VObject("FitTask")
+            obj_fit_task.impress()
+            first_uuid = str(obj_fit_task.impression())
 
             # Change the task so the next impress produces a different UUID.
-            celebi_yaml = os.path.join(obj_fitTask.path, "celebi.yaml")
+            celebi_yaml = os.path.join(obj_fit_task.path, "celebi.yaml")
             with open(celebi_yaml, "a", encoding="utf-8") as f:
                 f.write("# touch\n")
 
@@ -67,12 +69,12 @@ class TestImpressionHistory(unittest.TestCase):
             CHERN_CACHE.impression_consult_table.clear()
             CHERN_CACHE.project_modification_time = (None, 0)
 
-            obj_fitTask.impress()
-            second_uuid = str(obj_fitTask.impression())
+            obj_fit_task.impress()
+            second_uuid = str(obj_fit_task.impression())
             self.assertNotEqual(first_uuid, second_uuid)
 
             local_config = metadata.ConfigFile(
-                os.path.join(obj_fitTask.path, ".celebi", "config.local.json")
+                os.path.join(obj_fit_task.path, ".celebi", "config.local.json")
             )
             history = local_config.read_variable("impressions", [])
             self.assertEqual(len(history), 2)
@@ -86,7 +88,7 @@ class TestImpressionHistory(unittest.TestCase):
         finally:
             os.chdir("..")
             prepare.remove_chern_project("demo_genfit_new")
-            CHERN_CACHE.__init__()
+            CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_clean_impressions_clears_history(self):
         """clean_impressions resets the object-level impressions list."""
@@ -94,19 +96,19 @@ class TestImpressionHistory(unittest.TestCase):
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
         try:
-            obj_fitTask = vobj.VObject("FitTask")
-            obj_fitTask.impress()
-            obj_fitTask.clean_impressions()
+            obj_fit_task = vobj.VObject("FitTask")
+            obj_fit_task.impress()
+            obj_fit_task.clean_impressions()
 
             local_config = metadata.ConfigFile(
-                os.path.join(obj_fitTask.path, ".celebi", "config.local.json")
+                os.path.join(obj_fit_task.path, ".celebi", "config.local.json")
             )
             history = local_config.read_variable("impressions", [])
             self.assertEqual(history, [])
         finally:
             os.chdir("..")
             prepare.remove_chern_project("demo_genfit_new")
-            CHERN_CACHE.__init__()
+            CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_corrupt_history_list_is_reset(self):
         """A non-list value in impressions is replaced before appending."""
@@ -114,18 +116,18 @@ class TestImpressionHistory(unittest.TestCase):
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
         try:
-            obj_fitTask = vobj.VObject("FitTask")
+            obj_fit_task = vobj.VObject("FitTask")
             local_config = metadata.ConfigFile(
-                os.path.join(obj_fitTask.path, ".celebi", "config.local.json")
+                os.path.join(obj_fit_task.path, ".celebi", "config.local.json")
             )
             local_config.write_variable("impressions", "not-a-list")
 
-            obj_fitTask.impress()
+            obj_fit_task.impress()
             history = local_config.read_variable("impressions", [])
             self.assertIsInstance(history, list)
             self.assertEqual(len(history), 1)
-            self.assertEqual(history[0]["uuid"], str(obj_fitTask.impression()))
+            self.assertEqual(history[0]["uuid"], str(obj_fit_task.impression()))
         finally:
             os.chdir("..")
             prepare.remove_chern_project("demo_genfit_new")
-            CHERN_CACHE.__init__()
+            CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call

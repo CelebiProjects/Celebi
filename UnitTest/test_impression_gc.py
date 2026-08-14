@@ -1,3 +1,4 @@
+"""Test impression gc."""
 import os
 import shutil
 import tempfile
@@ -8,15 +9,19 @@ from CelebiChrono.kernel.impression_store import ImpressionStore
 
 
 class TestImpressionGC(unittest.TestCase):
+    """Test Impression GC."""
     def setUp(self):
+        """Set Up."""
         self.temp_dir = tempfile.mkdtemp(prefix="celebi_gc_test_")
         os.makedirs(os.path.join(self.temp_dir, ".celebi"), exist_ok=True)
         self.store = ImpressionStore(self.temp_dir)
 
     def tearDown(self):
+        """Tear Down."""
         shutil.rmtree(self.temp_dir)
 
     def test_gc_keeps_reachable_and_deletes_unreachable(self):
+        """Test gc keeps reachable and deletes unreachable."""
         reachable_blob = self.store.put_blob(b"reachable")
         unreachable_blob = self.store.put_blob(b"unreachable")
 
@@ -32,8 +37,8 @@ class TestImpressionGC(unittest.TestCase):
         real = ImpressionGC(self.temp_dir).run(grace_days=0, dry_run=False)
         self.assertGreaterEqual(real["deleted_objects"], 1)
 
-        self.assertTrue(os.path.exists(self.store._blob_path(reachable_blob)))
-        self.assertFalse(os.path.exists(self.store._blob_path(unreachable_blob)))
+        self.assertTrue(os.path.exists(self.store._blob_path(reachable_blob)))  # pylint: disable=protected-access
+        self.assertFalse(os.path.exists(self.store._blob_path(unreachable_blob)))  # pylint: disable=protected-access
 
 
 if __name__ == "__main__":

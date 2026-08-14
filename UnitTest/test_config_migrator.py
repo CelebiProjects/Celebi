@@ -4,9 +4,8 @@ import unittest
 import tempfile
 import json
 import os
-from unittest.mock import patch, MagicMock
 
-from CelebiChrono.utils import config_migrator
+
 from CelebiChrono.utils.config_migrator import ConfigMigrator, MigrationResult
 
 
@@ -56,7 +55,7 @@ class TestConfigMigrator(unittest.TestCase):
     def _create_config(self, path, config_dict):
         """Helper to create a config file."""
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding='utf-8') as f:
             json.dump(config_dict, f)
 
     def test_init_valid_path(self):
@@ -91,7 +90,7 @@ class TestConfigMigrator(unittest.TestCase):
         self.assertEqual(result.skipped_count, 0)
 
         # Check that config.json has shared fields only
-        with open(config_path) as f:
+        with open(config_path, encoding='utf-8') as f:
             shared_config = json.load(f)
         self.assertIn("object_type", shared_config)
         self.assertIn("predecessors", shared_config)
@@ -100,7 +99,7 @@ class TestConfigMigrator(unittest.TestCase):
         # Check that config.local.json was created
         local_config_path = os.path.join(self.temp_dir, ".celebi", "config.local.json")
         self.assertTrue(os.path.isfile(local_config_path))
-        with open(local_config_path) as f:
+        with open(local_config_path, encoding='utf-8') as f:
             local_config = json.load(f)
         self.assertIn("auto_download", local_config)
         self.assertIn("default_runner", local_config)
@@ -129,7 +128,7 @@ class TestConfigMigrator(unittest.TestCase):
         self.assertFalse(os.path.isfile(local_config_path))
 
         # Check that original config is unchanged
-        with open(config_path) as f:
+        with open(config_path, encoding='utf-8') as f:
             current_config = json.load(f)
         self.assertEqual(current_config, old_config)
 
@@ -194,10 +193,10 @@ class TestConfigMigrator(unittest.TestCase):
 
         # Migrate
         migrator = ConfigMigrator(self.temp_dir)
-        result = migrator.migrate(dry_run=False)
+        _result = migrator.migrate(dry_run=False)
 
         # Check that custom field was preserved in shared config
-        with open(config_path) as f:
+        with open(config_path, encoding='utf-8') as f:
             shared_config = json.load(f)
         self.assertIn("custom_field", shared_config)
         self.assertEqual(shared_config["custom_field"], "custom_value")
@@ -222,7 +221,7 @@ class TestConfigMigrator(unittest.TestCase):
         os.makedirs(os.path.dirname(config_path))
 
         # Write invalid JSON
-        with open(config_path, 'w') as f:
+        with open(config_path, 'w', encoding='utf-8') as f:
             f.write("{invalid json")
 
         # Migrate should handle error gracefully
@@ -240,7 +239,7 @@ class TestConfigMigrator(unittest.TestCase):
         os.makedirs(os.path.dirname(config_path))
 
         # Write JSON array instead of object
-        with open(config_path, 'w') as f:
+        with open(config_path, 'w', encoding='utf-8') as f:
             json.dump([1, 2, 3], f)
 
         # Migrate should handle error gracefully

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=invalid-name  # module name uses dashes
 """
 Verification script for git merge system implementation.
 
@@ -12,13 +13,12 @@ def check_import(module_path, class_name=None):
     """Check if a module or class can be imported."""
     try:
         if class_name:
-            exec(f"from {module_path} import {class_name}")
+            exec(f"from {module_path} import {class_name}")  # pylint: disable=exec-used
             print(f"✓ {module_path}.{class_name}")
             return True
-        else:
-            exec(f"import {module_path}")
-            print(f"✓ {module_path}")
-            return True
+        exec(f"import {module_path}")  # pylint: disable=exec-used
+        print(f"✓ {module_path}")
+        return True
     except ImportError as e:
         print(f"✗ {module_path}{'.' + class_name if class_name else ''}: {e}")
         return False
@@ -26,7 +26,7 @@ def check_import(module_path, class_name=None):
         print(f"✗ {module_path}{'.' + class_name if class_name else ''}: {e}")
         return False
 
-def main():
+def main():  # pylint: disable=too-many-branches, too-many-locals, too-many-statements
     """Main verification function."""
     print("VERIFYING GIT MERGE SYSTEM IMPLEMENTATION")
     print("="*80)
@@ -61,7 +61,7 @@ def main():
     # Check if doctor has merge methods (can't import directly, check file)
     doctor_path = "CelebiChrono/kernel/vobj_arc_doctor.py"
     if os.path.exists(doctor_path):
-        with open(doctor_path, 'r') as f:
+        with open(doctor_path, 'r', encoding='utf-8') as f:
             content = f.read()
             if "validate_merge" in content and "repair_merge_conflicts" in content:
                 print(f"✓ Doctor extensions found in {doctor_path}")
@@ -74,15 +74,20 @@ def main():
         checks.append(False)
 
     print("\n7. Impression Regeneration:")
-    checks.append(check_import("CelebiChrono.kernel.vobj_impression_regenerate", "ImpressionRegenerator"))
+    checks.append(
+        check_import("CelebiChrono.kernel.vobj_impression_regenerate", "ImpressionRegenerator")
+    )
 
     print("\n8. CLI Commands:")
     # Check main.py for git commands
     main_path = "CelebiChrono/main.py"
     if os.path.exists(main_path):
-        with open(main_path, 'r') as f:
+        with open(main_path, 'r', encoding='utf-8') as f:
             content = f.read()
-            git_commands = ['git_merge', 'git_validate', 'git_status', 'git_enable', 'git_disable', 'git_hooks', 'git_config']
+            git_commands = [
+                'git_merge', 'git_validate', 'git_status', 'git_enable',
+                'git_disable', 'git_hooks', 'git_config',
+            ]
             found = [cmd for cmd in git_commands if f"def {cmd}" in content or f"@{cmd}" in content]
             if len(found) >= 5:  # At least 5 of 7 commands
                 print(f"✓ CLI commands found: {', '.join(found)}")
@@ -98,9 +103,12 @@ def main():
     # Check utilities.py for git functions
     utilities_path = "CelebiChrono/interface/shell_modules/utilities.py"
     if os.path.exists(utilities_path):
-        with open(utilities_path, 'r') as f:
+        with open(utilities_path, 'r', encoding='utf-8') as f:
             content = f.read()
-            git_functions = ['git_merge', 'git_validate', 'git_status', 'git_enable', 'git_disable', 'git_hooks']
+            git_functions = [
+                'git_merge', 'git_validate', 'git_status', 'git_enable',
+                'git_disable', 'git_hooks',
+            ]
             found = [func for func in git_functions if f"def {func}" in content]
             if len(found) >= 4:  # At least 4 of 6 functions
                 print(f"✓ Shell functions found: {', '.join(found)}")

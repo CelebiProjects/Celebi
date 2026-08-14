@@ -37,7 +37,7 @@ Limitations:
 Version: 1.0.0
 Author: Documentation Utilities Team
 """
-from typing import List, Tuple, Dict, Any, Optional, Union
+from typing import List, Tuple, Dict, Any, Union
 
 __all__ = [
     'generate_google_docstring',
@@ -46,7 +46,7 @@ __all__ = [
     'generate_docstring_from_signature',
 ]
 
-def generate_google_docstring(
+def generate_google_docstring(  # pylint: disable=too-many-arguments, too-many-branches, too-many-positional-arguments
     func_name: str,
     params: List[Tuple[str, str, str]],
     returns: str,
@@ -159,7 +159,7 @@ def validate_google_docstring(docstring: str) -> Dict[str, Any]:
             missing.append(section)
 
     return {
-        'valid': len(missing) == 0,
+        'valid': not missing,
         'missing_sections': missing,
         'has_triple_quotes': '"""' in docstring,
     }
@@ -233,7 +233,7 @@ def analyze_docstring(docstring: str) -> Dict[str, Any]:
 
     return analysis
 
-def generate_docstring_from_signature(
+def generate_docstring_from_signature(  # pylint: disable=too-many-branches, too-many-locals, too-many-statements
     func_name: str,
     signature: str,
     description: str = ""
@@ -295,7 +295,7 @@ def generate_docstring_from_signature(
                 bracket_depth += 1
             elif char == ']':
                 bracket_depth -= 1
-            elif char == ',' and bracket_depth == 0:
+            elif char == ',' and not bracket_depth:
                 params_list.append(current_param.strip())
                 current_param = ''
                 continue
@@ -402,18 +402,18 @@ Note:
 """'''
 
     analysis = analyze_docstring(complete_doc)
-    assert analysis['has_docstring'] == True
-    assert analysis['has_triple_quotes'] == True
+    assert analysis['has_docstring']
+    assert analysis['has_triple_quotes']
     assert 'Args' in analysis['sections_present']
     assert 'Returns' in analysis['sections_present']
     assert 'Examples' in analysis['sections_present']
     assert 'Note' in analysis['sections_present']
-    assert len(analysis['sections_missing']) == 0
+    assert not analysis['sections_missing']
 
     # Test with incomplete docstring
     incomplete_doc = '''"""Example function without proper sections."""'''
     analysis = analyze_docstring(incomplete_doc)
-    assert analysis['has_docstring'] == True
+    assert analysis['has_docstring']
     assert len(analysis['sections_missing']) == 4  # All sections missing
     assert len(analysis['suggestions']) > 0
 

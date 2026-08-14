@@ -1,3 +1,4 @@
+"""Test migrate impressions."""
 import json
 import os
 import shutil
@@ -9,19 +10,25 @@ from CelebiChrono.kernel.impression_store import ImpressionStore
 
 
 class TestMigrateImpressions(unittest.TestCase):
+    """Test Migrate Impressions."""
     def setUp(self):
+        """Set Up."""
         self.project_dir = tempfile.mkdtemp(prefix="celebi_migrate_test_")
         os.makedirs(os.path.join(self.project_dir, ".celebi"), exist_ok=True)
         with open(os.path.join(self.project_dir, ".celebi", "project.json"), "w", encoding="utf-8"):
             pass
-        with open(os.path.join(self.project_dir, ".celebi", "config.json"), "w", encoding="utf-8") as f:
+        with open(
+            os.path.join(self.project_dir, ".celebi", "config.json"), "w", encoding="utf-8"
+        ) as f:
             json.dump({"object_type": "project", "project_uuid": "test-project"}, f)
 
         self.uuid = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         self.imp_dir = os.path.join(self.project_dir, ".celebi", "impressions", self.uuid)
         os.makedirs(os.path.join(self.imp_dir, "contents"), exist_ok=True)
 
-        with open(os.path.join(self.imp_dir, "contents", "celebi.yaml"), "w", encoding="utf-8") as f:
+        with open(
+            os.path.join(self.imp_dir, "contents", "celebi.yaml"), "w", encoding="utf-8"
+        ) as f:
             f.write("descriptor: demo\n")
         with open(os.path.join(self.imp_dir, "config.json"), "w", encoding="utf-8") as f:
             json.dump({
@@ -35,9 +42,11 @@ class TestMigrateImpressions(unittest.TestCase):
             f.write(b"legacy")
 
     def tearDown(self):
+        """Tear Down."""
         shutil.rmtree(self.project_dir)
 
     def test_migrate_with_prune_legacy(self):
+        """Test migrate with prune legacy."""
         project = VProject(self.project_dir)
 
         dry_result = project.migrate_impressions(dry_run=True, prune_legacy=True)

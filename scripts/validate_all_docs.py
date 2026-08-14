@@ -26,7 +26,7 @@ import re
 import sys
 from typing import List, Dict, Any, Tuple, Optional
 
-def get_function_return_type(func_node: ast.FunctionDef) -> Optional[str]:
+def get_function_return_type(func_node: ast.FunctionDef) -> Optional[str]:  # pylint: disable=too-many-return-statements
     """Extract return type annotation from function node."""
     if func_node.returns is None:
         return None
@@ -36,16 +36,15 @@ def get_function_return_type(func_node: ast.FunctionDef) -> Optional[str]:
         if func_node.returns.value is None:
             return "None"
         return str(func_node.returns.value)
-    elif isinstance(func_node.returns, ast.Name):
+    if isinstance(func_node.returns, ast.Name):
         return func_node.returns.id
-    elif isinstance(func_node.returns, ast.Attribute):
+    if isinstance(func_node.returns, ast.Attribute):
         # Handle qualified names like typing.List
         return ast.unparse(func_node.returns) if hasattr(ast, 'unparse') else str(func_node.returns)
-    elif isinstance(func_node.returns, ast.Subscript):
+    if isinstance(func_node.returns, ast.Subscript):
         # Handle generic types like List[str]
         return ast.unparse(func_node.returns) if hasattr(ast, 'unparse') else str(func_node.returns)
-    else:
-        return str(func_node.returns)
+    return str(func_node.returns)
 
 def function_has_parameters(func_node: ast.FunctionDef) -> bool:
     """Check if function has any parameters."""
@@ -56,8 +55,10 @@ def function_has_parameters(func_node: ast.FunctionDef) -> bool:
         func_node.args.kwarg or
         func_node.args.posonlyargs
     )
-
-def validate_function_docstring(func_node: ast.FunctionDef, docstring: Optional[str]) -> Dict[str, Any]:
+# pylint: disable-next=too-many-branches,too-many-locals,too-many-statements  # legacy function
+def validate_function_docstring(
+    func_node: ast.FunctionDef, docstring: Optional[str]
+) -> Dict[str, Any]:
     """Validate a single function's docstring against Google style requirements.
 
     Args:
@@ -110,7 +111,10 @@ def validate_function_docstring(func_node: ast.FunctionDef, docstring: Optional[
                 total_params -= 1  # Don't count self parameter
 
             if len(param_lines) < total_params:
-                errors.append(f'Incomplete Args documentation: {len(param_lines)}/{total_params} parameters documented')
+                errors.append(
+                    f'Incomplete Args documentation: '
+                    f'{len(param_lines)}/{total_params} parameters documented'
+                )
         else:
             errors.append('Args section exists but is empty or malformed')
 
@@ -124,7 +128,10 @@ def validate_function_docstring(func_node: ast.FunctionDef, docstring: Optional[
                 # Look for additional descriptive content
                 lines = returns_text.split('\n')
                 if len(lines) <= 2 and len(returns_text.strip()) < 50:
-                    warnings.append('Returns section may be too brief - describe content/meaning, not just "Message object"')
+                    warnings.append(
+                        'Returns section may be too brief - describe content/meaning, '
+                        'not just "Message object"'
+                    )
         else:
             errors.append('Returns section exists but is empty or malformed')
 
@@ -153,7 +160,7 @@ def validate_function_docstring(func_node: ast.FunctionDef, docstring: Optional[
             errors.append('Note section exists but is empty or malformed')
 
     return {
-        'valid': len(errors) == 0,
+        'valid': not errors,
         'errors': errors,
         'warnings': warnings
     }
@@ -175,7 +182,7 @@ def validate_all_functions() -> Tuple[bool, List[Tuple[str, Dict[str, Any]]]]:
     shell_py_path = '/Users/zhaomr/workdir/Chern/Celebi/CelebiChrono/interface/shell.py'
 
     try:
-        with open(shell_py_path, 'r') as f:
+        with open(shell_py_path, 'r', encoding='utf-8') as f:
             content = f.read()
     except FileNotFoundError:
         print(f"Error: File not found: {shell_py_path}")
@@ -201,12 +208,12 @@ def validate_all_functions() -> Tuple[bool, List[Tuple[str, Dict[str, Any]]]]:
 
     return all_valid, results
 
-def print_validation_results(results: List[Tuple[str, Dict[str, Any]]]) -> None:
+def print_validation_results(results: List[Tuple[str, Dict[str, Any]]]) -> None:  # pylint: disable=too-many-branches, too-many-locals
     """Print formatted validation results."""
     print("=" * 80)
     print("SHELL INTERFACE DOCUMENTATION VALIDATION REPORT")
     print("=" * 80)
-    print(f"Validating all public functions in CelebiChrono/interface/shell.py")
+    print("Validating all public functions in CelebiChrono/interface/shell.py")
     print(f"Total functions: {len(results)}")
     print()
 
@@ -278,7 +285,7 @@ def main() -> int:
     """Main validation function."""
     print("Starting comprehensive documentation validation...")
 
-    all_valid, results = validate_all_functions()
+    _all_valid, results = validate_all_functions()
     print_validation_results(results)
 
     # Return exit code based on validation results
@@ -288,10 +295,9 @@ def main() -> int:
     if has_errors:
         print("\n❌ Validation failed: Some functions have documentation errors.")
         return 1
-    else:
-        print("\n✅ Validation passed: All functions meet basic requirements.")
-        print("   (Warnings indicate areas for improvement but don't block validation)")
-        return 0
+    print("\n✅ Validation passed: All functions meet basic requirements.")
+    print("   (Warnings indicate areas for improvement but don't block validation)")
+    return 0
 
 if __name__ == '__main__':
     sys.exit(main())

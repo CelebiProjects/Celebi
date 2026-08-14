@@ -12,6 +12,7 @@ class ImpressionPack:  # pylint: disable=too-few-public-methods
     """Pack planner for loose CAS objects."""
 
     def __init__(self, project_path: str = "") -> None:
+        """Init."""
         self.store = ImpressionStore(project_path or None)
 
     def maybe_pack(

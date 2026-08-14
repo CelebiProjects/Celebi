@@ -41,6 +41,7 @@ class ChernProjectManager:
         return cls.instance
 
     def __init__(self) -> None:
+        """Init."""
         self.init_global_config()
 
     def init_global_config(self) -> None:

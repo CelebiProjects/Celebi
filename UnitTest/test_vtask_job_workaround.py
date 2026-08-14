@@ -17,53 +17,68 @@ class FakeJobManager(JobManager):
 
     def __init__(self, project_path, inputs=None):
         # pylint: disable=super-init-not-called
+        """Init."""
         self._project_path = project_path
         self._inputs = inputs or []
 
     # Required abstract stubs
     def algorithm(self):
+        """Algorithm."""
         return mock.Mock()
 
     def auto_download(self):
+        """Auto download."""
         return False
 
     def default_runner(self):
+        """Default runner."""
         return "local"
 
     def environment(self):
+        """Environment."""
         return "python:3.9"
 
     def get_task(self, path):
+        """Get task."""
         return self
 
     def input_md5(self):
+        """Input md5."""
         return "abc123"
 
     def memory_limit(self):
+        """Memory limit."""
         return "2G"
 
     def output_files(self):
+        """Output files."""
         return []
 
     def parameters(self):
+        """Parameters."""
         return ([], {})
 
     def set_input_md5(self, path):
-        pass
+        """Set input md5."""
 
     def cache_on_runner(self):
+        """Cache on runner."""
         return False
 
     def validated(self):
+        """Validated."""
         return True
 
     def project_path(self):
+        """Project path."""
         return self._project_path
 
     def inputs(self):
+        """Inputs."""
         return self._inputs
 
     def path_to_alias(self, path):
+        """Path to alias."""
         return os.path.basename(path.rstrip(os.sep))
 
 

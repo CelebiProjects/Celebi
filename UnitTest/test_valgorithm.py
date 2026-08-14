@@ -6,11 +6,11 @@ import os
 import unittest
 from unittest.mock import patch, MagicMock, mock_open
 from colored import Fore, Style
+import prepare
 import CelebiChrono.kernel.valgorithm as valg
 from CelebiChrono.kernel.chern_cache import ChernCache
 from CelebiChrono.kernel.chern_communicator import ChernCommunicator
 from CelebiChrono.utils.message import Message
-import prepare
 
 CHERN_CACHE = ChernCache.instance()
 
@@ -58,7 +58,7 @@ class TestVAlgorithm(unittest.TestCase):
         finally:
             os.chdir("..")
             prepare.remove_chern_project("demo_complex")
-            CHERN_CACHE.__init__()
+            CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_run_status(self):
         """Test run_status method"""
@@ -85,7 +85,7 @@ class TestVAlgorithm(unittest.TestCase):
         finally:
             os.chdir("..")
             prepare.remove_chern_project("demo_complex")
-            CHERN_CACHE.__init__()
+            CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_is_submitted(self):
         """Test is_submitted method"""
@@ -113,7 +113,7 @@ class TestVAlgorithm(unittest.TestCase):
         finally:
             os.chdir("..")
             prepare.remove_chern_project("demo_complex")
-            CHERN_CACHE.__init__()
+            CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_ls(self):
         """Test ls method"""
@@ -161,7 +161,7 @@ class TestVAlgorithm(unittest.TestCase):
         finally:
             os.chdir("..")
             prepare.remove_chern_project("demo_complex")
-            CHERN_CACHE.__init__()
+            CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_print_files(self):
         """Test print_files method"""
@@ -203,7 +203,7 @@ class TestVAlgorithm(unittest.TestCase):
         finally:
             os.chdir("..")
             prepare.remove_chern_project("demo_complex")
-            CHERN_CACHE.__init__()
+            CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_commands(self):
         """Test commands method"""
@@ -234,7 +234,7 @@ class TestVAlgorithm(unittest.TestCase):
         finally:
             os.chdir("..")
             prepare.remove_chern_project("demo_complex")
-            CHERN_CACHE.__init__()
+            CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_build_commands(self):
         """Test build_commands method"""
@@ -265,7 +265,7 @@ class TestVAlgorithm(unittest.TestCase):
         finally:
             os.chdir("..")
             prepare.remove_chern_project("demo_complex")
-            CHERN_CACHE.__init__()
+            CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_environment(self):
         """Test environment method"""
@@ -294,7 +294,7 @@ class TestVAlgorithm(unittest.TestCase):
         finally:
             os.chdir("..")
             prepare.remove_chern_project("demo_complex")
-            CHERN_CACHE.__init__()
+            CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_get_descriptor(self):
         """Test get_descriptor method."""
@@ -322,7 +322,7 @@ class TestVAlgorithm(unittest.TestCase):
         finally:
             os.chdir("..")
             prepare.remove_chern_project("demo_complex")
-            CHERN_CACHE.__init__()
+            CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_set_descriptor(self):
         """Test set_descriptor method."""
@@ -348,7 +348,7 @@ class TestVAlgorithm(unittest.TestCase):
         finally:
             os.chdir("..")
             prepare.remove_chern_project("demo_complex")
-            CHERN_CACHE.__init__()
+            CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_printed_status(self):
         """Test printed_status method"""
@@ -422,11 +422,11 @@ class TestVAlgorithm(unittest.TestCase):
         finally:
             os.chdir("..")
             prepare.remove_chern_project("demo_complex")
-            CHERN_CACHE.__init__()
+            CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch('subprocess.call')
     @patch('builtins.input')
-    def test_create_algorithm(self, mock_input, mock_subprocess):
+    def test_create_algorithm(self, mock_input, _mock_subprocess):
         """Test create_algorithm function"""
         print(Fore.BLUE + "Testing create_algorithm..." + Style.RESET)
 
@@ -462,7 +462,7 @@ class TestVAlgorithm(unittest.TestCase):
     @patch('subprocess.call')
     @patch('builtins.input')
     def test_create_algorithm_with_template(self, mock_input,
-                                            mock_subprocess):
+                                            _mock_subprocess):
         """Test create_algorithm function with template"""
         print(Fore.BLUE + "Testing create_algorithm with template..." +
               Style.RESET)
@@ -507,7 +507,7 @@ class TestVAlgorithm(unittest.TestCase):
         finally:
             os.chdir("..")
             prepare.remove_chern_project("demo_complex")
-            CHERN_CACHE.__init__()
+            CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
 
 if __name__ == '__main__':

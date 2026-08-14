@@ -1,8 +1,8 @@
 """Unit tests for configuration file merging."""
 import datetime
+import json
 import unittest
 import yaml
-import json
 
 from CelebiChrono.utils.config_merge import ConfigMerger, detect_config_file_type
 
@@ -170,7 +170,7 @@ dependencies:
 """
 
         # Simpler test - just check that it handles conflict markers
-        merged, conflicts = self.merger.merge_yaml_files(
+        _merged, conflicts = self.merger.merge_yaml_files(
             content_with_conflict,
             content_with_conflict,
             ""
@@ -209,7 +209,7 @@ uuid: def-456
 uuid: ghi-789
 """
 
-        merged, conflicts = remote_merger.merge_yaml_files(local, remote, base)
+        merged, _conflicts = remote_merger.merge_yaml_files(local, remote, base)
 
         # Should prefer remote UUID
         parsed = yaml.safe_load(merged)
@@ -218,12 +218,12 @@ uuid: ghi-789
     def test_merge_empty_files(self):
         """Test merging empty or invalid files."""
         # Test with empty content
-        merged, conflicts = self.merger.merge_yaml_files("", "", "")
+        _merged, conflicts = self.merger.merge_yaml_files("", "", "")
         self.assertEqual(len(conflicts), 0)
 
         # Test with invalid YAML (should fall back to textual merge)
         invalid = "not: valid: yaml"
-        merged, conflicts = self.merger.merge_yaml_files(invalid, invalid, invalid)
+        _merged, conflicts = self.merger.merge_yaml_files(invalid, invalid, invalid)
         self.assertEqual(len(conflicts), 1)
         self.assertEqual(conflicts[0]['type'], 'structure_conflict')
 
@@ -257,7 +257,7 @@ config:
     param3: value3
 """
 
-        merged, conflicts = self.merger.merge_yaml_files(local, remote, base)
+        merged, _conflicts = self.merger.merge_yaml_files(local, remote, base)
 
         parsed = yaml.safe_load(merged)
 

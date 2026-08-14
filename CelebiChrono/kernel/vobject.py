@@ -165,8 +165,10 @@ class VObject(ArcManagement, FileManagement, AliasManagement,
         subprocess.call(f"{editor} {file_name}", shell=True)
 
     def get_vobject(self, path: str, project_path: str = "") -> 'VObject':
+        """Get vobject."""
         return VObject(path, project_path)
 
     def get_vtask(self, path: str, project_path: str="") -> 'VTask':
+        """Get vtask."""
         from .vtask import VTask # pylint: disable=cyclic-import, import-outside-toplevel
         return VTask(path, project_path)

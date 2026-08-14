@@ -1,5 +1,7 @@
-from click.testing import CliRunner
+"""Test celebi cli cache config."""
 import os
+
+from click.testing import CliRunner
 
 from CelebiChrono.celebi_cli.cli import cli
 from CelebiChrono.kernel import vproject
@@ -7,10 +9,12 @@ from CelebiChrono.utils import metadata
 
 
 def test_config_cache_invalidation_mode_registered():
+    """Test config cache invalidation mode registered."""
     assert "config-cache-invalidation-mode" in cli.commands
 
 
 def test_config_cache_invalidation_mode_show_and_set():
+    """Test config cache invalidation mode show and set."""
     runner = CliRunner()
     with runner.isolated_filesystem():
         os.mkdir(".celebi")
@@ -18,11 +22,11 @@ def test_config_cache_invalidation_mode_show_and_set():
         vproject.create_configfile(".", "test-project-uuid")
 
         result = runner.invoke(cli, ["config-cache-invalidation-mode"])
-        assert result.exit_code == 0
+        assert not result.exit_code
         assert "cache_invalidation_mode=auto" in result.output
 
         result = runner.invoke(cli, ["config-cache-invalidation-mode", "off"])
-        assert result.exit_code == 0
+        assert not result.exit_code
         assert "cache_invalidation_mode=off" in result.output
         assert "resolved_method=off" in result.output
 

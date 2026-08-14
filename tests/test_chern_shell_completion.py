@@ -1,3 +1,4 @@
+"""Test chern shell completion."""
 import readline
 from pathlib import Path
 from unittest.mock import patch
@@ -6,20 +7,26 @@ from CelebiChrono.interface.chern_shell.base import ChernShellBase
 from CelebiChrono.utils import csys
 
 
-class _FakeCurrentObject:
+class _FakeCurrentObject:  # pylint: disable=too-few-public-methods
+    """Fake Current Object."""
     def __init__(self, path: str):
+        """Init."""
         self.path = path
 
 
-class _FakeManager:
+class _FakeManager:  # pylint: disable=too-few-public-methods
+    """Fake Manager."""
     def __init__(self, current_path: str):
+        """Init."""
         self.c = _FakeCurrentObject(current_path)
 
     def get_current_project(self) -> str:
+        """Get current project."""
         return "demo-project"
 
 
 def _make_project_tree(tmp_path: Path) -> tuple[Path, Path]:
+    """Make project tree."""
     project_root = tmp_path / "demo-project"
     (project_root / ".celebi").mkdir(parents=True)
     (project_root / ".celebi" / "project.json").write_text("{}", encoding="utf-8")
@@ -32,6 +39,7 @@ def _make_project_tree(tmp_path: Path) -> tuple[Path, Path]:
 
 
 def test_preloop_keeps_project_root_marker_inside_paths(tmp_path):
+    """Test preloop keeps project root marker inside paths."""
     original_delims = readline.get_completer_delims()
     project_root, current_path = _make_project_tree(tmp_path)
     shell = ChernShellBase()
@@ -47,6 +55,7 @@ def test_preloop_keeps_project_root_marker_inside_paths(tmp_path):
 
 
 def test_get_completions_preserves_project_relative_prefix(tmp_path):
+    """Test get completions preserves project relative prefix."""
     _, current_path = _make_project_tree(tmp_path)
     shell = ChernShellBase()
 
@@ -60,6 +69,7 @@ def test_get_completions_preserves_project_relative_prefix(tmp_path):
 
 
 def test_get_completions_hides_dotfolders_by_default(tmp_path):
+    """Test get completions hides dotfolders by default."""
     _, current_path = _make_project_tree(tmp_path)
     shell = ChernShellBase()
 
@@ -74,6 +84,7 @@ def test_get_completions_hides_dotfolders_by_default(tmp_path):
 
 
 def test_get_completions_shows_dotfolders_when_typed_explicitly(tmp_path):
+    """Test get completions shows dotfolders when typed explicitly."""
     _, current_path = _make_project_tree(tmp_path)
     shell = ChernShellBase()
 
@@ -87,6 +98,7 @@ def test_get_completions_shows_dotfolders_when_typed_explicitly(tmp_path):
 
 
 def test_get_completions_shows_dotfolders_for_current_dir_prefix(tmp_path):
+    """Test get completions shows dotfolders for current dir prefix."""
     _, current_path = _make_project_tree(tmp_path)
     shell = ChernShellBase()
 
@@ -101,6 +113,7 @@ def test_get_completions_shows_dotfolders_for_current_dir_prefix(tmp_path):
 
 
 def test_get_completions_bare_dot_shows_hidden_entries(tmp_path):
+    """Test get completions bare dot shows hidden entries."""
     _, current_path = _make_project_tree(tmp_path)
     shell = ChernShellBase()
 

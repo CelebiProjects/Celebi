@@ -381,6 +381,7 @@ class ImpressionManagement(Core):
             return message
 
         def resolve_impression_uuid(impr) -> str:
+            """Resolve impression uuid."""
             if hasattr(impr, "uuid"):
                 return impr.uuid
             token = str(impr)
@@ -425,6 +426,7 @@ class ImpressionManagement(Core):
         # Build DAG from current object state
         # ---------------------------------------------
         def build_current_dag(obj, dag, visited):
+            """Build current dag."""
             if obj in visited:
                 return
             visited.add(obj)
@@ -447,6 +449,7 @@ class ImpressionManagement(Core):
         # Build DAG from stored impression
         # ---------------------------------------------
         def build_impression_dag(impr, dag, visited):
+            """Build impression dag."""
             if impr.uuid in visited:
                 return
             visited.add(impr.uuid)
@@ -580,6 +583,7 @@ class ImpressionManagement(Core):
         message.add("\n=== Detailed Changes (Parent → Child) ===", "title0")
 
         def render_impression_diff(old_uuid, new_uuid, title):
+            """Render impression diff."""
             old_impr = VImpression(old_uuid) if old_uuid else None
             new_impr = VImpression(new_uuid) if new_uuid else None
 
@@ -641,6 +645,7 @@ class ImpressionManagement(Core):
             return has_changes
 
         def is_parent(parent_uuid, child_uuid):
+            """Is parent."""
             return parent_uuid in VImpression(child_uuid).parents()
 
         detailed_changes_found = False

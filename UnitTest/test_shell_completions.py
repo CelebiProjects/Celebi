@@ -13,6 +13,7 @@ class TestShellCompletions(unittest.TestCase):
     """Tests for ChernShellBase.get_completions."""
 
     def setUp(self):
+        """Set Up."""
         self.shell = ChernShellBase()
         self.project_dir = tempfile.mkdtemp()
         # Sample project structure
@@ -22,6 +23,7 @@ class TestShellCompletions(unittest.TestCase):
         os.makedirs(os.path.join(self.project_dir, "data"))
 
     def tearDown(self):
+        """Tear Down."""
         shutil.rmtree(self.project_dir)
 
     def test_at_alone_expands_to_at_slash(self):

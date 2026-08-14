@@ -23,7 +23,7 @@ class TestMergeResolver(unittest.TestCase):
             {'type': 'other_conflict', 'description': 'Other conflict'}
         ]
 
-        grouped = self.resolver._group_conflicts_by_type(conflicts)
+        grouped = self.resolver._group_conflicts_by_type(conflicts)  # pylint: disable=protected-access
 
         # Should have categories: dag, config, uuid, alias, other
         self.assertIn('dag', grouped)
@@ -43,7 +43,7 @@ class TestMergeResolver(unittest.TestCase):
         """Test getting DAG conflict resolution options."""
         # Test cycle creation conflict
         cycle_conflict = {'type': 'cycle_creation', 'description': 'Cycle detected'}
-        options = self.resolver._get_dag_resolution_options(cycle_conflict)
+        options = self.resolver._get_dag_resolution_options(cycle_conflict)  # pylint: disable=protected-access
 
         self.assertGreater(len(options), 0)
         # Should include cycle-specific options
@@ -56,7 +56,7 @@ class TestMergeResolver(unittest.TestCase):
 
         # Test edge conflict
         edge_conflict = {'type': 'additive_edge', 'description': 'Edge conflict'}
-        options = self.resolver._get_dag_resolution_options(edge_conflict)
+        options = self.resolver._get_dag_resolution_options(edge_conflict)  # pylint: disable=protected-access
 
         option_actions = [opt['action'] for opt in options]
         self.assertIn(ResolutionAction.KEEP_LOCAL, option_actions)
@@ -67,7 +67,7 @@ class TestMergeResolver(unittest.TestCase):
         """Test getting config conflict resolution options."""
         # Test UUID conflict
         uuid_conflict = {'type': 'uuid_conflict', 'description': 'UUID mismatch'}
-        options = self.resolver._get_config_resolution_options(uuid_conflict)
+        options = self.resolver._get_config_resolution_options(uuid_conflict)  # pylint: disable=protected-access
 
         self.assertGreater(len(options), 0)
         option_actions = [opt['action'] for opt in options]
@@ -83,7 +83,7 @@ class TestMergeResolver(unittest.TestCase):
 
         # Test generic config conflict
         config_conflict = {'type': 'config_conflict', 'description': 'Config mismatch'}
-        options = self.resolver._get_config_resolution_options(config_conflict)
+        options = self.resolver._get_config_resolution_options(config_conflict)  # pylint: disable=protected-access
 
         option_actions = [opt['action'] for opt in options]
         self.assertIn(ResolutionAction.KEEP_LOCAL, option_actions)
@@ -105,17 +105,17 @@ class TestMergeResolver(unittest.TestCase):
 
         # Test valid choice
         mock_input.return_value = '1'
-        result = self.resolver._present_resolution_options(options, conflict)
+        result = self.resolver._present_resolution_options(options, conflict)  # pylint: disable=protected-access
         self.assertEqual(result, ResolutionAction.KEEP_LOCAL)
 
         # Test skip choice
         mock_input.return_value = 's'
-        result = self.resolver._present_resolution_options(options, conflict)
+        result = self.resolver._present_resolution_options(options, conflict)  # pylint: disable=protected-access
         self.assertEqual(result, ResolutionAction.SKIP)
 
         # Test abort choice
         mock_input.return_value = 'a'
-        result = self.resolver._present_resolution_options(options, conflict)
+        result = self.resolver._present_resolution_options(options, conflict)  # pylint: disable=protected-access
         self.assertEqual(result, ResolutionAction.ABORT)
 
     @patch('builtins.input')
@@ -131,13 +131,13 @@ class TestMergeResolver(unittest.TestCase):
         # Simulate invalid input followed by valid input
         mock_input.side_effect = ['x', 'invalid', '1']
 
-        result = self.resolver._present_resolution_options(options, conflict)
+        result = self.resolver._present_resolution_options(options, conflict)  # pylint: disable=protected-access
 
         self.assertEqual(result, ResolutionAction.KEEP_LOCAL)
         self.assertEqual(mock_input.call_count, 3)
 
     @patch('builtins.input', side_effect=KeyboardInterrupt)
-    def test_present_resolution_options_interrupt(self, mock_input):
+    def test_present_resolution_options_interrupt(self, _mock_input):
         """Test handling keyboard interrupt."""
         options = [
             {'action': ResolutionAction.KEEP_LOCAL, 'description': 'Keep local', 'key': '1'}
@@ -145,7 +145,7 @@ class TestMergeResolver(unittest.TestCase):
 
         conflict = {'description': 'Test conflict'}
 
-        result = self.resolver._present_resolution_options(options, conflict)
+        result = self.resolver._present_resolution_options(options, conflict)  # pylint: disable=protected-access
 
         self.assertEqual(result, ResolutionAction.ABORT)
 
@@ -156,23 +156,23 @@ class TestMergeResolver(unittest.TestCase):
         remote_data = ['task2', 'task3', 'task4']
 
         # This should not crash
-        self.resolver._show_dag_diff(local_data, remote_data)
+        self.resolver._show_dag_diff(local_data, remote_data)  # pylint: disable=protected-access
 
         # Test with dict data
         local_dict = {'param1': 'value1', 'param2': 'value2'}
         remote_dict = {'param1': 'different', 'param3': 'value3'}
 
-        self.resolver._show_dag_diff(local_dict, remote_dict)
+        self.resolver._show_dag_diff(local_dict, remote_dict)  # pylint: disable=protected-access
 
         # Test with other data types
-        self.resolver._show_dag_diff('local', 'remote')
+        self.resolver._show_dag_diff('local', 'remote')  # pylint: disable=protected-access
 
     def test_apply_dag_resolution(self):
         """Test applying DAG conflict resolution."""
         conflict = {'type': 'cycle_creation', 'description': 'Cycle detected'}
         action = ResolutionAction.KEEP_LOCAL
 
-        result = self.resolver._apply_dag_resolution(conflict, action)
+        result = self.resolver._apply_dag_resolution(conflict, action)  # pylint: disable=protected-access
 
         self.assertTrue(result['success'])
         self.assertIn('details', result)
@@ -182,7 +182,7 @@ class TestMergeResolver(unittest.TestCase):
         conflict = {'type': 'uuid_conflict', 'description': 'UUID mismatch'}
         action = ResolutionAction.KEEP_REMOTE
 
-        result = self.resolver._apply_config_resolution(conflict, action)
+        result = self.resolver._apply_config_resolution(conflict, action)  # pylint: disable=protected-access
 
         self.assertTrue(result['success'])
         self.assertIn('details', result)
@@ -195,12 +195,12 @@ class TestMergeResolver(unittest.TestCase):
         mock_subprocess.return_value = mock_process
 
         # Test successful edit
-        result = self.resolver._edit_file_manually('/tmp/test.txt')
+        result = self.resolver._edit_file_manually('/tmp/test.txt')  # pylint: disable=protected-access
         self.assertTrue(result)
 
         # Test failed edit
         mock_subprocess.side_effect = Exception('Editor not found')
-        result = self.resolver._edit_file_manually('/tmp/test.txt')
+        result = self.resolver._edit_file_manually('/tmp/test.txt')  # pylint: disable=protected-access
         self.assertFalse(result)
 
     def test_resolution_action_enum(self):
@@ -226,16 +226,16 @@ class TestMergeResolver(unittest.TestCase):
         }
 
         # This should not crash
-        self.resolver._show_resolution_summary(results)
+        self.resolver._show_resolution_summary(results)  # pylint: disable=protected-access
 
         # Test with unresolved conflicts
         results['success'] = False
         results['remaining'] = 3
-        self.resolver._show_resolution_summary(results)
+        self.resolver._show_resolution_summary(results)  # pylint: disable=protected-access
 
     @patch('CelebiChrono.interface.merge_resolver.DAGVisualizer')
     @patch('CelebiChrono.kernel.vobj_arc_merge.DAGMerger')
-    def test_preview_merge(self, mock_merger, mock_visualizer):
+    def test_preview_merge(self, mock_merger, _mock_visualizer):
         """Test merge preview generation."""
         # Mock DAGs
         local_dag = Mock()
@@ -260,7 +260,7 @@ class TestMergeResolver(unittest.TestCase):
         # Mock topological sort
         merged_dag.predecessors.return_value = []
         try:
-            import networkx as nx
+            import networkx as nx  # pylint: disable=unused-import
             # Mock networkx topological sort if needed
             with patch('networkx.topological_sort') as mock_topo:
                 mock_topo.return_value = ['A', 'B', 'C']

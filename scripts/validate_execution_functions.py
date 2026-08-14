@@ -56,11 +56,15 @@ def validate_function_docstring(func_node, docstring):
             if len(param_lines) < len(func_node.args.args):
                 errors.append('Incomplete Args documentation')
 
-    return {'valid': len(errors) == 0, 'errors': errors}
+    return {'valid': not errors, 'errors': errors}
 
 def validate_functions():
     """Validate execution management function docstrings."""
-    with open('/Users/zhaomr/workdir/Chern/Celebi/CelebiChrono/interface/shell.py', 'r') as f:
+    with open(
+        '/Users/zhaomr/workdir/Chern/Celebi/CelebiChrono/interface/shell.py',
+        'r',
+        encoding='utf-8',
+    ) as f:
         content = f.read()
 
     tree = ast.parse(content)
@@ -90,5 +94,5 @@ def validate_functions():
     return all_valid
 
 if __name__ == '__main__':
-    success = validate_functions()
-    sys.exit(0 if success else 1)
+    successful = validate_functions()  # pylint: disable=invalid-name  # local to __main__ block
+    sys.exit(0 if successful else 1)

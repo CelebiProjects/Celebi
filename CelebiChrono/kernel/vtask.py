@@ -115,6 +115,7 @@ class VTask(InputManager, SettingManager, FileManager, JobManager):
 
     @staticmethod
     def _human_size(num):
+        """Human size."""
         result = ""
         for unit in ("B", "KB", "MB", "GB", "TB"):
             if num < 1024 or unit == "TB":

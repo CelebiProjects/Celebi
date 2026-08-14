@@ -7,7 +7,7 @@ import os
 # Add the parent directory to the path so we can import CelebiChrono
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from CelebiChrono.main import _get_command_docstring
+from CelebiChrono.main import _get_command_docstring  # pylint: disable=wrong-import-position  # requires sys.path setup above
 
 
 class TestHelpSystem(unittest.TestCase):
@@ -16,14 +16,13 @@ class TestHelpSystem(unittest.TestCase):
     def test_get_command_docstring_skips_first_line(self):
         """Test that _get_command_docstring returns docstring without first line."""
         # Create a simple mock function with a docstring
-        class MockFunction:
+        class MockFunction:  # pylint: disable=too-few-public-methods
             """First line summary.
 
             This is the detailed description.
             It has multiple lines.
 
             More details here."""
-            pass
 
         # Create a mock shell module with our mock function as an attribute
         mock_shell_module = MagicMock()
@@ -47,8 +46,8 @@ class TestHelpSystem(unittest.TestCase):
     def test_get_command_docstring_empty_docstring(self):
         """Test _get_command_docstring with empty docstring."""
         # Create a mock function with no docstring
-        class MockFunction:
-            pass
+        class MockFunction:  # pylint: disable=too-few-public-methods
+            """Mock Function."""
 
         # Create a mock shell module with our mock function as an attribute
         mock_shell_module = MagicMock()
@@ -62,9 +61,8 @@ class TestHelpSystem(unittest.TestCase):
     def test_get_command_docstring_single_line(self):
         """Test _get_command_docstring with single line docstring."""
         # Create a mock function with single line docstring
-        class MockFunction:
+        class MockFunction:  # pylint: disable=too-few-public-methods
             """Single line summary."""
-            pass
 
         # Create a mock shell module with our mock function as an attribute
         mock_shell_module = MagicMock()
@@ -90,26 +88,31 @@ class TestHelpSystem(unittest.TestCase):
 
     def test_all_commands_use_full_doc(self):
         """Test that all command registrations use help=full_doc."""
-        import os
         import re
 
         # Read the main.py file
         main_py_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                                    'CelebiChrono', 'main.py')
 
-        with open(main_py_path, 'r') as f:
+        with open(main_py_path, 'r', encoding='utf-8') as f:
             content = f.read()
 
         # Find the else clause for variable arguments - look for the specific pattern
         # We need to be more precise to avoid matching too much
-        else_clause_pattern = r'else:\s*\n\s+# Fallback: use variable arguments\s*\n(?:.*?\n)*?\s*command_func = cli_sh\.command\(name=cname, help=desc\)\(command_func\)'
+        else_clause_pattern = (
+            r'else:\s*\n\s+# Fallback: use variable arguments\s*\n(?:.*?\n)*?'
+            r'\s*command_func = cli_sh\.command\(name=cname, help=desc\)\(command_func\)'
+        )
         match = re.search(else_clause_pattern, content, re.MULTILINE | re.DOTALL)
 
         # The test should fail if we find the else clause using help=desc
         self.assertIsNone(match, "Found else clause using help=desc instead of help=full_doc")
 
         # Check that the correct pattern exists somewhere in the file
-        correct_pattern = r'command_func = cli_sh\.command\(name=cname, short_help=desc, help=full_doc\)\(command_func\)'
+        correct_pattern = (
+            r'command_func = cli_sh\.command\(name=cname, short_help=desc, '
+            r'help=full_doc\)\(command_func\)'
+        )
         self.assertIsNotNone(re.search(correct_pattern, content),
                            "Missing correct command registration pattern with help=full_doc")
 

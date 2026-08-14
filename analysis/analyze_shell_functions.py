@@ -16,10 +16,9 @@ Outputs a CSV file with function-by-function analysis including:
 import ast
 import csv
 import os
-import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple, Set, Optional
+from typing import Dict, List
 
 
 # Constants
@@ -118,10 +117,11 @@ class FunctionAnalyzer(ast.NodeVisitor):
     """AST visitor to extract function definitions and their docstrings."""
 
     def __init__(self):
+        """Init."""
         self.functions = []
         self.current_file = ""
 
-    def visit_FunctionDef(self, node):
+    def visit_FunctionDef(self, node):  # pylint: disable=invalid-name  # required by ast.NodeVisitor
         """Extract function information including docstring."""
         func_info = {
             'name': node.name,
@@ -211,10 +211,9 @@ class FunctionAnalyzer(ast.NodeVisitor):
 
         if section_count >= QUALITY_THRESHOLDS['Good']:
             return "Good"
-        elif section_count >= QUALITY_THRESHOLDS['Partial']:
+        if section_count >= QUALITY_THRESHOLDS['Partial']:
             return "Partial"
-        else:
-            return "Basic"  # Has docstring but no formal sections
+        return "Basic"  # Has docstring but no formal sections
 
 
 def analyze_file(filepath: str) -> List[Dict]:
@@ -369,7 +368,7 @@ def generate_summary_report(functions: List[Dict]):
             print(f"  {func['name']:30} (line {func['line']} in {os.path.basename(func['file'])})")
 
 
-def main():
+def main():  # pylint: disable=too-many-branches, too-many-statements
     """Main analysis function."""
     import argparse
 
@@ -461,7 +460,10 @@ def main():
         # Show top N other functions
         print(f"\nTop {MAX_OTHER_FUNCTIONS_TO_SHOW} other functions found:")
         for i, func in enumerate(other_functions[:MAX_OTHER_FUNCTIONS_TO_SHOW]):
-            print(f"  {i+1:2}. {func['name']:30} (line {func['line']} in {os.path.basename(func['file'])})")
+            print(
+                f"  {i+1:2}. {func['name']:30} "
+                f"(line {func['line']} in {os.path.basename(func['file'])})"
+            )
         if len(other_functions) > MAX_OTHER_FUNCTIONS_TO_SHOW:
             print(f"  ... and {len(other_functions) - MAX_OTHER_FUNCTIONS_TO_SHOW} more")
 

@@ -44,6 +44,7 @@ class MergeConflict:  # pylint: disable=too-many-instance-attributes
         base_data: Any = None,
         resolution_options: List[Dict] = None,
     ):
+        """Init."""
         self.conflict_type = conflict_type
         self.description = description
         self.local_data = local_data
@@ -66,6 +67,7 @@ class MergeConflict:  # pylint: disable=too-many-instance-attributes
         return False
 
     def __str__(self):
+        """Str."""
         return f"{self.conflict_type.value}: {self.description}"
 
 
@@ -73,6 +75,7 @@ class DAGMerger:
     """Specialized algorithm for merging dependency graphs with cycle detection."""
 
     def __init__(self, strategy: MergeResolutionStrategy = MergeResolutionStrategy.AUTO_MERGE):
+        """Init."""
         self.strategy = strategy
         self.conflicts: List[MergeConflict] = []
         self.merged_graph: Optional[nx.DiGraph] = None

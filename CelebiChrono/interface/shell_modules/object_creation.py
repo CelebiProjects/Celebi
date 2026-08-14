@@ -30,7 +30,7 @@ def _is_rawdata_task(obj_path):
     return yaml_file.read_variable("environment", "") == "rawdata"
 
 
-def _fill_or_create_pointer_task(project_path, current_obj, descriptor,
+def _fill_or_create_pointer_task(project_path, current_obj, descriptor,  # pylint: disable=too-many-locals
                                  data_md5, path_override, origin,
                                  default_runner=None):
     # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -423,7 +423,7 @@ def attach_data(impression_uuid: str, path_override: str = "") -> Message:
     return message
 
 
-def _fill_registered_data(project_path, current_obj, descriptor, data_md5,
+def _fill_registered_data(project_path, current_obj, descriptor, data_md5,  # pylint: disable=too-many-arguments, too-many-positional-arguments
                           origin, default_runner=None):
     """Dual-mode tail of register-data: fill the current rawdata task, or
     create/update a pointer task via the shared tail."""

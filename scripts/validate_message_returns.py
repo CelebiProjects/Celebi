@@ -11,7 +11,7 @@ import re
 import sys
 from typing import List, Dict, Any, Tuple
 
-def get_return_type(func_node: ast.FunctionDef) -> str:
+def get_return_type(func_node: ast.FunctionDef) -> str:  # pylint: disable=too-many-return-statements
     """Get the return type annotation as a string."""
     if func_node.returns is None:
         return "None"
@@ -20,28 +20,27 @@ def get_return_type(func_node: ast.FunctionDef) -> str:
         if func_node.returns.value is None:
             return "None"
         return str(func_node.returns.value)
-    elif isinstance(func_node.returns, ast.Name):
+    if isinstance(func_node.returns, ast.Name):
         return func_node.returns.id
-    elif isinstance(func_node.returns, ast.Attribute):
+    if isinstance(func_node.returns, ast.Attribute):
         # Handle qualified names
         try:
             return ast.unparse(func_node.returns)
         except AttributeError:
             # Fallback for older Python versions
             return f"{func_node.returns.value.id}.{func_node.returns.attr}"
-    elif isinstance(func_node.returns, ast.Subscript):
+    if isinstance(func_node.returns, ast.Subscript):
         try:
             return ast.unparse(func_node.returns)
         except AttributeError:
             return "ComplexType"
-    else:
-        return str(type(func_node.returns).__name__)
+    return str(type(func_node.returns).__name__)
 
 def check_message_return_functions() -> List[Tuple[str, str, str]]:
     """Check all functions that return Message objects."""
     shell_py_path = '/Users/zhaomr/workdir/Chern/Celebi/CelebiChrono/interface/shell.py'
 
-    with open(shell_py_path, 'r') as f:
+    with open(shell_py_path, 'r', encoding='utf-8') as f:
         content = f.read()
 
     tree = ast.parse(content)
@@ -97,7 +96,9 @@ def analyze_returns_quality(returns_text: str) -> Dict[str, Any]:
     if is_generic:
         suggestions.append('Returns section is too generic - describe what the Message contains')
     if word_count < 5:
-        suggestions.append('Returns section may be too brief - describe content/meaning of the Message')
+        suggestions.append(
+            'Returns section may be too brief - describe content/meaning of the Message'
+        )
 
     return {
         'has_returns': True,
@@ -106,7 +107,7 @@ def analyze_returns_quality(returns_text: str) -> Dict[str, Any]:
         'suggestions': suggestions
     }
 
-def main() -> int:
+def main() -> int:  # pylint: disable=too-many-branches
     """Main function."""
     print("=" * 80)
     print("MESSAGE-RETURNING FUNCTIONS RETURNS SECTION VALIDATION")
@@ -144,7 +145,7 @@ def main() -> int:
             if returns_text:
                 print(f"  Returns: {returns_text[:100]}...")
             else:
-                print(f"  Returns: [MISSING]")
+                print("  Returns: [MISSING]")
             for suggestion in analysis['suggestions']:
                 print(f"  SUGGESTION: {suggestion}")
             print()
@@ -171,12 +172,14 @@ def main() -> int:
     print(f"✓ Good Returns sections: {len(good)}")
     print(f"⚠ Needs improvement: {len(needs_improvement)}")
 
-    if len(needs_improvement) == 0:
+    if not needs_improvement:
         print("\n✅ SUCCESS: All Message-returning functions have descriptive Returns sections!")
         return 0
-    else:
-        print(f"\n❌ ISSUES: {len(needs_improvement)} Message-returning functions need Returns section improvements")
-        return 1
+    print(
+        f"\n❌ ISSUES: {len(needs_improvement)} Message-returning functions "
+        "need Returns section improvements"
+    )
+    return 1
 
 if __name__ == '__main__':
     sys.exit(main())

@@ -1,24 +1,30 @@
+# pylint: disable=too-many-lines
+"""Test vtask."""
 import os
 import unittest
 from unittest.mock import patch, MagicMock, ANY, mock_open
 from colored import Fore, Style
+import prepare
 import CelebiChrono.kernel.vtask as vtsk
 from CelebiChrono.kernel.chern_cache import ChernCache
 from CelebiChrono.kernel.chern_communicator import ChernCommunicator
-import prepare
 
 CHERN_CACHE = ChernCache.instance()
 
 
-class TestChernVTask(unittest.TestCase):
+class TestChernVTask(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
+    """Test Chern V Task."""
     def setUp(self):
+        """Set Up."""
         self.cwd = os.getcwd()
 
     def tearDown(self):
+        """Tear Down."""
         os.chdir(self.cwd)
 
     def test_setting(self):
+        """Test setting."""
         print(Fore.BLUE + "Testing setting..." + Style.RESET)
         prepare.create_chern_project("demo_complex")
         os.chdir("demo_complex")
@@ -51,9 +57,10 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_init(self):
+        """Test init."""
         print(Fore.BLUE + "Testing Init Commands..." + Style.RESET)
 
         prepare.create_chern_project("demo_complex")
@@ -69,9 +76,10 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_file(self):
+        """Test file."""
         print(Fore.BLUE + "Testing File Operation..." + Style.RESET)
 
         prepare.create_chern_project("demo_complex")
@@ -84,7 +92,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_get_descriptor(self):
         """Test get_descriptor method."""
@@ -207,7 +215,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     # def test_run_status_method(self):
     #     """Test run_status method with different scenarios"""
@@ -307,7 +315,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_core_environment_methods(self):
         """Test Core environment-related methods"""
@@ -347,7 +355,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_core_with_rawdata_environment(self):
         """Test Core methods with rawdata environment"""
@@ -373,7 +381,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_core_algorithm_display(self):
         """Test Core algorithm display functionality"""
@@ -418,6 +426,7 @@ class TestChernVTask(unittest.TestCase):
         real_listdir = os.listdir
 
         def listdir_side_effect(path):
+            """Listdir side effect."""
             if path == mock_algorithm.path:
                 return [
                     "script.py",
@@ -478,7 +487,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         # prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_file_manager_methods(self):
         """Test FileManager methods inherited by VTask"""
@@ -566,7 +575,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_file_manager_input_md5_integration(self):
         """Test FileManager input_md5 integration with real YAML file"""
@@ -609,7 +618,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_file_manager_error_handling(self):
         """Test FileManager error handling scenarios"""
@@ -652,7 +661,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_input_manager_methods(self):
         """Test InputManager methods inherited by VTask"""
@@ -701,7 +710,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_input_manager_algorithm_methods(self):
         """Test InputManager algorithm-related methods"""
@@ -790,7 +799,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_input_manager_remove_algorithm(self):
         """Test InputManager remove_algorithm method"""
@@ -827,7 +836,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_input_manager_algorithm_getter(self):
         """Test InputManager algorithm getter method"""
@@ -887,9 +896,9 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
-    def test_input_manager_inputs_outputs(self):
+    def test_input_manager_inputs_outputs(self):  # pylint: disable=too-many-locals, too-many-statements
         """Test InputManager inputs and outputs methods"""
         print(Fore.BLUE + "Testing InputManager inputs/outputs..." +
               Style.RESET)
@@ -993,7 +1002,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_input_manager_error_handling(self):
         """Test InputManager error handling scenarios"""
@@ -1041,7 +1050,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_setting_manager_read_methods(self):
         """Test SettingManager read methods inherited by VTask"""
@@ -1131,7 +1140,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_setting_manager_parameter_methods(self):
         """Test SettingManager parameter modification methods"""
@@ -1221,7 +1230,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_setting_manager_setter_methods(self):
         """Test SettingManager setter methods"""
@@ -1280,7 +1289,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_setting_manager_validation_methods(self):
         """Test SettingManager validation methods"""
@@ -1345,7 +1354,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_setting_manager_integration(self):
         """Test SettingManager integration with real YAML files"""
@@ -1397,14 +1406,14 @@ class TestChernVTask(unittest.TestCase):
         new_auto_download = obj_tsk.auto_download()
         self.assertEqual(new_auto_download, not original_auto_download)
 
-        original_runner = obj_tsk.default_runner()
+        _original_runner = obj_tsk.default_runner()
         obj_tsk.set_default_runner("test_runner")
         new_runner = obj_tsk.default_runner()
         self.assertEqual(new_runner, "test_runner")
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_setting_manager_error_handling(self):
         """Test SettingManager error handling scenarios"""
@@ -1487,7 +1496,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_vtask_specific_methods(self):
         """Test VTask-specific methods not covered by other managers"""
@@ -1522,7 +1531,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_vtask_view_method(self):
         """Test VTask view method"""
@@ -1583,7 +1592,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_vtask_printed_status_method(self):
         """Test VTask printed_status method"""
@@ -1661,7 +1670,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_printed_status_rawdata_shows_file_table(self):
         """rawdata status shows the stageout table (runner files, in-Yuki marks)."""
@@ -1695,7 +1704,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_printed_status_rawdata_falls_back_to_sample_files(self):
         """rawdata status falls back to Sample files when no table rows."""
@@ -1725,7 +1734,7 @@ class TestChernVTask(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_show_parameters_rawdata_hides_memory_and_validated(self):
         """rawdata ls must not show Memory limit / Validated."""

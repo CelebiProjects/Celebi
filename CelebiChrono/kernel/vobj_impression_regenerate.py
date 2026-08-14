@@ -20,6 +20,7 @@ class ImpressionRegenerator(VObject):
 
     def __init__(self, path: str = "", project_path: str = ""):
         # Initialize Core with project path
+        """Init."""
         super().__init__(path, project_path)
         self.regenerated_count = 0
         self.skipped_count = 0

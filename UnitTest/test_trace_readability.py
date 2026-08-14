@@ -7,13 +7,13 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from CelebiChrono.utils.format_utils import (
+from CelebiChrono.utils.format_utils import (  # pylint: disable=wrong-import-position  # requires sys.path setup above
     format_uuid_short,
     format_node_display,
     format_edge_display
 )
-from CelebiChrono.utils.message import Message
-from CelebiChrono.kernel.vobj_impression import ImpressionManagement
+from CelebiChrono.utils.message import Message  # pylint: disable=wrong-import-position
+from CelebiChrono.kernel.vobj_impression import ImpressionManagement  # pylint: disable=wrong-import-position
 
 
 def test_formatting_utilities():
@@ -120,9 +120,24 @@ def demonstrate_human_readable_format():
     print(f"   • {format_node_display('mno345-pqr678-stu901', '')} (no type)")
 
     print("\n2. Edge Display Examples:")
-    print(f"   • {format_edge_display('abc123-def456-ghi789', 'def456-ghi789-jkl012', 'task', 'algorithm')}")
-    print(f"   • {format_edge_display('def456-ghi789-jkl012', 'ghi789-jkl012-mno345', 'algorithm', 'data')}")
-    print(f"   • {format_edge_display('jkl012-mno345-pqr678', 'mno345-pqr678-stu901', 'project', '')}")
+    print(
+        "   • "
+        + format_edge_display(
+            'abc123-def456-ghi789', 'def456-ghi789-jkl012', 'task', 'algorithm'
+        )
+    )
+    print(
+        "   • "
+        + format_edge_display(
+            'def456-ghi789-jkl012', 'ghi789-jkl012-mno345', 'algorithm', 'data'
+        )
+    )
+    print(
+        "   • "
+        + format_edge_display(
+            'jkl012-mno345-pqr678', 'mno345-pqr678-stu901', 'project', ''
+        )
+    )
 
     print("\n3. Short UUID Examples:")
     uuids = [

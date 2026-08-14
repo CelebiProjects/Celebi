@@ -1,3 +1,4 @@
+"""Test vimpression."""
 import unittest
 from unittest.mock import patch, MagicMock
 from CelebiChrono.kernel.vimpression import VImpression

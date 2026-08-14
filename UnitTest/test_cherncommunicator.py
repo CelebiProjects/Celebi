@@ -1,30 +1,38 @@
+# pylint: disable=too-many-lines
+"""Test cherncommunicator."""
 import os
-import unittest
-from colored import Fore, Style
-import CelebiChrono.kernel.vobject as vobj
-from CelebiChrono.kernel.chern_cache import ChernCache
-import prepare
-import requests
-
-CHERN_CACHE = ChernCache.instance()
-
+import tarfile
 import unittest
 from io import BytesIO
 from unittest.mock import patch, mock_open, MagicMock
+from colored import Fore, Style
+import prepare
+import requests
+import CelebiChrono.kernel.vobject as vobj
+from CelebiChrono.kernel.chern_cache import ChernCache
 from CelebiChrono.kernel.chern_communicator import ChernCommunicator
-import tarfile
 
-class TestChernCommunicator(unittest.TestCase):
+CHERN_CACHE = ChernCache.instance()
+
+
+class TestChernCommunicator(unittest.TestCase):  # pylint: disable=too-many-public-methods
+    """Test Chern Communicator."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the test case."""
+        super().__init__(*args, **kwargs)
+        self.comm = None
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_dite_status(self, mock_get):
+        """Test dite status."""
         print(Fore.BLUE + "Testing Dite Status..." + Style.RESET)
         prepare.create_chern_project("demo_complex")
         os.chdir("demo_complex")
-        obj_gen = vobj.VObject("Gen")
-        obj_genTask = vobj.VObject("GenTask")
-        obj_fit = vobj.VObject("Fit")
-        obj_fitTask = vobj.VObject("FitTask")
+        _obj_gen = vobj.VObject("Gen")
+        _obj_gen_task = vobj.VObject("GenTask")
+        _obj_fit = vobj.VObject("Fit")
+        _obj_fit_task = vobj.VObject("FitTask")
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
@@ -49,17 +57,18 @@ class TestChernCommunicator(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_dite_info(self, mock_get):
+        """Test dite info."""
         print(Fore.BLUE + "Testing Dite Info..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
-        obj_gen = vobj.VObject("Gen")
-        obj_genTask = vobj.VObject("GenTask")
-        obj_fit = vobj.VObject("Fit")
-        obj_fitTask = vobj.VObject("FitTask")
+        _obj_gen = vobj.VObject("Gen")
+        _obj_gen_task = vobj.VObject("GenTask")
+        _obj_fit = vobj.VObject("Fit")
+        _obj_fit_task = vobj.VObject("FitTask")
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
@@ -85,17 +94,18 @@ class TestChernCommunicator(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_output_files(self, mock_get):
+        """Test output files."""
         print(Fore.BLUE + "Testing Output Files..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
-        obj_gen = vobj.VObject("Gen")
-        obj_genTask = vobj.VObject("GenTask")
-        obj_fit = vobj.VObject("Fit")
-        obj_fitTask = vobj.VObject("FitTask")
+        _obj_gen = vobj.VObject("Gen")
+        _obj_gen_task = vobj.VObject("GenTask")
+        _obj_fit = vobj.VObject("Fit")
+        _obj_fit_task = vobj.VObject("FitTask")
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
@@ -112,24 +122,27 @@ class TestChernCommunicator(unittest.TestCase):
 
         expected_calls = [
             unittest.mock.call("http://localhost:8080/machine-id/local", timeout=10),
-            unittest.mock.call("http://localhost:8080/outputs/projectuuid/xyz/machineABC", timeout=10),
+            unittest.mock.call(
+                "http://localhost:8080/outputs/projectuuid/xyz/machineABC", timeout=10
+            ),
         ]
         mock_get.assert_has_calls(expected_calls)
         self.assertEqual(result, ["output1.out", "output2.out"])
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def get_file(self, mock_get):
+        """Get file."""
         print(Fore.BLUE + "Testing Get File..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
-        obj_gen = vobj.VObject("Gen")
-        obj_genTask = vobj.VObject("GenTask")
-        obj_fit = vobj.VObject("Fit")
-        obj_fitTask = vobj.VObject("FitTask")
+        _obj_gen = vobj.VObject("Gen")
+        _obj_gen_task = vobj.VObject("GenTask")
+        _obj_fit = vobj.VObject("Fit")
+        _obj_fit_task = vobj.VObject("FitTask")
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
@@ -141,7 +154,7 @@ class TestChernCommunicator(unittest.TestCase):
         mock_response.text = "file content"
         mock_get.return_value = mock_response
 
-        result = self.comm.get_file("xyz", "output1.out", machine="local")
+        result = self.comm.get_file("xyz", "output1.out", machine="local")  # pylint: disable=unexpected-keyword-arg
 
         mock_get.assert_called_once_with(
             "http://localhost:8080/get-file/xyz/output1.out/local", timeout=10
@@ -150,26 +163,32 @@ class TestChernCommunicator(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     @patch("CelebiChrono.kernel.chern_communicator.requests.post")
-    @patch("CelebiChrono.kernel.chern_communicator.open", new_callable=mock_open, read_data=b"configdata")
+    @patch(
+        "CelebiChrono.kernel.chern_communicator.open",
+        new_callable=mock_open,
+        read_data=b"configdata",
+    )
     @patch("CelebiChrono.kernel.chern_communicator.ResumableUploader")
     @patch("CelebiChrono.kernel.chern_communicator.tarfile.open")
-    def test_deposit_with_data(
+    def test_deposit_with_data(  # pylint: disable=too-many-arguments, too-many-locals, too-many-positional-arguments
         self, mock_tarfile_open, mock_uploader_cls, mock_open_fn, mock_post, mock_get
     ):
+        """Test deposit with data."""
         print(Fore.BLUE + "Testing Deposit With Data..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
-        obj_gen = vobj.VObject("Gen")
-        obj_genTask = vobj.VObject("GenTask")
-        obj_fit = vobj.VObject("Fit")
-        obj_fitTask = vobj.VObject("FitTask")
+        _obj_gen = vobj.VObject("Gen")
+        _obj_gen_task = vobj.VObject("GenTask")
+        _obj_fit = vobj.VObject("Fit")
+        _obj_fit_task = vobj.VObject("FitTask")
 
         # Setup mock impression
-        class FakeImpression:
+        class FakeImpression:  # pylint: disable=too-few-public-methods
+            """Fake Impression."""
             uuid = "abc123"
             tarfile = "/path/to/impression.tar"
             path = "/path/to/impression"
@@ -228,24 +247,26 @@ class TestChernCommunicator(unittest.TestCase):
         )
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_export(self, mock_get):
+        """Test export."""
         print(Fore.BLUE + "Testing Export..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
-        obj_gen = vobj.VObject("Gen")
-        obj_genTask = vobj.VObject("GenTask")
-        obj_fit = vobj.VObject("Fit")
-        obj_fitTask = vobj.VObject("FitTask")
+        _obj_gen = vobj.VObject("Gen")
+        _obj_gen_task = vobj.VObject("GenTask")
+        _obj_fit = vobj.VObject("Fit")
+        _obj_fit_task = vobj.VObject("FitTask")
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
         self.comm.project_uuid = "projectuuid"
 
         # Setup mock impression
-        class FakeImpression:
+        class FakeImpression:  # pylint: disable=too-few-public-methods
+            """Fake Impression."""
             uuid = "abc123"
             tarfile = "/path/to/impression.tar"
             path = "/path/to/impression"
@@ -273,24 +294,26 @@ class TestChernCommunicator(unittest.TestCase):
         os.remove("output.txt")
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_status(self, mock_get):
+        """Test status."""
         print(Fore.BLUE + "Testing Status..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
-        obj_gen = vobj.VObject("Gen")
-        obj_genTask = vobj.VObject("GenTask")
-        obj_fit = vobj.VObject("Fit")
-        obj_fitTask = vobj.VObject("FitTask")
+        _obj_gen = vobj.VObject("Gen")
+        _obj_gen_task = vobj.VObject("GenTask")
+        _obj_fit = vobj.VObject("Fit")
+        _obj_fit_task = vobj.VObject("FitTask")
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
         self.comm.project_uuid = "projectuuid"
 
         # Setup mock impression
-        class FakeImpression:
+        class FakeImpression:  # pylint: disable=too-few-public-methods
+            """Fake Impression."""
             uuid = "abc123"
             tarfile = "/path/to/impression.tar"
             path = "/path/to/impression"
@@ -323,24 +346,26 @@ class TestChernCommunicator(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_run_status(self, mock_get):
+        """Test run status."""
         print(Fore.BLUE + "Testing Run Status..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
-        obj_gen = vobj.VObject("Gen")
-        obj_genTask = vobj.VObject("GenTask")
-        obj_fit = vobj.VObject("Fit")
-        obj_fitTask = vobj.VObject("FitTask")
+        _obj_gen = vobj.VObject("Gen")
+        _obj_gen_task = vobj.VObject("GenTask")
+        _obj_fit = vobj.VObject("Fit")
+        _obj_fit_task = vobj.VObject("FitTask")
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
         self.comm.project_uuid = "projectuuid"
 
         # Setup mock impression
-        class FakeImpression:
+        class FakeImpression:  # pylint: disable=too-few-public-methods
+            """Fake Impression."""
             uuid = "abc123"
             tarfile = "/path/to/impression.tar"
             path = "/path/to/impression"
@@ -373,17 +398,18 @@ class TestChernCommunicator(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_collect(self, mock_get):
+        """Test collect."""
         print(Fore.BLUE + "Testing Collect..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
-        obj_gen = vobj.VObject("Gen")
-        obj_genTask = vobj.VObject("GenTask")
-        obj_fit = vobj.VObject("Fit")
-        obj_fitTask = vobj.VObject("FitTask")
+        _obj_gen = vobj.VObject("Gen")
+        _obj_gen_task = vobj.VObject("GenTask")
+        _obj_fit = vobj.VObject("Fit")
+        _obj_fit_task = vobj.VObject("FitTask")
 
         self.comm = ChernCommunicator()
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
@@ -391,7 +417,8 @@ class TestChernCommunicator(unittest.TestCase):
 
 
         # Setup mock impression
-        class FakeImpression:
+        class FakeImpression:  # pylint: disable=too-few-public-methods
+            """Fake Impression."""
             uuid = "abc123"
             tarfile = "/path/to/impression.tar"
             path = "/path/to/impression"
@@ -417,7 +444,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_collect_parses_json_report(self, mock_get):
@@ -430,7 +457,8 @@ class TestChernCommunicator(unittest.TestCase):
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
         self.comm.project_uuid = "projectuuid"
 
-        class FakeImpression:
+        class FakeImpression:  # pylint: disable=too-few-public-methods
+            """Fake Impression."""
             uuid = "abc123"
             tarfile = "/path/to/impression.tar"
             path = "/path/to/impression"
@@ -453,7 +481,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_collect_reports_request_error(self, mock_get):
@@ -466,7 +494,8 @@ class TestChernCommunicator(unittest.TestCase):
         self.comm.serverurl = MagicMock(return_value="localhost:8080")
         self.comm.project_uuid = "projectuuid"
 
-        class FakeImpression:
+        class FakeImpression:  # pylint: disable=too-few-public-methods
+            """Fake Impression."""
             uuid = "abc123"
             tarfile = "/path/to/impression.tar"
             path = "/path/to/impression"
@@ -480,19 +509,21 @@ class TestChernCommunicator(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     @patch("CelebiChrono.kernel.chern_communicator.requests.post")
     @patch("CelebiChrono.kernel.chern_communicator.open", new_callable=mock_open,
            read_data=b"filedata")
-    def test_submit(self, mock_open_fn, mock_post, mock_get):
+    def test_submit(self, _mock_open_fn, mock_post, mock_get):
+        """Test submit."""
         print(Fore.BLUE + "Testing Submit..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
 
         # Setup mock impression
-        class FakeImpression:
+        class FakeImpression:  # pylint: disable=too-few-public-methods
+            """Fake Impression."""
             uuid = "abc123"
             tarfile = "/path/to/impression.tar"
             path = "/path/to/impression"
@@ -521,23 +552,25 @@ class TestChernCommunicator(unittest.TestCase):
 
         # Verify post call for upload
         mock_post.assert_called_once()
-        args, kwargs = mock_post.call_args
+        args, _kwargs = mock_post.call_args
         self.assertIn("http://localhost:8080/upload", args[0])
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.post")
     @patch("CelebiChrono.kernel.chern_communicator.open", new_callable=mock_open,
            read_data=b"filedata")
-    def test_deposit(self, mock_open_fn, mock_post):
+    def test_deposit(self, _mock_open_fn, mock_post):
+        """Test deposit."""
         print(Fore.BLUE + "Testing Deposit..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
 
         # Setup mock impression
-        class FakeImpression:
+        class FakeImpression:  # pylint: disable=too-few-public-methods
+            """Fake Impression."""
             uuid = "abc123"
             tarfile = "/path/to/impression.tar"
             path = "/path/to/impression"
@@ -553,21 +586,23 @@ class TestChernCommunicator(unittest.TestCase):
 
         # Verify post call
         mock_post.assert_called_once()
-        args, kwargs = mock_post.call_args
+        args, _kwargs = mock_post.call_args
         self.assertIn("http://localhost:8080/upload", args[0])
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_is_deposited(self, mock_get):
+        """Test is deposited."""
         print(Fore.BLUE + "Testing Is Deposited..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
 
         # Setup mock impression
-        class FakeImpression:
+        class FakeImpression:  # pylint: disable=too-few-public-methods
+            """Fake Impression."""
             uuid = "abc123"
 
         impression = FakeImpression()
@@ -594,16 +629,18 @@ class TestChernCommunicator(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_kill(self, mock_get):
+        """Test kill."""
         print(Fore.BLUE + "Testing Kill..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
 
         # Setup mock impression
-        class FakeImpression:
+        class FakeImpression:  # pylint: disable=too-few-public-methods
+            """Fake Impression."""
             uuid = "abc123"
 
         impression = FakeImpression()
@@ -630,10 +667,11 @@ class TestChernCommunicator(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_runners(self, mock_get):
+        """Test runners."""
         print(Fore.BLUE + "Testing Runners..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
@@ -660,10 +698,11 @@ class TestChernCommunicator(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.post")
     def test_register_runner(self, mock_post):
+        """Test register runner."""
         print(Fore.BLUE + "Testing Register Runner..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
@@ -707,10 +746,11 @@ class TestChernCommunicator(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.post")
     def test_register_runner_with_settings(self, mock_post):
+        """Test register runner with settings."""
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
         self.comm = ChernCommunicator()
@@ -727,10 +767,11 @@ class TestChernCommunicator(unittest.TestCase):
         )
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_test_runner(self, mock_get):
+        """Test test runner."""
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
         self.comm = ChernCommunicator()
@@ -749,10 +790,11 @@ class TestChernCommunicator(unittest.TestCase):
         self.assertEqual(result["status"], "unsupported")
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_test_runner_404_unknown_runner(self, mock_get):
+        """Test test runner 404 unknown runner."""
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
         self.comm = ChernCommunicator()
@@ -774,10 +816,11 @@ class TestChernCommunicator(unittest.TestCase):
         self.assertEqual(result["status"], "unsupported")
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_runner_envs(self, mock_get):
+        """Test runner envs."""
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
         self.comm = ChernCommunicator()
@@ -811,16 +854,18 @@ class TestChernCommunicator(unittest.TestCase):
         self.assertIn("upgrade Yuki", result["error"])
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_sample_status(self, mock_get):
+        """Test sample status."""
         print(Fore.BLUE + "Testing Sample Status..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
 
         # Setup mock impression
-        class FakeImpression:
+        class FakeImpression:  # pylint: disable=too-few-public-methods
+            """Fake Impression."""
             uuid = "abc123"
 
         impression = FakeImpression()
@@ -847,16 +892,18 @@ class TestChernCommunicator(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.subprocess.call")
     def test_display(self, mock_subprocess):
+        """Test display."""
         print(Fore.BLUE + "Testing Display..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
 
         # Setup mock impression
-        class FakeImpression:
+        class FakeImpression:  # pylint: disable=too-few-public-methods
+            """Fake Impression."""
             uuid = "abc123"
 
         impression = FakeImpression()
@@ -876,7 +923,7 @@ class TestChernCommunicator(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     # @patch("CelebiChrono.kernel.chern_communicator.subprocess.call")
     # def test_impview(self, mock_subprocess):
@@ -907,6 +954,7 @@ class TestChernCommunicator(unittest.TestCase):
     #     CHERN_CACHE.__init__()
 
     def test_add_host_and_serverurl(self):
+        """Test add host and serverurl."""
         print(Fore.BLUE + "Testing Add Host and ServerURL..." + Style.RESET)
         prepare.create_chern_project("demo_complex")
         os.chdir("demo_complex")
@@ -930,10 +978,11 @@ class TestChernCommunicator(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_get_file_fixed(self, mock_get):
+        """Test get file fixed."""
         print(Fore.BLUE + "Testing Get File (Fixed)..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
@@ -958,10 +1007,11 @@ class TestChernCommunicator(unittest.TestCase):
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.post")
     def test_register_remote_data(self, mock_post):
+        """Test register remote data."""
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
         self.comm = ChernCommunicator()
@@ -996,10 +1046,11 @@ class TestChernCommunicator(unittest.TestCase):
             timeout=10)
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_register_remote_data_status(self, mock_get):
+        """Test register remote data status."""
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")
         self.comm = ChernCommunicator()
@@ -1016,4 +1067,4 @@ class TestChernCommunicator(unittest.TestCase):
                          "unknown")
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
-        CHERN_CACHE.__init__()
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
