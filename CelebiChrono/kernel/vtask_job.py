@@ -374,7 +374,7 @@ class JobManager(Core):
             # ssh/native backends store plain log strings instead of the
             # REANA nested logs structure
             if not inner_logs.get("workflow_logs"):
-                for key, title in (("workflow_log", "WORKFLOW LOGS"),
+                for key, title in (("workflow_log", "YUKI LOG"),
                                    ("snakemake_log", "SNAKEMAKE LOG")):
                     content = logs_container.get(key, "")
                     if not content:
