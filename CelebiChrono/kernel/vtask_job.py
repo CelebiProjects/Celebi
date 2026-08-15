@@ -313,8 +313,14 @@ class JobManager(Core):
                 msg.add(logs_raw + "\n", "normal")
                 return msg
 
+            if "error" in outer_data:
+                msg.add(outer_data["error"], "error")
+                msg.add("Run 'collect' to generate engine logs.\n", "normal")
+                return msg
+
             # The structure is: {"logs": {"logs": "...", "user": "...",
-            # "workflow_id": "...", "workflow_name": "..."}}
+            # "workflow_id": "...", "workflow_name": "..."}} for reana;
+            # ssh/native store backend/workflow_uuid/workflow_log instead.
             logs_container = outer_data.get("logs", {})
             if isinstance(logs_container, str):
                 try:
@@ -323,8 +329,10 @@ class JobManager(Core):
                     logs_container = {}
 
             # Extract workflow info from logs_container
-            workflow_name = logs_container.get("workflow_name", "N/A")
-            workflow_id = logs_container.get("workflow_id", "N/A")
+            workflow_name = logs_container.get("workflow_name") or \
+                logs_container.get("backend", "N/A")
+            workflow_id = logs_container.get("workflow_id") or \
+                logs_container.get("workflow_uuid", "N/A")
             user = logs_container.get("user", "N/A")
 
             msg.add("Workflow Name: ", "title0")
@@ -362,6 +370,27 @@ class JobManager(Core):
                         color = "normal"
                     msg.add(line + "\n", color)
                 msg.add("\n", "normal")
+
+            # ssh/native backends store plain log strings instead of the
+            # REANA nested logs structure
+            if not inner_logs.get("workflow_logs"):
+                for key, title in (("workflow_log", "WORKFLOW LOGS"),
+                                   ("snakemake_log", "SNAKEMAKE LOG")):
+                    content = logs_container.get(key, "")
+                    if not content:
+                        continue
+                    msg.add("\n", "normal")
+                    msg.add(f"{title}:\n", "title0")
+                    msg.add("=" * 40 + "\n", "normal")
+                    for line in content.split("\n"):
+                        line_upper = line.upper()
+                        if "CRITICAL" in line_upper or "ERROR" in line_upper:
+                            color = "warning"
+                        elif "WARNING" in line_upper:
+                            color = "running"
+                        else:
+                            color = "normal"
+                        msg.add(line + "\n", color)
 
             # Display job logs
             job_logs = inner_logs.get("job_logs", {})

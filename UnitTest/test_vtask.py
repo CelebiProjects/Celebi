@@ -1,5 +1,6 @@
 # pylint: disable=too-many-lines
 """Test vtask."""
+import json
 import os
 import unittest
 from unittest.mock import patch, MagicMock, ANY, mock_open
@@ -1753,6 +1754,49 @@ class TestChernVTask(unittest.TestCase):  # pylint: disable=too-many-public-meth
         self.assertNotIn("Memory limit:", text)
         self.assertNotIn("Validated:", text)
 
+    def test_engine_logs_renders_ssh_schema(self):
+        """ssh/native engine logs (workflow_log/workflow_uuid) must render."""
+        obj_tsk = vtsk.VTask.__new__(vtsk.VTask)
+        obj_tsk.path = "/tmp/demo_complex/tasks/taskAna1"
+        impression = MagicMock()
+        impression.uuid = "imp-1"
+        ssh_payload = {
+            "logs": {
+                "backend": "ssh",
+                "workflow_uuid": "wf-123",
+                "workflow_log": "[t0] Starting\n[t1] ERROR something broke",
+            }
+        }
+        with patch.object(ChernCommunicator, 'instance') as mock_instance:
+            mock_communicator = MagicMock()
+            mock_instance.return_value = mock_communicator
+            mock_communicator.dite_status.return_value = "connected"
+            mock_communicator.engine_logs.return_value = json.dumps(ssh_payload)
+            obj_tsk.impression = MagicMock(return_value=impression)
+            message = obj_tsk.engine_logs()
+        text = "".join(str(m) for m in message.messages)
+        self.assertIn("wf-123", text)
+        self.assertIn("ssh", text)
+        self.assertIn("ERROR something broke", text)
+
+    def test_engine_logs_error_body_shown(self):
+        """A 404 error body must render as an error, not an N/A table."""
+        obj_tsk = vtsk.VTask.__new__(vtsk.VTask)
+        obj_tsk.path = "/tmp/demo_complex/tasks/taskAna1"
+        impression = MagicMock()
+        impression.uuid = "imp-1"
+        with patch.object(ChernCommunicator, 'instance') as mock_instance:
+            mock_communicator = MagicMock()
+            mock_instance.return_value = mock_communicator
+            mock_communicator.dite_status.return_value = "connected"
+            mock_communicator.engine_logs.return_value = (
+                '{"error": "Engine log not found"}')
+            obj_tsk.impression = MagicMock(return_value=impression)
+            message = obj_tsk.engine_logs()
+        text = "".join(str(m) for m in message.messages)
+        self.assertIn("Engine log not found", text)
+        self.assertIn("collect", text)
+
     def test_create_task_writes_descriptor(self):
         """Test create_task writes default descriptor to celebi.yaml."""
         test_path = "tasks/new_task"
@@ -1932,7 +1976,6 @@ class TestChernVTask(unittest.TestCase):  # pylint: disable=too-many-public-meth
     #         # Should return early without creating anything
     #         result = vtsk.create_data(test_path)
     #         self.assertIsNone(result)
-
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
