@@ -62,7 +62,7 @@ class TestRunnerShellCommands(unittest.TestCase):
             shell.test_runner.return_value = mock.MagicMock(
                 messages=[("ok", "success")], colored=lambda: "rendered")
             self.cmds.do_test_runner("pkufarm212")
-        shell.test_runner.assert_called_once_with("pkufarm212")
+        shell.test_runner.assert_called_once_with("pkufarm212", timeout=None)
 
     def test_do_runner_envs(self):
         """Test do runner envs."""

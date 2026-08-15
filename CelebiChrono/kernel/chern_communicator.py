@@ -653,11 +653,13 @@ class ChernCommunicator():
             return {"status": "unconnected to DITE"}
         return json.loads(r.text)
 
-    def test_runner(self, runner):
+    def test_runner(self, runner, timeout=None):
         """ Ask the server to probe a runner's capabilities (snakemake/conda) """
         url = self.serverurl()
+        timeout_param = f"?timeout={timeout}" if timeout else ""
         try:
-            r = requests.get(f"http://{url}/test-runner/{runner}", timeout=30)
+            r = requests.get(
+                f"http://{url}/test-runner/{runner}{timeout_param}", timeout=30)
         except requests.exceptions.RequestException as e:
             raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
         if r.status_code == 404:

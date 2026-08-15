@@ -56,7 +56,7 @@ class TestCliRunnerCommands(unittest.TestCase):
         with mock.patch("CelebiChrono.interface.shell.test_runner") as fn:
             result = self.runner.invoke(test_runner_command, ["local"])
         self.assertEqual(result.exit_code, 0, result.output)
-        fn.assert_called_once_with("local")
+        fn.assert_called_once_with("local", timeout=None)
 
 
 if __name__ == "__main__":

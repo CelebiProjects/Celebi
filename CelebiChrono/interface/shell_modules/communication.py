@@ -295,12 +295,12 @@ def register_runner(runner: str, url: str, secret: str, backend_type: str,
     return message
 
 
-def test_runner(runner: str) -> Message:
+def test_runner(runner: str, timeout: int = None) -> Message:
     """Probe a runner's capabilities (snakemake/conda/workdir) via DITE."""
     message = Message()
     cherncc = ChernCommunicator.instance()
     try:
-        result = cherncc.test_runner(runner)
+        result = cherncc.test_runner(runner, timeout=timeout)
     except ConnectionError as e:
         message.add(str(e), "error")
         return message

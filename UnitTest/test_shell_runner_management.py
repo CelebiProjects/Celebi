@@ -39,6 +39,7 @@ class TestShellRunnerManagement(unittest.TestCase):
         with mock.patch.object(communication, "ChernCommunicator") as cls:
             cls.instance.return_value = cc
             message = communication.test_runner("local")
+        cc.test_runner.assert_called_once_with("local", timeout=None)
         text = str(message)
         self.assertIn("8.1.0", text)
         self.assertIn("not found in PATH", text)

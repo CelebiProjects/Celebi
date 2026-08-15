@@ -298,12 +298,18 @@ class EnvironmentCommands:
     def do_test_runner(self, arg: str) -> None:
         """Probe a runner's capabilities (snakemake/conda/workdir)."""
         try:
-            runner = arg.split()[0]
+            args = arg.split()
+            runner = args[0]
+            timeout = None
+            if "--timeout" in args:
+                idx = args.index("--timeout")
+                if idx + 1 < len(args):
+                    timeout = int(args[idx + 1])
         except IndexError:
             print("Error: Please provide a runner name.")
             return
         try:
-            result = shell.test_runner(runner)
+            result = shell.test_runner(runner, timeout=timeout)
             if result.messages:
                 print(result.colored())
         except Exception as e:

@@ -204,7 +204,9 @@ def update_runner_command(name, url, token, backend_type, use_kerberos,
 
 @click.command(name="test-runner")
 @click.argument("runner", type=str)
-def test_runner_command(runner: str) -> None:
+@click.option("--timeout", type=int, default=None,
+              help="Probe command timeout in seconds (default: server default)")
+def test_runner_command(runner: str, timeout: int) -> None:
     """Probe a runner's capabilities (snakemake/conda/workdir) via DITE.
 
     RUNNER is the name of the registered runner to test. Results are stored
@@ -212,7 +214,7 @@ def test_runner_command(runner: str) -> None:
     """
     try:
         from CelebiChrono.interface.shell import test_runner
-        _handle_result(test_runner(runner))
+        _handle_result(test_runner(runner, timeout=timeout))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
