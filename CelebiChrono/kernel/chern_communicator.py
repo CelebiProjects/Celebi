@@ -450,12 +450,14 @@ class ChernCommunicator():
             return ["unconnected to DITE"]
         return r.text.split()
 
-    def engine_logs(self, impression):
+    def engine_logs(self, impression, fetch=False):
         """ Get the engine logs for the impression from the server """
         url = self.serverurl()
+        fetch_param = "?fetch=true" if fetch else ""
         try:
             r = requests.get(
-                f"http://{url}/engine-log/{self.project_uuid}/{impression.uuid}",
+                f"http://{url}/engine-log/{self.project_uuid}/{impression.uuid}"
+                f"{fetch_param}",
                 timeout=self.timeout
             )
         except Exception as e:

@@ -176,7 +176,7 @@ def test() -> Message:
     return MANAGER.current_object().docker_test()
 
 
-def engine_logs() -> Message:
+def engine_logs(fetch: bool = False) -> Message:
     """Fetch and display engine logs for the current task.
 
     Retrieves documented engine logs from the DITE server for the current
@@ -199,4 +199,4 @@ def engine_logs() -> Message:
         - Logs are fetched from http://localhost:3315/engine-log/
         - Useful for debugging execution issues and monitoring workflow
     """
-    return MANAGER.current_object().engine_logs()
+    return MANAGER.current_object().engine_logs(fetch=fetch)

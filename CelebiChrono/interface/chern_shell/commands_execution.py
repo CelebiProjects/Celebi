@@ -21,7 +21,7 @@ class CommandsExecution:
         _docker_image, _command = args
         test()
 
-    def do_engine_logs(self, _arg):
+    def do_engine_logs(self, arg):
         """
         Fetch and display engine logs for the current task.
 
@@ -41,7 +41,7 @@ class CommandsExecution:
             - Useful for debugging execution issues
         """
         try:
-            result = engine_logs()
+            result = engine_logs(fetch="--fetch" in arg.split())
             if result.messages:
                 print(result.colored())
         except Exception as e:

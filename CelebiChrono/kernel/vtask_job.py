@@ -269,7 +269,7 @@ class JobManager(Core):
         msg.add(cherncc.error_log(self.impression(), error_index))
         return msg
 
-    def engine_logs(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    def engine_logs(self, fetch=False):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
         """ Fetch and display engine logs for the task.
 
         Retrieves documented engine logs from the DITE server for the current
@@ -294,7 +294,7 @@ class JobManager(Core):
             msg.add("No impression found for current task", "error")
             return msg
         try:
-            logs_raw = cherncc.engine_logs(impression)
+            logs_raw = cherncc.engine_logs(impression, fetch=fetch)
             if logs_raw == "unconnected to DITE":
                 msg = Message()
                 msg.add("Failed to connect to DITE server", "error")

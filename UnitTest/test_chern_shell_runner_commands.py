@@ -127,6 +127,31 @@ class TestRunnerCompletions(unittest.TestCase):
                          ["pkufarm212"])
 
 
+class TestEngineLogsFetch(unittest.TestCase):
+
+    """Test engine logs fetch flag."""
+    def setUp(self):
+        """Set Up."""
+        from CelebiChrono.interface.chern_shell.commands_execution import (
+            CommandsExecution)
+        self.cmds = CommandsExecution.__new__(CommandsExecution)
+
+    def test_do_engine_logs_fetch_flag(self):
+        """Test do engine logs fetch flag."""
+        from CelebiChrono.interface.chern_shell import commands_execution
+        with mock.patch.object(commands_execution, "engine_logs") as fn:
+            fn.return_value = mock.MagicMock(messages=[])
+            self.cmds.do_engine_logs("--fetch")
+        fn.assert_called_once_with(fetch=True)
+
+    def test_do_engine_logs_plain(self):
+        """Test do engine logs plain."""
+        from CelebiChrono.interface.chern_shell import commands_execution
+        with mock.patch.object(commands_execution, "engine_logs") as fn:
+            fn.return_value = mock.MagicMock(messages=[])
+            self.cmds.do_engine_logs("")
+        fn.assert_called_once_with(fetch=False)
+
 if __name__ == "__main__":
     unittest.main()
 

@@ -410,7 +410,9 @@ def collect_logs_command() -> None:
 
 
 @click.command(name="engine-logs")
-def engine_logs_command() -> None:
+@click.option("--fetch", is_flag=True, default=False,
+              help="Generate the engine logs on the server if missing.")
+def engine_logs_command(fetch: bool) -> None:
     """Fetch and display engine logs for the current task.
 
     Retrieves documented engine logs from the DITE server for the current
@@ -421,7 +423,7 @@ def engine_logs_command() -> None:
     """
     try:
         from CelebiChrono.interface.shell import engine_logs
-        result = engine_logs()
+        result = engine_logs(fetch=fetch)
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")

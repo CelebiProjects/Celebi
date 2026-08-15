@@ -1068,3 +1068,26 @@ class TestChernCommunicator(unittest.TestCase):  # pylint: disable=too-many-publ
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
+
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
+    def test_engine_logs_fetch_param(self, mock_get):
+        prepare.create_chern_project("demo_genfit_new")
+        os.chdir("demo_genfit_new")
+        self.comm = ChernCommunicator()
+        self.comm.serverurl = MagicMock(return_value="localhost:8080")
+        self.comm.project_uuid = "projectuuid"
+        impression = MagicMock()
+        impression.uuid = "imp-1"
+
+        mock_get.return_value = MagicMock(text="logs")
+        self.comm.engine_logs(impression, fetch=True)
+        mock_get.assert_called_once_with(
+            "http://localhost:8080/engine-log/projectuuid/imp-1?fetch=true",
+            timeout=10)
+        mock_get.reset_mock()
+        self.comm.engine_logs(impression)
+        mock_get.assert_called_once_with(
+            "http://localhost:8080/engine-log/projectuuid/imp-1", timeout=10)
+        os.chdir("..")
+        prepare.remove_chern_project("demo_genfit_new")
+        CHERN_CACHE.__init__()
