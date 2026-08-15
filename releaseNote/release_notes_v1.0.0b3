@@ -9,6 +9,37 @@
 + Refactor `add_source` to store the source MD5 via `set_input_md5` instead of writing `data.json` directly, matching the rawdata workflow used by Yuki's `use-data` command.
 + Add regression tests for nested stageout directory creation and shell path completion.
 + Add a command naming review report (`COMMAND_NAMING_REVIEW.md`) covering the `celebi`, `celebi-cli`, `celebi-git`, and Chern shell command surfaces.
++ Rename the data commands to directional verbs.
+  - `use-data` -> `attach-data`: adopt an impression already on DITE as a local raw-data task (no data transfer).
+  - `send` -> `upload-data`: upload a local directory to DITE with a progress bar.
+  - The old names are removed entirely.
++ Add `register-data <runner> <remote_path> [--descriptor]`: register data that already lives on an SSH runner.
+  - The MD5 is computed on the runner; the data is copied into Yuki's managed impressions area on that runner — it never crosses the local network.
+  - Registration runs as a background job on Yuki (hashing → copying → registering) with live progress; re-registering the same path is idempotent.
+  - On success the current raw-data task is filled (or a pointer task created) and its default runner is set to the runner hosting the data.
++ Add `verify-data`: recompute the MD5 of the current data task and compare it with the registered UUID (remote data is re-hashed on its host runner).
++ Add `cache_on_runner` task option (shell: `cache_on_runner on|off`), replacing `use_eos`.
+  - REANA runner: results are copied to EOS.
+  - SSH runner: results are copied to the runner's managed impressions area.
+  - native/dry: no effect.
+  - The task option is transmitted to Yuki at submit time.
++ Runner management overhaul.
+  - `register-runner` now accepts ssh options (`--ssh-host/--ssh-user/--ssh-key-path/--ssh-port/--remote-workdir`) and native options (`--workdir/--cores/--mem-mb/--conda-path/--snakemake-path`); `update-runner` accepts the same options.
+  - SSH private keys are uploaded automatically at register/update (a client-side path is read and sent; the server stores the key). Registration falls back to `~/.ssh/id_rsa` / `~/.ssh/id_ed25519` when no key path is given.
+  - Add `test-runner <name>`: probes connectivity, snakemake, conda and the remote working directory; results are persisted and shown by `runners` (HEALTH column).
+  - Add `runner-envs <name>`: lists the conda environments available on an ssh/native runner.
+  - The Chern shell gains `test_runner`, `runner_envs`, `register_data`, `cache_on_runner`, and runner-name tab completion; `register_runner` in the shell is now ssh-aware.
++ Raw-data task display and status.
+  - `ls` no longer shows Memory limit / Validated for raw-data tasks; it shows Cache on runner instead of Use EOS.
+  - `status` renders the stageout file table (name/size/type/in-Yuki marks) for raw-data tasks, falling back to the sample-files listing.
+  - `archived` displays as `[coda][archived]`.
++ Engine logs.
+  - `engine-logs` renders the ssh/native log schema (`workflow_log`/`snakemake_log`); the workflow log section is titled YUKI LOG.
+  - `engine-logs --fetch` generates the engine logs on the server when they are missing; without `--fetch` the Yuki workflow log is still served when available.
+  - Error bodies (e.g. log not found) are shown as errors instead of an empty N/A table.
++ Fix the DITE port fallback (`127.0.0.1:3315` instead of `localhost:5000`), the `add_host` wrapper arity mismatch, and the never-populated runner tab-completion cache.
++ Declare the `tqdm` dependency (used by the upload progress bar) in `pyproject.toml`.
++ Fix all pylint issues across `CelebiChrono` (10.00/10 with the project rcfile).
 + Bump version to 1.0.0b3.
 
 ## v1.0.0b2
