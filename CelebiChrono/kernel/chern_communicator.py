@@ -740,6 +740,22 @@ class ChernCommunicator():
             return {"status": "unknown", "error": "job not found"}
         return r.json()
 
+    def register_remote_data_impression_status(self, impression_uuid):
+        """ Poll a registration job's state by impression uuid.
+
+        Returns None when no job for the impression is known.
+        """
+        url = self.serverurl()
+        try:
+            r = requests.get(
+                f"http://{url}/register-remote-data/impression/{impression_uuid}",
+                timeout=self.timeout)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        if r.status_code == 404:
+            return None
+        return r.json()
+
     def verify_data(self, project_uuid, impression_uuid):
         """ Recompute the data md5 on Yuki and compare with the registered uuid """
         url = self.serverurl()

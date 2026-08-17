@@ -88,8 +88,51 @@ def status() -> Message:
         - For tasks/algorithms: shows input/output configuration, parameters
         - For data objects: shows size, format, metadata
         - For directories: shows contents and structure
+        - For rawdata tasks with a registered impression: shows the
+          background copy state (Data registration line)
     """
-    return MANAGER.current_object().printed_status()
+    message = MANAGER.current_object().printed_status()
+    current = MANAGER.current_object()
+    if current.object_type() == "task":
+        from .object_creation import _is_rawdata_task
+        if _is_rawdata_task(current.path):
+            impression_uuid = current.config_file.read_variable("impression",
+                                                                "")
+            if impression_uuid:
+                message.append(_registration_status_line(impression_uuid))
+    return message
+
+
+def _registration_status_line(impression_uuid):
+    """Describe the background copy state of a registered impression."""
+    from ...kernel.chern_communicator import ChernCommunicator
+    line = Message()
+    try:
+        state = ChernCommunicator.instance().register_remote_data_impression_status(
+            impression_uuid)
+    except ConnectionError as e:
+        line.add(f"Data registration: unreachable ({e})", "warning")
+        return line
+    if state is None:
+        return line
+    job_status = state.get("status")
+    if job_status == "copying":
+        progress = state.get("progress") or {}
+        done = progress.get("bytes_done")
+        total = progress.get("bytes_total")
+        if done is not None and total:
+            line.add(f"Data registration: copying — {done}/{total} bytes",
+                     "info")
+        else:
+            line.add("Data registration: copying", "info")
+    elif job_status == "hashing":
+        line.add("Data registration: hashing", "info")
+    elif job_status == "done":
+        line.add("Data registration: archived", "success")
+    elif job_status == "failed":
+        line.add(f"Data registration: failed — {state.get('error')}",
+                 "error")
+    return line
 
 
 def add_input(path: str, alias: str) -> Message:  # pylint: disable=too-many-branches, too-many-return-statements

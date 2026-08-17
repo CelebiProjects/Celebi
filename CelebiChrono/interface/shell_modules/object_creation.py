@@ -6,6 +6,8 @@ Functions for creating new algorithms, tasks, data objects, and directories.
 import os
 import time
 
+from tqdm import tqdm
+
 from ...utils import csys
 from ...utils import metadata
 from ...utils.message import Message
@@ -35,10 +37,10 @@ def _fill_or_create_pointer_task(project_path, current_obj, descriptor,  # pylin
                                  default_runner=None):
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     """Fill an existing rawdata task or create a pointer task (shared tail
-    of attach-data and register-data).
+    of attach-data and register-ssh-data).
 
-    With default_runner set (register-data), the task's default runner is
-    pointed at the runner hosting the data.
+    With default_runner set (register-ssh-data), the task's default runner
+    is pointed at the runner hosting the data.
     """
     message = Message()
     task_path = path_override if path_override else descriptor
@@ -425,8 +427,8 @@ def attach_data(impression_uuid: str, path_override: str = "") -> Message:
 
 def _fill_registered_data(project_path, current_obj, descriptor, data_md5,  # pylint: disable=too-many-arguments, too-many-positional-arguments
                           origin, default_runner=None):
-    """Dual-mode tail of register-data: fill the current rawdata task, or
-    create/update a pointer task via the shared tail."""
+    """Dual-mode tail of register-ssh-data: fill the current rawdata task,
+    or create/update a pointer task via the shared tail."""
     message = Message()
     if current_obj.object_type() == "task" and _is_rawdata_task(current_obj.path):
         task_path = current_obj.invariant_path()
@@ -446,8 +448,28 @@ def _fill_registered_data(project_path, current_obj, descriptor, data_md5,  # py
     return message
 
 
-def register_data(runner: str, remote_path: str, descriptor: str = "") -> Message:
-    # pylint: disable=too-many-return-statements
+def _update_progress_bar(progress_bar, state):
+    """Update the tqdm bar from a poll state's progress payload."""
+    status = state.get("status", "unknown")
+    progress = state.get("progress")
+    if isinstance(progress, dict):
+        total = progress.get("bytes_total")
+        if total:
+            if progress_bar.total != total:
+                progress_bar.total = total
+            done = progress.get("bytes_done")
+            if isinstance(done, int):
+                progress_bar.n = min(done, total)
+        progress_bar.set_description(
+            f"register-ssh-data: {progress.get('stage') or status}")
+    elif status in ("hashing", "copying"):
+        progress_bar.set_description(f"register-ssh-data: {status}")
+    progress_bar.refresh()
+
+
+def register_ssh_data(runner: str, remote_path: str,
+                      descriptor: str = "") -> Message:
+    # pylint: disable=too-many-return-statements,too-many-branches
     """Register data living on an ssh runner into Yuki's managed staging.
 
     Computes the data MD5 and copies it into the runner's managed
@@ -466,8 +488,9 @@ def register_data(runner: str, remote_path: str, descriptor: str = "") -> Messag
         return message
     if current_obj.object_type() == "task" and \
             not _is_rawdata_task(current_obj.path):
-        message.add("Current task is not a rawdata task; run register-data "
-                    "from a rawdata task or outside a task", "error")
+        message.add("Current task is not a rawdata task; run "
+                    "register-ssh-data from a rawdata task or outside a task",
+                    "error")
         return message
 
     cherncc = ChernCommunicator.instance()
@@ -486,7 +509,7 @@ def register_data(runner: str, remote_path: str, descriptor: str = "") -> Messag
             f"impression={result['impression_uuid']}", "success")
         message.messages.extend(_fill_registered_data(
             project_path, current_obj, result["descriptor"],
-            result["uuid"], "register-data",
+            result["uuid"], "register-ssh-data",
             default_runner=runner).messages)
         return message
     if "job_id" not in resp:
@@ -494,34 +517,53 @@ def register_data(runner: str, remote_path: str, descriptor: str = "") -> Messag
                     "nor a result", "error")
         return message
     job_id = resp["job_id"]
-    print(f"register-data: job {job_id[:8]}... started on '{runner}'")
+    print(f"register-ssh-data: job {job_id[:8]}... started on '{runner}'")
+    progress_bar = tqdm(unit="B", unit_scale=True, unit_divisor=1024,
+                        desc="register-ssh-data: hashing")
     consecutive_unknowns = 0
-    while True:
-        state = cherncc.register_remote_data_status(job_id)
-        status = state.get("status", "unknown")
-        if status == "unknown":
-            consecutive_unknowns += 1
-            if consecutive_unknowns >= 10:
+    try:
+        while True:
+            state = cherncc.register_remote_data_status(job_id)
+            status = state.get("status", "unknown")
+            if status == "unknown":
+                consecutive_unknowns += 1
+                if consecutive_unknowns >= 10:
+                    message.add(
+                        f"Registration job {job_id[:8]}... status 'unknown' "
+                        f"{consecutive_unknowns} times in a row (job not "
+                        "found on the server); aborting after ~30s. The "
+                        "server may have restarted or dropped the job.",
+                        "error")
+                    return message
+            else:
+                consecutive_unknowns = 0
+            _update_progress_bar(progress_bar, state)
+            if status == "done":
+                result = state["result"]
                 message.add(
-                    f"Registration job {job_id[:8]}... status 'unknown' "
-                    f"{consecutive_unknowns} times in a row (job not found on "
-                    "the server); aborting after ~30s. The server may have "
-                    "restarted or dropped the job.", "error")
+                    f"Registered: md5={result['uuid']} "
+                    f"impression={result['impression_uuid']}\n", "success")
+                message.messages.extend(_fill_registered_data(
+                    project_path, current_obj, result["descriptor"],
+                    result["uuid"], "register-ssh-data",
+                    default_runner=runner).messages)
                 return message
-        else:
-            consecutive_unknowns = 0
-        if status == "done":
-            result = state["result"]
-            message.add(
-                f"Registered: md5={result['uuid']} "
-                f"impression={result['impression_uuid']}\n", "success")
-            message.messages.extend(_fill_registered_data(
-                project_path, current_obj, result["descriptor"],
-                result["uuid"], "register-data",
-            default_runner=runner).messages)
-            return message
-        if status == "failed":
-            message.add(f"Registration failed: {state.get('error')}", "error")
-            return message
-        print(f"register-data: {status}...")
-        time.sleep(3)
+            if status == "copying" and state.get("result"):
+                # The hash is done: the copy continues in the background.
+                result = state["result"]
+                message.add(
+                    f"Registered: md5={result['uuid']} "
+                    f"impression={result['impression_uuid']} — "
+                    "copying in background\n", "success")
+                message.messages.extend(_fill_registered_data(
+                    project_path, current_obj, result["descriptor"],
+                    result["uuid"], "register-ssh-data",
+                    default_runner=runner).messages)
+                return message
+            if status == "failed":
+                message.add(
+                    f"Registration failed: {state.get('error')}", "error")
+                return message
+            time.sleep(3)
+    finally:
+        progress_bar.close()

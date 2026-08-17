@@ -1070,6 +1070,30 @@ class TestChernCommunicator(unittest.TestCase):  # pylint: disable=too-many-publ
         CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     @patch("CelebiChrono.kernel.chern_communicator.requests.get")
+    def test_register_remote_data_impression_status(self, mock_get):
+        """Test register remote data impression status."""
+        prepare.create_chern_project("demo_genfit_new")
+        os.chdir("demo_genfit_new")
+        self.comm = ChernCommunicator()
+        self.comm.serverurl = MagicMock(return_value="localhost:8080")
+
+        mock_get.return_value = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={"status": "copying"}))
+        result = self.comm.register_remote_data_impression_status("imp-1")
+        self.assertEqual(result["status"], "copying")
+        mock_get.assert_called_with(
+            "http://localhost:8080/register-remote-data/impression/imp-1",
+            timeout=10)
+
+        mock_get.return_value = MagicMock(status_code=404)
+        self.assertIsNone(
+            self.comm.register_remote_data_impression_status("ghost"))
+        os.chdir("..")
+        prepare.remove_chern_project("demo_genfit_new")
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
+
+    @patch("CelebiChrono.kernel.chern_communicator.requests.get")
     def test_engine_logs_fetch_param(self, mock_get):
         prepare.create_chern_project("demo_genfit_new")
         os.chdir("demo_genfit_new")

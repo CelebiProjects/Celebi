@@ -46,7 +46,7 @@ cli.add_command(object_creation.create_data_list_command)
 cli.add_command(object_creation.mkdir_command)
 cli.add_command(object_creation.attach_data_command)
 cli.add_command(object_creation.verify_data_command)
-cli.add_command(object_creation.register_data_command)
+cli.add_command(object_creation.register_ssh_data_command)
 cli.add_command(object_creation.create_lhcb_ap_list_command)
 
 # Task configuration commands (9 commands)

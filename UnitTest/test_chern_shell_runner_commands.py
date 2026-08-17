@@ -121,10 +121,10 @@ class TestRunnerCompletions(unittest.TestCase):
         self.assertEqual(self.comp.complete_runner_envs("", "runner_envs ", 0, 0),
                          ["cern", "local", "pkufarm212"])
 
-    def test_complete_register_data(self):
-        """Test complete register data."""
-        self.assertEqual(self.comp.complete_register_data("p", "register_data p", 0, 0),
-                         ["pkufarm212"])
+    def test_complete_register_ssh_data(self):
+        """Test complete register ssh data."""
+        self.assertEqual(self.comp.complete_register_ssh_data(
+            "p", "register-ssh-data p", 0, 0), ["pkufarm212"])
 
 
 class TestEngineLogsFetch(unittest.TestCase):
@@ -156,32 +156,34 @@ if __name__ == "__main__":
     unittest.main()
 
 
-class TestRegisterDataShellCommand(unittest.TestCase):
+class TestRegisterSshDataShellCommand(unittest.TestCase):
 
-    """Test Register Data Shell Command."""
+    """Test Register SSH Data Shell Command."""
     def setUp(self):
         """Set Up."""
         self.cmds = TaskCommands.__new__(TaskCommands)
 
-    def test_do_register_data_parses_args(self):
-        """Test do register data parses args."""
+    def test_do_register_ssh_data_parses_args(self):
+        """Test do register ssh data parses args."""
         with mock.patch.object(commands_task, "shell") as shell:
-            shell.register_data.return_value = mock.MagicMock(messages=[])
-            self.cmds.do_register_data("pkufarm212 /data/dir --descriptor mydata")
-        shell.register_data.assert_called_once_with(
+            shell.register_ssh_data.return_value = mock.MagicMock(messages=[])
+            self.cmds.do_register_ssh_data(
+                "pkufarm212 /data/dir --descriptor mydata")
+        shell.register_ssh_data.assert_called_once_with(
             "pkufarm212", "/data/dir", "mydata")
 
-    def test_do_register_data_defaults_descriptor(self):
-        """Test do register data defaults descriptor."""
+    def test_do_register_ssh_data_defaults_descriptor(self):
+        """Test do register ssh data defaults descriptor."""
         with mock.patch.object(commands_task, "shell") as shell:
-            shell.register_data.return_value = mock.MagicMock(messages=[])
-            self.cmds.do_register_data("pkufarm212 /data/dir")
-        shell.register_data.assert_called_once_with("pkufarm212", "/data/dir", "")
+            shell.register_ssh_data.return_value = mock.MagicMock(messages=[])
+            self.cmds.do_register_ssh_data("pkufarm212 /data/dir")
+        shell.register_ssh_data.assert_called_once_with(
+            "pkufarm212", "/data/dir", "")
 
-    def test_do_register_data_requires_args(self):
-        """Test do register data requires args."""
+    def test_do_register_ssh_data_requires_args(self):
+        """Test do register ssh data requires args."""
         with mock.patch.object(commands_task, "shell") as shell, \
                 mock.patch("builtins.print") as pr:
-            self.cmds.do_register_data("")
-        shell.register_data.assert_not_called()
+            self.cmds.do_register_ssh_data("")
+        shell.register_ssh_data.assert_not_called()
         self.assertTrue(pr.called)

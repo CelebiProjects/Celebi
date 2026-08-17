@@ -1,4 +1,4 @@
-"""Tests for register-data shell function and CLI command."""
+"""Tests for register-ssh-data shell function and CLI command."""
 import os
 import shutil
 import tempfile
@@ -6,13 +6,13 @@ import unittest
 from unittest import mock
 
 from CelebiChrono.interface.shell_modules import object_creation
-from CelebiChrono.celebi_cli.commands.object_creation import register_data_command
+from CelebiChrono.celebi_cli.commands.object_creation import register_ssh_data_command
 from CelebiChrono.utils.metadata import YamlFile
 
 
-class TestRegisterData(unittest.TestCase):
+class TestRegisterSshData(unittest.TestCase):
 
-    """Test Register Data."""
+    """Test Register SSH Data."""
     def _make_current(self, obj_type="project", path="/proj", env=None):
         """Make current."""
         current = mock.MagicMock()
@@ -52,18 +52,52 @@ class TestRegisterData(unittest.TestCase):
         with mock.patch.object(object_creation, "MANAGER") as manager, \
                 mock.patch.object(object_creation, "ChernCommunicator") as cccls, \
                 mock.patch.object(object_creation.time, "sleep"), \
+                mock.patch.object(object_creation, "tqdm",
+                                  return_value=mock.MagicMock()), \
                 mock.patch.object(object_creation, "_fill_or_create_pointer_task",
                                   return_value=mock.MagicMock(messages=[])) as fill:
             manager.current_object.return_value = current
             cccls.instance.return_value = cc
-            message = object_creation.register_data("cluster", "/src/data", "d")
+            message = object_creation.register_ssh_data("cluster", "/src/data", "d")
 
         fill.assert_called_once_with(
-            "/proj", current, "d", "md5abc", "", "register-data",
+            "/proj", current, "d", "md5abc", "", "register-ssh-data",
             default_runner="cluster")
         registered = [m for m in message.messages if "Registered" in str(m)]
         self.assertTrue(registered)
         self.assertTrue(registered[0][0].endswith("\n"))
+
+    def test_exits_when_copying_with_result(self):
+        """Copying-with-result is the exit point: fill the pointer, stop."""
+        current = self._make_current("directory", path="/proj/dir")
+        states = iter([
+            {"status": "hashing"},
+            {"status": "copying",
+             "result": {"uuid": "md5abc", "impression_uuid": "imp-1",
+                        "descriptor": "d"}},
+        ])
+        cc = mock.MagicMock()
+        cc.register_remote_data.return_value = {"job_id": "job-1"}
+        cc.register_remote_data_status.side_effect = lambda j: next(states)
+        with mock.patch.object(object_creation, "MANAGER") as manager, \
+                mock.patch.object(object_creation, "ChernCommunicator") as cccls, \
+                mock.patch.object(object_creation.time, "sleep"), \
+                mock.patch.object(object_creation, "tqdm",
+                                  return_value=mock.MagicMock()), \
+                mock.patch.object(object_creation, "_fill_or_create_pointer_task",
+                                  return_value=mock.MagicMock(messages=[])) as fill:
+            manager.current_object.return_value = current
+            cccls.instance.return_value = cc
+            message = object_creation.register_ssh_data("cluster", "/src/data", "d")
+
+        # exits at the copying poll — no further polling
+        self.assertEqual(cc.register_remote_data_status.call_count, 2)
+        fill.assert_called_once_with(
+            "/proj", current, "d", "md5abc", "", "register-ssh-data",
+            default_runner="cluster")
+        self.assertTrue(any("Registered" in str(m) for m in message.messages))
+        self.assertTrue(
+            any("background" in str(m) for m in message.messages))
 
     def test_failed_job_reports_error(self):
         """Test failed job reports error."""
@@ -75,10 +109,12 @@ class TestRegisterData(unittest.TestCase):
         with mock.patch.object(object_creation, "MANAGER") as manager, \
                 mock.patch.object(object_creation, "ChernCommunicator") as cccls, \
                 mock.patch.object(object_creation.time, "sleep"), \
+                mock.patch.object(object_creation, "tqdm",
+                                  return_value=mock.MagicMock()), \
                 mock.patch.object(object_creation, "_fill_or_create_pointer_task") as fill:
             manager.current_object.return_value = current
             cccls.instance.return_value = cc
-            message = object_creation.register_data("cluster", "/src/data")
+            message = object_creation.register_ssh_data("cluster", "/src/data")
         fill.assert_not_called()
         self.assertTrue(any("boom" in str(m) for m in message.messages))
 
@@ -91,10 +127,12 @@ class TestRegisterData(unittest.TestCase):
             "status": "unknown", "error": "job not found"}
         with mock.patch.object(object_creation, "MANAGER") as manager, \
                 mock.patch.object(object_creation, "ChernCommunicator") as cccls, \
-                mock.patch.object(object_creation.time, "sleep") as sleep:
+                mock.patch.object(object_creation.time, "sleep") as sleep, \
+                mock.patch.object(object_creation, "tqdm",
+                                  return_value=mock.MagicMock()):
             manager.current_object.return_value = current
             cccls.instance.return_value = cc
-            message = object_creation.register_data("cluster", "/src/data")
+            message = object_creation.register_ssh_data("cluster", "/src/data")
 
         # 10 polls, then an error instead of an unbounded loop
         self.assertEqual(cc.register_remote_data_status.call_count, 10)
@@ -113,7 +151,7 @@ class TestRegisterData(unittest.TestCase):
                 mock.patch.object(object_creation, "ChernCommunicator") as cccls:
             manager.current_object.return_value = current
             cccls.instance.return_value = cc
-            message = object_creation.register_data("local", "/p")
+            message = object_creation.register_ssh_data("local", "/p")
         self.assertTrue(any("ssh runner" in str(m) for m in message.messages))
 
     def test_idempotent_result_no_polling_creates_pointer_task(self):
@@ -129,16 +167,16 @@ class TestRegisterData(unittest.TestCase):
                                   return_value=mock.MagicMock(messages=[])) as fill:
             manager.current_object.return_value = current
             cccls.instance.return_value = cc
-            message = object_creation.register_data("cluster", "/src/data", "d")
+            message = object_creation.register_ssh_data("cluster", "/src/data", "d")
 
         cc.register_remote_data_status.assert_not_called()
         fill.assert_called_once_with(
-            "/proj", current, "d", "md5abc", "", "register-data",
+            "/proj", current, "d", "md5abc", "", "register-ssh-data",
             default_runner="cluster")
         self.assertTrue(any("Registered" in str(m) for m in message.messages))
 
     def test_done_fills_current_rawdata_task(self):
-        """register-data inside a rawdata task fills that task, not a pointer."""
+        """register-ssh-data inside a rawdata task fills that task, not a pointer."""
         tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
         with open(os.path.join(tmp, "celebi.yaml"), "w", encoding="utf-8") as f:
@@ -155,17 +193,19 @@ class TestRegisterData(unittest.TestCase):
         with mock.patch.object(object_creation, "MANAGER") as manager, \
                 mock.patch.object(object_creation, "ChernCommunicator") as cccls, \
                 mock.patch.object(object_creation.time, "sleep"), \
+                mock.patch.object(object_creation, "tqdm",
+                                  return_value=mock.MagicMock()), \
                 mock.patch.object(object_creation, "_fill_or_create_pointer_task") as fill:
             manager.current_object.return_value = current
             cccls.instance.return_value = cc
-            message = object_creation.register_data("cluster", "/src/data", "d")
+            message = object_creation.register_ssh_data("cluster", "/src/data", "d")
 
         fill.assert_not_called()
         yaml_file = YamlFile(os.path.join(tmp, "celebi.yaml"))
         self.assertEqual(yaml_file.read_variable("uuid", ""), "md5abc")
         self.assertEqual(yaml_file.read_variable("descriptor", ""), "d")
         self.assertTrue(
-            any("Updated rawdata task at /proj/rawtask (register-data)" in str(m)
+            any("Updated rawdata task at /proj/rawtask (register-ssh-data)" in str(m)
                 for m in message.messages))
 
     def test_idempotent_result_fills_current_rawdata_task(self):
@@ -184,7 +224,7 @@ class TestRegisterData(unittest.TestCase):
                 mock.patch.object(object_creation, "_fill_or_create_pointer_task") as fill:
             manager.current_object.return_value = current
             cccls.instance.return_value = cc
-            _message = object_creation.register_data("cluster", "/src/data", "d")
+            _message = object_creation.register_ssh_data("cluster", "/src/data", "d")
 
         cc.register_remote_data_status.assert_not_called()
         fill.assert_not_called()
@@ -194,8 +234,9 @@ class TestRegisterData(unittest.TestCase):
     def test_cli_command(self):
         """Test cli command."""
         from click.testing import CliRunner
-        with mock.patch("CelebiChrono.interface.shell.register_data") as fn:
-            result = CliRunner().invoke(register_data_command,
+        self.assertEqual(register_ssh_data_command.name, "register-ssh-data")
+        with mock.patch("CelebiChrono.interface.shell.register_ssh_data") as fn:
+            result = CliRunner().invoke(register_ssh_data_command,
                                         ["cluster", "/src/data",
                                          "--descriptor", "d"])
         self.assertEqual(result.exit_code, 0, result.output)
@@ -215,13 +256,15 @@ class TestRegisterData(unittest.TestCase):
         with mock.patch.object(object_creation, "MANAGER") as manager, \
                 mock.patch.object(object_creation, "ChernCommunicator") as cccls, \
                 mock.patch.object(object_creation.time, "sleep"), \
+                mock.patch.object(object_creation, "tqdm",
+                                  return_value=mock.MagicMock()), \
                 mock.patch.object(object_creation, "_fill_or_create_pointer_task",
                                   return_value=mock.MagicMock(messages=[])) as fill:
             manager.current_object.return_value = current
             cccls.instance.return_value = cc
-            object_creation.register_data("cluster", "/src/data", "d")
+            object_creation.register_ssh_data("cluster", "/src/data", "d")
         fill.assert_called_once_with(
-            "/proj", current, "d", "md5abc", "", "register-data",
+            "/proj", current, "d", "md5abc", "", "register-ssh-data",
             default_runner="cluster")
 
     def test_rawdata_context_sets_default_runner(self):
@@ -239,8 +282,159 @@ class TestRegisterData(unittest.TestCase):
                        "descriptor": "d"}}
         with mock.patch.object(object_creation, "MANAGER") as manager, \
                 mock.patch.object(object_creation, "ChernCommunicator") as cccls, \
-                mock.patch.object(object_creation.time, "sleep"):
+                mock.patch.object(object_creation.time, "sleep"), \
+                mock.patch.object(object_creation, "tqdm",
+                                  return_value=mock.MagicMock()):
             manager.current_object.return_value = current
             cccls.instance.return_value = cc
-            object_creation.register_data("cluster", "/src/data", "d")
+            object_creation.register_ssh_data("cluster", "/src/data", "d")
         current.set_default_runner.assert_called_once_with("cluster")
+
+
+class _FakeBar:
+    """Determinate progress bar shim recording tqdm interactions."""
+
+    instances = []
+
+    def __init__(self, **kwargs):
+        self.total = kwargs.get("total")
+        self.n = 0
+        self.desc = kwargs.get("desc", "")
+        self.closed = False
+        _FakeBar.instances.append(self)
+
+    def set_description(self, desc):
+        """Record the description change."""
+        self.desc = desc
+
+    def refresh(self):
+        """No-op."""
+
+    def close(self):
+        """Record the close."""
+        self.closed = True
+
+
+class TestRegisterSshDataProgressBar(unittest.TestCase):
+
+    """Test the determinate byte progress bar."""
+
+    def setUp(self):
+        """Set Up."""
+        _FakeBar.instances = []
+
+    def _run(self, states):
+        """Run register_ssh_data with the given poll states."""
+        current = mock.MagicMock()
+        current.object_type.return_value = "project"
+        current.path = "/proj"
+        current.project_path.return_value = "/proj"
+        current.project_uuid.return_value = "proj-uuid"
+        cc = mock.MagicMock()
+        cc.register_remote_data.return_value = {"job_id": "job-1"}
+        cc.register_remote_data_status.side_effect = lambda j: next(states)
+        with mock.patch.object(object_creation, "MANAGER") as manager, \
+                mock.patch.object(object_creation, "ChernCommunicator") as cccls, \
+                mock.patch.object(object_creation.time, "sleep"), \
+                mock.patch.object(object_creation, "tqdm",
+                                  side_effect=_FakeBar), \
+                mock.patch.object(object_creation,
+                                  "_fill_or_create_pointer_task",
+                                  return_value=mock.MagicMock(messages=[])):
+            manager.current_object.return_value = current
+            cccls.instance.return_value = cc
+            return object_creation.register_ssh_data(
+                "cluster", "/src/data", "d")
+
+    def test_progress_drives_bar_bytes(self):
+        """The bar total/n come from the server's byte progress."""
+        states = iter([
+            {"status": "hashing",
+             "progress": {"stage": "hashing", "bytes_done": 3,
+                          "bytes_total": 14}},
+            {"status": "copying",
+             "progress": {"stage": "copying", "bytes_done": 10,
+                          "bytes_total": 14}},
+            {"status": "done",
+             "result": {"uuid": "md5abc", "impression_uuid": "imp-1",
+                        "descriptor": "d"}},
+        ])
+        self._run(states)
+        progress_bar = _FakeBar.instances[-1]
+        self.assertEqual(progress_bar.total, 14)
+        self.assertEqual(progress_bar.n, 10)
+        self.assertTrue(progress_bar.closed)
+
+    def test_bar_desc_follows_stage(self):
+        """Stage transitions update the bar description."""
+        states = iter([
+            {"status": "hashing",
+             "progress": {"stage": "hashing", "bytes_done": 1,
+                          "bytes_total": 14}},
+            {"status": "copying",
+             "progress": {"stage": "copying", "bytes_done": 2,
+                          "bytes_total": 14}},
+            {"status": "done",
+             "result": {"uuid": "md5abc", "impression_uuid": "imp-1",
+                        "descriptor": "d"}},
+        ])
+        self._run(states)
+        progress_bar = _FakeBar.instances[-1]
+        self.assertIn("copying", progress_bar.desc)
+        self.assertTrue(progress_bar.closed)
+
+    def test_bar_closes_on_failed(self):
+        """A failed job closes the bar and reports the error."""
+        states = iter([{"status": "failed", "error": "boom"}])
+        message = self._run(states)
+        progress_bar = _FakeBar.instances[-1]
+        self.assertTrue(progress_bar.closed)
+        self.assertTrue(any("boom" in str(m) for m in message.messages))
+
+    def test_bar_done_clamps_over_total(self):
+        """bytes_done above bytes_total (CoW du overshoot) is clamped."""
+        states = iter([
+            {"status": "copying",
+             "progress": {"stage": "copying", "bytes_done": 99,
+                          "bytes_total": 14}},
+            {"status": "done",
+             "result": {"uuid": "md5abc", "impression_uuid": "imp-1",
+                        "descriptor": "d"}},
+        ])
+        self._run(states)
+        progress_bar = _FakeBar.instances[-1]
+        self.assertEqual(progress_bar.n, 14)
+
+    def test_bar_indeterminate_without_progress(self):
+        """Polls without progress keep the bar total unset."""
+        states = iter([
+            {"status": "hashing"},
+            {"status": "done",
+             "result": {"uuid": "md5abc", "impression_uuid": "imp-1",
+                        "descriptor": "d"}},
+        ])
+        self._run(states)
+        progress_bar = _FakeBar.instances[-1]
+        self.assertIsNone(progress_bar.total)
+
+    def test_no_bar_for_idempotent_result(self):
+        """The result fast path creates no bar."""
+        current = mock.MagicMock()
+        current.object_type.return_value = "project"
+        current.path = "/proj"
+        current.project_path.return_value = "/proj"
+        current.project_uuid.return_value = "proj-uuid"
+        cc = mock.MagicMock()
+        cc.register_remote_data.return_value = {
+            "result": {"uuid": "md5abc", "impression_uuid": "imp-1",
+                       "descriptor": "d"}}
+        with mock.patch.object(object_creation, "MANAGER") as manager, \
+                mock.patch.object(object_creation, "ChernCommunicator") as cccls, \
+                mock.patch.object(object_creation, "tqdm") as tqdm_mock, \
+                mock.patch.object(object_creation,
+                                  "_fill_or_create_pointer_task",
+                                  return_value=mock.MagicMock(messages=[])):
+            manager.current_object.return_value = current
+            cccls.instance.return_value = cc
+            object_creation.register_ssh_data("cluster", "/src/data", "d")
+        tqdm_mock.assert_not_called()

@@ -321,10 +321,10 @@ class TaskCommands:
         except Exception as e:
             print(f"Error verifying data: {e}")
 
-    def do_register_data(self, arg: str) -> None:
+    def do_register_ssh_data(self, arg: str) -> None:
         """Register data living on an ssh runner (MD5 + managed staging).
 
-        Usage: register_data <runner> <remote_path> [--descriptor DESC]
+        Usage: register-ssh-data <runner> <remote_path> [--descriptor DESC]
         """
         try:
             args = arg.split()
@@ -338,7 +338,7 @@ class TaskCommands:
                 idx = args.index("--descriptor")
                 if idx + 1 < len(args):
                     descriptor = args[idx + 1]
-            result = shell.register_data(runner, remote_path, descriptor)
+            result = shell.register_ssh_data(runner, remote_path, descriptor)
             if result.messages:
                 print(result.colored())
         except Exception as e:
