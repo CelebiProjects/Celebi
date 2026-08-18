@@ -3,8 +3,14 @@
 This script verifies that the trace readability improvements work correctly,
 including formatting utilities and Message object integration.
 """
-import sys
+import json
 import os
+import shutil
+import sys
+import tempfile
+
+import yaml
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from CelebiChrono.utils.format_utils import (  # pylint: disable=wrong-import-position  # requires sys.path setup above
@@ -14,6 +20,79 @@ from CelebiChrono.utils.format_utils import (  # pylint: disable=wrong-import-po
 )
 from CelebiChrono.utils.message import Message  # pylint: disable=wrong-import-position
 from CelebiChrono.kernel.vobj_impression import ImpressionManagement  # pylint: disable=wrong-import-position
+from CelebiChrono.kernel.chern_cache import ChernCache  # pylint: disable=wrong-import-position
+from CelebiChrono.kernel.vtask import VTask  # pylint: disable=wrong-import-position
+
+
+def _write_json(path, data):
+    """Write json data to the file at path."""
+    with open(path, "w", encoding="utf-8") as stream:
+        json.dump(data, stream)
+
+
+def _make_object(path, object_type):
+    """Create a plain directory object."""
+    os.makedirs(os.path.join(path, ".celebi"), exist_ok=True)
+    _write_json(os.path.join(path, ".celebi", "config.json"),
+                {"object_type": object_type})
+
+
+def _make_task_or_algo(path, object_type, predecessors=(), successors=()):
+    """Create a task or algorithm object."""
+    _make_object(path, object_type)
+    with open(os.path.join(path, "celebi.yaml"), "w",
+              encoding="utf-8") as stream:
+        yaml.safe_dump({"alias": [],
+                        "environment": "celebichrono/lhcb-omegac:v0.2",
+                        "kubernetes_memory_limit": "256Mi"}, stream)
+    with open(os.path.join(path, "README.md"), "w",
+              encoding="utf-8") as stream:
+        stream.write("")
+    _write_json(os.path.join(path, ".celebi", "config.json"), {
+        "object_type": object_type,
+        "predecessors": list(predecessors),
+        "successors": list(successors),
+        "alias_to_path": {}, "path_to_alias": {},
+        "impression": "", "impressions": [],
+        "output_md5s": {}, "output_md5": ""})
+
+
+def _make_project_with_reimpressed_task():
+    """Create a temp project with a task re-impressed after an edit.
+
+    Returns:
+        (root, task_path, old_impression_uuid)
+    """
+    root = os.path.realpath(tempfile.mkdtemp())
+    _make_object(root, "project")
+    with open(os.path.join(root, ".celebi", "project.json"),
+              "w", encoding="utf-8") as stream:
+        stream.write("")
+    _make_object(os.path.join(root, "code"), "directory")
+    gen = os.path.join(root, "code", "Gen")
+    _make_task_or_algo(gen, "algorithm", successors=["GenTask1"])
+    with open(os.path.join(gen, "gen.C"), "w", encoding="utf-8") as stream:
+        stream.write("void gen() {}\n")
+    task = os.path.join(root, "GenTask1")
+    _make_task_or_algo(task, "task", predecessors=["code/Gen"])
+    os.chdir(root)
+
+    task_obj = VTask(task)
+    task_obj.impress()
+    old_uuid = task_obj.impression().uuid
+
+    # Change the environment and impress again: the new impression's
+    # parent is the old one, matching the reported trace scenario.
+    yaml_file = os.path.join(task, "celebi.yaml")
+    with open(yaml_file, encoding="utf-8") as stream:
+        data = yaml.safe_load(stream)
+    data["environment"] = "docker.io/celebichrono/lhcb-omegac:v0.2"
+    with open(yaml_file, "w", encoding="utf-8") as stream:
+        yaml.safe_dump(data, stream)
+    ChernCache.instance().__init__()  # pylint: disable=unnecessary-dunder-call
+    task_obj.impress()
+
+    return root, task, old_uuid
 
 
 def test_formatting_utilities():
@@ -64,6 +143,29 @@ def test_message_object():
     print("  ✓ All message types work correctly")
 
     print("Message object tests passed!")
+
+
+def test_trace_output_line_breaks():
+    """Every trace message entry ends its own line, nothing jams together."""
+    root, task, old_uuid = _make_project_with_reimpressed_task()
+    try:
+        task_obj = VTask(task)
+        text = str(task_obj.trace(old_uuid))
+
+        assert "Added nodes (1):\n" in text
+        assert "Removed nodes (1):\n" in text
+        assert "Added edges (1):\n" in text
+        assert "Removed edges (1):\n" in text
+        assert "Diff in file: celebi.yaml\n" in text
+        assert "celebi.yaml---" not in text
+        assert "Changed incoming edges to [TASK]" in text
+        assert "Added from (1):\n" in text
+        assert "      • [ALGO]" in text
+        assert text.endswith("\n")
+    finally:
+        os.chdir(os.path.dirname(os.path.abspath(__file__)))
+        ChernCache.instance().__init__()  # pylint: disable=unnecessary-dunder-call
+        shutil.rmtree(root, ignore_errors=True)
 
 
 def test_trace_method_exists():

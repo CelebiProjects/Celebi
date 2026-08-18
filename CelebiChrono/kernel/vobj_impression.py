@@ -503,40 +503,40 @@ class ImpressionManagement(Core):
         # ------------------------------------------------------
         # Pretty print
         # ------------------------------------------------------
-        message.add("\n=== DAG Node Differences ===", "title0")
+        message.add("\n=== DAG Node Differences ===\n", "title0")
 
         if added_nodes:
-            message.add(f"\nAdded nodes ({len(added_nodes)}):", "info")
+            message.add(f"\nAdded nodes ({len(added_nodes)}):\n", "info")
             # Filter out None values before sorting (None can't be sorted with strings)
             for node in sorted([n for n in added_nodes if n is not None]):
-                message.add(f"  • {node_display(node)}", "diff")
+                message.add(f"  • {node_display(node)}\n", "diff")
             # Handle None nodes separately if any exist
             none_nodes = [n for n in added_nodes if n is None]
             if none_nodes:
-                message.add("  • [NEW] (no impression yet)", "diff")
+                message.add("  • [NEW] (no impression yet)\n", "diff")
         else:
-            message.add("\nAdded nodes: none", "info")
+            message.add("\nAdded nodes: none\n", "info")
 
         if removed_nodes:
-            message.add(f"\nRemoved nodes ({len(removed_nodes)}):", "info")
+            message.add(f"\nRemoved nodes ({len(removed_nodes)}):\n", "info")
             # Filter out None values before sorting (None can't be sorted with strings)
             for node in sorted([n for n in removed_nodes if n is not None]):
-                message.add(f"  • {node_display(node)}", "diff")
+                message.add(f"  • {node_display(node)}\n", "diff")
             # Handle None nodes separately if any exist
             none_nodes = [n for n in removed_nodes if n is None]
             if none_nodes:
-                message.add("  • [DELETED] (impression missing)", "diff")
+                message.add("  • [DELETED] (impression missing)\n", "diff")
         else:
-            message.add("\nRemoved nodes: none", "info")
+            message.add("\nRemoved nodes: none\n", "info")
 
-        message.add("\n=== DAG Edge Differences ===", "title0")
+        message.add("\n=== DAG Edge Differences ===\n", "title0")
 
         if added_edges:
-            message.add(f"\nAdded edges ({len(added_edges)}):", "info")
+            message.add(f"\nAdded edges ({len(added_edges)}):\n", "info")
             # Filter out edges with None values before sorting (None can't be sorted with strings)
             valid_edges = [e for e in added_edges if e[0] is not None and e[1] is not None]
             for parent, child in sorted(valid_edges):
-                message.add(f"  • {edge_display(parent, child)}", "diff")
+                message.add(f"  • {edge_display(parent, child)}\n", "diff")
             # Handle edges with None values separately
             none_edges = [e for e in added_edges if e[0] is None or e[1] is None]
             for parent, child in none_edges:
@@ -550,16 +550,16 @@ class ImpressionManagement(Core):
                     if child is None
                     else node_display(child)
                 )
-                message.add(f"  • {parent_display} → {child_display}", "diff")
+                message.add(f"  • {parent_display} → {child_display}\n", "diff")
         else:
-            message.add("\nAdded edges: none", "info")
+            message.add("\nAdded edges: none\n", "info")
 
         if removed_edges:
-            message.add(f"\nRemoved edges ({len(removed_edges)}):", "info")
+            message.add(f"\nRemoved edges ({len(removed_edges)}):\n", "info")
             # Filter out edges with None values before sorting (None can't be sorted with strings)
             valid_edges = [e for e in removed_edges if e[0] is not None and e[1] is not None]
             for parent, child in sorted(valid_edges):
-                message.add(f"  • {edge_display(parent, child)}", "diff")
+                message.add(f"  • {edge_display(parent, child)}\n", "diff")
             # Handle edges with None values separately
             none_edges = [e for e in removed_edges if e[0] is None or e[1] is None]
             for parent, child in none_edges:
@@ -573,14 +573,14 @@ class ImpressionManagement(Core):
                     if child is None
                     else node_display(child)
                 )
-                message.add(f"  • {parent_display} → {child_display}", "diff")
+                message.add(f"  • {parent_display} → {child_display}\n", "diff")
         else:
-            message.add("\nRemoved edges: none", "info")
+            message.add("\nRemoved edges: none\n", "info")
 
         # --------------------------------------------------------
         #  Check parent-child relationships between removed/added
         # --------------------------------------------------------
-        message.add("\n=== Detailed Changes (Parent → Child) ===", "title0")
+        message.add("\n=== Detailed Changes (Parent → Child) ===\n", "title0")
 
         def render_impression_diff(old_uuid, new_uuid, title):
             """Render impression diff."""
@@ -589,7 +589,7 @@ class ImpressionManagement(Core):
 
             if not (old_impr and new_impr):
                 message.add(
-                    "One of the impressions does not exist, skipping diff.",
+                    "One of the impressions does not exist, skipping diff.\n",
                     "warning",
                 )
                 return False
@@ -608,16 +608,16 @@ class ImpressionManagement(Core):
             added_files = new_files_set - old_files_set
             has_changes = bool(added_files or removed_files)
 
-            message.add(f"\n{title}", "title1")
+            message.add(f"\n{title}\n", "title1")
 
             if added_files:
-                message.add(f"  Added files ({len(added_files)}):", "info")
+                message.add(f"  Added files ({len(added_files)}):\n", "info")
                 for file in sorted(added_files):
-                    message.add(f"    • {file}", "diff")
+                    message.add(f"    • {file}\n", "diff")
             if removed_files:
-                message.add(f"  Removed files ({len(removed_files)}):", "info")
+                message.add(f"  Removed files ({len(removed_files)}):\n", "info")
                 for file in sorted(removed_files):
-                    message.add(f"    • {file}", "diff")
+                    message.add(f"    • {file}\n", "diff")
 
             for rel in sorted(common):
                 old_f = os.path.join(old_root, rel)
@@ -637,11 +637,11 @@ class ImpressionManagement(Core):
                 if diff:
                     has_changes = True
                     diff = colorize_diff(diff).splitlines(keepends=True)
-                    message.add(f"\n  Diff in file: {rel}", "info")
-                    message.add("".join(diff), "diff")
+                    message.add(f"\n  Diff in file: {rel}\n", "info")
+                    message.add("".join(diff) + "\n", "diff")
 
             if not has_changes:
-                message.add("  No file-level changes detected.", "info")
+                message.add("  No file-level changes detected.\n", "info")
             return has_changes
 
         def is_parent(parent_uuid, child_uuid):
@@ -664,17 +664,17 @@ class ImpressionManagement(Core):
                     edge_diff_a = set(added_edges_to_a) - set(removed_edges_from_r)
                     edge_diff_r = set(removed_edges_from_r) - set(added_edges_to_a)
                     message.add(
-                        f"\n  Changed incoming edges to {node_display(a)}:",
+                        f"\n  Changed incoming edges to {node_display(a)}:\n",
                         "title1",
                     )
                     if edge_diff_a:
-                        message.add(f"    Added from ({len(edge_diff_a)}):", "info")
+                        message.add(f"    Added from ({len(edge_diff_a)}):\n", "info")
                         for parent in sorted(edge_diff_a):
-                            message.add(f"      • {node_display(parent)}", "diff")
+                            message.add(f"      • {node_display(parent)}\n", "diff")
                     if edge_diff_r:
-                        message.add(f"    Removed from ({len(edge_diff_r)}):", "info")
+                        message.add(f"    Removed from ({len(edge_diff_r)}):\n", "info")
                         for parent in sorted(edge_diff_r):
-                            message.add(f"      • {node_display(parent)}", "diff")
+                            message.add(f"      • {node_display(parent)}\n", "diff")
 
         if not detailed_changes_found:
             current_impression = self.impression()
@@ -687,7 +687,7 @@ class ImpressionManagement(Core):
                     f"Direct comparison: {old_display} → {new_display}",
                 )
             else:
-                message.add("\nNo detailed parent-child impression changes detected.", "info")
+                message.add("\nNo detailed parent-child impression changes detected.\n", "info")
 
         return message
 
