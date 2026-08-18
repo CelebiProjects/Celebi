@@ -113,6 +113,22 @@ def import_command(path: str) -> None:
         _handle_error(f"Command failed: {e}")
 
 
+@click.command(name="replace")
+@click.argument("a", type=str)
+@click.argument("b", type=str)
+@click.option("--dry-run", is_flag=True, default=False,
+              help="Print the planned changes without applying them.")
+def replace_command(a: str, b: str, dry_run: bool) -> None:
+    """Replace A with B in names, inputs, and aliases of the current folder."""
+    try:
+        from CelebiChrono.interface.shell import replace
+        _handle_result(replace(a, b, dry_run=dry_run))
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
 @click.command(name="upload-data")
 @click.argument("path", type=str)
 def upload_data_command(path: str) -> None:

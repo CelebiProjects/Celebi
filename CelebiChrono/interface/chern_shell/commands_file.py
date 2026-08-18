@@ -144,6 +144,28 @@ class FileCommands:
         except Exception as e:
             print(f"Error moving file: {e}")
 
+    def do_replace(self, arg: str) -> None:
+        """Replace a substring in names, inputs, and aliases. Usage: replace A B."""
+        try:
+            args = arg.split()
+            if len(args) != 2:
+                print("Usage: replace A B")
+                return
+            plan = shell.replace(args[0], args[1], dry_run=True)
+            if not plan.messages:
+                print("Nothing to replace.")
+                return
+            print(plan.colored())
+            if not plan.success:
+                return
+            answer = input("Apply these changes? (y/n): ").strip().lower()
+            if answer in ("y", "yes"):
+                result = shell.replace(args[0], args[1])
+                if result.messages:
+                    print(result.colored())
+        except Exception as e:
+            print(f"Error replacing: {e}")
+
     def do_export(self, arg: str) -> None:
         """Export files matching glob pattern to project/export/."""
         try:

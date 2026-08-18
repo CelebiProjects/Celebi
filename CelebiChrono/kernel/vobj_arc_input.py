@@ -33,7 +33,7 @@ class ArcManagementInput(Core):
         obj = self.get_vobject(path, project_path)
         if obj.object_type() != self.object_type():
             print(f"You are adding {obj.object_type()} type object as"
-                   " input. The input is required to be a {self.object_type()}.")
+                  f" input. The input is required to be a {self.object_type()}.")
             return
 
         if obj.has_predecessor_recursively(self):

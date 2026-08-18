@@ -14,6 +14,7 @@ from .shell_modules.file_operations import (
     mv, cp, ls, predecessors, successors, short_ls, rm, rm_file, mv_file,
     import_file, add_source, upload_data
 )
+from .shell_modules.replace_operations import replace as _replace
 from .shell_modules.object_creation import (
     mkalgorithm, mktask, mkdata, mkdatalist, create_lhcb_ap_list, mkdir,
     attach_data, register_ssh_data, verify_data
@@ -55,7 +56,7 @@ __all__ = [
     # File operations functions
     '_normalize_paths', '_validate_copy_operation', '_adjust_destination_path',
     'mv', 'cp', 'ls', 'predecessors', 'successors', 'short_ls', 'rm', 'rm_file', 'mv_file',
-    'import_file', 'add_source', 'upload_data',
+    'import_file', 'add_source', 'upload_data', 'replace',
     # Object creation functions (from object_creation.py)
     'mkalgorithm', 'mktask', 'mkdata', 'mkdatalist', 'create_lhcb_ap_list', 'mkdir', 'attach_data',
     'register_ssh_data',
@@ -89,3 +90,14 @@ __all__ = [
 
 # Import MANAGER explicitly for backward compatibility
 from .shell_modules._manager import MANAGER
+
+
+def replace(a: str, b: str, dry_run: bool = False):
+    """Replace A with B in the names, inputs, and aliases of the current object.
+
+    Args:
+        a: The search string.
+        b: The replacement string.
+        dry_run: Whether to only report the planned actions.
+    """
+    return _replace(a, b, MANAGER.current_object(), dry_run)
