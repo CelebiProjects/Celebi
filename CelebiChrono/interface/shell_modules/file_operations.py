@@ -4,6 +4,7 @@ File operations functions for shell interface.
 Functions for moving, copying, listing, removing files and directories.
 """
 import os
+import time
 
 from tqdm import tqdm
 
@@ -11,6 +12,7 @@ from ...utils import csys
 from ...utils.message import Message
 from ...kernel.vobject import VObject
 from ...kernel.vobj_file import LsParameters
+from ...kernel.chern_communicator import ChernCommunicator
 from ...interface.ChernManager import create_object_instance
 from ._manager import MANAGER
 
@@ -29,7 +31,8 @@ __all__ = [
     'mv_file',
     'import_file',
     'add_source',
-    'upload_data'
+    'upload_data',
+    'transfer'
 ]
 
 
@@ -602,3 +605,65 @@ def upload_data(path: str) -> Message:
         current_obj.send(path)
 
     return message
+
+
+def transfer(source: str, destination: str, pattern: str = None,
+             force: bool = False) -> Message:
+    """Transfer stageout results between Yuki and a runner cache.
+
+    SOURCE and DESTINATION are 'yuki' or 'runner:<runner-id>'.
+    """
+    message = Message()
+    current_obj = MANAGER.current_object()
+    if current_obj is None:
+        message.add("No current object selected", "error")
+        return message
+    project_uuid = current_obj.project_uuid()
+    impression = current_obj.impression()
+    if not project_uuid or not impression:
+        message.add("No project/impression selected", "error")
+        return message
+
+    cherncc = ChernCommunicator.instance()
+    resp = cherncc.transfer(project_uuid, impression, source, destination,
+                            pattern=pattern, force=force)
+    if "error" in resp:
+        message.add(resp["error"], "error")
+        return message
+    if "job_id" not in resp:
+        message.add("Server did not return a job id", "error")
+        return message
+
+    job_id = resp["job_id"]
+    progress_bar = tqdm(unit="B", unit_scale=True, unit_divisor=1024,
+                        desc="transfer: pending")
+    try:
+        while True:
+            state = cherncc.transfer_status(job_id)
+            status = state.get("status", "unknown")
+            total = state.get("bytes_total", 0) or 0
+            done = state.get("bytes_done", 0) or 0
+            current_file = state.get("current_file", "")
+            if total and progress_bar.total != total:
+                progress_bar.total = total
+                progress_bar.refresh()
+            progress_bar.n = min(done, total)
+            progress_bar.set_description(
+                f"transfer: {status}" + (f" {current_file}" if current_file else ""))
+            progress_bar.refresh()
+
+            if status == "done":
+                report = state.get("report", {})
+                transferred = len(report.get("transferred", []))
+                skipped = len(report.get("skipped", []))
+                failed = len(report.get("failed", []))
+                message.add(
+                    f"Transferred {transferred}, skipped {skipped}, "
+                    f"failed {failed}", "success")
+                return message
+            if status == "failed":
+                message.add(f"Transfer failed: {state.get('error')}", "error")
+                return message
+            time.sleep(2)
+    finally:
+        progress_bar.close()
