@@ -43,6 +43,10 @@ Data Registration:
 - POST /register-remote-data - Register data hosted on an ssh runner
 - GET /register-remote-data/{job_id} - Poll a remote data registration job
 
+Result Transfer:
+- POST /transfer - Start a result transfer job between yuki and a runner cache
+- GET /transfer/{job_id} - Poll a result transfer job's state
+
 All requests use configurable timeout (default: 10s) and support both local and remote execution.
 
 Method Usage Status:
@@ -754,6 +758,46 @@ class ChernCommunicator():
             raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
         if r.status_code == 404:
             return None
+        return r.json()
+
+    def transfer(self, project_uuid, impression, source, destination,
+                 pattern=None, force=False):
+        """Start a result transfer job on Yuki."""
+        url = self.serverurl()
+        data = {
+            "project_uuid": project_uuid,
+            "impression": impression,
+            "source": source,
+            "destination": destination,
+            "force": force,
+        }
+        if pattern:
+            data["pattern"] = pattern
+        try:
+            r = requests.post(f"http://{url}/transfer",
+                              json=data, timeout=self.timeout)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        if r.status_code != 200:
+            try:
+                body = r.json()
+            except ValueError:
+                body = None
+            if isinstance(body, dict) and "error" in body:
+                return {"error": body["error"]}
+            return {"error": f"transfer failed (HTTP {r.status_code})"}
+        return r.json()
+
+    def transfer_status(self, job_id):
+        """Poll a transfer job's state."""
+        url = self.serverurl()
+        try:
+            r = requests.get(f"http://{url}/transfer/{job_id}",
+                             timeout=self.timeout)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        if r.status_code == 404:
+            return {"status": "unknown", "error": "job not found"}
         return r.json()
 
     def verify_data(self, project_uuid, impression_uuid):
