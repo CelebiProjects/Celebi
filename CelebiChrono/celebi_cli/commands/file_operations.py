@@ -168,3 +168,26 @@ def add_source_command(path: str) -> None:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="transfer")
+@click.argument("source", type=str)
+@click.argument("destination", type=str)
+@click.option("--pattern", type=str, default=None,
+              help="Glob pattern to filter transferred files")
+@click.option("--force", is_flag=True, default=False,
+              help="Overwrite existing files at destination")
+def transfer_command(source: str, destination: str,
+                     pattern: str = None, force: bool = False) -> None:
+    """Transfer stageout results between Yuki and runner cache.
+
+    SOURCE and DESTINATION are 'yuki' or 'runner:<runner-id>'.
+    """
+    try:
+        from CelebiChrono.interface.shell import transfer
+        result = transfer(source, destination, pattern=pattern, force=force)
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")

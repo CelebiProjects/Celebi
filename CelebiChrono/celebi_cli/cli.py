@@ -38,6 +38,7 @@ cli.add_command(file_operations.import_command)
 cli.add_command(file_operations.upload_data_command)
 cli.add_command(file_operations.add_input_command)
 cli.add_command(file_operations.add_source_command)
+cli.add_command(file_operations.transfer_command)
 
 # Object creation commands (6 commands)
 cli.add_command(object_creation.create_algorithm_command)

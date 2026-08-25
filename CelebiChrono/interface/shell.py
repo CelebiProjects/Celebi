@@ -12,7 +12,7 @@ from .shell_modules.navigation import (
 from .shell_modules.file_operations import (
     _normalize_paths, _validate_copy_operation, _adjust_destination_path,
     mv, cp, ls, predecessors, successors, short_ls, rm, rm_file, mv_file,
-    import_file, add_source, upload_data
+    import_file, add_source, upload_data, transfer
 )
 from .shell_modules.replace_operations import replace as _replace
 from .shell_modules.object_creation import (
@@ -56,7 +56,7 @@ __all__ = [
     # File operations functions
     '_normalize_paths', '_validate_copy_operation', '_adjust_destination_path',
     'mv', 'cp', 'ls', 'predecessors', 'successors', 'short_ls', 'rm', 'rm_file', 'mv_file',
-    'import_file', 'add_source', 'upload_data', 'replace',
+    'import_file', 'add_source', 'upload_data', 'transfer', 'replace',
     # Object creation functions (from object_creation.py)
     'mkalgorithm', 'mktask', 'mkdata', 'mkdatalist', 'create_lhcb_ap_list', 'mkdir', 'attach_data',
     'register_ssh_data',
