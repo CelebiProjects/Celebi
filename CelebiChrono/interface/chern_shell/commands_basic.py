@@ -11,6 +11,32 @@ from ...interface.ChernManager import get_manager
 MANAGER = get_manager()
 
 
+def _parse_log_args(arg: str):
+    """Parse `log` command arguments into (index, follow, poll_interval).
+
+    Returns (None, follow, poll_interval) after printing an error when the
+    first token is present but not a valid index.
+    """
+    tokens = arg.split()
+    follow = "--follow" in tokens or "-f" in tokens
+    poll_interval = 2.0
+    if "-i" in tokens:
+        pos = tokens.index("-i")
+        if pos + 1 < len(tokens):
+            poll_interval = float(tokens[pos + 1])
+    elif "--poll-interval" in tokens:
+        pos = tokens.index("--poll-interval")
+        if pos + 1 < len(tokens):
+            poll_interval = float(tokens[pos + 1])
+
+    if tokens and tokens[0].isdigit():
+        return int(tokens[0]), follow, poll_interval
+    if tokens and not tokens[0].startswith("-"):
+        print(f"Error: Please provide a valid log index. {tokens[0]}")
+        return None, follow, poll_interval
+    return 0, follow, poll_interval
+
+
 class BasicCommands:
     """Mixin class providing basic operation command handlers."""
 
@@ -104,13 +130,34 @@ class BasicCommands:
             print(f"Error showing jobs: {e}")
 
     def do_log(self, arg: str) -> None:
-        """Show log for current object."""
+        """Show log for current object. Usage: log [index] [--follow] [-i SECONDS]
+
+        With --follow, prints the current log and then polls for new content
+        every interval (default 2s) until Ctrl-C.
+        """
         try:
-            index = int(arg.split()[0]) if arg.strip() else 0
-            result = shell.error_log(index)
-            if result.messages:
-                print(result.colored())
-        except (IndexError, ValueError) as e:
-            print(f"Error: Please provide a valid log index. {e}")
+            index, follow, poll_interval = _parse_log_args(arg)
+            if index is None:
+                return
+            if not follow:
+                result = shell.error_log(index)
+                output = result.colored()
+                if output:
+                    print(output, end="")
+                else:
+                    print("No log content found")
+                return
+
+            import time
+
+            offset = 0
+            while True:
+                result = shell.error_log(index, offset=offset)
+                output = result.colored()
+                if output:
+                    print(output, end="")
+                    offset += len("".join(
+                        text for text, _ in result.messages).encode("utf-8"))
+                time.sleep(poll_interval)
         except Exception as e:
             print(f"Error showing error log: {e}")

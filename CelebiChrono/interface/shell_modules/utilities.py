@@ -303,7 +303,7 @@ def tree(_depth: int = -1) -> Message:
     return MANAGER.current_object().tree()
 
 
-def error_log(index: int) -> Message:
+def error_log(index: int, offset: int = 0) -> Message:
     """Get the error log.
 
     Retrieves error log entries for the current object. Error logs
@@ -314,6 +314,7 @@ def error_log(index: int) -> Message:
         index (int): Log entry index to retrieve. Specific indexing
             depends on implementation (may be sequential, timestamp-based,
             or other scheme).
+        offset (int): Byte offset to start reading from. Defaults to 0.
 
     Examples:
         error_log(0)    # Get most recent error log
@@ -330,7 +331,7 @@ def error_log(index: int) -> Message:
         - Includes both fatal errors and warnings
         - Useful for debugging execution problems
     """
-    return MANAGER.current_object().error_log(index)
+    return MANAGER.current_object().error_log(index, offset=offset)
 
 
 def danger_call(cmd: str) -> Message:

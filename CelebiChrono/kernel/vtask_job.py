@@ -261,12 +261,12 @@ class JobManager(Core):
         self._append_skipped_failed(msg, skipped, failed)
         return msg
 
-    def error_log(self, error_index=0):
+    def error_log(self, error_index=0, offset=0):
         """ Collect the error logs of the job"""
         cherncc = ChernCommunicator.instance()
         cherncc.collect_logs(self.impression())
         msg = Message()
-        msg.add(cherncc.error_log(self.impression(), error_index))
+        msg.add(cherncc.error_log(self.impression(), error_index, offset=offset))
         return msg
 
     def engine_logs(self, fetch=False):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements

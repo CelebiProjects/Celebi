@@ -923,12 +923,13 @@ class ChernCommunicator():
             return "unconnected to DITE"
         return r.text
 
-    def error_log(self, impression, index):
-        """ Get the index_th error"""
+    def error_log(self, impression, index, offset=0):
+        """ Get the index_th error log, starting at byte offset."""
         url = self.serverurl()
         try:
             r = requests.get(
                 f"http://{url}/error-log/{self.project_uuid}/{impression.uuid}/{index}",
+                params={"offset": offset},
                 timeout=self.timeout
             )
         except Exception as e:

@@ -20,6 +20,17 @@ def _handle_error(error: str) -> None:
     sys.exit(1)
 
 
+def _raw_output(result: Optional[Any]) -> str:
+    """Return the raw text of a shell result for byte-offset tracking."""
+    if result is None:
+        return ""
+    if isinstance(result, str):
+        return result
+    if hasattr(result, "messages"):
+        return "".join(text for text, _ in result.messages)
+    return str(result)
+
+
 _RUNNER_SETTING_OPTIONS = [
     click.option("--ssh-host", type=str, default=None, help="SSH host (ssh backend)"),
     click.option("--ssh-user", type=str, default=None, help="SSH user (ssh backend)"),
@@ -273,18 +284,44 @@ def collect_command(contents: str) -> None:
 
 @click.command(name="log")
 @click.argument("index", type=int, default=0, required=False)
-def log_command(index: int) -> None:
+@click.option("--follow", "-f", is_flag=True, default=False,
+              help="Continuously poll for new log content.")
+@click.option("--poll-interval", "-i", type=float, default=2.0,
+              help="Seconds between polls when --follow is set (default: 2).")
+def log_command(index: int, follow: bool, poll_interval: float) -> None:
     """View error log for the current task.
 
     Retrieves error log entries for the current object. Error logs
     capture execution failures, warnings, and diagnostic information.
 
     INDEX specifies which log entry to retrieve (default: 0 for most recent).
+
+    With --follow, the command prints the current log and then polls for
+    new content every --poll-interval seconds until interrupted.
     """
     try:
         from CelebiChrono.interface.shell import error_log
-        result = error_log(index)
-        _handle_result(result)
+        if not follow:
+            result = error_log(index)
+            output = format_output(result)
+            if output:
+                print(output, end="")
+            else:
+                print("No log content found")
+            return
+
+        import time
+
+        offset = 0
+        while True:
+            result = error_log(index, offset=offset)
+            output = format_output(result)
+            if output:
+                print(output, end="")
+                offset += len(_raw_output(result).encode("utf-8"))
+            time.sleep(poll_interval)
+    except KeyboardInterrupt:
+        return
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
