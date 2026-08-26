@@ -89,6 +89,9 @@ class ChernCommunicator():
         """ Initialize the communicator and Singleton """
         self.local_config_dir = csys.local_config_dir()
         self.timeout = 10
+        # file-status waits on the server, which itself waits on a live
+        # (sometimes multi-second) runner listing — give it more patience
+        self.file_status_timeout = 40
         project_path = csys.project_path()
         self.project_uuid = metadata.ConfigFile(
                 join(project_path, ".celebi/config.json")
@@ -535,16 +538,43 @@ class ChernCommunicator():
 
     def file_status(self, impression, machine="none", kind="stageout"):
         """Return merged runner+Storage file listing for an impression."""
+        return self.file_status_detailed(impression, machine, kind).get("files", [])
+
+    def file_status_detailed(self, impression, machine="none", kind="stageout"):
+        """Return {"files": [...], "notes": [...]} for an impression.
+
+        Notes carry {"runner", "level", "message"} entries explaining e.g. an
+        unreachable runner or a cached listing (server-side), or a Yuki server
+        that cannot be reached at all (transport error, reported here).
+        """
         url = self.serverurl()
         imp = impression.uuid if hasattr(impression, "uuid") else impression
         try:
             r = requests.get(
-                f"http://{url}/file-status/{self.project_uuid}/{imp}/{machine}?kind={kind}",
-                timeout=self.timeout,
+                f"http://{url}/file-status/{self.project_uuid}/{imp}/{machine}"
+                f"?kind={kind}&detailed=1",
+                timeout=self.file_status_timeout,
             )
-            return r.json()
-        except Exception:
-            return []
+            payload = r.json()
+        except requests.exceptions.Timeout:
+            return {"files": [], "notes": [{
+                "runner": machine,
+                "level": "error",
+                "message": (f"no answer from Yuki server within "
+                            f"{self.file_status_timeout}s — it may still be "
+                            f"waiting on the runner"),
+            }]}
+        except Exception as exc:
+            return {"files": [], "notes": [{
+                "runner": machine,
+                "level": "error",
+                "message": f"cannot reach Yuki server: {exc}",
+            }]}
+        if isinstance(payload, list):        # legacy server without detailed mode
+            return {"files": payload, "notes": []}
+        if isinstance(payload, dict) and "files" in payload:
+            return payload
+        return {"files": [], "notes": []}
 
     def watermark(self, impression):
         """ Set the water mark to the png files"""

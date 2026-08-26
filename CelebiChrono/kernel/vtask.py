@@ -124,15 +124,29 @@ class VTask(InputManager, SettingManager, FileManager, JobManager):
             num /= 1024
         return result
 
-    def _stageout_table(self, cherncc, runner, rows=None):
-        """Build a Message listing stageout files: name, size, type, in-Yuki."""
+    def _stageout_table(self, cherncc, runner, rows=None, notes=None):
+        """Build a Message listing stageout files: name, size, type, in-Yuki.
+
+        Notes ({"level": info|warning|error, "message": str}) explain why the
+        table may be empty (e.g. an unreachable runner) or that the rows come
+        from a cached listing. When the table is empty, notes replace the
+        generic placeholder; otherwise they are printed under the table.
+        """
         message = Message()
         if rows is None:
-            rows = cherncc.file_status(self.impression(), runner, "stageout")
+            detail = cherncc.file_status_detailed(self.impression(), runner, "stageout")
+            rows = detail.get("files", [])
+            notes = detail.get("notes", [])
         message.add("Stageout files:\n", "title0")
         if not rows:
-            message.add("    (nothing to show yet — run 'collect', "
-                        "or the runner may be unreachable)\n")
+            if notes:
+                for note in notes:
+                    style = "warning" if note.get("level") in ("error", "warning") \
+                        else "normal"
+                    message.add(f"    ({note.get('message', '')})\n", style)
+            else:
+                message.add("    (nothing to show yet — run 'collect', "
+                            "or the runner may be unreachable)\n")
             return message
         message.add(f"    {'NAME':<28}{'SIZE':>10}  {'TYPE':<6} IN YUKI\n")
         for r in rows:
@@ -140,6 +154,10 @@ class VTask(InputManager, SettingManager, FileManager, JobManager):
             message.add(
                 f"    {r['name']:<28}{self._human_size(r.get('size', 0)):>10}  "
                 f"{r.get('type', ''):<6} {mark}\n")
+        for note in notes or []:
+            style = "warning" if note.get("level") in ("error", "warning") \
+                else "normal"
+            message.add(f"    ({note.get('message', '')})\n", style)
         return message
 
     def get_file(self, filename):
