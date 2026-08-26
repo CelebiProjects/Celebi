@@ -292,6 +292,17 @@ class ChernShellCompletions:
             return [r for r in runners if r.startswith(text)]
         return []
 
+    def complete_transfer(
+        self, text: str, line: str, _begidx: int, _endidx: int
+    ) -> list:
+        """Complete transfer's source/destination args with yuki and runners."""
+        parts = line.split()
+        if len(parts) == 1 or (len(parts) == 2 and not line.endswith(" ")):
+            runners = self.readline_file.read_variable("runners", [])
+            options = ["yuki"] + [f"runner:{r}" for r in runners]
+            return [o for o in options if o.startswith(text)]
+        return []
+
     # ====================================================================
     # Script and Documentation Completions
     # ====================================================================

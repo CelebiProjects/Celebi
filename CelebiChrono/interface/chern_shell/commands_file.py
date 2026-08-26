@@ -173,3 +173,30 @@ class FileCommands:
             MANAGER.current_object().export(pattern)
         except Exception as e:
             print(f"Error exporting: {e}")
+
+    def do_transfer(self, arg: str) -> None:
+        """Transfer stageout results.
+
+        Usage: transfer <source> <destination> [--pattern GLOB] [--force]
+        SOURCE and DESTINATION are 'yuki' or 'runner:<runner-id>'.
+        """
+        try:
+            args = arg.split()
+            if len(args) < 2:
+                print("Error: Please provide source and destination "
+                      "('yuki' or 'runner:<runner-id>').")
+                return
+            pattern = None
+            force = False
+            if "--pattern" in args:
+                idx = args.index("--pattern")
+                if idx + 1 < len(args):
+                    pattern = args[idx + 1]
+            if "--force" in args:
+                force = True
+            result = shell.transfer(args[0], args[1],
+                                    pattern=pattern, force=force)
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error transferring results: {e}")

@@ -623,6 +623,7 @@ def transfer(source: str, destination: str, pattern: str = None,
     if not project_uuid or not impression:
         message.add("No project/impression selected", "error")
         return message
+    impression = impression.uuid
 
     cherncc = ChernCommunicator.instance()
     resp = cherncc.transfer(project_uuid, impression, source, destination,

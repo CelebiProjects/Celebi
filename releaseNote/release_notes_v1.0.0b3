@@ -1,4 +1,12 @@
 ## v1.0.0b3
++ Add `transfer` to the Chern shell.
+  - `transfer <source> <destination> [--pattern GLOB] [--force]` moves the current impression's stageout results between `yuki` and SSH runners (`runner:<name>`), and from REANA runners to SSH runners via the destination's own reana-cli.
+  - Shows a byte-level progress bar and reports transferred/skipped/failed counts; tab completion offers `yuki` and `runner:<id>` for both arguments.
+  - Fix the transfer request to send the impression uuid instead of the VImpression object.
++ Live log following.
+  - Shell `log [index] --follow [-i SECONDS]` prints the log and then polls for new content until interrupted.
+  - The CLI `log` command gains the same `--follow`/`--poll-interval` options.
+  - The error-log client sends a byte offset so polls only fetch new content.
 + Add `--workon <project>` option to the `celebi` CLI entry point. It switches the current project before starting the Chern shell, e.g. `celebi --workon my-analysis`. Unknown project names are reported and the shell is not started.
 + Improve path completion in the Chern shell.
   - `@` is no longer a word delimiter, so `@/` project-root paths complete as a single token.
