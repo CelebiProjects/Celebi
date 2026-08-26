@@ -637,10 +637,23 @@ def transfer(source: str, destination: str, pattern: str = None,
     job_id = resp["job_id"]
     progress_bar = tqdm(unit="B", unit_scale=True, unit_divisor=1024,
                         desc="transfer: pending")
+    consecutive_unknowns = 0
     try:
         while True:
             state = cherncc.transfer_status(job_id)
             status = state.get("status", "unknown")
+            if status == "unknown":
+                consecutive_unknowns += 1
+                if consecutive_unknowns >= 10:
+                    message.add(
+                        f"Transfer job {job_id[:8]}... status 'unknown' "
+                        f"{consecutive_unknowns} times in a row (job not "
+                        "found on the server); aborting after ~30s. The "
+                        "server may have restarted or dropped the job.",
+                        "error")
+                    return message
+            else:
+                consecutive_unknowns = 0
             total = state.get("bytes_total", 0) or 0
             done = state.get("bytes_done", 0) or 0
             current_file = state.get("current_file", "")
@@ -664,6 +677,6 @@ def transfer(source: str, destination: str, pattern: str = None,
             if status == "failed":
                 message.add(f"Transfer failed: {state.get('error')}", "error")
                 return message
-            time.sleep(2)
+            time.sleep(3)
     finally:
         progress_bar.close()
