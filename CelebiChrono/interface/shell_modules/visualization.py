@@ -4,27 +4,47 @@ Visualization functions for shell interface.
 Functions for viewing, creating, and tracing impressions.
 """
 import os
+import webbrowser
 from collections import defaultdict
 
 from ...utils.message import Message
+from ...kernel.vimpression import VImpression
 from ._manager import MANAGER
 
 
-def view(browser: str = "open") -> Message:
-    """View impressions for current task.
+def _resolve_impression(current_obj, impression, message):
+    """Resolve a short impression id (or None) to a full impression uuid.
+
+    Returns the resolved uuid, or None if the impression is missing or
+    the prefix is ambiguous (the error is recorded on the message).
+    """
+    try:
+        uuid = current_obj.resolve_impression_uuid(
+            impression if impression is not None else current_obj.impression()
+        )
+    except ValueError as e:
+        message.add(str(e), "error")
+        return None
+    if VImpression(uuid).is_zombie():
+        message.add(f"Impression not found: {uuid}", "error")
+        return None
+    return uuid
+
+
+def view(impression: str = None) -> Message:
+    """View an impression in the default browser.
 
     Opens task execution impressions in a web browser for visualization.
     Impressions are graphical representations of task execution results,
     including plots, charts, and interactive visualizations.
 
     Args:
-        browser (str, optional): Browser command to use for opening URL.
-            Defaults to "open" (system default browser).
+        impression (str, optional): Impression id or unique short prefix.
+            Defaults to the current impression.
 
     Examples:
-        view()           # Open impressions in default browser
-        view firefox     # Open impressions in Firefox
-        view chrome      # Open impressions in Chrome
+        view            # Open the current impression
+        view abc1234    # Open the impression with prefix abc1234
 
     Returns:
         Message: Status message indicating success or error.
@@ -32,22 +52,29 @@ def view(browser: str = "open") -> Message:
     Note:
         - Current object must be a task
         - Task must have generated impressions
-        - Browser command must be available in system PATH
-        - Uses system's subprocess to launch browser
+        - A prefix matching more than one impression is an error
+        - Views of impressions outside this task's history carry a warning
     """
-    import subprocess
     message = Message()
-    is_task = MANAGER.current_object().is_task()
-    if not is_task:
+    current_obj = MANAGER.current_object()
+    if not current_obj.is_task():
         message.add("Not able to view", "error")
         return message
-    url = MANAGER.current_object().impview()
-    subprocess.call([browser, url])
+    uuid = _resolve_impression(current_obj, impression, message)
+    if uuid is None:
+        return message
+    if not current_obj.impression_in_history(uuid):
+        message.add(
+            f"Note: impression {uuid[:7]} is not in this task's history.",
+            "warning",
+        )
+    url = current_obj.impview(uuid)
+    webbrowser.open(url)
     message.add("Opened view in browser", "success")
     return message
 
 
-def viewurl() -> Message:
+def viewurl(impression: str = None) -> Message:
     """Get the impression URL for current task.
 
     Retrieves the URL where task execution impressions can be viewed.
@@ -55,11 +82,12 @@ def viewurl() -> Message:
     impressions are available.
 
     Args:
-        None: Function takes no parameters.
+        impression (str, optional): Impression id or unique short prefix.
+            Defaults to the current impression.
 
     Examples:
-        url = viewurl()  # Get impression URL
-        print(f"View at: {viewurl()}")  # Display URL
+        url = viewurl()       # Current impression URL
+        url = viewurl("abc1") # URL for the impression with prefix abc1
 
     Returns:
         Message: Message containing the URL, or error if not available.
@@ -71,11 +99,19 @@ def viewurl() -> Message:
         - Empty return indicates no impressions available
     """
     message = Message()
-    is_task = MANAGER.current_object().is_task()
-    if not is_task:
+    current_obj = MANAGER.current_object()
+    if not current_obj.is_task():
         message.add("Not able to get view url", "error")
         return message
-    url = MANAGER.current_object().impview()
+    uuid = _resolve_impression(current_obj, impression, message)
+    if uuid is None:
+        return message
+    if not current_obj.impression_in_history(uuid):
+        message.add(
+            f"Note: impression {uuid[:7]} is not in this task's history.",
+            "warning",
+        )
+    url = current_obj.impview(uuid)
     message.add(url, "normal")
     message.data["url"] = url
     return message

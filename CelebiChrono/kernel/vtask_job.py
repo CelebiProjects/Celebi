@@ -571,10 +571,16 @@ class JobManager(Core):
         except Exception as e:
             return False, f"Failed to list output files: {e}"
 
-    def impview(self):
-        """ Open browser to view the impression"""
+    def impview(self, impression=None):
+        """ Open browser to view the impression
+
+        Args:
+            impression: Impression to view. Defaults to the current one.
+        """
+        if impression is None:
+            impression = self.impression()
         cherncc = ChernCommunicator.instance()
-        return cherncc.impview(self.impression())
+        return cherncc.impview(impression)
 
     def export(self, pattern="*"):
         """Export files matching glob pattern to {project_path}/export/."""

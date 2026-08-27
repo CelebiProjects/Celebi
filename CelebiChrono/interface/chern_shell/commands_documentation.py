@@ -97,10 +97,13 @@ class DocumentationCommands:
         except Exception as e:
             print(f"Error viewing impressions: {e}")
 
-    def do_viewurl(self, _: str) -> None:
+    def do_viewurl(self, arg: str) -> None:
         """View impression URL."""
         try:
-            result = shell.viewurl()
+            if arg:
+                result = shell.viewurl(arg)
+            else:
+                result = shell.viewurl()
             print(result.colored())
         except Exception as e:
             print(f"Error getting impression URL: {e}")

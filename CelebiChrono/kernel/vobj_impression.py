@@ -353,6 +353,62 @@ class ImpressionManagement(Core):
             consult_table[self.path] = (consult_id, status)
         return status
 
+    def resolve_impression_uuid(self, impression) -> str:
+        """Resolve an impression to its full uuid, expanding a short prefix.
+
+        Args:
+            impression: A VImpression, a full uuid, or a unique uuid prefix.
+
+        Returns:
+            The full uuid. An unmatched token is returned unchanged so the
+            caller can report it as missing.
+
+        Raises:
+            ValueError: If the prefix matches more than one impression.
+        """
+        if hasattr(impression, "uuid"):
+            return impression.uuid
+        token = str(impression)
+        project_path = self.project_path()
+        impressions_path = os.path.join(project_path, ".celebi", "impressions")
+        ref_path = os.path.join(
+            project_path, ".celebi", "impressions_store", "refs", "impressions"
+        )
+        matches = set()
+
+        if os.path.isdir(impressions_path):
+            for uuid in os.listdir(impressions_path):
+                if uuid.startswith(token):
+                    matches.add(uuid)
+        if os.path.isdir(ref_path):
+            for name in os.listdir(ref_path):
+                if not name.endswith(".json"):
+                    continue
+                uuid = name[:-5]
+                if uuid.startswith(token):
+                    matches.add(uuid)
+
+        if len(matches) == 1:
+            return next(iter(matches))
+        if len(matches) > 1:
+            raise ValueError(
+                f"Ambiguous impression prefix '{token}': {sorted(matches)}"
+            )
+        return token
+
+    def impression_in_history(self, uuid: str) -> bool:
+        """Check whether an impression belongs to this object's lineage.
+
+        The lineage is the current impression together with its parents,
+        the same set listed by history().
+        """
+        current = self.impression()
+        if current is None:
+            return False
+        if uuid == current.uuid:
+            return True
+        return uuid in current.parents()
+
     # pylint: disable=too-many-locals,too-many-statements,too-many-branches
     def trace(self, impression=None) -> Message:
         """
@@ -380,40 +436,8 @@ class ImpressionManagement(Core):
             message.add("No impression exists. Object is NEW.", "warning")
             return message
 
-        def resolve_impression_uuid(impr) -> str:
-            """Resolve impression uuid."""
-            if hasattr(impr, "uuid"):
-                return impr.uuid
-            token = str(impr)
-            project_path = self.project_path()
-            impressions_path = os.path.join(project_path, ".celebi", "impressions")
-            ref_path = os.path.join(
-                project_path, ".celebi", "impressions_store", "refs", "impressions"
-            )
-            matches = set()
-
-            if os.path.isdir(impressions_path):
-                for uuid in os.listdir(impressions_path):
-                    if uuid.startswith(token):
-                        matches.add(uuid)
-            if os.path.isdir(ref_path):
-                for name in os.listdir(ref_path):
-                    if not name.endswith(".json"):
-                        continue
-                    uuid = name[:-5]
-                    if uuid.startswith(token):
-                        matches.add(uuid)
-
-            if len(matches) == 1:
-                return next(iter(matches))
-            if len(matches) > 1:
-                raise ValueError(
-                    f"Ambiguous impression prefix '{token}': {sorted(matches)}"
-                )
-            return token
-
         try:
-            impression_uuid = resolve_impression_uuid(impression)
+            impression_uuid = self.resolve_impression_uuid(impression)
             impression = VImpression(impression_uuid)
             if impression.is_zombie():
                 message.add(f"Impression not found: {impression_uuid}", "error")

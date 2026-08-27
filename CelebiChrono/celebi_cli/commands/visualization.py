@@ -20,25 +20,25 @@ def _handle_error(error):
 
 
 @click.command(name="view")
-@click.argument("browser", type=str, required=False, default="open")
-def view_command(browser):
-    """View impressions for current task in browser.
+@click.argument("impression", type=str, required=False, default=None)
+def view_command(impression):
+    """View impressions in the default browser.
 
     Opens task execution impressions in a web browser for visualization.
     Impressions are graphical representations of task execution results,
     including plots, charts, and interactive visualizations.
 
     Args:
-        browser: Browser command to use for opening URL (default: "open").
+        impression: Impression id or unique short prefix to view
+            (default: the current impression).
 
     Examples:
-        view           # Open impressions in default browser
-        view firefox   # Open impressions in Firefox
-        view chrome    # Open impressions in Chrome
+        view           # Open the current impression
+        view abc1234   # Open the impression with prefix abc1234
     """
     try:
         from CelebiChrono.interface.shell import view
-        result = view(browser)
+        result = view(impression)
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
@@ -47,19 +47,24 @@ def view_command(browser):
 
 
 @click.command(name="viewurl")
-def viewurl_command():
+@click.argument("impression", type=str, required=False, default=None)
+def viewurl_command(impression):
     """Get the impression URL for current task.
 
     Retrieves the URL where task execution impressions can be viewed.
     Returns empty string if current object is not a task or if no
     impressions are available.
 
+    Args:
+        impression: Impression id or unique short prefix to view
+            (default: the current impression).
+
     Returns:
         URL for viewing task impressions, or empty string if not available.
     """
     try:
         from CelebiChrono.interface.shell import viewurl
-        result = viewurl()
+        result = viewurl(impression)
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")

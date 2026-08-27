@@ -112,14 +112,19 @@ class ChernShellCompletions:
     def complete_view(
         self, _: str, line: str, _begidx: int, _endidx: int
     ) -> list:
-        """Complete view command with [browsers] option"""
-        options = ["firefox", "chrome", "safari", "edge", "browsers"]
+        """Complete view command with impression short ids."""
+        current_obj = MANAGER.current_object()
+        if not current_obj.is_task():
+            return []
+        impression = current_obj.impression()
+        if impression is None:
+            return []
+        short_ids = [impression.short_uuid()]
+        short_ids.extend(uuid[:7] for uuid in impression.parents())
         if line.strip() == "view":
-            return options
-        for option in options:
-            if option.startswith(line.strip().split()[-1]):
-                return [option]
-        return []
+            return short_ids
+        token = line.strip().split()[-1]
+        return [short_id for short_id in short_ids if short_id.startswith(token)]
 
     # ====================================================================
     # File and Directory Completions
