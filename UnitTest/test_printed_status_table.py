@@ -13,7 +13,7 @@ def test_status_table_lists_runner_and_downloaded():
          "in_runner": True, "in_yuki": False},
     ]
     cc = mock.Mock()
-    cc.file_status.return_value = rows
+    cc.file_status_detailed.return_value = {"files": rows, "notes": []}
     msg = t._stageout_table(cc, "runner")     # helper under test  # pylint: disable=protected-access
     text = "".join(m[0] for m in msg.messages)
     assert "mass.png" in text and "ntuple.root" in text

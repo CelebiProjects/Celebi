@@ -14,7 +14,7 @@ def test_transfer_no_current_object():
 def test_transfer_polls_until_done():
     current = mock.MagicMock()
     current.project_uuid.return_value = "proj"
-    current.impression.return_value = "imp"
+    current.impression.return_value = mock.Mock(uuid="imp")
     with mock.patch.object(file_operations.MANAGER, "current_object",
                            return_value=current):
         cc = mock.MagicMock()
@@ -35,7 +35,7 @@ def test_transfer_polls_until_done():
 def test_transfer_aborts_on_consecutive_unknown():
     current = mock.MagicMock()
     current.project_uuid.return_value = "proj"
-    current.impression.return_value = "imp"
+    current.impression.return_value = mock.Mock(uuid="imp")
     with mock.patch.object(file_operations.MANAGER, "current_object",
                            return_value=current):
         cc = mock.MagicMock()
