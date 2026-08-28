@@ -273,6 +273,18 @@ class ChernShellCompletions:
         runners = self.readline_file.read_variable("runners", [])
         return [r for r in runners if r.startswith(text)]
 
+    def complete_test(
+        self, text: str, line: str, _begidx: int, _endidx: int
+    ) -> list:
+        """Complete test mode (docker/ssh), then runners after `test ssh`."""
+        words = line.split()
+        if len(words) <= 2 or words[1] == text:
+            return [m for m in ("docker", "ssh") if m.startswith(text)]
+        if words[1] == "ssh":
+            runners = self.readline_file.read_variable("runners", [])
+            return [r for r in runners if r.startswith(text)]
+        return []
+
     def complete_test_runner(
         self, text: str, _line: str, _begidx: int, _endidx: int
     ) -> list:

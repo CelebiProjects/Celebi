@@ -377,6 +377,14 @@ class ExecutionManagement(Core):
         msg.add("Docker test executed for task.", "info")
         return msg
 
+    def ssh_test(self, runner: str = "") -> Message:
+        """Run an ssh test for the task on a registered runner."""
+        if not self.is_task():
+            msg = Message()
+            msg.add("SSH test can only be run on a task.", "warning")
+            return msg
+        return self.get_vtask(self.path).ssh_test(runner)
+
     def collect(self, contents="") -> Message:
         """ Collect the results from the runner. """
         cherncc = ChernCommunicator.instance()

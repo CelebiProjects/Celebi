@@ -77,21 +77,7 @@ class JobManager(Core):
         )
 
         try:
-            commands = self.algorithm().commands()
-            # Parse the commands, and replace any placeholders with actual values if needed
-            parameters = self.parameters()
-            if parameters:
-                # Example: Parameters for command execution:
-                # (['events'], {'events': '20000'})
-                # Here you can implement any logic to replace placeholders
-                # in commands with actual parameter values
-                # For example, if your command has a placeholder like {param1},
-                # you can replace it with parameters['param1']
-                for key, value in parameters[1].items():
-                    commands = [cmd.replace(f"${{{key}}}", str(value)) for cmd in commands]
-                # Commands after parameter substitution:
-                # ['root -b -q \'code/gendata.C(20000,"stageout/data.root")\'']
-            commands = " && ".join(commands)  # Join commands with '&&' to execute them sequentially
+            commands = " && ".join(self._test_commands())
             # Insert a mkdir -p /workspace/stageout command to ensure the stageout directory exists
             commands = f"mkdir -p /workspace/stageout && {commands}"
             print(f"Final command to execute in container: {commands}")
@@ -103,6 +89,23 @@ class JobManager(Core):
             return True, "Docker test executed successfully."
         except RuntimeError as e:
             return False, f"Docker test failed: {e}"
+
+    def _test_commands(self):
+        """Return the algorithm commands with parameters substituted.
+
+        Shared by docker_test and ssh_test.
+        """
+        commands = self.algorithm().commands()
+        # Parse the commands, and replace any placeholders with actual values if needed
+        parameters = self.parameters()
+        if parameters:
+            # Example: Parameters for command execution:
+            # (['events'], {'events': '20000'})
+            # For example, if your command has a placeholder like {param1},
+            # you can replace it with parameters['param1']
+            for key, value in parameters[1].items():
+                commands = [cmd.replace(f"${{{key}}}", str(value)) for cmd in commands]
+        return commands
 
     def kill(self):
         """ Kill the task
@@ -643,7 +646,6 @@ class JobManager(Core):
     def _prepare_data_dir(self, temp_dir):
         """copy the data to the temporal directory"""
         file_list = csys.tree_excluded(self.path)
-        print(file_list)
         for dirpath, _, filenames in file_list:
             for f in filenames:
                 full_path = os.path.join(self.project_path(), self.invariant_path(), dirpath, f)
@@ -849,8 +851,12 @@ class JobManager(Core):
                 csys.copy(full_path, dest_path)
         print(f"Reference algorithm copied to {ref_temp_dir}")
 
-    def pre_docker_test(self) -> Tuple[bool, Union[str, dict]]:
-        """ Pre-docker workaround - returns mounting guidance for Docker"""
+    def pre_docker_test(self, skip_impressions=None) -> Tuple[bool, Union[str, dict]]:
+        """ Pre-docker workaround - returns mounting guidance for Docker
+
+        Impressions in ``skip_impressions`` are not downloaded: they live
+        in the runner-side cache and are linked there instead.
+        """
         cherncc = ChernCommunicator.instance()
         status = cherncc.dite_status()
         if status != "connected":
@@ -872,18 +878,24 @@ class JobManager(Core):
             "mounts": []
         }
 
-        self._prepare_mounting_preceding_jobs(cherncc, temp_dir, mount_config)
+        self._prepare_mounting_preceding_jobs(cherncc, temp_dir, mount_config,
+                                              skip_impressions=skip_impressions)
         self._prepare_mounting_algorithm_code(temp_dir, mount_config)
 
         return True, mount_config
 
-    def _prepare_mounting_preceding_jobs(self, cherncc, _temp_dir, mount_config):
+    def _prepare_mounting_preceding_jobs(self, cherncc, _temp_dir, mount_config,
+                                         skip_impressions=None):
         """Prepare the preceding jobs for mounting - generates mount guidance"""
+        skip_impressions = set(skip_impressions or ())
         for pre in self.inputs():
-            pre_temp_dir = self._workaround_dir(name=pre.impression().uuid, prefix="chernimp_")
-            if not os.path.exists(pre_temp_dir):
+            impression_uuid = pre.impression().uuid
+            pre_temp_dir = self._workaround_dir(
+                name=impression_uuid, prefix="chernimp_")
+            if impression_uuid not in skip_impressions and \
+                    not os.path.exists(pre_temp_dir):
                 pre_temp_dir = self._create_workaround_dir(
-                    name=pre.impression().uuid, prefix="chernimp_"
+                    name=impression_uuid, prefix="chernimp_"
                 )
                 outputs = cherncc.output_files(pre.impression())
                 for f in outputs:
@@ -902,7 +914,8 @@ class JobManager(Core):
                 "target": f"/workspace/{alias}",
                 "type": "bind",
                 "readonly": True,
-                "description": f"Preceding job {pre}"
+                "description": f"Preceding job {pre}",
+                "impression": impression_uuid
             })
 
     def _prepare_mounting_algorithm_code(self, _temp_dir, mount_config):

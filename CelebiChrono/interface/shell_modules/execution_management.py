@@ -176,6 +176,21 @@ def test() -> Message:
     return MANAGER.current_object().docker_test()
 
 
+def ssh_test(runner: str = "") -> Message:
+    """Run the task's algorithm commands on a registered ssh runner.
+
+    The connection details are fetched from the DITE server; the client
+    then connects directly and streams the remote output. No impression
+    is created.
+
+    Note:
+        - The current object must be a task
+        - Requires connection to DITE server to look up the runner config
+        - Related function: `test()` for the local docker test
+    """
+    return MANAGER.current_object().ssh_test(runner)
+
+
 def engine_logs(fetch: bool = False) -> Message:
     """Fetch and display engine logs for the current task.
 

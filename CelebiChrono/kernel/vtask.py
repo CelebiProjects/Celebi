@@ -98,15 +98,18 @@ from .vtask_input import InputManager
 from .vtask_setting import SettingManager
 from .vtask_file import FileManager
 from .vtask_job import JobManager
+from .vtask_ssh_test import SshTestMixin
 from ..utils.message import Message
 
 CHERN_CACHE = ChernCache.instance()
 logger = getLogger("ChernLogger")
 
 
-class VTask(InputManager, SettingManager, FileManager, JobManager):
+class VTask(InputManager, SettingManager, FileManager, JobManager,
+            SshTestMixin):
     """ The main vtask class
-    It contains: Core, InputManager, SettingManager, FileManager, JobManager
+    It contains: Core, InputManager, SettingManager, FileManager, JobManager,
+    SshTestMixin
     """
     def output_files(self):
         """ [unused]

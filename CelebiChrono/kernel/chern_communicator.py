@@ -634,6 +634,26 @@ class ChernCommunicator():
         except Exception:
             return None
 
+    def runner_ssh_config(self, runner, environment=""):
+        """ Get the ssh connection settings (incl. key content) for a runner.
+
+        When ``environment`` is given, the server resolves it to a conda
+        environment name and includes it as ``conda_env`` in the response.
+        """
+        url = self.serverurl()
+        if environment:
+            url = f"{url}/runner-ssh-config/{runner}?environment={environment}"
+        else:
+            url = f"{url}/runner-ssh-config/{runner}"
+        try:
+            r = requests.get(f"http://{url}", timeout=self.timeout)
+            if r.status_code == 404:
+                return None
+            r.raise_for_status()
+            return r.json()
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+
     def register_runner(self, runner, runner_url, token, backend_type,
                         settings=None):
         """ Register a runner to the server """

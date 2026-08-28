@@ -34,6 +34,7 @@ dependencies = [
     "graphviz",
     "plotly",
     "docker",
+    "paramiko",
 ]
 
 [project.urls]
