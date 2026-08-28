@@ -63,6 +63,7 @@ cli.add_command(task_configuration.set_descriptor_command)
 cli.add_command(task_configuration.add_host_command)
 cli.add_command(task_configuration.hosts_command)
 cli.add_command(task_configuration.add_apd_token_command)
+cli.add_command(task_configuration.user_config_command)
 
 # Execution management commands
 cli.add_command(execution_management.runners_command)

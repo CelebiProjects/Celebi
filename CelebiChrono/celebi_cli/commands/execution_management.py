@@ -1,5 +1,4 @@
 """Execution management commands for Celebi CLI."""
-import os
 import sys
 import subprocess
 from typing import Optional, Any
@@ -408,7 +407,7 @@ def edit_command(script: str) -> None:
     """
     try:
         from CelebiChrono.interface.shell import get_script_path
-        from CelebiChrono.utils import metadata
+        from CelebiChrono.utils import user_config
 
         result = get_script_path(script)
         if not result.success:
@@ -416,9 +415,7 @@ def edit_command(script: str) -> None:
             return
 
         file_path = result.data["path"]
-        config_path = os.path.join(os.environ["HOME"], ".celebi", "config.yaml")
-        yaml_file = metadata.YamlFile(config_path)
-        editor = yaml_file.read_variable("editor", "vi")
+        editor = user_config.get("editor")
         subprocess.call([editor, file_path])
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")

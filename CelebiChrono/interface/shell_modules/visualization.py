@@ -4,10 +4,11 @@ Visualization functions for shell interface.
 Functions for viewing, creating, and tracing impressions.
 """
 import os
-import webbrowser
 from collections import defaultdict
 
 from ...utils.message import Message
+from ...utils.file_utils import open_url
+from ...utils import user_config
 from ...kernel.vimpression import VImpression
 from ._manager import MANAGER
 
@@ -69,7 +70,7 @@ def view(impression: str = None) -> Message:
             "warning",
         )
     url = current_obj.impview(VImpression(uuid))
-    webbrowser.open(url)
+    open_url(url)
     message.add("Opened view in browser", "success")
     return message
 
@@ -350,8 +351,9 @@ def draw_dag_graphviz(output_file: str = "dag.pdf", exclude_algorithms: bool = F
 
     # Output Setup
     output_file = os.path.join(
-        os.environ.get("HOME", "."), "Downloads", output_file
+        user_config.get_path("dag_output_dir"), output_file
     )
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
     output_format = output_file.split('.')[-1].lower()
 
     if output_format not in ['svg', 'png', 'pdf']:

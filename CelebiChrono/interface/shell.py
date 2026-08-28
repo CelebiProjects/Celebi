@@ -22,7 +22,7 @@ from .shell_modules.object_creation import (
 from .shell_modules.task_configuration import (
     add_input, add_algorithm, add_parameter, add_parameter_subtask,
     set_environment, set_memory_limit, set_descriptor, rm_parameter, remove_input,
-    jobs, status, get_script_path, config, add_apd_token
+    jobs, status, get_script_path, config, add_apd_token, user_config
 )
 from .shell_modules.execution_management import (
     submit, submit_objects, purge, purge_old_impressions, test,
@@ -64,7 +64,7 @@ __all__ = [
     # Task configuration functions (from task_configuration.py)
     'add_input', 'add_algorithm', 'add_parameter', 'add_parameter_subtask',
     'set_environment', 'set_memory_limit', 'set_descriptor', 'rm_parameter', 'remove_input',
-    'jobs', 'status', 'get_script_path', 'config', 'add_apd_token',
+    'jobs', 'status', 'get_script_path', 'config', 'add_apd_token', 'user_config',
     # Execution management functions (from execution_management.py)
     'submit', 'submit_objects', 'purge', 'purge_old_impressions', 'test',
     'collect', 'collect_outputs', 'collect_logs', 'engine_logs',

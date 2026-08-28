@@ -9,8 +9,21 @@ import prepare
 import CelebiChrono.kernel.vtask as vtsk
 from CelebiChrono.kernel.chern_cache import ChernCache
 from CelebiChrono.kernel.chern_communicator import ChernCommunicator
+from CelebiChrono.utils import user_config
 
 CHERN_CACHE = ChernCache.instance()
+
+
+def _registry_default(name):
+    """Resolve a user setting to its registered default.
+
+    create_task tests mock metadata.YamlFile, which would otherwise make
+    user_config.get return a MagicMock instead of the real default.
+    """
+    for setting in user_config.SETTINGS:
+        if setting.name == name:
+            return setting.default
+    raise KeyError(name)
 
 
 class TestChernVTask(unittest.TestCase):  # pylint: disable=too-many-public-methods
@@ -1548,6 +1561,8 @@ class TestChernVTask(unittest.TestCase):  # pylint: disable=too-many-public-meth
 
         with patch.object(obj_tsk, 'get_file') as mock_get_file, \
              patch('CelebiChrono.utils.csys.exists') as mock_exists, \
+             patch('CelebiChrono.kernel.vtask.user_config.get',
+                   return_value="myopen"), \
              patch('CelebiChrono.kernel.vtask.open_subprocess') as \
              mock_open_subprocess:
 
@@ -1560,7 +1575,7 @@ class TestChernVTask(unittest.TestCase):  # pylint: disable=too-many-public-meth
             mock_get_file.assert_called_once_with("local:test_file.txt")
             mock_exists.assert_called_once_with(mock_file_path)
             mock_open_subprocess.assert_called_once_with(
-                f"open {mock_file_path}"
+                f"myopen {mock_file_path}"
             )
 
         # Test view method with local file that doesn't exist
@@ -1810,6 +1825,8 @@ class TestChernVTask(unittest.TestCase):  # pylint: disable=too-many-public-meth
              patch('CelebiChrono.kernel.vtask.metadata.ConfigFile'), \
              patch('CelebiChrono.kernel.vtask.metadata.TwoTierConfigFile'), \
              patch('CelebiChrono.kernel.vtask.metadata.YamlFile') as mock_yaml_file, \
+             patch('CelebiChrono.kernel.vtask.user_config.get',
+                   side_effect=_registry_default), \
              patch('builtins.open', mock_open()):
 
             mock_parent = MagicMock()

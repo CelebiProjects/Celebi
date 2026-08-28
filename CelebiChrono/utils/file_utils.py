@@ -8,6 +8,7 @@ import hashlib
 import subprocess
 import uuid
 import time
+import webbrowser
 from pathlib import Path
 from contextlib import contextmanager
 from typing import Tuple, Iterator, List
@@ -261,3 +262,21 @@ def open_subprocess(command):
     finally:
         # Ensure the subprocess is finished and cleaned up
         process.wait()
+
+
+def open_url(url):
+    """Open a URL in the user's browser.
+
+    Uses the `browser` user setting when one is configured, otherwise the
+    system default browser via the webbrowser module -- which is portable,
+    unlike shelling out to `open`.
+
+    Args:
+        url (str): The URL to open.
+    """
+    from . import user_config  # pylint: disable=import-outside-toplevel
+    browser = user_config.get("browser")
+    if browser:
+        subprocess.call([browser, url])
+    else:
+        webbrowser.open(url)

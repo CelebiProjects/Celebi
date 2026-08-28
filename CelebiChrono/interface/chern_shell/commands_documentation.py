@@ -5,9 +5,9 @@ This module contains command handlers for documentation, help,
 and impression management.
 """
 # pylint: disable=broad-exception-caught
-import os
 import subprocess
-from ...utils import metadata
+from ...utils import user_config
+from ...utils.file_utils import open_url
 from ...interface import shell
 from ...interface.ChernManager import get_manager
 
@@ -37,13 +37,11 @@ class DocumentationCommands:
         try:
             obj = arg.split()[0]
             result = shell.get_script_path(obj)  # Validate script existence
-            config_path = os.path.join(os.environ["HOME"], ".celebi", "config.yaml")
             if not result.success:
                 print(result.colored())
             else:
                 file_path = result.data["path"]
-                yaml_file = metadata.YamlFile(config_path)
-                editor = yaml_file.read_variable("editor", "vi")
+                editor = user_config.get("editor")
                 subprocess.call([editor, f"{file_path}"])
         except (IndexError, ValueError) as e:
             print(f"Error: Please provide a script name. {e}")
@@ -131,7 +129,7 @@ class DocumentationCommands:
             result = shell.bookkeep_url()
             url = result.data.get("url", "")
             if url:
-                subprocess.call(["open", url])
+                open_url(url)
             else:
                 print(result.colored())
         except Exception as e:

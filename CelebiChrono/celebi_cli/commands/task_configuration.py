@@ -165,3 +165,23 @@ def add_apd_token_command(token):
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
+
+@click.command(name="user-config")
+@click.option("--list", "-l", "list_only", is_flag=True,
+              help="Show the settings in force without opening an editor.")
+def user_config_command(list_only):
+    """Create and edit the user configuration (~/.celebi/config.yaml).
+
+    Creates the file from a documented template if it does not exist yet,
+    then opens it in the configured editor. An existing file is never
+    rewritten. Unlike `config`, which edits the current object's
+    celebi.yaml, this edits your own user-level settings.
+    """
+    try:
+        from CelebiChrono.interface.shell import user_config
+        result = user_config(list_only=list_only)
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")

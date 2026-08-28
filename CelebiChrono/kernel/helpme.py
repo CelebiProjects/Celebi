@@ -19,6 +19,7 @@ The following commands can be used, and type ``helpme [COMMAND]'' or ``[COMMAND]
     --------------------------------
     ls_project   : List the projects.
     cd_project   : Switch to another project.
+    user-config  : Create and edit your user settings (~/.celebi/config.yaml).
 """,
 
 "cd": """The usage of cd:

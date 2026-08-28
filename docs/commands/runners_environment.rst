@@ -9,4 +9,6 @@ Commands for configuring execution backends and environments.
 * ``set-environment`` – Configure execution environment
 * ``set-memory-limit`` – Set task memory limits
 * ``setenv`` – Set environment variables
-* ``config`` – View or modify configuration
+* ``config`` – Edit the current task or algorithm's ``celebi.yaml``
+* ``user-config`` – Create and edit your user settings (``~/.celebi/config.yaml``);
+  ``--list`` shows the settings in force without opening an editor

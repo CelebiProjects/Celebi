@@ -193,11 +193,11 @@ class TestShellViewImpression(unittest.TestCase):
     def test_view_opens_url_for_given_impression(self):
         """view('1111111') resolves the id and opens its url."""
         print(Fore.BLUE + "Testing view with impression id..." + Style.RESET)
-        with patch.object(visualization, "webbrowser") as mock_browser:
+        with patch.object(visualization, "open_url") as mock_browser:
             result = visualization.view("1111111")
         self.mock_obj.resolve_impression_uuid.assert_called_once_with("1111111")
         self.mock_obj.impview.assert_called_once_with(self.mock_vimpr.return_value)
-        mock_browser.open.assert_called_once_with(
+        mock_browser.assert_called_once_with(
             "http://dite/imp-view/proj/11111111-2222-3333-4444-555555555555"
         )
         self.assertIn("success", [entry[1] for entry in result.messages])
@@ -216,19 +216,19 @@ class TestShellViewImpression(unittest.TestCase):
         """view warns but still opens when the impression is foreign."""
         print(Fore.BLUE + "Testing view foreign impression warning..." + Style.RESET)
         self.mock_obj.impression_in_history.return_value = False
-        with patch.object(visualization, "webbrowser") as mock_browser:
+        with patch.object(visualization, "open_url") as mock_browser:
             result = visualization.view("1111111")
         self.assertIn("warning", [entry[1] for entry in result.messages])
-        mock_browser.open.assert_called_once()
+        mock_browser.assert_called_once()
 
     def test_view_reports_unknown_impression(self):
         """view errors when the impression does not exist."""
         print(Fore.BLUE + "Testing view unknown impression..." + Style.RESET)
         self.mock_vimpr.return_value.is_zombie.return_value = True
-        with patch.object(visualization, "webbrowser") as mock_browser:
+        with patch.object(visualization, "open_url") as mock_browser:
             result = visualization.view("deadbeef")
         self.assertIn("error", [entry[1] for entry in result.messages])
-        mock_browser.open.assert_not_called()
+        mock_browser.assert_not_called()
 
 
 class TestViewPassesImpressionObject(unittest.TestCase):
@@ -266,10 +266,10 @@ class TestViewPassesImpressionObject(unittest.TestCase):
             mock_communicator = MagicMock()
             mock_communicator.impview.side_effect = impview_side_effect
             mock_instance.return_value = mock_communicator
-            with patch.object(visualization, "webbrowser") as mock_browser:
+            with patch.object(visualization, "open_url") as mock_browser:
                 result = visualization.view(self.uuid[:7])
         self.assertIn("success", [entry[1] for entry in result.messages])
-        mock_browser.open.assert_called_once_with(
+        mock_browser.assert_called_once_with(
             f"http://dite/imp-view/proj/{self.uuid}"
         )
 

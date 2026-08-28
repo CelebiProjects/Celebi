@@ -10,6 +10,7 @@ def _cc():
     cc.timeout = 1
     cc.serverurl = lambda: "host:1"
     cc.file_status_timeout = 40
+    cc.transfer_timeout = 600
     return cc
 
 

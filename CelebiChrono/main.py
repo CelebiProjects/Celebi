@@ -152,7 +152,9 @@ def cli(ctx, debug, workon_project):
 @cli.command()
 def config():
     """ Configure the software"""
-    print("Configuration is not supported yet")
+    print("Use `celebi-cli user-config` to edit your user settings")
+    print("(~/.celebi/config.yaml), or `celebi-cli user-config --list`")
+    print("to see the settings in force.")
 
 
 @cli.command()

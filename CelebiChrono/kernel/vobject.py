@@ -86,12 +86,11 @@
         + dite
 """
 import os
-from os.path import join
 import subprocess
 from logging import getLogger
 from typing import TYPE_CHECKING
 
-from ..utils import metadata
+from ..utils import user_config
 from .vobj_arc_management import ArcManagement
 from .vobj_alias_management import AliasManagement
 from .vobj_impression import ImpressionManagement
@@ -157,10 +156,7 @@ class VObject(ArcManagement, FileManagement, AliasManagement,
 
     def edit_readme(self) -> None:
         """ Edit the README.md file of the object"""
-        yaml_file = metadata.YamlFile(
-            join(os.environ["HOME"], ".celebi", "config.yaml")
-        )
-        editor = yaml_file.read_variable("editor", "vi")
+        editor = user_config.get("editor")
         file_name = os.path.join(self.path, "./README.md")
         subprocess.call(f"{editor} {file_name}", shell=True)
 

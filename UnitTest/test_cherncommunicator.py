@@ -283,7 +283,7 @@ class TestChernCommunicator(unittest.TestCase):  # pylint: disable=too-many-publ
         self.comm.export(impression, "file.txt", "output.txt")
 
         mock_get.assert_called_once_with(
-            "http://localhost:8080/export/projectuuid/abc123/file.txt", timeout=10000
+            "http://localhost:8080/export/projectuuid/abc123/file.txt", timeout=600
         )
 
         # Check if the output file was created correctly
@@ -438,7 +438,7 @@ class TestChernCommunicator(unittest.TestCase):  # pylint: disable=too-many-publ
         result = self.comm.collect(impression)
 
         mock_get.assert_called_once_with(
-            "http://localhost:8080/collect/projectuuid/abc123", timeout=10000
+            "http://localhost:8080/collect/projectuuid/abc123", timeout=600
         )
         self.assertEqual(result, {"success": True, "message": "collected"})
 
@@ -894,8 +894,8 @@ class TestChernCommunicator(unittest.TestCase):  # pylint: disable=too-many-publ
         prepare.remove_chern_project("demo_genfit_new")
         CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
-    @patch("CelebiChrono.kernel.chern_communicator.subprocess.call")
-    def test_display(self, mock_subprocess):
+    @patch("CelebiChrono.kernel.chern_communicator.open_url")
+    def test_display(self, mock_open_url):
         """Test display."""
         print(Fore.BLUE + "Testing Display..." + Style.RESET)
         prepare.create_chern_project("demo_genfit_new")
@@ -915,11 +915,10 @@ class TestChernCommunicator(unittest.TestCase):  # pylint: disable=too-many-publ
         # Call display method
         self.comm.display(impression, "output.html")
 
-        # Verify subprocess call
-        mock_subprocess.assert_called_once_with([
-            "open",
+        # Verify the URL is handed to the browser helper
+        mock_open_url.assert_called_once_with(
             "http://localhost:8080/export/projectuuid/abc123/output.html"
-        ])
+        )
 
         os.chdir("..")
         prepare.remove_chern_project("demo_genfit_new")

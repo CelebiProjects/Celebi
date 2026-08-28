@@ -67,7 +67,6 @@ Method Usage Status:
 """
 
 import json
-import subprocess
 import tarfile
 import os
 from logging import getLogger
@@ -78,6 +77,7 @@ import requests
 from ..utils import csys
 from ..utils import metadata
 from ..utils.pretty import colorize
+from ..utils.file_utils import open_url
 from ..utils.resumable_upload import ResumableUploader, UploadError
 from .chern_cache import ChernCache
 from ..utils.message import Message
@@ -99,6 +99,9 @@ class ChernCommunicator():
         # file-status waits on the server, which itself waits on a live
         # (sometimes multi-second) runner listing — give it more patience
         self.file_status_timeout = 40
+        # Bulk transfers (upload, collect, export, watermark) move real data
+        # and need far longer than a control request, but still need a bound.
+        self.transfer_timeout = 600
         project_path = csys.project_path()
         self.project_uuid = metadata.ConfigFile(
                 join(project_path, ".celebi/config.json")
@@ -209,7 +212,7 @@ class ChernCommunicator():
                 'project_uuid': self.project_uuid,
             },
             files=files,
-            timeout=self.timeout * 1000
+            timeout=self.transfer_timeout
         )
 
     def deposit_with_data(self, impression, path, progress_callback=None):
@@ -507,7 +510,7 @@ class ChernCommunicator():
         if params:
             path = f"{path}?{params}"
         try:
-            r = requests.get(path, timeout=self.timeout * 1000)
+            r = requests.get(path, timeout=self.transfer_timeout)
             r.raise_for_status()
             try:
                 payload = r.json()
@@ -588,7 +591,7 @@ class ChernCommunicator():
         url = self.serverurl()
         r = requests.get(
                 f"http://{url}/watermark/{self.project_uuid}/{impression.uuid}",
-                timeout=self.timeout * 1000
+                timeout=self.transfer_timeout
         )
         return r.text
 
@@ -988,7 +991,7 @@ class ChernCommunicator():
         url = self.serverurl()
         r = requests.get(
                 f"http://{url}/export/{self.project_uuid}/{impression.uuid}/{filename}",
-                timeout=self.timeout * 1000
+                timeout=self.transfer_timeout
         )
         with open(output, "wb") as f:
             f.write(r.content)
@@ -996,13 +999,10 @@ class ChernCommunicator():
     # === Browser Integration ===
     def display(self, impression, filename):
         """ Display the file in the browser """
-        # Open the browser to display the file
         url = self.serverurl()
-        # The browser is 'open'
-        subprocess.call([
-            "open",
+        open_url(
             f"http://{url}/export/{self.project_uuid}/{impression.uuid}/{filename}"
-            ])
+        )
 
     def impview(self, impression):
         """ View the impression in the browser """

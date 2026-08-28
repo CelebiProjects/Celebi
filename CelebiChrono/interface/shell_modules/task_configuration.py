@@ -6,9 +6,12 @@ Functions for configuring tasks and algorithms: inputs, parameters, environment,
 import os
 import subprocess
 
+import yaml
+
 from ...kernel.vobject import VObject
 from ...utils import csys
 from ...utils import metadata
+from ...utils import user_config as user_settings
 from ...utils.message import Message
 from ._manager import MANAGER
 
@@ -621,23 +624,73 @@ def config() -> Message:
     if not MANAGER.current_object().is_task_or_algorithm():
         message.add("Not able to config", "error")
         return message
-    path = os.path.join(os.environ["HOME"], ".celebi", "config.yaml")
-    yaml_file = metadata.YamlFile(path)
-    editor = yaml_file.read_variable("editor", "vi")
+    editor = user_settings.get("editor")
     # Generate a template file if the config file does not exist
     if not os.path.exists(f"{MANAGER.current_object().path}/celebi.yaml"):
+        if MANAGER.current_object().object_type() == "task":
+            template = {
+                "environment": user_settings.get("task_environment"),
+                "memory_limit": "256Mi",
+                "alias": ["void"],
+                "parameters": {},
+            }
+        else:
+            template = {
+                "environment": user_settings.get("algorithm_environment"),
+                "commands": ["echo 'Hello, world!'"],
+            }
         with open(f"{MANAGER.current_object().path}/celebi.yaml", "w", encoding="utf-8") as f:
-            if MANAGER.current_object().object_type() == "task":
-                f.write("""environment: chern
-memory_limit: 256Mi
-alias:
-  - void
-parameters: {{}}""")
-            else:
-                f.write("""environment: script
-commands:
-  - echo 'Hello, world!'""")
+            # Rendered through yaml.dump so any environment value stays valid
+            f.write(yaml.dump(template, default_flow_style=False,
+                              sort_keys=False))
     subprocess.call([editor, f"{MANAGER.current_object().path}/celebi.yaml"])
+    return message
+
+
+def user_config(list_only: bool = False) -> Message:
+    """Create and edit the user configuration file.
+
+    Creates ~/.celebi/config.yaml from a documented template if it does not
+    exist yet, then opens it in the configured editor. An existing file is
+    never rewritten, so hand-edited settings and comments always survive.
+
+    Unlike `config`, which edits the current task or algorithm's celebi.yaml,
+    this edits your own user-level settings and works from anywhere.
+
+    Args:
+        list_only (bool): Print the settings in force and exit without
+            creating the file or opening an editor.
+
+    Returns:
+        Message: Message with status information or the settings listing.
+
+    Examples:
+        user-config
+        user-config --list
+
+    Note:
+        - Settings are documented in the generated template
+        - Values not present in the file fall back to built-in defaults
+        - Uses the `editor` setting, defaulting to "vi"
+    """
+    message = Message()
+
+    if list_only:
+        for row in user_settings.describe():
+            origin = "set" if row.is_set else "default"
+            message.add(f"{row.name}: ", "title0")
+            message.add(f"{row.value} ", "normal")
+            message.add(f"({origin})\n", "comment")
+            message.add(f"    {row.description}\n", "comment")
+        message.add(f"\nFile: {user_settings.config_path()}\n", "comment")
+        return message
+
+    if user_settings.ensure_exists():
+        message.add(f"Created {user_settings.config_path()}\n", "success")
+
+    subprocess.call([
+        user_settings.get("editor"), user_settings.config_path()
+    ])
     return message
 
 

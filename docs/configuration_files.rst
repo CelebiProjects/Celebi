@@ -10,15 +10,72 @@ Global Configuration (``~/.celebi/config.yaml``)
 The global configuration file stores user preferences and is located in
 the user's home directory under ``~/.celebi/``.
 
+Run ``user-config`` to create it. The file is generated from a documented
+template listing every available setting at its default value, then opened in
+your editor. An existing file is never rewritten, so your edits and comments
+always survive. ``user-config --list`` prints the settings in force, marking
+each as ``set`` or ``default``, without opening an editor.
+
+Any setting omitted from the file falls back to its built-in default, so it is
+safe to delete a line rather than guess a value.
+
 **Example:**
 
 .. code-block:: yaml
 
     editor: code
+    browser: firefox
+    default_runner: farm
 
-**Common fields:**
+**Fields:**
 
-* ``editor`` – Default editor for editing files (e.g., ``code``, ``vim``, ``nano``)
+*Programs*
+
+* ``editor`` – Editor used by ``config``, ``edit-script``, ``readme`` and
+  merge-conflict resolution (e.g., ``code``, ``vim``, ``nano``). Default: ``vi``
+* ``file_opener`` – Program used to open a local file, e.g. by
+  ``view local:...``. Default: ``open`` on macOS, ``xdg-open`` elsewhere
+* ``browser`` – Command used to open a URL. Leave empty to use the system
+  default browser. Default: empty
+
+*Defaults for newly created tasks*
+
+These are applied when a task is created and recorded on that task. Existing
+tasks keep whatever they were created with — changing a setting never rewrites
+a task that already exists.
+
+* ``default_runner`` – Runner assigned to new tasks. Default: ``local``
+* ``auto_download`` – Whether new tasks download outputs automatically.
+  Default: ``true``
+* ``cache_on_runner`` – Whether new tasks cache results on the runner.
+  Default: ``false``
+* ``task_environment`` – Environment written into a new task's ``celebi.yaml``.
+  Default: ``reanahub/reana-env-root6:6.18.04``
+* ``algorithm_environment`` – Environment written into a new algorithm's
+  ``celebi.yaml``. Default: ``script``
+
+*Output*
+
+* ``dag_output_dir`` – Directory where ``draw-dag`` writes its output.
+  Default: ``~/Downloads``
+
+.. warning::
+
+   ``task_environment`` and ``algorithm_environment`` are written **into**
+   ``celebi.yaml``, which is hashed into the object's impression. Two people
+   with different settings will therefore create tasks with different
+   impressions. That difference is visible in the committed ``celebi.yaml``,
+   so it is reviewable — but for a shared project, agree on a value.
+
+   Deliberately, these settings are consulted only when a file is *written*.
+   Reading an ``environment`` never falls back to them: if it did, two users
+   could share an impression id while executing in different environments.
+
+.. note::
+
+   ``user-config`` edits your own user-level settings. The similarly named
+   ``config`` command edits the *current task or algorithm's* ``celebi.yaml``,
+   documented below.
 
 
 Task Configuration (``celebi.yaml``)

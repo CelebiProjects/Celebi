@@ -17,7 +17,9 @@ class ContainerManager:
         self.volumes = volumes
         self.memory_limit = memory_limit
         self.name = name
-        self.client = docker.DockerClient(base_url='unix:///Users/zhaomr/.docker/run/docker.sock')
+        # Resolve the daemon from the environment (DOCKER_HOST, or the
+        # platform default socket) rather than a fixed path.
+        self.client = docker.from_env()
         self.container = None
 
     def start_container(self, commands: list[str]) -> None:

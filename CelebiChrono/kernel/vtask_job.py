@@ -474,7 +474,7 @@ class JobManager(Core):
             import requests
             response = requests.get(
                 f"http://{url}/export/{cherncc.project_uuid}/{impression.uuid}/{filename}",
-                timeout=cherncc.timeout * 1000
+                timeout=cherncc.transfer_timeout
             )
             if response.status_code != 200:
                 return False, f"Failed to fetch image: HTTP {response.status_code}", None

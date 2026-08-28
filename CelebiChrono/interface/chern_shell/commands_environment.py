@@ -195,6 +195,29 @@ class EnvironmentCommands:
         except Exception as e:
             print(f"Error accessing config: {e}")
 
+    def do_user_config(self, arg: str) -> None:
+        """Create and edit the user configuration (~/.celebi/config.yaml).
+
+        Usage: user-config [--list|-l]
+
+        Unlike `config`, which edits the current object's celebi.yaml, this
+        edits your own user-level settings and works from anywhere.
+        """
+        argument = arg.strip()
+        if argument in ("--list", "-l"):
+            list_only = True
+        elif not argument:
+            list_only = False
+        else:
+            print("Usage: user-config [--list|-l]")
+            return
+        try:
+            result = shell.user_config(list_only=list_only)
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error accessing user config: {e}")
+
     def do_submit(self, arg: str) -> None:
         """Submit current object or named sub-objects.
 

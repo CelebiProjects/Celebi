@@ -4,11 +4,12 @@ This module provides user-friendly interfaces for resolving
 merge conflicts with clear prompts and visualizations.
 """
 import sys
-import os
+import subprocess
 from typing import Dict, List, Any
 from enum import Enum
 from logging import getLogger
 
+from ..utils import user_config
 from ..utils.dag_visualizer import DAGVisualizer
 
 logger = getLogger("ChernLogger")
@@ -591,13 +592,12 @@ class MergeResolver:
 
     def _edit_file_manually(self, file_path: str) -> bool:
         """Launch editor for manual file editing."""
-        editor = os.environ.get('EDITOR', 'vim')
+        editor = user_config.get("editor")
 
         print(f"  Opening {file_path} in {editor}...")
         print("  Edit the file to resolve conflicts, then save and exit.")
 
         try:
-            import subprocess
             result = subprocess.run([editor, file_path], check=False)
             return not result.returncode
         except Exception as e:

@@ -83,11 +83,13 @@
 
 """
 import os
+import shlex
 from logging import getLogger
 from os.path import join
 
 from ..utils import metadata
 from ..utils import csys
+from ..utils import user_config
 from ..utils.csys import open_subprocess
 
 from .chern_cache import ChernCache
@@ -177,7 +179,8 @@ class VTask(InputManager, SettingManager, FileManager, JobManager,
             if not csys.exists(path):
                 print(f"File: {path} do not exists")
                 return
-            with open_subprocess(f"open {path}"):
+            opener = user_config.get("file_opener")
+            with open_subprocess(f"{opener} {shlex.quote(path)}"):
                 pass
 
     def printed_status(self):
@@ -280,14 +283,19 @@ def create_task(path):
     shared_config.write_variable("object_type", "task")
     # Create local config.local.json with default settings
     local_config = metadata.TwoTierConfigFile(path + "/.celebi/config.json")
-    local_config.write_variable("auto_download", True)
-    local_config.write_variable("default_runner", "local")
+    local_config.write_variable(
+        "auto_download", user_config.get("auto_download"))
+    local_config.write_variable(
+        "default_runner", user_config.get("default_runner"))
+    local_config.write_variable(
+        "cache_on_runner", user_config.get("cache_on_runner"))
     task = VObject(path)
 
     # Create the default celebi.yaml file
     yaml_file = metadata.YamlFile(join(path, "celebi.yaml"))
     yaml_file.write_variable("descriptor", descriptor)
-    yaml_file.write_variable("environment", "reanahub/reana-env-root6:6.18.04")
+    yaml_file.write_variable(
+        "environment", user_config.get("task_environment"))
     yaml_file.write_variable("memory_limit", "256Mi")
 
     with open(path + "/README.md", "w", encoding="utf-8") as f:
