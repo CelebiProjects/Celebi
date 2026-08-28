@@ -48,6 +48,11 @@
 + Fix the DITE port fallback (`127.0.0.1:3315` instead of `localhost:5000`), the `add_host` wrapper arity mismatch, and the never-populated runner tab-completion cache.
 + Declare the `tqdm` dependency (used by the upload progress bar) in `pyproject.toml`.
 + Fix all pylint issues across `CelebiChrono` (10.00/10 with the project rcfile).
++ Runner cache management in the shell.
+  - `purge-ssh-runner-cache <runner>`: purge the current impression's cache entry from an ssh runner. In a folder it fans out over every impressed subobject (one confirmation for the whole batch); it never purges the whole runner cache, and warns to restore registered data with `register-data` afterwards.
+  - `cache-results <runner>`: save the current impression's runner-resident results (the workflow's stageout) into the runner's managed impressions cache. Runs as a background job on Yuki with live polling; in a folder it processes every impressed subobject and reports per-impression totals.
+  - `whereabouts`: report where the current impression's data lives — yuki storage, each runner's workflow/cache states, and the registration host — in aligned columns.
+  - All three commands exist in the Chern shell (`do_*`), `celebi-cli`, and the shell-function layer, with runner-name tab completion where a runner is taken.
 + Bump version to 1.0.0b3.
 
 ## v1.0.0b2
