@@ -4,6 +4,7 @@ Communication functions for shell interface.
 Functions for managing hosts, runners, and DITE communication.
 """
 import os
+import time
 
 from ...utils import csys
 from ...utils.message import Message
@@ -317,6 +318,230 @@ def test_runner(runner: str, timeout: int = None) -> Message:
             message.add(f"\n  {name:<20}{detail}", "success")
         else:
             message.add(f"\n  {name:<20}{check.get('error', 'failed')}", "error")
+    return message
+
+
+def _impression_scopes():
+    """(project_uuid, impression_uuid) scopes to act on.
+
+    The current object's own impression — or, when the current object is
+    a folder, every impressed subobject beneath it (recursively).
+    """
+    try:
+        current = MANAGER.current_object()
+    except Exception:  # pylint: disable=broad-exception-caught
+        return []
+    if current.object_type() in ("project", "directory"):
+        scopes = []
+        for obj in current.sub_objects_recursively():
+            imp = obj.impression()
+            if imp is not None:
+                scopes.append((obj.project_uuid(), imp.uuid))
+        return scopes
+    imp = current.impression()
+    if imp is None:
+        return []
+    return [(current.project_uuid(), imp.uuid)]
+
+
+def purge_ssh_runner_cache(runner: str, project: str = None,
+                           impression: str = None,
+                           dry_run: bool = False) -> Message:
+    """Purge cached impressions from an ssh runner via DITE.
+
+    Defaults to the current object's impression — or every impressed
+    subobject when run inside a folder; an explicit impression skips the
+    context lookup. Never purges the whole runner cache.
+    """
+    message = Message()
+    if not impression:
+        scopes = _impression_scopes()
+        if not scopes:
+            message.add("Current object has no impression — impress it "
+                        "first, or pass an impression explicitly.", "error")
+            return message
+    else:
+        scopes = [(project, impression)]
+    cherncc = ChernCommunicator.instance()
+    total_purged = 0
+    registered_purged = False
+    for scope_project, scope_imp in scopes:
+        try:
+            result = cherncc.purge_runner_cache(runner, project=scope_project,
+                                                impression=scope_imp,
+                                                dry_run=dry_run)
+        except ConnectionError as e:
+            message.add(str(e), "error")
+            return message
+        if "error" in result:
+            message.add(result["error"], "error")
+            return message
+        purged, skipped = result.get("purged", []), result.get("skipped", [])
+        total_purged += len(purged)
+        entries = "entry" if len(purged) == 1 else "entries"
+        if result.get("dry_run"):
+            message.add(f"Dry run: {len(purged)} cache {entries} would be "
+                        f"purged from runner '{runner}' "
+                        f"(imp {scope_imp[:7]}…)", "warning")
+        else:
+            message.add(f"Purged {len(purged)} cache {entries} from "
+                        f"runner '{runner}' (imp {scope_imp[:7]}…)",
+                        "success")
+        for entry in skipped:
+            message.add(f"\n  Skipped: {entry['impression']} — "
+                        f"{entry['reason']}", "warning")
+        if any(entry.get("kind") == "registered" for entry in purged):
+            registered_purged = True
+    if len(scopes) > 1:
+        message.add(f"Total: purged {total_purged} cache entries from "
+                    f"runner '{runner}'",
+                    "success" if total_purged else "warning")
+    if registered_purged:
+        message.add("Registered data lives only on this runner — restore "
+                    "it with register-ssh-data.", "warning")
+    return message
+
+
+def cache_results(runner: str) -> Message:
+    """Cache runner-resident results on that runner via DITE.
+
+    Acts on the current object's impression — or every impressed
+    subobject when run inside a folder. Each job fast-copies the
+    workflow's stageout into the runner's managed impressions cache and
+    records the copy in the distribution registry.
+    """
+    message = Message()
+    scopes = _impression_scopes()
+    if not scopes:
+        message.add("Current object has no impression — impress it first.",
+                    "error")
+        return message
+    cherncc = ChernCommunicator.instance()
+    total_cached = 0
+    for scope_project, scope_imp in scopes:
+        try:
+            resp = cherncc.cache_results(runner, scope_project, scope_imp)
+        except ConnectionError as e:
+            message.add(str(e), "error")
+            return message
+        if "error" in resp:
+            message.add(resp["error"], "error")
+            return message
+        job_id = resp.get("job_id", "")
+        if not job_id:
+            message.add("cache-results: server returned no job id", "error")
+            return message
+        print(f"cache-results: job {job_id[:8]}... started on '{runner}' "
+              f"(imp {scope_imp[:7]}…)")
+        consecutive_unknowns = 0
+        while True:
+            time.sleep(3)
+            state = cherncc.cache_results_status(job_id)
+            status = state.get("status", "unknown")
+            if status == "unknown":
+                consecutive_unknowns += 1
+                if consecutive_unknowns >= 10:
+                    message.add(f"cache-results: no status for job "
+                                f"{job_id[:8]}... after 30s; giving up",
+                                "error")
+                    return message
+                continue
+            consecutive_unknowns = 0
+            if status == "copying":
+                continue
+            if status == "done":
+                result = state.get("result") or {}
+                cached = result.get("cached", 0)
+                total_cached += cached
+                message.add(f"Cached {cached} files from runner '{runner}' "
+                            f"(imp {scope_imp[:7]}…)", "success")
+                break
+            if status == "failed":
+                message.add(f"cache-results failed: {state.get('error')}",
+                            "error")
+                return message
+            message.add(f"cache-results: unexpected status '{status}'",
+                        "warning")
+            return message
+    if len(scopes) > 1:
+        message.add(f"Total: cached {total_cached} files from runner "
+                    f"'{runner}'",
+                    "success" if total_cached else "warning")
+    return message
+
+
+def _human_bytes(num_bytes):
+    """Human-readable byte count (B/KB/MB/GB)."""
+    if num_bytes is None:
+        return ""
+    size = float(num_bytes)
+    for unit in ("B", "KB", "MB", "GB"):
+        if size < 1024 or unit == "GB":
+            return f"{size:.0f} {unit}" if unit == "B" else f"{size:.1f} {unit}"
+        size /= 1024
+    return f"{size:.1f} GB"  # pragma: no cover
+
+
+def _render_whereabouts(scope_project, scope_imp, cherncc, message):
+    """Fetch and render one impression's data whereabouts.
+
+    Rows use fixed column widths so marks, origins, and file counts
+    align across locations:
+      {location:<13}{state:<9}{mark} {origin:<11} {files:>4} files
+    """
+    resp = cherncc.whereabouts(scope_project, scope_imp)
+    if "error" in resp:
+        message.add(resp["error"], "error")
+        return
+    message.add(f"Data whereabouts for {scope_imp[:7]}…:")
+    yuki = resp.get("yuki")
+    if yuki:
+        message.add(f"  {'yuki':<13}{'':<9}{'✓'} "
+                    f"{(yuki.get('origin') or 'stored'):<11} "
+                    f"{yuki.get('files', 0):>4} files · "
+                    f"{_human_bytes(yuki.get('bytes'))}")
+    else:
+        message.add(f"  {'yuki':<13}{'':<9}✗ not in local storage")
+    for name, states in (resp.get("runners") or {}).items():
+        workflow = states.get("workflow")
+        cache = states.get("cache")
+        row = f"  {name:<13}workflow "
+        row += (f"{'✓' if workflow else '✗'} "
+                f"{(workflow.get('origin') if workflow else '—'):<11} "
+                f"{workflow.get('files', 0) if workflow else 0:>4} files")
+        row += " · cache    "
+        row += (f"{'✓' if cache else '✗'} "
+                f"{(cache.get('origin') if cache else '—'):<11} "
+                f"{cache.get('files', 0) if cache else 0:>4} files")
+        message.add(row)
+    registered = resp.get("registered")
+    if registered:
+        message.add(f"  {'registered':<13}{'':<9}on "
+                    f"{registered.get('host_runner')} "
+                    f"(source: {registered.get('source_path')})")
+    if resp.get("note"):
+        message.add(f"  note: {resp['note']}", "warning")
+
+
+def whereabouts() -> Message:
+    """Report where each impression's data lives (runner cache / yuki).
+
+    Acts on the current object's impression — or every impressed
+    subobject when run inside a folder.
+    """
+    message = Message()
+    scopes = _impression_scopes()
+    if not scopes:
+        message.add("Current object has no impression — impress it first.",
+                    "error")
+        return message
+    cherncc = ChernCommunicator.instance()
+    for scope_project, scope_imp in scopes:
+        try:
+            _render_whereabouts(scope_project, scope_imp, cherncc, message)
+        except ConnectionError as e:
+            message.add(str(e), "error")
+            return message
     return message
 
 

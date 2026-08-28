@@ -31,7 +31,7 @@ from .shell_modules.execution_management import (
 from .shell_modules.communication import (
     dite, set_dite, add_host, hosts, runners, register_runner, update_runner,
     remove_runner, request_runner, search_impression, test_runner,
-    runner_envs
+    runner_envs, purge_ssh_runner_cache, cache_results, whereabouts
 )
 from .shell_modules.visualization import (
     view, viewurl, impress, impress_objects, trace, imgcat, draw_dag_graphviz
@@ -71,7 +71,7 @@ __all__ = [
     # Communication functions (from communication.py)
     'dite', 'set_dite', 'add_host', 'hosts', 'runners', 'register_runner', 'update_runner',
     'remove_runner', 'request_runner', 'search_impression', 'test_runner',
-    'runner_envs',
+    'runner_envs', 'purge_ssh_runner_cache', 'cache_results', 'whereabouts',
     # Visualization functions (from visualization.py)
     'view', 'viewurl', 'impress', 'impress_objects', 'trace', 'imgcat', 'draw_dag_graphviz',
     # Utilities functions (from utilities.py)

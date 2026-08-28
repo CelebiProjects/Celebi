@@ -5,8 +5,9 @@ from unittest import mock
 from click.testing import CliRunner
 
 from CelebiChrono.celebi_cli.commands.execution_management import (
+    cache_results_command, purge_ssh_runner_cache_command,
     register_runner_command, runner_envs_command, test_runner_command,
-    update_runner_command,
+    update_runner_command, whereabouts_command,
 )
 
 
@@ -57,6 +58,48 @@ class TestCliRunnerCommands(unittest.TestCase):
             result = self.runner.invoke(test_runner_command, ["local"])
         self.assertEqual(result.exit_code, 0, result.output)
         fn.assert_called_once_with("local", timeout=None)
+
+    def test_purge_ssh_runner_cache_command(self):
+        """Test purge ssh runner cache command passes options through."""
+        with mock.patch("CelebiChrono.interface.shell.purge_ssh_runner_cache") as fn:
+            result = self.runner.invoke(purge_ssh_runner_cache_command, [
+                "farm", "--project", "proj", "--impression", "imp-a", "--yes",
+            ])
+        self.assertEqual(result.exit_code, 0, result.output)
+        fn.assert_called_once_with("farm", project="proj", impression="imp-a",
+                                   dry_run=False)
+
+    def test_purge_ssh_runner_cache_dry_run(self):
+        """Test purge ssh runner cache dry run skips confirmation."""
+        with mock.patch("CelebiChrono.interface.shell.purge_ssh_runner_cache") as fn:
+            result = self.runner.invoke(purge_ssh_runner_cache_command, [
+                "farm", "--dry-run",
+            ])
+        self.assertEqual(result.exit_code, 0, result.output)
+        fn.assert_called_once_with("farm", project=None, impression=None,
+                                   dry_run=True)
+
+    def test_purge_ssh_runner_cache_confirmation_aborts(self):
+        """Test purge ssh runner cache aborts when confirmation declines."""
+        with mock.patch("CelebiChrono.interface.shell.purge_ssh_runner_cache") as fn:
+            result = self.runner.invoke(purge_ssh_runner_cache_command,
+                                        ["farm"], input="n\n")
+        self.assertEqual(result.exit_code, 1)
+        fn.assert_not_called()
+
+    def test_cache_results_command(self):
+        """Test cache results command delegates to the shell function."""
+        with mock.patch("CelebiChrono.interface.shell.cache_results") as fn:
+            result = self.runner.invoke(cache_results_command, ["farm"])
+        self.assertEqual(result.exit_code, 0, result.output)
+        fn.assert_called_once_with("farm")
+
+    def test_whereabouts_command(self):
+        """Test whereabouts command delegates to the shell function."""
+        with mock.patch("CelebiChrono.interface.shell.whereabouts") as fn:
+            result = self.runner.invoke(whereabouts_command, [])
+        self.assertEqual(result.exit_code, 0, result.output)
+        fn.assert_called_once_with()
 
 
 if __name__ == "__main__":

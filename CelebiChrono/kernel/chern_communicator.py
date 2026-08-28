@@ -2,6 +2,7 @@
 # pylint: disable=broad-exception-caught
 # pylint: disable=too-many-public-methods
 # pylint: disable=consider-using-with
+# pylint: disable=too-many-lines
 """
 Chern class for communicate to local and remote server.
 
@@ -46,6 +47,12 @@ Data Registration:
 Result Transfer:
 - POST /transfer - Start a result transfer job between yuki and a runner cache
 - GET /transfer/{job_id} - Poll a result transfer job's state
+
+Runner Cache Management:
+- POST /purge-runner-cache - Purge cached impressions from an ssh runner
+- POST /cache-results - Cache a workflow's stageout on its runner
+- GET /cache-results/{job_id} - Poll a cache-results job's state
+- GET /whereabouts/{project}/{impression} - Data-location registry
 
 All requests use configurable timeout (default: 10s) and support both local and remote execution.
 
@@ -851,6 +858,83 @@ class ChernCommunicator():
                     "location": "",
                     "error": "DITE server does not support verify-data "
                              "(upgrade Yuki)"}
+        return r.json()
+
+    def purge_runner_cache(self, runner, project=None, impression=None,
+                           dry_run=False, timeout=600):
+        """Purge cached impressions from an ssh runner (runs on Yuki)."""
+        url = self.serverurl()
+        data = {"runner": runner, "dry_run": dry_run}
+        if project:
+            data["project"] = project
+        if impression:
+            data["impression"] = impression
+        try:
+            r = requests.post(f"http://{url}/purge-runner-cache",
+                              json=data, timeout=timeout)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        if r.status_code != 200:
+            try:
+                body = r.json()
+            except ValueError:
+                body = None
+            if isinstance(body, dict) and "error" in body:
+                return {"error": body["error"]}
+            return {"error": f"purge failed (HTTP {r.status_code})"}
+        return r.json()
+
+    def cache_results(self, runner, project_uuid, impression):
+        """Start a cache-results job on Yuki (stageout -> runner cache)."""
+        url = self.serverurl()
+        data = {"runner": runner, "project_uuid": project_uuid,
+                "impression": impression}
+        try:
+            r = requests.post(f"http://{url}/cache-results",
+                              json=data, timeout=self.timeout)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        if r.status_code != 200:
+            try:
+                body = r.json()
+            except ValueError:
+                body = None
+            if isinstance(body, dict) and "error" in body:
+                return {"error": body["error"]}
+            return {"error": f"cache-results failed (HTTP {r.status_code})"}
+        return r.json()
+
+    def cache_results_status(self, job_id):
+        """Poll a cache-results job's state."""
+        url = self.serverurl()
+        try:
+            r = requests.get(f"http://{url}/cache-results/{job_id}",
+                             timeout=self.timeout)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        if r.status_code == 404:
+            return {"status": "unknown", "error": "job not found"}
+        return r.json()
+
+    def whereabouts(self, project_uuid, impression):
+        """Fetch an impression's data-location registry from Yuki."""
+        url = self.serverurl()
+        try:
+            r = requests.get(
+                f"http://{url}/whereabouts/{project_uuid}/{impression}",
+                timeout=self.timeout)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        if r.status_code == 404:
+            return {"error": "impression not found"}
+        if r.status_code != 200:
+            try:
+                body = r.json()
+            except ValueError:
+                body = None
+            if isinstance(body, dict) and "error" in body:
+                return {"error": body["error"]}
+            return {"error": f"whereabouts failed (HTTP {r.status_code})"}
         return r.json()
 
     # === File Operations ===

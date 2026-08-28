@@ -7,6 +7,7 @@ and job execution management.
 # pylint: disable=broad-exception-caught
 from ...interface import shell
 from ...interface.ChernManager import get_manager
+from ..shell_modules.communication import _impression_scopes
 
 
 MANAGER = get_manager()
@@ -241,6 +242,76 @@ class EnvironmentCommands:
                 print(result.colored())
         except Exception as e:
             print(f"Error purging old impressions: {e}")
+
+    def do_whereabouts(self, _arg: str) -> None:
+        """Show where the current impression's data lives."""
+        try:
+            result = shell.whereabouts()
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error whereabouts: {e}")
+
+    def do_cache_results(self, arg: str) -> None:
+        """Cache the current impression's results on an ssh runner.
+
+        Inside a folder, every impressed subobject is cached.
+        """
+        try:
+            runner = arg.strip()
+            if not runner:
+                print("Usage: cache-results <runner>")
+                return
+            scopes = _impression_scopes()
+            if not scopes:
+                print("Current object has no impression — impress it first.")
+                return
+            target = (f"impression {scopes[0][1]}"
+                      if len(scopes) == 1 else
+                      f"{len(scopes)} impressions")
+            answer = input(f"Cache {target} results on ssh runner "
+                           f"'{runner}'? (N/y): ")
+            if answer.lower() != 'y':
+                print("Cache results cancelled.")
+                return
+            result = shell.cache_results(runner)
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error caching results: {e}")
+
+    def do_purge_ssh_runner_cache(self, arg: str) -> None:
+        """Purge the current impression's cache from an ssh runner.
+
+        Inside a folder, every impressed subobject is purged.
+        """
+        try:
+            runner = arg.strip()
+            if not runner:
+                print("Usage: purge-ssh-runner-cache <runner>")
+                return
+            scopes = _impression_scopes()
+            if not scopes:
+                print("Current object has no impression — impress it first.")
+                return
+            target = (f"impression {scopes[0][1]}"
+                      if len(scopes) == 1 else
+                      f"{len(scopes)} impressions")
+            answer = input(f"Purge cache for {target} on ssh runner "
+                           f"'{runner}'? This cannot be undone. (N/y): ")
+            if answer.lower() != 'y':
+                print("Purge runner cache cancelled.")
+                return
+            if len(scopes) == 1:
+                result = shell.purge_ssh_runner_cache(
+                    runner, project=scopes[0][0],
+                    impression=scopes[0][1])
+            else:
+                result = shell.purge_ssh_runner_cache(runner)
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error purging runner cache: {e}")
 
 
 

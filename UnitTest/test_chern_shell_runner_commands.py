@@ -80,6 +80,15 @@ class TestRunnerShellCommands(unittest.TestCase):
         shell.test_runner.assert_not_called()
         self.assertTrue(pr.called)
 
+    def test_do_whereabouts(self):
+        """Test do whereabouts."""
+        with mock.patch.object(commands_environment, "shell") as shell, \
+                mock.patch("builtins.print"):
+            shell.whereabouts.return_value = mock.MagicMock(
+                messages=[("ok", "success")], colored=lambda: "rendered")
+            self.cmds.do_whereabouts("")
+        shell.whereabouts.assert_called_once_with()
+
     def test_do_register_runner_ssh_flow(self):
         """Test do register runner ssh flow."""
         answers = iter(["ssh", "cluster", "h", "u", "", "22", "/remote"])
@@ -100,6 +109,133 @@ class TestRunnerShellCommands(unittest.TestCase):
             self.cmds.do_register_runner("")
         shell.register_runner.assert_called_once_with(
             "cern", "https://reana.cern.ch", "tok", "reana")
+
+    def test_do_purge_ssh_runner_cache_confirms_and_calls(self):
+        """Test do purge ssh runner cache confirms and calls."""
+        with mock.patch.object(commands_environment, "shell") as shell, \
+                mock.patch.object(commands_environment,
+                                  "_impression_scopes",
+                                  return_value=[("proj", "imp-uuid")]), \
+                mock.patch("builtins.input", return_value="y"), \
+                mock.patch("builtins.print"):
+            shell.purge_ssh_runner_cache.return_value = mock.MagicMock(
+                messages=[("ok", "success")], colored=lambda: "rendered")
+            self.cmds.do_purge_ssh_runner_cache("pkufarm212")
+        shell.purge_ssh_runner_cache.assert_called_once_with(
+            "pkufarm212", project="proj", impression="imp-uuid")
+
+    def test_do_purge_ssh_runner_cache_cancels_on_no(self):
+        """Test do purge ssh runner cache cancels on no."""
+        with mock.patch.object(commands_environment, "shell") as shell, \
+                mock.patch.object(commands_environment,
+                                  "_impression_scopes",
+                                  return_value=[("proj", "imp-uuid")]), \
+                mock.patch("builtins.input", return_value="n"), \
+                mock.patch("builtins.print") as pr:
+            self.cmds.do_purge_ssh_runner_cache("pkufarm212")
+        shell.purge_ssh_runner_cache.assert_not_called()
+        self.assertTrue(pr.called)
+
+    def test_do_purge_ssh_runner_cache_requires_name(self):
+        """Test do purge ssh runner cache requires name."""
+        with mock.patch.object(commands_environment, "shell") as shell, \
+                mock.patch.object(commands_environment,
+                                  "_impression_scopes",
+                                  return_value=[("proj", "imp-uuid")]), \
+                mock.patch("builtins.print") as pr:
+            self.cmds.do_purge_ssh_runner_cache("")
+        shell.purge_ssh_runner_cache.assert_not_called()
+        self.assertTrue(pr.called)
+
+    def test_do_purge_ssh_runner_cache_no_impression(self):
+        """Test do purge ssh runner cache refuses without an impression."""
+        with mock.patch.object(commands_environment, "shell") as shell, \
+                mock.patch.object(commands_environment,
+                                  "_impression_scopes",
+                                  return_value=[]), \
+                mock.patch("builtins.input") as inp, \
+                mock.patch("builtins.print") as pr:
+            self.cmds.do_purge_ssh_runner_cache("pkufarm212")
+        shell.purge_ssh_runner_cache.assert_not_called()
+        self.assertFalse(inp.called)
+        self.assertTrue(pr.called)
+
+    def test_do_purge_ssh_runner_cache_folder_batch(self):
+        """Test do purge in a folder delegates the batch to the shell fn."""
+        with mock.patch.object(commands_environment, "shell") as shell, \
+                mock.patch.object(commands_environment,
+                                  "_impression_scopes",
+                                  return_value=[("proj", "abc1234"),
+                                                ("proj", "def5678")]), \
+                mock.patch("builtins.input", return_value="y"), \
+                mock.patch("builtins.print"):
+            shell.purge_ssh_runner_cache.return_value = mock.MagicMock(
+                messages=[("ok", "success")], colored=lambda: "rendered")
+            self.cmds.do_purge_ssh_runner_cache("pkufarm212")
+        shell.purge_ssh_runner_cache.assert_called_once_with("pkufarm212")
+
+    def test_do_cache_results_confirms_and_calls(self):
+        """Test do cache results confirms and calls."""
+        with mock.patch.object(commands_environment, "shell") as shell, \
+                mock.patch.object(commands_environment,
+                                  "_impression_scopes",
+                                  return_value=[("proj", "imp-uuid")]), \
+                mock.patch("builtins.input", return_value="y"), \
+                mock.patch("builtins.print"):
+            shell.cache_results.return_value = mock.MagicMock(
+                messages=[("ok", "success")], colored=lambda: "rendered")
+            self.cmds.do_cache_results("pkufarm212")
+        shell.cache_results.assert_called_once_with("pkufarm212")
+
+    def test_do_cache_results_cancels_on_no(self):
+        """Test do cache results cancels on no."""
+        with mock.patch.object(commands_environment, "shell") as shell, \
+                mock.patch.object(commands_environment,
+                                  "_impression_scopes",
+                                  return_value=[("proj", "imp-uuid")]), \
+                mock.patch("builtins.input", return_value="n"), \
+                mock.patch("builtins.print") as pr:
+            self.cmds.do_cache_results("pkufarm212")
+        shell.cache_results.assert_not_called()
+        self.assertTrue(pr.called)
+
+    def test_do_cache_results_requires_name(self):
+        """Test do cache results requires name."""
+        with mock.patch.object(commands_environment, "shell") as shell, \
+                mock.patch.object(commands_environment,
+                                  "_impression_scopes",
+                                  return_value=[("proj", "imp-uuid")]), \
+                mock.patch("builtins.print") as pr:
+            self.cmds.do_cache_results("")
+        shell.cache_results.assert_not_called()
+        self.assertTrue(pr.called)
+
+    def test_do_cache_results_folder_batch(self):
+        """Test do cache results in a folder delegates the batch."""
+        with mock.patch.object(commands_environment, "shell") as shell, \
+                mock.patch.object(commands_environment,
+                                  "_impression_scopes",
+                                  return_value=[("proj", "abc1234"),
+                                                ("proj", "def5678")]), \
+                mock.patch("builtins.input", return_value="y"), \
+                mock.patch("builtins.print"):
+            shell.cache_results.return_value = mock.MagicMock(
+                messages=[("ok", "success")], colored=lambda: "rendered")
+            self.cmds.do_cache_results("pkufarm212")
+        shell.cache_results.assert_called_once_with("pkufarm212")
+
+    def test_do_cache_results_no_impression(self):
+        """Test do cache results refuses without an impression."""
+        with mock.patch.object(commands_environment, "shell") as shell, \
+                mock.patch.object(commands_environment,
+                                  "_impression_scopes",
+                                  return_value=[]), \
+                mock.patch("builtins.input") as inp, \
+                mock.patch("builtins.print") as pr:
+            self.cmds.do_cache_results("pkufarm212")
+        shell.cache_results.assert_not_called()
+        self.assertFalse(inp.called)
+        self.assertTrue(pr.called)
 
 
 class TestRunnerCompletions(unittest.TestCase):
@@ -125,6 +261,16 @@ class TestRunnerCompletions(unittest.TestCase):
         """Test complete register ssh data."""
         self.assertEqual(self.comp.complete_register_ssh_data(
             "p", "register-ssh-data p", 0, 0), ["pkufarm212"])
+
+    def test_complete_purge_ssh_runner_cache(self):
+        """Test complete purge ssh runner cache."""
+        self.assertEqual(self.comp.complete_purge_ssh_runner_cache(
+            "p", "purge-ssh-runner-cache p", 0, 0), ["pkufarm212"])
+
+    def test_complete_cache_results(self):
+        """Test complete cache results."""
+        self.assertEqual(self.comp.complete_cache_results(
+            "p", "cache-results p", 0, 0), ["pkufarm212"])
 
 
 class TestEngineLogsFetch(unittest.TestCase):

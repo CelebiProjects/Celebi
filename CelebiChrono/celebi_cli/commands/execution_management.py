@@ -232,6 +232,74 @@ def test_runner_command(runner: str, timeout: int) -> None:
         _handle_error(f"Command failed: {e}")
 
 
+@click.command(name="purge-ssh-runner-cache")
+@click.argument("runner", type=str)
+@click.option("--project", type=str, default=None,
+              help="Only purge cached impressions of this project.")
+@click.option("--impression", type=str, default=None,
+              help="Only purge this cached impression.")
+@click.option("--dry-run", is_flag=True,
+              help="List what would be purged without deleting anything.")
+@click.option("--yes", "-y", is_flag=True,
+              help="Skip the confirmation prompt.")
+def purge_ssh_runner_cache_command(runner: str, project: str,
+                                   impression: str, dry_run: bool,
+                                   yes: bool) -> None:
+    """Purge cached impressions from an ssh runner via DITE.
+
+    RUNNER is the name of the registered runner whose remote cache is
+    purged. Registered data only lives on the runner — restore it with
+    register-ssh-data.
+    """
+    try:
+        from CelebiChrono.interface.shell import purge_ssh_runner_cache
+        if not dry_run and not yes:
+            click.confirm(
+                f"Purge the impressions cache on ssh runner '{runner}'?",
+                abort=True)
+        _handle_result(purge_ssh_runner_cache(
+            runner, project=project, impression=impression,
+            dry_run=dry_run))
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="whereabouts")
+def whereabouts_command() -> None:
+    """Report where the current impression's data lives via DITE.
+
+    Shows which runners hold the data, whether it is cached in their
+    managed impressions caches, and whether it is in yuki storage.
+    """
+    try:
+        from CelebiChrono.interface.shell import whereabouts
+        _handle_result(whereabouts())
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="cache-results")
+@click.argument("runner", type=str)
+def cache_results_command(runner: str) -> None:
+    """Cache the current impression's results on an ssh runner via DITE.
+
+    RUNNER is the name of the registered runner hosting the results. The
+    workflow's stageout is copied into the runner's managed impressions
+    cache and recorded in the distribution registry.
+    """
+    try:
+        from CelebiChrono.interface.shell import cache_results
+        _handle_result(cache_results(runner))
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
 @click.command(name="runner-envs")
 @click.argument("runner", type=str)
 def runner_envs_command(runner: str) -> None:

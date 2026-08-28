@@ -287,6 +287,20 @@ class ChernShellCompletions:
         runners = self.readline_file.read_variable("runners", [])
         return [r for r in runners if r.startswith(text)]
 
+    def complete_purge_ssh_runner_cache(
+        self, text: str, _line: str, _begidx: int, _endidx: int
+    ) -> list:
+        """Complete purge-ssh-runner-cache with existing runners."""
+        runners = self.readline_file.read_variable("runners", [])
+        return [r for r in runners if r.startswith(text)]
+
+    def complete_cache_results(
+        self, text: str, _line: str, _begidx: int, _endidx: int
+    ) -> list:
+        """Complete cache-results with existing runners."""
+        runners = self.readline_file.read_variable("runners", [])
+        return [r for r in runners if r.startswith(text)]
+
     def complete_register_ssh_data(
         self, text: str, line: str, _begidx: int, _endidx: int
     ) -> list:
