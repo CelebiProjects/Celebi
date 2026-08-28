@@ -196,7 +196,7 @@ class TestShellViewImpression(unittest.TestCase):
         with patch.object(visualization, "webbrowser") as mock_browser:
             result = visualization.view("1111111")
         self.mock_obj.resolve_impression_uuid.assert_called_once_with("1111111")
-        self.mock_obj.impview.assert_called_once_with(self.impression.uuid)
+        self.mock_obj.impview.assert_called_once_with(self.mock_vimpr.return_value)
         mock_browser.open.assert_called_once_with(
             "http://dite/imp-view/proj/11111111-2222-3333-4444-555555555555"
         )
@@ -229,6 +229,49 @@ class TestShellViewImpression(unittest.TestCase):
             result = visualization.view("deadbeef")
         self.assertIn("error", [entry[1] for entry in result.messages])
         mock_browser.open.assert_not_called()
+
+
+class TestViewPassesImpressionObject(unittest.TestCase):
+    """view() hands impview an impression object, not a bare uuid str."""
+
+    def setUp(self):
+        """Set Up."""
+        self.cwd = os.getcwd()
+        prepare.create_chern_project("demo_genfit_new")
+        os.chdir("demo_genfit_new")
+        self.task = vtsk.VTask("FitTask")
+        self.task.impress()
+        self.uuid = self.task.impression().uuid
+        self.manager_patch = patch.object(
+            visualization.MANAGER, "current_object", return_value=self.task
+        )
+        self.manager_patch.start()
+
+    def tearDown(self):
+        """Tear Down."""
+        self.manager_patch.stop()
+        os.chdir(self.cwd)
+        prepare.remove_chern_project("demo_genfit_new")
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
+
+    def test_view_opens_url_built_from_impression_uuid(self):
+        """view(short_id) reaches the communicator with an object carrying .uuid."""
+        print(Fore.BLUE + "Testing view short id end-to-end..." + Style.RESET)
+
+        def impview_side_effect(impression):
+            # Mirrors ChernCommunicator.impview: needs impression.uuid.
+            return f"http://dite/imp-view/proj/{impression.uuid}"
+
+        with patch.object(ChernCommunicator, "instance") as mock_instance:
+            mock_communicator = MagicMock()
+            mock_communicator.impview.side_effect = impview_side_effect
+            mock_instance.return_value = mock_communicator
+            with patch.object(visualization, "webbrowser") as mock_browser:
+                result = visualization.view(self.uuid[:7])
+        self.assertIn("success", [entry[1] for entry in result.messages])
+        mock_browser.open.assert_called_once_with(
+            f"http://dite/imp-view/proj/{self.uuid}"
+        )
 
 
 class TestImpressionInHistory(unittest.TestCase):

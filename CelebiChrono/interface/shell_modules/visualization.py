@@ -68,7 +68,7 @@ def view(impression: str = None) -> Message:
             f"Note: impression {uuid[:7]} is not in this task's history.",
             "warning",
         )
-    url = current_obj.impview(uuid)
+    url = current_obj.impview(VImpression(uuid))
     webbrowser.open(url)
     message.add("Opened view in browser", "success")
     return message
@@ -111,7 +111,7 @@ def viewurl(impression: str = None) -> Message:
             f"Note: impression {uuid[:7]} is not in this task's history.",
             "warning",
         )
-    url = current_obj.impview(uuid)
+    url = current_obj.impview(VImpression(uuid))
     message.add(url, "normal")
     message.data["url"] = url
     return message
@@ -324,7 +324,6 @@ def draw_dag_graphviz(output_file: str = "dag.pdf", exclude_algorithms: bool = F
         - Output is always saved to ~/Downloads/
     """
     # pylint: disable=import-outside-toplevel,too-many-locals,too-many-statements
-    import networkx as nx
     import graphviz
     from colorsys import hls_to_rgb, rgb_to_hls
 
@@ -409,24 +408,15 @@ def draw_dag_graphviz(output_file: str = "dag.pdf", exclude_algorithms: bool = F
         )
         graph.nodes[n]['label'] = sid
 
-    # Transitive Reduction
-    dependency_graph = nx.DiGraph(
-        (u, v, data) for u, v, data in graph.edges(data=True)
+    # Dependency Edges
+    # Every declared predecessor is drawn. Each one is a real input the task
+    # reads, under its own alias, so an edge that is merely implied by a
+    # longer path is still a genuine input and must stay visible. Only the
+    # layout-only 'sibling' clique edges are left out.
+    dependency_edges = [
+        (u, v) for u, v, data in graph.edges(data=True)
         if data.get('type') == 'dependency'
-    )
-    dependency_graph.add_nodes_from(graph.nodes(data=True))
-
-    try:
-        relabeled_graph = nx.relabel_nodes(dependency_graph, node_map)
-        reduced_graph = nx.transitive_reduction(relabeled_graph)
-        inv = {v: k for k, v in node_map.items()}
-        reduced_dependency_edges = [
-            (inv[u], inv[v]) for u, v in reduced_graph.edges()
-        ]
-    except Exception:
-        reduced_dependency_edges = [
-            (u, v) for u, v, data in dependency_graph.edges(data=True)
-        ]
+    ]
 
     # GRAPHVIZ RENDERING SETUP
     dot = graphviz.Digraph(
@@ -465,8 +455,8 @@ def draw_dag_graphviz(output_file: str = "dag.pdf", exclude_algorithms: bool = F
             fontcolor='#111111'
         )
 
-    # Add Filtered Dependency Edges
-    for u, v in reduced_dependency_edges:
+    # Add Dependency Edges
+    for u, v in dependency_edges:
         u_id = node_map[u]
         v_id = node_map[v]
 

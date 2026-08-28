@@ -241,9 +241,9 @@ class ExecutionManagement(Core):
         """ Get the status of the job"""
         consult_table = CHERN_CACHE.job_status_consult_table
         if consult_id is not None:
-            cid, status = consult_table.get(self.path, (-1, -1))
-            if cid == consult_id:
-                return status
+            entry = consult_table.get(self.path)
+            if entry is not None and entry[0] == consult_id:
+                return entry[1]
 
         if consult_id is None:
             consult_id = time.time()
@@ -261,14 +261,14 @@ class ExecutionManagement(Core):
                     continue
                 status = sub_object.job_status(consult_id, runner)
                 if status == "failed":
-                    consult_table[self.path] = (consult_id, "failed")
+                    consult_table[self.path] = (consult_id, "failed", "")
                     return "failed"
                 if status not in ("finished", "archived", "coda"):
                     pending = True
             if pending:
-                consult_table[self.path] = (consult_id, "pending")
+                consult_table[self.path] = (consult_id, "pending", "")
                 return "pending"
-            consult_table[self.path] = (consult_id, "finished")
+            consult_table[self.path] = (consult_id, "finished", "")
             return "finished"
         cherncc = ChernCommunicator.instance()
         if runner is None:
@@ -278,19 +278,44 @@ class ExecutionManagement(Core):
                 job_status_data.get("status_legacy", "unknown")
                 if isinstance(job_status_data, dict) else job_status_data
             )
+            detailed_status = (
+                job_status_data.get("detailed_status", "")
+                if isinstance(job_status_data, dict) else ""
+            )
             if job_status == "success":
                 job_status = "finished"
-            consult_table[self.path] = (consult_id, job_status)
+            consult_table[self.path] = (consult_id, job_status, detailed_status)
             return job_status
         job_status_data = cherncc.job_status(self.impression(), runner)
         job_status = (
             job_status_data.get("status_legacy", "unknown")
             if isinstance(job_status_data, dict) else job_status_data
         )
+        detailed_status = (
+            job_status_data.get("detailed_status", "")
+            if isinstance(job_status_data, dict) else ""
+        )
         if job_status == "success":
             job_status = "finished"
-        consult_table[self.path] = (consult_id, job_status)
+        consult_table[self.path] = (consult_id, job_status, detailed_status)
         return job_status
+
+    def job_status_detail(self, consult_id = None, runner: Optional[str] = None) -> str:
+        """ Get the detailed status message of the job, if any.
+
+        Reads the consult-table entry populated by job_status(); triggers the
+        fetch itself when the entry is missing or stale.
+        """
+        consult_table = CHERN_CACHE.job_status_consult_table
+        if consult_id is None:
+            consult_id = time.time()
+        entry = consult_table.get(self.path)
+        if entry is None or entry[0] != consult_id:
+            self.job_status(consult_id, runner)
+            entry = consult_table.get(self.path)
+        if entry is not None and len(entry) > 2:
+            return entry[2]
+        return ""
 
     def set_cache_on_runner(self, cache_on_runner: bool) -> None:
         """ Set whether to use EOS for this task. """

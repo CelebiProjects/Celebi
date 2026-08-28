@@ -187,16 +187,22 @@ class FileManagementDisplay(Core):
             sub_objects.sort(key=_topo_sort_key)
             for sub_object in sub_objects:
                 # only append the base name
-                objects.append((os.path.basename(sub_object.path),
-                                sub_object.job_status(now)))
+                name = os.path.basename(sub_object.path)
+                status = sub_object.job_status(now)
+                detail = ""
+                if status == "failed":
+                    detail = sub_object.job_status_detail(now)
+                objects.append((name, status, detail))
 
             max_width = 0
             if objects:
-                max_width = max(len(name) for name, _ in objects)
+                max_width = max(len(name) for name, _, _ in objects)
 
-            for name, status in objects:
+            for name, status, detail in objects:
                 message.add(f"{name:<{max_width}}: ")
                 message.add(f"[{status}]")
+                if detail:
+                    message.add(f" - {detail}", "warning")
                 message.add("\n")
 
         return message
