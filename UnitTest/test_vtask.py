@@ -1443,6 +1443,35 @@ class TestChernVTask(unittest.TestCase):  # pylint: disable=too-many-public-meth
         prepare.remove_chern_project("demo_complex")
         CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
+    def test_env_validated_inline_commands(self):
+        """Inline-code tasks validate on their own commands and environment."""
+        prepare.create_chern_project("demo_complex")
+        os.chdir("demo_complex")
+        obj_tsk = vtsk.VTask(os.getcwd() + "/tasks/taskAna1")
+        yaml_file = metadata.YamlFile(os.path.join(obj_tsk.path, "celebi.yaml"))
+        yaml_file.write_variable("commands", ["echo hi"])
+
+        # Inline commands with an environment: valid
+        with patch.object(obj_tsk, 'environment', return_value='python:3.9'), \
+             patch.object(obj_tsk, 'algorithm', return_value=None):
+            self.assertTrue(obj_tsk.env_validated())
+
+        # Inline commands without an environment: invalid
+        with patch.object(obj_tsk, 'environment', return_value=''), \
+             patch.object(obj_tsk, 'algorithm', return_value=None):
+            self.assertFalse(obj_tsk.env_validated())
+
+        # Inline commands win: algorithm environment mismatch is irrelevant
+        mock_algorithm = MagicMock()
+        mock_algorithm.environment.return_value = "ubuntu:20.04"
+        with patch.object(obj_tsk, 'environment', return_value='python:3.9'), \
+             patch.object(obj_tsk, 'algorithm', return_value=mock_algorithm):
+            self.assertTrue(obj_tsk.env_validated())
+
+        os.chdir("..")
+        prepare.remove_chern_project("demo_complex")
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
+
     def test_setting_manager_integration(self):
         """Test SettingManager integration with real YAML files"""
         print(Fore.BLUE + "Testing SettingManager Integration..." +

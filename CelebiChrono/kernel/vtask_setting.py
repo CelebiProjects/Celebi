@@ -142,6 +142,8 @@ class SettingManager(Core):
         """
         if self.environment() in ("rawdata", "datalist", "lhcb_ap_datalist"):
             return True
+        if self.task_commands():
+            return bool(self.environment())
         if self.algorithm() is not None:
             if self.algorithm().environment() == "script":
                 return True
