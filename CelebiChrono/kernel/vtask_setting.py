@@ -47,6 +47,13 @@ class SettingManager(Core):
         # ---------------------------------------------
         return memory_limit
 
+    def task_commands(self):
+        """
+        Read the task's own commands from celebi.yaml.
+        """
+        parameters_file = metadata.YamlFile(join(self.path, "celebi.yaml"))
+        return parameters_file.read_variable("commands", [])
+
     def parameters(self):
         """
         Read the parameters file
