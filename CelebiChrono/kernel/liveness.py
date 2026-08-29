@@ -8,55 +8,6 @@ from CelebiChrono.utils.path_utils import project_path as _project_path
 IMPRESSIONS_DIR = ".celebi/impressions"
 
 
-def _object_variables(obj_dir):
-    """Merged variable reader across an object's two-tier config files.
-
-    Reads <obj>/.celebi/config.json (shared) first, then the local
-    override <obj>/.celebi/config.local.json (which records the
-    impression pointer and history); the local file wins. Mirrors
-    metadata.TwoTierConfigFile.
-    """
-    two_tier = metadata.TwoTierConfigFile(
-        os.path.join(obj_dir, ".celebi", "config.json"))
-
-    def read(key, default):
-        return two_tier.read_variable(key, default)
-    return read
-
-
-def _objects(project_dir):
-    """Yield object_type + variable reader for every task/algorithm.
-
-    Walks the project tree recursively: tasks and algorithms are leaves,
-    directory objects (object_type "directory") are traversed. Real
-    projects nest their objects under folders, so a top-level walk
-    would find nothing.
-    """
-    if not os.path.isdir(project_dir):
-        return
-    stack = [project_dir]
-    visited = set()
-    while stack:
-        current = stack.pop()
-        real = os.path.realpath(current)
-        if real in visited:
-            continue
-        visited.add(real)
-        for name in sorted(os.listdir(current)):
-            obj_dir = os.path.join(current, name)
-            if not os.path.isdir(obj_dir) or name.startswith("."):
-                continue
-            config_path = os.path.join(obj_dir, ".celebi", "config.json")
-            if not os.path.isfile(config_path):
-                continue
-            object_type = metadata.TwoTierConfigFile(config_path).read_variable(
-                "object_type", "")
-            if object_type in ("task", "algorithm"):
-                yield object_type, _object_variables(obj_dir)
-            elif object_type == "directory":
-                stack.append(obj_dir)
-
-
 def _collect_inputs(project_dir, root_uuid, seen):
     """Transitively add the impression's dependency uuids to seen.
 
@@ -87,15 +38,26 @@ def compute_live_sets(project_dir=None):
     its transitive input dependencies.
     superseded: every impression in an object's impression history that
     is not a current pointer (of any object).
+
+    Objects are enumerated through VProject.sub_objects_recursively —
+    Celebi's own traversal, which walks nested directory objects and
+    skips zombies — and each object's pointer/history is read through
+    its two-tier config_file.
     """
+    from CelebiChrono.kernel.vproject import VProject
+
     project_dir = project_dir or _project_path()
     live, superseded, current = set(), set(), set()
-    for _object_type, read in _objects(project_dir):
-        pointer = read("impression", "")
+    project = VProject(project_dir, project_dir)
+    for obj in project.sub_objects_recursively():
+        if obj.object_type() not in ("task", "algorithm"):
+            continue
+        pointer = obj.config_file.read_variable("impression", "")
         if pointer:
             current.add(pointer)
             _collect_inputs(project_dir, pointer, live)
-        for record in read("impressions", []) or []:
+        for record in obj.config_file.read_variable(
+                "impressions", []) or []:
             uuid = record.get("uuid", "") if isinstance(record, dict) else ""
             if uuid:
                 superseded.add(uuid)
