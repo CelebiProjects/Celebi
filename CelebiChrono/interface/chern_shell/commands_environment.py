@@ -338,6 +338,57 @@ class EnvironmentCommands:
 
 
 
+    def do_sync_live(self, _arg: str) -> None:
+        """Push the project's live impression set to DITE."""
+        try:
+            result = shell.sync_live()
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error syncing live set: {e}")
+
+    def do_purge_stale_cache(self, arg: str) -> None:
+        """Purge superseded impressions' cache entries from a runner.
+
+        The project's live set is re-synced automatically before purging.
+        """
+        try:
+            runner = arg.strip()
+            if not runner:
+                print("Usage: purge-stale-cache <runner>")
+                return
+            answer = input(f"Purge superseded impressions' cache on ssh "
+                           f"runner '{runner}'? This cannot be undone. (N/y): ")
+            if answer.lower() != 'y':
+                print("Purge stale cache cancelled.")
+                return
+            result = shell.purge_stale_cache(runner)
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error purging stale cache: {e}")
+
+    def do_purge_stale_workflows(self, arg: str) -> None:
+        """Delete non-live workflow workspaces from a runner.
+
+        The project's live set is re-synced automatically before purging.
+        """
+        try:
+            runner = arg.strip()
+            if not runner:
+                print("Usage: purge-stale-workflows <runner>")
+                return
+            answer = input(f"Purge non-live workflows on runner "
+                           f"'{runner}'? This cannot be undone. (N/y): ")
+            if answer.lower() != 'y':
+                print("Purge stale workflows cancelled.")
+                return
+            result = shell.purge_stale_workflows(runner)
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error purging stale workflows: {e}")
+
     def do_kill(self, _: str) -> None:
         """Kill current object process."""
         try:

@@ -69,3 +69,52 @@ def test_purge_stale_workflows_delegates():
     cherncc.purge_stale_workflows.assert_called_once_with(
         "pkufarm", dry_run=False)
     assert isinstance(result, Message)
+
+
+def test_purge_stale_cache_syncs_live_first():
+    """purge_stale_cache pushes the live set before purging."""
+    cherncc = mock.MagicMock()
+    cherncc.purge_stale_cache.return_value = {"purged": [], "skipped": [],
+                                              "dry_run": True}
+    with mock.patch.object(comm, "ChernCommunicator") as cc, \
+            mock.patch.object(comm, "sync_live") as sync:
+        cc.instance.return_value = cherncc
+        sync.return_value = Message()
+        result = comm.purge_stale_cache("pkufarm", dry_run=True)
+    sync.assert_called_once_with()
+    cherncc.purge_stale_cache.assert_called_once_with(
+        "pkufarm", dry_run=True)
+    assert isinstance(result, Message)
+
+
+def test_purge_stale_cache_proceeds_when_sync_warns():
+    """A failed sync (warning Message) never blocks the purge."""
+    cherncc = mock.MagicMock()
+    cherncc.purge_stale_cache.return_value = {"purged": [], "skipped": [],
+                                              "dry_run": False}
+    sync = Message()
+    sync.add("Live-set sync failed (safe to ignore): down", "warning")
+    with mock.patch.object(comm, "ChernCommunicator") as cc, \
+            mock.patch.object(comm, "sync_live", return_value=sync):
+        cc.instance.return_value = cherncc
+        result = comm.purge_stale_cache("pkufarm")
+    cherncc.purge_stale_cache.assert_called_once_with(
+        "pkufarm", dry_run=False)
+    assert isinstance(result, Message)
+    assert any("sync failed" in text for text, _ in result.messages)
+
+
+def test_purge_stale_workflows_syncs_live_first():
+    """purge_stale_workflows pushes the live set before purging."""
+    cherncc = mock.MagicMock()
+    cherncc.purge_stale_workflows.return_value = {"purged": [],
+                                                  "skipped": [],
+                                                  "dry_run": False}
+    with mock.patch.object(comm, "ChernCommunicator") as cc, \
+            mock.patch.object(comm, "sync_live") as sync:
+        cc.instance.return_value = cherncc
+        sync.return_value = Message()
+        comm.purge_stale_workflows("pkufarm")
+    sync.assert_called_once_with()
+    cherncc.purge_stale_workflows.assert_called_once_with(
+        "pkufarm", dry_run=False)

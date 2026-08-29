@@ -748,9 +748,21 @@ def sync_live() -> Message:
     return message
 
 
+def _merge_sync_lines(message, sync):
+    """Merge a best-effort sync-live result into a message."""
+    for text, color in sync.messages:
+        message.add(f"[sync-live] {text}", color)
+
+
 def purge_stale_cache(runner: str, dry_run: bool = False) -> Message:
-    """Purge superseded impressions' cache entries on a runner."""
+    """Purge superseded impressions' cache entries on a runner.
+
+    The project's live set is re-synced first (best-effort), so the
+    purge always sees the freshest liveness data; a failed sync warns
+    and never blocks the purge.
+    """
     message = Message()
+    _merge_sync_lines(message, sync_live())
     try:
         result = ChernCommunicator.instance().purge_stale_cache(
             runner, dry_run=dry_run)
@@ -773,8 +785,14 @@ def purge_stale_cache(runner: str, dry_run: bool = False) -> Message:
 
 
 def purge_stale_workflows(runner: str, dry_run: bool = False) -> Message:
-    """Delete non-live workflow workspaces on a runner."""
+    """Delete non-live workflow workspaces on a runner.
+
+    The project's live set is re-synced first (best-effort), so the
+    purge always sees the freshest liveness data; a failed sync warns
+    and never blocks the purge.
+    """
     message = Message()
+    _merge_sync_lines(message, sync_live())
     try:
         result = ChernCommunicator.instance().purge_stale_workflows(
             runner, dry_run=dry_run)
