@@ -60,6 +60,9 @@ class InputManager(Core):
         if algorithm is not None:
             print("Already have algorithm, will replace it")
             self.remove_algorithm()
+        if self.task_commands():  # pylint: disable=no-member
+            print("The task has its own commands in celebi.yaml; "
+                  "they take precedence over the algorithm's commands.")
         self.add_arc_from(self.get_vobject(path, self.project_path()))
 
     def remove_algorithm(self):

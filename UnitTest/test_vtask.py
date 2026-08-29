@@ -909,6 +909,30 @@ class TestChernVTask(unittest.TestCase):  # pylint: disable=too-many-public-meth
         prepare.remove_chern_project("demo_complex")
         CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
+    def test_add_algorithm_notices_task_commands_precedence(self):
+        """add_algorithm warns when task commands will shadow the algorithm."""
+        prepare.create_chern_project("demo_complex")
+        os.chdir("demo_complex")
+        obj_tsk = vtsk.VTask(os.getcwd() + "/tasks/taskAna1")
+
+        mock_algo_obj = MagicMock()
+        mock_algo_obj.object_type.return_value = "algorithm"
+        mock_algo_obj.has_predecessor_recursively.return_value = False
+
+        with patch.object(obj_tsk, 'get_vobject', return_value=mock_algo_obj), \
+             patch.object(obj_tsk, 'algorithm', return_value=None), \
+             patch.object(obj_tsk, 'task_commands', return_value=["echo hi"]), \
+             patch.object(obj_tsk, 'add_arc_from'), \
+             patch("builtins.print") as mock_print:
+            obj_tsk.add_algorithm(os.getcwd() + "/code/ana1")
+
+        printed = " ".join(str(call.args[0]) for call in mock_print.call_args_list)
+        self.assertIn("take precedence", printed)
+
+        os.chdir("..")
+        prepare.remove_chern_project("demo_complex")
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
+
     def test_input_manager_remove_algorithm(self):
         """Test InputManager remove_algorithm method"""
         print(Fore.BLUE + "Testing InputManager remove_algorithm..." +
