@@ -155,3 +155,19 @@ def test_purge_stale_workflows_no_project_returns_error(monkeypatch):
         result = comm.purge_stale_workflows("pkufarm")
     cc.instance.assert_not_called()
     assert any("No project" in text for text, _ in result.messages)
+
+
+def test_purge_stale_workflows_reports_already_gone(monkeypatch, tmp_path):
+    """already_gone entries are summarized in one line."""
+    monkeypatch.setattr("CelebiChrono.utils.path_utils.project_path",
+                        lambda: _project(tmp_path))
+    cherncc = mock.MagicMock()
+    cherncc.purge_stale_workflows.return_value = {"purged": [],
+                                                  "skipped": [],
+                                                  "already_gone": 3,
+                                                  "dry_run": False}
+    with mock.patch.object(comm, "ChernCommunicator") as cc:
+        cc.instance.return_value = cherncc
+        result = comm.purge_stale_workflows("pkufarm")
+    assert any("3 workspace(s) already gone" in text
+               for text, _ in result.messages)

@@ -836,6 +836,9 @@ def purge_stale_workflows(runner: str, dry_run: bool = False) -> Message:
             message.add(f"Skipped workflow: {entry.get('project')}/"
                         f"{entry.get('workflow')} — {entry.get('reason')}",
                         "warning")
+        if result.get("already_gone"):
+            message.add(f"{result['already_gone']} workspace(s) already "
+                        "gone, skipped")
         if result.get("dry_run"):
             message.add(f"Dry run — {len(result.get('purged', []))} "
                         "workflows would be purged, nothing was deleted.")
