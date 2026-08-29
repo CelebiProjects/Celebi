@@ -145,5 +145,50 @@ class TestAddParameterSubtaskPathResolution(unittest.TestCase):
         mock_csys.project_path.assert_not_called()
 
 
+class TestGetScriptPathCodePrefix(unittest.TestCase):
+    """Tests that code:/code/ prefixes resolve via the task's code_path."""
+
+    @patch.object(MANAGER, "current_object")
+    def test_code_prefix_resolves_to_code_path(self, mock_current_object):
+        """code: paths resolve against the code root (task dir when inline)."""
+        mock_task = MagicMock()
+        mock_task.is_task_or_algorithm.return_value = True
+        mock_task.object_type.return_value = "task"
+        mock_task.path = "/project/tasks/foo"
+        mock_task.code_path.return_value = "/project/tasks/foo"
+        mock_current_object.return_value = mock_task
+
+        message = task_configuration.get_script_path("code/main.py")
+        self.assertEqual(message.data["path"], "/project/tasks/foo/main.py")
+
+        message = task_configuration.get_script_path("code:utils.py")
+        self.assertEqual(message.data["path"], "/project/tasks/foo/utils.py")
+
+    @patch.object(MANAGER, "current_object")
+    def test_code_prefix_without_code_root_is_error(self, mock_current_object):
+        """code: paths with no code root report an error instead of None."""
+        mock_task = MagicMock()
+        mock_task.is_task_or_algorithm.return_value = True
+        mock_task.object_type.return_value = "task"
+        mock_task.path = "/project/tasks/foo"
+        mock_task.code_path.return_value = None
+        mock_current_object.return_value = mock_task
+
+        message = task_configuration.get_script_path("code/main.py")
+        self.assertFalse(message.success)
+
+    @patch.object(MANAGER, "current_object")
+    def test_plain_filename_unaffected(self, mock_current_object):
+        """Non-code: paths still resolve against the object itself."""
+        mock_task = MagicMock()
+        mock_task.is_task_or_algorithm.return_value = True
+        mock_task.object_type.return_value = "task"
+        mock_task.path = "/project/tasks/foo"
+        mock_current_object.return_value = mock_task
+
+        message = task_configuration.get_script_path("script.py")
+        self.assertEqual(message.data["path"], "/project/tasks/foo/script.py")
+
+
 if __name__ == "__main__":
     unittest.main()

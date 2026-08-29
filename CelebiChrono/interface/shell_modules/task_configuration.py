@@ -576,15 +576,14 @@ def get_script_path(filename: str) -> Message:
         message.add("Not able to get script path if you are not in a task or algorithm.", "error")
         return message
     if MANAGER.current_object().object_type() == "task":
-        if filename.startswith("code/"):
-            algorithm = MANAGER.current_object().algorithm()
-            path = f"{algorithm.path}/{filename[5:]}"
-            message.add(path, "normal")
-            message.data["path"] = path
-            return message
-        if filename.startswith("code:"):
-            algorithm = MANAGER.current_object().algorithm()
-            path = f"{algorithm.path}/{filename[5:]}"
+        if filename.startswith("code/") or filename.startswith("code:"):
+            code_root = MANAGER.current_object().code_path()
+            if code_root is None:
+                message.add(
+                    "No code root for this task (no algorithm and no inline commands).",
+                    "error")
+                return message
+            path = f"{code_root}/{filename[5:]}"
             message.add(path, "normal")
             message.data["path"] = path
             return message
