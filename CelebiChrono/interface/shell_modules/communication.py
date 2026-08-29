@@ -716,20 +716,29 @@ def search_impression(partial_uuid: str) -> Message:
     return message
 
 
-def _current_project_uuid():
-    """The current project's uuid, or "" when not inside a project."""
+def _current_project():
+    """(project_dir, project_uuid) of the current project.
+
+    Returns (None, "") when not inside a Celebi project.
+    """
     import os
     from CelebiChrono.utils import metadata
     from CelebiChrono.utils.path_utils import project_path
     try:
         project_dir = project_path()
         if not project_dir:
-            return ""
-        return metadata.ConfigFile(
+            return None, ""
+        uuid = metadata.ConfigFile(
             os.path.join(project_dir, ".celebi", "config.json")
         ).read_variable("project_uuid", "")
+        return project_dir, uuid
     except Exception:  # pylint: disable=broad-exception-caught
-        return ""
+        return None, ""
+
+
+def _current_project_uuid():
+    """The current project's uuid, or "" when not inside a project."""
+    return _current_project()[1]
 
 
 def sync_live() -> Message:
@@ -741,12 +750,12 @@ def sync_live() -> Message:
     from CelebiChrono.kernel.liveness import compute_live_sets
     message = Message()
     try:
-        project_uuid = _current_project_uuid()
+        project_dir, project_uuid = _current_project()
         if not project_uuid:
             message.add("No project found — run inside a Celebi project.",
                         "error")
             return message
-        live, superseded = compute_live_sets()
+        live, superseded = compute_live_sets(project_dir)
         result = ChernCommunicator.instance().put_live_set(
             project_uuid, live, superseded)
         message.add(f"Synced live set: {result.get('live')} live, "
