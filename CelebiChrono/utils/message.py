@@ -40,6 +40,7 @@ class Message:
             raise TypeError("Expected a Message instance")
 
     def colored(self) -> str:
-        """ Return colored messages
+        """ Return colored messages, one per line
         """
-        return "".join(colorize(text, msg_type) for text, msg_type in self.messages)
+        return "\n".join(colorize(text, msg_type)
+                          for text, msg_type in self.messages)

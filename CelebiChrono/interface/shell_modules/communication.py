@@ -762,10 +762,12 @@ def purge_stale_cache(runner: str, dry_run: bool = False) -> Message:
     and never blocks the purge.
     """
     message = Message()
+    message.data["purge_count"] = 0
     _merge_sync_lines(message, sync_live())
     try:
         result = ChernCommunicator.instance().purge_stale_cache(
             runner, dry_run=dry_run)
+        message.data["purge_count"] = len(result.get("purged", []))
         for entry in result.get("purged", []):
             message.add(f"Purged cache: {entry.get('project')}/"
                         f"{entry.get('impression')}")
@@ -792,10 +794,12 @@ def purge_stale_workflows(runner: str, dry_run: bool = False) -> Message:
     and never blocks the purge.
     """
     message = Message()
+    message.data["purge_count"] = 0
     _merge_sync_lines(message, sync_live())
     try:
         result = ChernCommunicator.instance().purge_stale_workflows(
             runner, dry_run=dry_run)
+        message.data["purge_count"] = len(result.get("purged", []))
         for entry in result.get("purged", []):
             message.add(f"Purged workflow: {entry.get('project')}/"
                         f"{entry.get('workflow')}")

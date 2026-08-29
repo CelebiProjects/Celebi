@@ -248,51 +248,130 @@ class TestRunnerShellCommands(unittest.TestCase):
             self.cmds.do_sync_live("")
         shell.sync_live.assert_called_once_with()
 
+    def _plan(self, purge_count, lines=("Dry run", "")):
+        """A dry-run plan Message stand-in with a purge count."""
+        plan = mock.MagicMock(messages=[lines], colored=lambda: "plan")
+        plan.data = {"purge_count": purge_count}
+        return plan
+
     def test_do_purge_stale_cache_confirms_and_runs(self):
-        """Test do purge stale cache confirms and runs."""
+        """Test do purge stale cache plans, confirms, and runs."""
         with mock.patch.object(commands_environment, "shell") as shell, \
                 mock.patch("builtins.print"), \
                 mock.patch("builtins.input", return_value="y"):
-            shell.purge_stale_cache.return_value = mock.MagicMock(
+            done = mock.MagicMock(
                 messages=[("Purged 1 cache entries", "")],
-                colored=lambda: "rendered")
+                colored=lambda: "done")
+            shell.purge_stale_cache.side_effect = [
+                self._plan(1), done]
             self.cmds.do_purge_stale_cache("pkufarm")
-        shell.purge_stale_cache.assert_called_once_with("pkufarm")
+        shell.purge_stale_cache.assert_has_calls([
+            mock.call("pkufarm", dry_run=True),
+            mock.call("pkufarm")])
+
+    def test_do_purge_stale_cache_dry_run_stops(self):
+        """Test do purge stale cache --dry-run never purges."""
+        with mock.patch.object(commands_environment, "shell") as shell, \
+                mock.patch("builtins.print"), \
+                mock.patch("builtins.input") as inp:
+            shell.purge_stale_cache.return_value = self._plan(2)
+            self.cmds.do_purge_stale_cache("--dry-run pkufarm")
+        shell.purge_stale_cache.assert_called_once_with(
+            "pkufarm", dry_run=True)
+        inp.assert_not_called()
+
+    def test_do_purge_stale_cache_dry_run_after_runner(self):
+        """Test do purge stale cache --dry-run after the runner token."""
+        with mock.patch.object(commands_environment, "shell") as shell, \
+                mock.patch("builtins.print"), \
+                mock.patch("builtins.input") as inp:
+            shell.purge_stale_cache.return_value = self._plan(2)
+            self.cmds.do_purge_stale_cache("pkufarm --dry-run")
+        shell.purge_stale_cache.assert_called_once_with(
+            "pkufarm", dry_run=True)
+        inp.assert_not_called()
+
+    def test_do_purge_stale_cache_nothing_to_purge_no_confirm(self):
+        """Test an empty plan needs no confirmation."""
+        with mock.patch.object(commands_environment, "shell") as shell, \
+                mock.patch("builtins.print"), \
+                mock.patch("builtins.input") as inp:
+            shell.purge_stale_cache.return_value = self._plan(0)
+            self.cmds.do_purge_stale_cache("pkufarm")
+        shell.purge_stale_cache.assert_called_once_with(
+            "pkufarm", dry_run=True)
+        inp.assert_not_called()
+
+    def test_do_purge_stale_cache_yes_skips_confirm(self):
+        """Test do purge stale cache --yes skips the prompt."""
+        with mock.patch.object(commands_environment, "shell") as shell, \
+                mock.patch("builtins.print"), \
+                mock.patch("builtins.input") as inp:
+            done = mock.MagicMock(
+                messages=[("Purged 1 cache entries", "")],
+                colored=lambda: "done")
+            shell.purge_stale_cache.side_effect = [
+                self._plan(1), done]
+            self.cmds.do_purge_stale_cache("--yes pkufarm")
+        shell.purge_stale_cache.assert_has_calls([
+            mock.call("pkufarm", dry_run=True),
+            mock.call("pkufarm")])
+        inp.assert_not_called()
 
     def test_do_purge_stale_cache_cancels(self):
         """Test do purge stale cache cancels on no."""
         with mock.patch.object(commands_environment, "shell") as shell, \
                 mock.patch("builtins.print"), \
                 mock.patch("builtins.input", return_value="n"):
+            shell.purge_stale_cache.return_value = self._plan(1)
             self.cmds.do_purge_stale_cache("pkufarm")
-        shell.purge_stale_cache.assert_not_called()
+        shell.purge_stale_cache.assert_called_once_with(
+            "pkufarm", dry_run=True)
 
     def test_do_purge_stale_cache_requires_name(self):
         """Test do purge stale cache requires a runner name."""
         with mock.patch.object(commands_environment, "shell") as shell, \
                 mock.patch("builtins.print") as pr:
-            self.cmds.do_purge_stale_cache("")
+            self.cmds.do_purge_stale_cache("--dry-run")
         shell.purge_stale_cache.assert_not_called()
         self.assertTrue(pr.called)
 
     def test_do_purge_stale_workflows_confirms_and_runs(self):
-        """Test do purge stale workflows confirms and runs."""
+        """Test do purge stale workflows plans, confirms, and runs."""
         with mock.patch.object(commands_environment, "shell") as shell, \
                 mock.patch("builtins.print"), \
                 mock.patch("builtins.input", return_value="y"):
-            shell.purge_stale_workflows.return_value = mock.MagicMock(
+            done = mock.MagicMock(
                 messages=[("Purged 1 workflows", "")],
-                colored=lambda: "rendered")
+                colored=lambda: "done")
+            shell.purge_stale_workflows.side_effect = [
+                self._plan(1), done]
             self.cmds.do_purge_stale_workflows("pkufarm")
-        shell.purge_stale_workflows.assert_called_once_with("pkufarm")
+        shell.purge_stale_workflows.assert_has_calls([
+            mock.call("pkufarm", dry_run=True),
+            mock.call("pkufarm")])
+
+    def test_do_purge_stale_workflows_dry_run_stops(self):
+        """Test do purge stale workflows --dry-run never purges."""
+        with mock.patch.object(commands_environment, "shell") as shell, \
+                mock.patch("builtins.print"), \
+                mock.patch("builtins.input") as inp:
+            shell.purge_stale_workflows.return_value = self._plan(2)
+            self.cmds.do_purge_stale_workflows("--dry-run pkufarm")
+        shell.purge_stale_workflows.assert_called_once_with(
+            "pkufarm", dry_run=True)
+        inp.assert_not_called()
 
     def test_do_purge_stale_workflows_cancels(self):
         """Test do purge stale workflows cancels on no."""
         with mock.patch.object(commands_environment, "shell") as shell, \
                 mock.patch("builtins.print"), \
                 mock.patch("builtins.input", return_value="n"):
+            shell.purge_stale_workflows.return_value = self._plan(1)
             self.cmds.do_purge_stale_workflows("pkufarm")
-        shell.purge_stale_workflows.assert_not_called()
+        shell.purge_stale_workflows.assert_called_once_with(
+            "pkufarm", dry_run=True)
+
 class TestRunnerCompletions(unittest.TestCase):
 
     """Test Runner Completions."""

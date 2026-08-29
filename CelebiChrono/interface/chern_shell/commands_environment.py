@@ -88,6 +88,28 @@ def _parse_submit_args(arg: str):
     return "local", parts
 
 
+def _parse_purge_args(arg: str):
+    """Split '[--dry-run] [--yes] <runner>' tokens in any order.
+
+    Returns (runner, dry_run, yes), or None after printing an error for
+    an unknown token.
+    """
+    runner = ""
+    dry_run = False
+    yes = False
+    for token in arg.split():
+        if token == "--dry-run":
+            dry_run = True
+        elif token in ("--yes", "-y"):
+            yes = True
+        elif runner:
+            print(f"Unknown argument: {token}")
+            return None
+        else:
+            runner = token
+    return runner, dry_run, yes
+
+
 class EnvironmentCommands:
     """Mixin class providing environment and execution command handlers."""
     # pylint: disable=too-many-public-methods
@@ -350,18 +372,32 @@ class EnvironmentCommands:
     def do_purge_stale_cache(self, arg: str) -> None:
         """Purge superseded impressions' cache entries from a runner.
 
-        The project's live set is re-synced automatically before purging.
+        The live set is re-synced automatically and the plan (what would
+        be purged, what is skipped as live) is shown before anything is
+        deleted. Usage: purge-stale-cache [--dry-run] [--yes] <runner>
         """
         try:
-            runner = arg.strip()
+            parsed = _parse_purge_args(arg)
+            if parsed is None:
+                return
+            runner, dry_run, yes = parsed
             if not runner:
-                print("Usage: purge-stale-cache <runner>")
+                print("Usage: purge-stale-cache [--dry-run] [--yes] "
+                      "<runner>")
                 return
-            answer = input(f"Purge superseded impressions' cache on ssh "
-                           f"runner '{runner}'? This cannot be undone. (N/y): ")
-            if answer.lower() != 'y':
-                print("Purge stale cache cancelled.")
+            plan = shell.purge_stale_cache(runner, dry_run=True)
+            if plan.messages:
+                print(plan.colored())
+            if dry_run or not plan.data.get("purge_count", 0):
                 return
+            if not yes:
+                answer = input(f"Purge {plan.data['purge_count']} cache "
+                               f"entr{'y' if plan.data['purge_count'] == 1 else 'ies'} "
+                               f"on ssh runner '{runner}'? This cannot be "
+                               f"undone. (N/y): ")
+                if answer.lower() != 'y':
+                    print("Purge stale cache cancelled.")
+                    return
             result = shell.purge_stale_cache(runner)
             if result.messages:
                 print(result.colored())
@@ -371,18 +407,32 @@ class EnvironmentCommands:
     def do_purge_stale_workflows(self, arg: str) -> None:
         """Delete non-live workflow workspaces from a runner.
 
-        The project's live set is re-synced automatically before purging.
+        The live set is re-synced automatically and the plan (what would
+        be purged, what is skipped as live) is shown before anything is
+        deleted. Usage: purge-stale-workflows [--dry-run] [--yes] <runner>
         """
         try:
-            runner = arg.strip()
+            parsed = _parse_purge_args(arg)
+            if parsed is None:
+                return
+            runner, dry_run, yes = parsed
             if not runner:
-                print("Usage: purge-stale-workflows <runner>")
+                print("Usage: purge-stale-workflows [--dry-run] [--yes] "
+                      "<runner>")
                 return
-            answer = input(f"Purge non-live workflows on runner "
-                           f"'{runner}'? This cannot be undone. (N/y): ")
-            if answer.lower() != 'y':
-                print("Purge stale workflows cancelled.")
+            plan = shell.purge_stale_workflows(runner, dry_run=True)
+            if plan.messages:
+                print(plan.colored())
+            if dry_run or not plan.data.get("purge_count", 0):
                 return
+            if not yes:
+                answer = input(f"Purge {plan.data['purge_count']} workflow"
+                               f"{'s' if plan.data['purge_count'] != 1 else ''} "
+                               f"on runner '{runner}'? This cannot be undone. "
+                               f"(N/y): ")
+                if answer.lower() != 'y':
+                    print("Purge stale workflows cancelled.")
+                    return
             result = shell.purge_stale_workflows(runner)
             if result.messages:
                 print(result.colored())

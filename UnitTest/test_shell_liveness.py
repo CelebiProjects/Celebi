@@ -56,6 +56,7 @@ def test_purge_stale_cache_delegates():
     cherncc.purge_stale_cache.assert_called_once_with(
         "pkufarm", dry_run=True)
     assert isinstance(result, Message)
+    assert result.data["purge_count"] == 0
 
 
 def test_purge_stale_workflows_delegates():
@@ -68,6 +69,8 @@ def test_purge_stale_workflows_delegates():
         result = comm.purge_stale_workflows("pkufarm")
     cherncc.purge_stale_workflows.assert_called_once_with(
         "pkufarm", dry_run=False)
+    assert isinstance(result, Message)
+    assert result.data["purge_count"] == 0
     assert isinstance(result, Message)
 
 
