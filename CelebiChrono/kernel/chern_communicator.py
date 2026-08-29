@@ -1083,20 +1083,29 @@ class ChernCommunicator():
         r.raise_for_status()
         return r.json()
 
-    def purge_stale_cache(self, runner, dry_run=False):
-        """Ask DITE to purge superseded impressions' cache on a runner."""
+    def purge_stale_cache(self, runner, dry_run=False, project_uuid=None):
+        """Ask DITE to purge superseded impressions' cache on a runner.
+
+        With project_uuid, only that project's cache entries are selected.
+        """
         url = f"http://{self.serverurl()}/purge-runner-cache"
-        r = requests.post(url, json={"runner": runner, "superseded": True,
-                                     "dry_run": dry_run},
-                          timeout=self.purge_timeout)
+        data = {"runner": runner, "superseded": True, "dry_run": dry_run}
+        if project_uuid:
+            data["project"] = project_uuid
+        r = requests.post(url, json=data, timeout=self.purge_timeout)
         r.raise_for_status()
         return r.json()
 
-    def purge_stale_workflows(self, runner, dry_run=False):
-        """Ask DITE to delete non-live workflow workspaces on a runner."""
+    def purge_stale_workflows(self, runner, dry_run=False,
+                              project_uuid=None):
+        """Ask DITE to delete non-live workflow workspaces on a runner.
+
+        With project_uuid, only that project's workflows are scanned.
+        """
         url = f"http://{self.serverurl()}/purge-runner-workflows"
-        r = requests.post(url, json={"runner": runner,
-                                     "dry_run": dry_run},
-                          timeout=self.purge_timeout)
+        data = {"runner": runner, "dry_run": dry_run}
+        if project_uuid:
+            data["project_uuid"] = project_uuid
+        r = requests.post(url, json=data, timeout=self.purge_timeout)
         r.raise_for_status()
         return r.json()

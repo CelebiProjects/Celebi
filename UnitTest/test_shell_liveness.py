@@ -46,7 +46,10 @@ def test_sync_live_failure_is_a_warning(monkeypatch, tmp_path):
     assert isinstance(result, Message)
 
 
-def test_purge_stale_cache_delegates():
+def test_purge_stale_cache_delegates(monkeypatch, tmp_path):
+    project = _project(tmp_path)
+    monkeypatch.setattr("CelebiChrono.utils.path_utils.project_path",
+                        lambda: project)
     cherncc = mock.MagicMock()
     cherncc.purge_stale_cache.return_value = {"purged": [], "skipped": [],
                                               "dry_run": True}
@@ -54,12 +57,15 @@ def test_purge_stale_cache_delegates():
         cc.instance.return_value = cherncc
         result = comm.purge_stale_cache("pkufarm", dry_run=True)
     cherncc.purge_stale_cache.assert_called_once_with(
-        "pkufarm", dry_run=True)
+        "pkufarm", dry_run=True, project_uuid="proj-1")
     assert isinstance(result, Message)
     assert result.data["purge_count"] == 0
 
 
-def test_purge_stale_workflows_delegates():
+def test_purge_stale_workflows_delegates(monkeypatch, tmp_path):
+    project = _project(tmp_path)
+    monkeypatch.setattr("CelebiChrono.utils.path_utils.project_path",
+                        lambda: project)
     cherncc = mock.MagicMock()
     cherncc.purge_stale_workflows.return_value = {"purged": [],
                                                   "skipped": [],
@@ -68,14 +74,16 @@ def test_purge_stale_workflows_delegates():
         cc.instance.return_value = cherncc
         result = comm.purge_stale_workflows("pkufarm")
     cherncc.purge_stale_workflows.assert_called_once_with(
-        "pkufarm", dry_run=False)
+        "pkufarm", dry_run=False, project_uuid="proj-1")
     assert isinstance(result, Message)
     assert result.data["purge_count"] == 0
     assert isinstance(result, Message)
 
 
-def test_purge_stale_cache_syncs_live_first():
+def test_purge_stale_cache_syncs_live_first(monkeypatch, tmp_path):
     """purge_stale_cache pushes the live set before purging."""
+    monkeypatch.setattr("CelebiChrono.utils.path_utils.project_path",
+                        lambda: _project(tmp_path))
     cherncc = mock.MagicMock()
     cherncc.purge_stale_cache.return_value = {"purged": [], "skipped": [],
                                               "dry_run": True}
@@ -86,12 +94,15 @@ def test_purge_stale_cache_syncs_live_first():
         result = comm.purge_stale_cache("pkufarm", dry_run=True)
     sync.assert_called_once_with()
     cherncc.purge_stale_cache.assert_called_once_with(
-        "pkufarm", dry_run=True)
+        "pkufarm", dry_run=True, project_uuid="proj-1")
     assert isinstance(result, Message)
 
 
-def test_purge_stale_cache_proceeds_when_sync_warns():
+def test_purge_stale_cache_proceeds_when_sync_warns(monkeypatch,
+                                                        tmp_path):
     """A failed sync (warning Message) never blocks the purge."""
+    monkeypatch.setattr("CelebiChrono.utils.path_utils.project_path",
+                        lambda: _project(tmp_path))
     cherncc = mock.MagicMock()
     cherncc.purge_stale_cache.return_value = {"purged": [], "skipped": [],
                                               "dry_run": False}
@@ -102,13 +113,15 @@ def test_purge_stale_cache_proceeds_when_sync_warns():
         cc.instance.return_value = cherncc
         result = comm.purge_stale_cache("pkufarm")
     cherncc.purge_stale_cache.assert_called_once_with(
-        "pkufarm", dry_run=False)
+        "pkufarm", dry_run=False, project_uuid="proj-1")
     assert isinstance(result, Message)
     assert any("sync failed" in text for text, _ in result.messages)
 
 
-def test_purge_stale_workflows_syncs_live_first():
+def test_purge_stale_workflows_syncs_live_first(monkeypatch, tmp_path):
     """purge_stale_workflows pushes the live set before purging."""
+    monkeypatch.setattr("CelebiChrono.utils.path_utils.project_path",
+                        lambda: _project(tmp_path))
     cherncc = mock.MagicMock()
     cherncc.purge_stale_workflows.return_value = {"purged": [],
                                                   "skipped": [],
@@ -120,4 +133,25 @@ def test_purge_stale_workflows_syncs_live_first():
         comm.purge_stale_workflows("pkufarm")
     sync.assert_called_once_with()
     cherncc.purge_stale_workflows.assert_called_once_with(
-        "pkufarm", dry_run=False)
+        "pkufarm", dry_run=False, project_uuid="proj-1")
+
+
+def test_purge_stale_cache_no_project_returns_error(monkeypatch):
+    """Without a project, the purge refuses to run (never touches other
+    projects)."""
+    monkeypatch.setattr("CelebiChrono.utils.path_utils.project_path",
+                        lambda: None)
+    with mock.patch.object(comm, "ChernCommunicator") as cc:
+        result = comm.purge_stale_cache("pkufarm")
+    cc.instance.assert_not_called()
+    assert any("No project" in text for text, _ in result.messages)
+
+
+def test_purge_stale_workflows_no_project_returns_error(monkeypatch):
+    """Without a project, the workflow purge refuses to run."""
+    monkeypatch.setattr("CelebiChrono.utils.path_utils.project_path",
+                        lambda: None)
+    with mock.patch.object(comm, "ChernCommunicator") as cc:
+        result = comm.purge_stale_workflows("pkufarm")
+    cc.instance.assert_not_called()
+    assert any("No project" in text for text, _ in result.messages)

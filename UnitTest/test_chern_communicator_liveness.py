@@ -57,3 +57,27 @@ def test_purge_stale_workflows_posts_runner():
     req.post.assert_called_once_with(
         "http://dite.example:3315/purge-runner-workflows",
         json={"runner": "pkufarm", "dry_run": False}, timeout=600)
+
+
+def test_purge_stale_cache_posts_project_scope():
+    """With project_uuid, the cache purge body carries the project."""
+    cherncc = _communicator()
+    response = mock.MagicMock()
+    response.json.return_value = {"purged": [], "skipped": [],
+                                  "dry_run": True}
+    with mock.patch("CelebiChrono.kernel.chern_communicator.requests") as req:
+        req.post.return_value = response
+        cherncc.purge_stale_cache("pkufarm", project_uuid="proj")
+    assert req.post.call_args[1]["json"]["project"] == "proj"
+
+
+def test_purge_stale_workflows_posts_project_scope():
+    """With project_uuid, the workflow purge body carries it."""
+    cherncc = _communicator()
+    response = mock.MagicMock()
+    response.json.return_value = {"purged": [], "skipped": [],
+                                  "dry_run": True}
+    with mock.patch("CelebiChrono.kernel.chern_communicator.requests") as req:
+        req.post.return_value = response
+        cherncc.purge_stale_workflows("pkufarm", project_uuid="proj")
+    assert req.post.call_args[1]["json"]["project_uuid"] == "proj"

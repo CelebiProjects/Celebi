@@ -716,6 +716,22 @@ def search_impression(partial_uuid: str) -> Message:
     return message
 
 
+def _current_project_uuid():
+    """The current project's uuid, or "" when not inside a project."""
+    import os
+    from CelebiChrono.utils import metadata
+    from CelebiChrono.utils.path_utils import project_path
+    try:
+        project_dir = project_path()
+        if not project_dir:
+            return ""
+        return metadata.ConfigFile(
+            os.path.join(project_dir, ".celebi", "config.json")
+        ).read_variable("project_uuid", "")
+    except Exception:  # pylint: disable=broad-exception-caught
+        return ""
+
+
 def sync_live() -> Message:
     """Push the project's live impression set to DITE (best-effort).
 
@@ -723,20 +739,14 @@ def sync_live() -> Message:
     unknown-is-live rule.
     """
     from CelebiChrono.kernel.liveness import compute_live_sets
-    from CelebiChrono.utils import metadata
-    from CelebiChrono.utils.path_utils import project_path
-    import os
     message = Message()
     try:
-        project_dir = project_path()
-        project_uuid = metadata.ConfigFile(
-            os.path.join(project_dir, ".celebi", "config.json")
-        ).read_variable("project_uuid", "")
+        project_uuid = _current_project_uuid()
         if not project_uuid:
             message.add("No project found — run inside a Celebi project.",
                         "error")
             return message
-        live, superseded = compute_live_sets(project_dir)
+        live, superseded = compute_live_sets()
         result = ChernCommunicator.instance().put_live_set(
             project_uuid, live, superseded)
         message.add(f"Synced live set: {result.get('live')} live, "
@@ -763,10 +773,15 @@ def purge_stale_cache(runner: str, dry_run: bool = False) -> Message:
     """
     message = Message()
     message.data["purge_count"] = 0
+    project_uuid = _current_project_uuid()
+    if not project_uuid:
+        message.add("No project found — run inside a Celebi project.",
+                    "error")
+        return message
     _merge_sync_lines(message, sync_live())
     try:
         result = ChernCommunicator.instance().purge_stale_cache(
-            runner, dry_run=dry_run)
+            runner, dry_run=dry_run, project_uuid=project_uuid)
         message.data["purge_count"] = len(result.get("purged", []))
         for entry in result.get("purged", []):
             message.add(f"Purged cache: {entry.get('project')}/"
@@ -795,10 +810,15 @@ def purge_stale_workflows(runner: str, dry_run: bool = False) -> Message:
     """
     message = Message()
     message.data["purge_count"] = 0
+    project_uuid = _current_project_uuid()
+    if not project_uuid:
+        message.add("No project found — run inside a Celebi project.",
+                    "error")
+        return message
     _merge_sync_lines(message, sync_live())
     try:
         result = ChernCommunicator.instance().purge_stale_workflows(
-            runner, dry_run=dry_run)
+            runner, dry_run=dry_run, project_uuid=project_uuid)
         message.data["purge_count"] = len(result.get("purged", []))
         for entry in result.get("purged", []):
             message.add(f"Purged workflow: {entry.get('project')}/"
