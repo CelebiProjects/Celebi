@@ -91,11 +91,11 @@ class JobManager(Core):
             return False, f"Docker test failed: {e}"
 
     def _test_commands(self):
-        """Return the algorithm commands with parameters substituted.
+        """Return the effective commands with parameters substituted.
 
         Shared by docker_test and ssh_test.
         """
-        commands = self.algorithm().commands()
+        commands = self.commands()
         # Parse the commands, and replace any placeholders with actual values if needed
         parameters = self.parameters()
         if parameters:
@@ -688,27 +688,27 @@ class JobManager(Core):
             )
 
     def _prepare_algorithm_code(self, temp_dir): # pylint: disable=too-many-locals
-        """Prepare the algorithm code and its inputs"""
-        algorithm = self.algorithm()
-        if not algorithm:
+        """Prepare the task's code tree (inline task dir or algorithm dir)"""
+        code_root = self.code_path()
+        if not code_root:
             return
 
         alg_temp_dir = self._create_workaround_dir(prefix="chernws_")
-        file_list = csys.tree_excluded(algorithm.path)
+        file_list = csys.tree_excluded(code_root)
         for dirpath, _, filenames in file_list:
             for f in filenames:
-                full_path = os.path.join(
-                        self.project_path(),
-                        algorithm.invariant_path(),
-                        dirpath, f
-                )
-                rel_path = os.path.relpath(full_path, algorithm.path)
+                full_path = os.path.join(code_root, dirpath, f)
+                rel_path = os.path.relpath(full_path, code_root)
                 dest_path = os.path.join(alg_temp_dir, rel_path)
                 csys.copy(full_path, dest_path)
         csys.symlink(
             os.path.join(alg_temp_dir),
             os.path.join(temp_dir, "code"),
         )
+
+        algorithm = self.algorithm()
+        if algorithm is None:
+            return
 
         # if the algorithm have inputs, link them too
         alg_inputs = filter(
@@ -799,29 +799,27 @@ class JobManager(Core):
         # Generate filelist for later comparison in workaround_postshell
         self._generate_workaround_filelist(temp_dir)
 
-        algorithm = self.algorithm()
-        if algorithm:
-            commands = algorithm.commands()
-            if commands:
-                parameters = self.parameters()
-                if parameters:
-                    for key, value in parameters[1].items():
-                        commands = [cmd.replace(f"${{{key}}}", str(value)) for cmd in commands]
-                script = "#!/bin/bash\n\n"
-                env = self.environment()
-                if env and env != "rawdata" and "/" not in env:
-                    conda_env = env.split("=", 1)[1] if env.startswith("conda_env=") else env
-                    script += (
-                        'eval "$(conda shell.bash hook)" 2>/dev/null || '
-                        'source ~/miniconda3/etc/profile.d/conda.sh 2>/dev/null || '
-                        'source ~/anaconda3/etc/profile.d/conda.sh 2>/dev/null || true\n'
-                        f'conda activate {conda_env}\n\n'
-                    )
-                script += "mkdir -p stageout\n\n" + " && ".join(commands) + "\n"
-                script_path = os.path.join(temp_dir, "exec.sh")
-                with open(script_path, "w", encoding="utf-8") as f:
-                    f.write(script)
-                os.chmod(script_path, 0o755)
+        commands = self.commands()
+        if commands:
+            parameters = self.parameters()
+            if parameters:
+                for key, value in parameters[1].items():
+                    commands = [cmd.replace(f"${{{key}}}", str(value)) for cmd in commands]
+            script = "#!/bin/bash\n\n"
+            env = self.environment()
+            if env and env != "rawdata" and "/" not in env:
+                conda_env = env.split("=", 1)[1] if env.startswith("conda_env=") else env
+                script += (
+                    'eval "$(conda shell.bash hook)" 2>/dev/null || '
+                    'source ~/miniconda3/etc/profile.d/conda.sh 2>/dev/null || '
+                    'source ~/anaconda3/etc/profile.d/conda.sh 2>/dev/null || true\n'
+                    f'conda activate {conda_env}\n\n'
+                )
+            script += "mkdir -p stageout\n\n" + " && ".join(commands) + "\n"
+            script_path = os.path.join(temp_dir, "exec.sh")
+            with open(script_path, "w", encoding="utf-8") as f:
+                f.write(script)
+            os.chmod(script_path, 0o755)
 
         return True, temp_dir
 
@@ -919,21 +917,17 @@ class JobManager(Core):
             })
 
     def _prepare_mounting_algorithm_code(self, _temp_dir, mount_config):
-        """Prepare the algorithm code for mounting - generates mount guidance"""
-        algorithm = self.algorithm()
-        if not algorithm:
+        """Prepare the code tree (inline task dir or algorithm dir) for mounting"""
+        code_root = self.code_path()
+        if not code_root:
             return
 
         alg_temp_dir = self._create_workaround_dir(prefix="chernws_")
-        file_list = csys.tree_excluded(algorithm.path)
+        file_list = csys.tree_excluded(code_root)
         for dirpath, _, filenames in file_list:
             for f in filenames:
-                full_path = os.path.join(
-                        self.project_path(),
-                        algorithm.invariant_path(),
-                        dirpath, f
-                )
-                rel_path = os.path.relpath(full_path, algorithm.path)
+                full_path = os.path.join(code_root, dirpath, f)
+                rel_path = os.path.relpath(full_path, code_root)
                 dest_path = os.path.join(alg_temp_dir, rel_path)
                 csys.copy(full_path, dest_path)
 
@@ -945,6 +939,10 @@ class JobManager(Core):
             "readonly": False,
             "description": "Algorithm code"
         })
+
+        algorithm = self.algorithm()
+        if algorithm is None:
+            return
 
         # if the algorithm have inputs, link them too
         alg_inputs = filter(
@@ -987,8 +985,8 @@ class JobManager(Core):
         deleted. The user may edit filelist.yaml during the workaround to add
         new files they want to keep or remove files they want to discard.
         """
-        algorithm = self.algorithm()
-        if not algorithm:
+        code_root = self.code_path()
+        if not code_root:
             return True
 
         alg_temp_dir = os.path.join(path, "code")
@@ -1011,7 +1009,7 @@ class JobManager(Core):
         # Copy files from workaround to origin according to filelist
         for rel_path in filelist_entries:
             workaround_path = os.path.join(alg_temp_dir, rel_path)
-            origin_path = os.path.join(algorithm.path, rel_path)
+            origin_path = os.path.join(code_root, rel_path)
             if os.path.isfile(workaround_path):
                 csys.copy(workaround_path, origin_path)
                 print(f"Copied: {rel_path}")
@@ -1019,11 +1017,11 @@ class JobManager(Core):
                 print(f"Warning: {rel_path} listed in filelist but not found")
 
         # Delete files from origin that are NOT in the filelist
-        origin_tree = csys.tree_excluded(algorithm.path)
+        origin_tree = csys.tree_excluded(code_root)
         for dirpath, _, filenames in origin_tree:
             for f in filenames:
-                full_path = os.path.join(algorithm.path, dirpath, f)
-                rel_path = os.path.relpath(full_path, algorithm.path)
+                full_path = os.path.join(code_root, dirpath, f)
+                rel_path = os.path.relpath(full_path, code_root)
                 if rel_path not in filelist_entries:
                     os.remove(full_path)
                     print(f"Deleted: {rel_path}")
