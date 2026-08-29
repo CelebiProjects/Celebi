@@ -101,3 +101,25 @@ def test_compute_live_sets_aliases_transitive_deps_dangling_skipped(
     assert live == sorted([t1, data, deeper])
     assert dangling not in live
     assert superseded == []
+
+
+def test_compute_live_sets_finds_nested_objects(tmp_path):
+    """Tasks nested under directory objects are included (real layout)."""
+    project = str(tmp_path / "proj")
+    t1 = _uuid("a")
+    t2 = _uuid("b")
+    folder = os.path.join(project, "Analysis")
+    _mk_config(os.path.join(folder, ".celebi", "config.json"),
+               {"object_type": "directory"})
+    _mk_object(folder, "mytask", "task", t1, [])
+    subfolder = os.path.join(folder, "Sub")
+    _mk_config(os.path.join(subfolder, ".celebi", "config.json"),
+               {"object_type": "directory"})
+    _mk_object(subfolder, "myalgo", "algorithm", t2, [])
+    _mk_impression(project, t1)
+    _mk_impression(project, t2)
+
+    live, superseded = celeb_liveness.compute_live_sets(project)
+
+    assert live == sorted([t1, t2])
+    assert superseded == []

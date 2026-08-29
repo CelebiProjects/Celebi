@@ -102,6 +102,9 @@ class ChernCommunicator():
         # Bulk transfers (upload, collect, export, watermark) move real data
         # and need far longer than a control request, but still need a bound.
         self.transfer_timeout = 600
+        # Runner purges delete many remote dirs one by one server-side; a
+        # control-request timeout would give up while the server still works.
+        self.purge_timeout = 600
         project_path = csys.project_path()
         self.project_uuid = metadata.ConfigFile(
                 join(project_path, ".celebi/config.json")
@@ -1085,7 +1088,7 @@ class ChernCommunicator():
         url = f"http://{self.serverurl()}/purge-runner-cache"
         r = requests.post(url, json={"runner": runner, "superseded": True,
                                      "dry_run": dry_run},
-                          timeout=self.timeout)
+                          timeout=self.purge_timeout)
         r.raise_for_status()
         return r.json()
 
@@ -1094,6 +1097,6 @@ class ChernCommunicator():
         url = f"http://{self.serverurl()}/purge-runner-workflows"
         r = requests.post(url, json={"runner": runner,
                                      "dry_run": dry_run},
-                          timeout=self.timeout)
+                          timeout=self.purge_timeout)
         r.raise_for_status()
         return r.json()

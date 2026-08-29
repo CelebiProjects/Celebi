@@ -25,21 +25,36 @@ def _object_variables(obj_dir):
 
 
 def _objects(project_dir):
-    """Yield object_type + variable reader for each task/algorithm dir."""
+    """Yield object_type + variable reader for every task/algorithm.
+
+    Walks the project tree recursively: tasks and algorithms are leaves,
+    directory objects (object_type "directory") are traversed. Real
+    projects nest their objects under folders, so a top-level walk
+    would find nothing.
+    """
     if not os.path.isdir(project_dir):
         return
-    for name in os.listdir(project_dir):
-        obj_dir = os.path.join(project_dir, name)
-        if not os.path.isdir(obj_dir) or name.startswith("."):
+    stack = [project_dir]
+    visited = set()
+    while stack:
+        current = stack.pop()
+        real = os.path.realpath(current)
+        if real in visited:
             continue
-        config_path = os.path.join(obj_dir, ".celebi", "config.json")
-        if not os.path.isfile(config_path):
-            continue
-        object_type = metadata.TwoTierConfigFile(config_path).read_variable(
-            "object_type", "")
-        if object_type not in ("task", "algorithm"):
-            continue
-        yield object_type, _object_variables(obj_dir)
+        visited.add(real)
+        for name in sorted(os.listdir(current)):
+            obj_dir = os.path.join(current, name)
+            if not os.path.isdir(obj_dir) or name.startswith("."):
+                continue
+            config_path = os.path.join(obj_dir, ".celebi", "config.json")
+            if not os.path.isfile(config_path):
+                continue
+            object_type = metadata.TwoTierConfigFile(config_path).read_variable(
+                "object_type", "")
+            if object_type in ("task", "algorithm"):
+                yield object_type, _object_variables(obj_dir)
+            elif object_type == "directory":
+                stack.append(obj_dir)
 
 
 def _collect_inputs(project_dir, root_uuid, seen):

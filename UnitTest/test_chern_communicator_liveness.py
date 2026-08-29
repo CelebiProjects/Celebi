@@ -41,7 +41,7 @@ def test_purge_stale_cache_posts_superseded_scope():
     req.post.assert_called_once_with(
         "http://dite.example:3315/purge-runner-cache",
         json={"runner": "pkufarm", "superseded": True, "dry_run": True},
-        timeout=5)
+        timeout=600)
     assert result["dry_run"] is True
 
 
@@ -56,4 +56,4 @@ def test_purge_stale_workflows_posts_runner():
         cherncc.purge_stale_workflows("pkufarm")
     req.post.assert_called_once_with(
         "http://dite.example:3315/purge-runner-workflows",
-        json={"runner": "pkufarm", "dry_run": False}, timeout=5)
+        json={"runner": "pkufarm", "dry_run": False}, timeout=600)
