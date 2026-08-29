@@ -1070,3 +1070,30 @@ class ChernCommunicator():
             print(f"An error occurred: {e}")
             return "unconnected to DITE"
         return r.text
+
+    def put_live_set(self, project_uuid, live, superseded):
+        """Push the project's live/superseded impression sets to DITE."""
+        url = f"http://{self.serverurl()}/live-set/{project_uuid}"
+        r = requests.put(url, json={"live": live,
+                                    "superseded": superseded},
+                         timeout=self.timeout)
+        r.raise_for_status()
+        return r.json()
+
+    def purge_stale_cache(self, runner, dry_run=False):
+        """Ask DITE to purge superseded impressions' cache on a runner."""
+        url = f"http://{self.serverurl()}/purge-runner-cache"
+        r = requests.post(url, json={"runner": runner, "superseded": True,
+                                     "dry_run": dry_run},
+                          timeout=self.timeout)
+        r.raise_for_status()
+        return r.json()
+
+    def purge_stale_workflows(self, runner, dry_run=False):
+        """Ask DITE to delete non-live workflow workspaces on a runner."""
+        url = f"http://{self.serverurl()}/purge-runner-workflows"
+        r = requests.post(url, json={"runner": runner,
+                                     "dry_run": dry_run},
+                          timeout=self.timeout)
+        r.raise_for_status()
+        return r.json()
