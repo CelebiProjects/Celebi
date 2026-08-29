@@ -576,6 +576,27 @@ class TestChernVTask(unittest.TestCase):  # pylint: disable=too-many-public-meth
         # prepare.remove_chern_project("demo_complex")
         CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
+    def test_ls_shows_effective_commands_for_inline_task(self):
+        """ls lists the task's own commands when the task is inline."""
+        prepare.create_chern_project("demo_complex")
+        os.chdir("demo_complex")
+        obj_tsk = vtsk.VTask(os.getcwd() + "/tasks/taskAna1")
+        yaml_file = metadata.YamlFile(os.path.join(obj_tsk.path, "celebi.yaml"))
+        yaml_file.write_variable("commands", ["echo inline"])
+
+        with patch.object(obj_tsk, 'algorithm', return_value=None), \
+             patch('os.get_terminal_size') as mock_terminal_size:
+            mock_terminal_size.return_value.columns = 80
+            message = obj_tsk.ls()
+
+        msg_str = str(message)
+        self.assertIn("Commands", msg_str)
+        self.assertIn("echo inline", msg_str)
+
+        os.chdir("..")
+        prepare.remove_chern_project("demo_complex")
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
+
     def test_file_manager_methods(self):
         """Test FileManager methods inherited by VTask"""
         print(Fore.BLUE + "Testing FileManager Methods..." + Style.RESET)

@@ -40,7 +40,7 @@ class Core(VObject):
             message.append(self.show_task_files())
             message.append(self.show_parameters())
 
-            if self.algorithm() is not None:
+            if self.algorithm() is not None or self.commands():
                 message.append(self.show_algorithm())
 
             # Show APD token status for LHCb AP data list tasks
@@ -158,41 +158,40 @@ class Core(VObject):
         return message
 
     def show_algorithm(self) -> Message:
-        """ Show the algorithm of the task.
+        """ Show the algorithm files (if any) and the effective commands of the task.
         """
         message = Message()
 
-        message.add("---- Algorithm files:\n", "title0")
+        algorithm = self.algorithm()
+        if algorithm is not None:
+            message.add("---- Algorithm files:\n", "title0")
 
-        files = os.listdir(self.algorithm().path)
-        if not files:
-            return message
+            files = os.listdir(algorithm.path)
+            if files:
+                files = sorted(f for f in files
+                    if not f.startswith(".") and f not in ["README.md", "celebi.yaml"])
+                if files:
+                    max_len = max(len(f) for f in files)
+                    columns = shutil.get_terminal_size((80, 20)).columns
+                    nfiles = max(1, columns // (max_len + 4 + 11))  # Avoid division by zero
+                    line = ""
 
-        files = sorted(f for f in files
-            if not f.startswith(".") and f not in ["README.md", "celebi.yaml"])
-        if not files:
-            return message
+                    for i, f in enumerate(files, start=1):
+                        line += f"code:{f:<{max_len+4}}"
+                        if not i % nfiles:
+                            message.add(line + "\n")
+                            line = ""
+                    if line:
+                        message.add(line + "\n")
 
-        max_len = max(len(f) for f in files)
-        columns = shutil.get_terminal_size((80, 20)).columns
-        # columns = 80
-        nfiles = max(1, columns // (max_len + 4 + 11))  # Avoid division by zero
-        line = ""
-
-        for i, f in enumerate(files, start=1):
-            line += f"code:{f:<{max_len+4}}"
-            if not i % nfiles:
-                message.add(line + "\n")
-                line = ""
-        if line:
-            message.add(line + "\n")
-
-        message.add("---- Commands:\n", "title0")
-        for command in self.algorithm().commands():
+        commands = self.commands()
+        if commands:
+            message.add("---- Commands:\n", "title0")
             parameters, values = self.parameters()
-            for parameter in parameters:
-                command = command.replace("${" + parameter + "}", values[parameter])
-            message.add(command + "\n")
+            for command in commands:
+                for parameter in parameters:
+                    command = command.replace("${" + parameter + "}", values[parameter])
+                message.add(command + "\n")
 
         return message
 
