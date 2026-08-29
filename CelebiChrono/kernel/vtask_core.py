@@ -40,7 +40,7 @@ class Core(VObject):
             message.append(self.show_task_files())
             message.append(self.show_parameters())
 
-            if self.algorithm() is not None or self.commands():
+            if self.algorithm() is not None or self.commands():  # pylint: disable=no-member
                 message.append(self.show_algorithm())
 
             # Show APD token status for LHCb AP data list tasks
@@ -184,7 +184,7 @@ class Core(VObject):
                     if line:
                         message.add(line + "\n")
 
-        commands = self.commands()
+        commands = self.commands()  # pylint: disable=no-member
         if commands:
             message.add("---- Commands:\n", "title0")
             parameters, values = self.parameters()

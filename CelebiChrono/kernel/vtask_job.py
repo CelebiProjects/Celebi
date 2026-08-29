@@ -95,7 +95,7 @@ class JobManager(Core):
 
         Shared by docker_test and ssh_test.
         """
-        commands = self.commands()
+        commands = self.commands()  # pylint: disable=no-member
         # Parse the commands, and replace any placeholders with actual values if needed
         parameters = self.parameters()
         if parameters:
@@ -689,7 +689,7 @@ class JobManager(Core):
 
     def _prepare_algorithm_code(self, temp_dir): # pylint: disable=too-many-locals
         """Prepare the task's code tree (inline task dir or algorithm dir)"""
-        code_root = self.code_path()
+        code_root = self.code_path()  # pylint: disable=no-member
         if not code_root:
             return
 
@@ -799,7 +799,7 @@ class JobManager(Core):
         # Generate filelist for later comparison in workaround_postshell
         self._generate_workaround_filelist(temp_dir)
 
-        commands = self.commands()
+        commands = self.commands()  # pylint: disable=no-member
         if commands:
             parameters = self.parameters()
             if parameters:
@@ -918,7 +918,7 @@ class JobManager(Core):
 
     def _prepare_mounting_algorithm_code(self, _temp_dir, mount_config):
         """Prepare the code tree (inline task dir or algorithm dir) for mounting"""
-        code_root = self.code_path()
+        code_root = self.code_path()  # pylint: disable=no-member
         if not code_root:
             return
 
@@ -985,7 +985,7 @@ class JobManager(Core):
         deleted. The user may edit filelist.yaml during the workaround to add
         new files they want to keep or remove files they want to discard.
         """
-        code_root = self.code_path()
+        code_root = self.code_path()  # pylint: disable=no-member
         if not code_root:
             return True
 
