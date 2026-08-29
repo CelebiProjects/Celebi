@@ -714,3 +714,83 @@ def search_impression(partial_uuid: str) -> Message:
     """
     message = MANAGER.current_object().search_impression(partial_uuid)
     return message
+
+
+def sync_live() -> Message:
+    """Push the project's live impression set to DITE (best-effort).
+
+    Failures are reported as a warning: a stale set is safe by the
+    unknown-is-live rule.
+    """
+    from CelebiChrono.kernel.liveness import compute_live_sets
+    from CelebiChrono.utils import metadata
+    from CelebiChrono.utils.path_utils import project_path
+    import os
+    message = Message()
+    try:
+        project_dir = project_path()
+        project_uuid = metadata.ConfigFile(
+            os.path.join(project_dir, ".celebi", "config.json")
+        ).read_variable("project_uuid", "")
+        if not project_uuid:
+            message.add("No project found — run inside a Celebi project.",
+                        "error")
+            return message
+        live, superseded = compute_live_sets(project_dir)
+        result = ChernCommunicator.instance().put_live_set(
+            project_uuid, live, superseded)
+        message.add(f"Synced live set: {result.get('live')} live, "
+                    f"{result.get('superseded')} superseded, "
+                    f"{result.get('live_workflows')} live workflows")
+    except Exception as exc:
+        message.add(f"Live-set sync failed (safe to ignore): {exc}",
+                    "warning")
+    return message
+
+
+def purge_stale_cache(runner: str, dry_run: bool = False) -> Message:
+    """Purge superseded impressions' cache entries on a runner."""
+    message = Message()
+    try:
+        result = ChernCommunicator.instance().purge_stale_cache(
+            runner, dry_run=dry_run)
+        for entry in result.get("purged", []):
+            message.add(f"Purged cache: {entry.get('project')}/"
+                        f"{entry.get('impression')}")
+        for entry in result.get("skipped", []):
+            message.add(f"Skipped cache: {entry.get('project')}/"
+                        f"{entry.get('impression')} — {entry.get('reason')}",
+                        "warning")
+        if result.get("dry_run"):
+            message.add(f"Dry run — {len(result.get('purged', []))} cache "
+                        "entries would be purged, nothing was deleted.")
+        else:
+            message.add(f"Purged {len(result.get('purged', []))} cache "
+                        f"entries from runner '{runner}'")
+    except Exception as exc:
+        message.add(f"Purge failed: {exc}", "error")
+    return message
+
+
+def purge_stale_workflows(runner: str, dry_run: bool = False) -> Message:
+    """Delete non-live workflow workspaces on a runner."""
+    message = Message()
+    try:
+        result = ChernCommunicator.instance().purge_stale_workflows(
+            runner, dry_run=dry_run)
+        for entry in result.get("purged", []):
+            message.add(f"Purged workflow: {entry.get('project')}/"
+                        f"{entry.get('workflow')}")
+        for entry in result.get("skipped", []):
+            message.add(f"Skipped workflow: {entry.get('project')}/"
+                        f"{entry.get('workflow')} — {entry.get('reason')}",
+                        "warning")
+        if result.get("dry_run"):
+            message.add(f"Dry run — {len(result.get('purged', []))} "
+                        "workflows would be purged, nothing was deleted.")
+        else:
+            message.add(f"Purged {len(result.get('purged', []))} workflows "
+                        f"from runner '{runner}'")
+    except Exception as exc:
+        message.add(f"Purge failed: {exc}", "error")
+    return message
