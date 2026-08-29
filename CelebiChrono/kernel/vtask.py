@@ -274,7 +274,7 @@ class VTask(InputManager, SettingManager, FileManager, JobManager,
             return task_commands
         algorithm = self.algorithm()
         if algorithm is not None:
-            return algorithm.commands()
+            return algorithm.commands() or []
         return []
 
     def code_path(self) -> Optional[str]:

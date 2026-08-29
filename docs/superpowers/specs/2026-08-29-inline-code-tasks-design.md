@@ -71,6 +71,7 @@ Consequences:
   (task-level commands non-empty), copy `tree_excluded(self.path)` into the
   workaround `code/` tree and symlink it; skip algorithm-input linking
   (an algorithm-only concept).
+- Note: for a task with BOTH inline commands and a linked algorithm, algorithm-input linking (algorithms that are predecessors of the linked algorithm) still runs; this is benign — the linked dirs never enter the filelist (os.walk without followlinks) and postshell is unaffected.
 - `workaround_preshell()` (line 778): build `exec.sh` from effective
   commands with the existing `${param}` substitution; keep the conda
   preamble logic driven by the task's own `environment`.

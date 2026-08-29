@@ -937,7 +937,7 @@ class JobManager(Core):
             "target": "/workspace/code",
             "type": "bind",
             "readonly": False,
-            "description": "Algorithm code"
+            "description": "Task code"
         })
 
         algorithm = self.algorithm()

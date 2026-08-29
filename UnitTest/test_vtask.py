@@ -187,6 +187,21 @@ class TestChernVTask(unittest.TestCase):  # pylint: disable=too-many-public-meth
         prepare.remove_chern_project("demo_complex")
         CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
+    def test_effective_commands_none_guard_on_algorithm_fallback(self):
+        """commands() returns [] when the algorithm's commands read as null."""
+        prepare.create_chern_project("demo_complex")
+        os.chdir("demo_complex")
+        obj_tsk = vtsk.VTask(os.getcwd() + "/tasks/taskAna1")
+
+        mock_algorithm = MagicMock()
+        mock_algorithm.commands.return_value = None
+        with patch.object(obj_tsk, 'algorithm', return_value=mock_algorithm):
+            self.assertEqual(obj_tsk.commands(), [])
+
+        os.chdir("..")
+        prepare.remove_chern_project("demo_complex")
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
+
     def test_code_path(self):
         """code_path is the task dir when inline, else the algorithm dir."""
         prepare.create_chern_project("demo_complex")
