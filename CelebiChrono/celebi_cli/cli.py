@@ -6,6 +6,7 @@ from .commands import (
     navigation, file_operations, object_creation, task_configuration,
     execution_management, communication, visualization, utilities, booking
 )
+from .commands import liveness
 
 @click.group()
 @click.option("--debug", is_flag=True, default=False,
@@ -85,6 +86,10 @@ cli.add_command(execution_management.purge_old_impressions_command)
 cli.add_command(execution_management.collect_outputs_command)
 cli.add_command(execution_management.collect_logs_command)
 cli.add_command(execution_management.engine_logs_command)
+
+cli.add_command(liveness.sync_live_command)
+cli.add_command(liveness.purge_stale_cache_command)
+cli.add_command(liveness.purge_stale_workflows_command)
 
 # Communication commands
 cli.add_command(communication.config_command)

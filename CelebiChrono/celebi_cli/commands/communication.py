@@ -7,6 +7,15 @@ from CelebiChrono.celebi_cli.utils import format_output
 from CelebiChrono.utils import csys, metadata
 
 
+def _best_effort_sync_live() -> None:
+    """Push the live set after impress; failures are silently ignored."""
+    try:
+        from CelebiChrono.interface.shell import sync_live
+        sync_live()
+    except Exception:
+        pass
+
+
 def _handle_result(result: Optional[Any]) -> None:
     """Handle result from shell function."""
     output = format_output(result)
@@ -168,6 +177,7 @@ def impress_command() -> None:
         from CelebiChrono.interface.shell import impress
         result = impress()
         _handle_result(result)
+        _best_effort_sync_live()
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
