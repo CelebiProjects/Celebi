@@ -9,18 +9,18 @@ IMPRESSIONS_DIR = ".celebi/impressions"
 
 
 def _object_variables(obj_dir):
-    """Merged variable reader across an object's config files.
+    """Merged variable reader across an object's two-tier config files.
 
-    Reads <obj>/config.json first, then <obj>/.celebi/config.local.json
-    (which records the impression history); the local file wins.
+    Reads <obj>/.celebi/config.json (shared) first, then the local
+    override <obj>/.celebi/config.local.json (which records the
+    impression pointer and history); the local file wins. Mirrors
+    metadata.TwoTierConfigFile.
     """
+    two_tier = metadata.TwoTierConfigFile(
+        os.path.join(obj_dir, ".celebi", "config.json"))
+
     def read(key, default):
-        value = default
-        for path in (os.path.join(obj_dir, "config.json"),
-                     os.path.join(obj_dir, ".celebi", "config.local.json")):
-            if os.path.isfile(path):
-                value = metadata.ConfigFile(path).read_variable(key, value)
-        return value
+        return two_tier.read_variable(key, default)
     return read
 
 
@@ -32,28 +32,30 @@ def _objects(project_dir):
         obj_dir = os.path.join(project_dir, name)
         if not os.path.isdir(obj_dir) or name.startswith("."):
             continue
-        config_path = os.path.join(obj_dir, "config.json")
+        config_path = os.path.join(obj_dir, ".celebi", "config.json")
         if not os.path.isfile(config_path):
             continue
-        object_type = metadata.ConfigFile(config_path).read_variable(
+        object_type = metadata.TwoTierConfigFile(config_path).read_variable(
             "object_type", "")
         if object_type not in ("task", "algorithm"):
             continue
         yield object_type, _object_variables(obj_dir)
 
 
-def _impression_config(project_dir, uuid):
-    """ConfigFile of an impression in the project's impression store."""
-    return metadata.ConfigFile(os.path.join(
-        project_dir, IMPRESSIONS_DIR, uuid, "config.json"))
-
-
 def _collect_inputs(project_dir, root_uuid, seen):
-    """Transitively add the impression's dependency uuids to seen."""
+    """Transitively add the impression's dependency uuids to seen.
+
+    A dependency uuid without an impression config is dangling and is
+    silently skipped.
+    """
     if not root_uuid or root_uuid in seen:
         return
+    config_path = os.path.join(project_dir, IMPRESSIONS_DIR, root_uuid,
+                               "config.json")
+    if not os.path.isfile(config_path):
+        return
     seen.add(root_uuid)
-    config = _impression_config(project_dir, root_uuid)
+    config = metadata.ConfigFile(config_path)
     for dep in config.read_variable("dependencies", []) or []:
         if isinstance(dep, str):
             _collect_inputs(project_dir, dep, seen)

@@ -38,3 +38,16 @@ def test_purge_stale_workflows_command_calls_shell():
             cli, ["purge-stale-workflows", "pkufarm", "--yes"])
     assert result.exit_code == 0
     fn.assert_called_once_with("pkufarm", dry_run=False)
+
+
+def test_impress_hook_fires_and_survives_raising_sync():
+    """impress fires the sync-live hook; a raising sync never breaks it."""
+    runner = CliRunner()
+    with mock.patch("CelebiChrono.interface.shell.impress",
+                    return_value="") as impress_fn, \
+            mock.patch("CelebiChrono.interface.shell.sync_live",
+                       side_effect=OSError("boom")) as sync_fn:
+        result = runner.invoke(cli, ["impress"])
+    assert result.exit_code == 0
+    impress_fn.assert_called_once_with()
+    sync_fn.assert_called_once_with()
