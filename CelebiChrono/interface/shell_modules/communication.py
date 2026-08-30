@@ -792,11 +792,17 @@ def purge_stale_cache(runner: str, dry_run: bool = False) -> Message:
         result = ChernCommunicator.instance().purge_stale_cache(
             runner, dry_run=dry_run, project_uuid=project_uuid)
         message.data["purge_count"] = len(result.get("purged", []))
-        for entry in result.get("purged", []):
-            message.add(f"Purged cache: {entry.get('impression')}\n")
-        for entry in result.get("skipped", []):
-            message.add(f"Skipped cache: {entry.get('impression')} — "
-                        f"{entry.get('reason')}\n", "warning")
+        purged_entries = result.get("purged", [])
+        if purged_entries:
+            message.add("Purged cache:\n")
+            for entry in purged_entries:
+                message.add(f"{entry.get('impression')}\n")
+        skipped_entries = result.get("skipped", [])
+        if skipped_entries:
+            message.add("Skipped cache:\n")
+            for entry in skipped_entries:
+                message.add(f"{entry.get('impression')} — "
+                            f"{entry.get('reason')}\n", "warning")
         if result.get("dry_run"):
             message.add(f"Dry run — {len(result.get('purged', []))} cache "
                         "entries would be purged, nothing was deleted.\n")
@@ -827,11 +833,17 @@ def purge_stale_workflows(runner: str, dry_run: bool = False) -> Message:
         result = ChernCommunicator.instance().purge_stale_workflows(
             runner, dry_run=dry_run, project_uuid=project_uuid)
         message.data["purge_count"] = len(result.get("purged", []))
-        for entry in result.get("purged", []):
-            message.add(f"Purged workflow: {entry.get('workflow')}\n")
-        for entry in result.get("skipped", []):
-            message.add(f"Skipped workflow: {entry.get('workflow')} — "
-                        f"{entry.get('reason')}\n", "warning")
+        purged_entries = result.get("purged", [])
+        if purged_entries:
+            message.add("Purged workflow:\n")
+            for entry in purged_entries:
+                message.add(f"{entry.get('workflow')}\n")
+        skipped_entries = result.get("skipped", [])
+        if skipped_entries:
+            message.add("Skipped workflow:\n")
+            for entry in skipped_entries:
+                message.add(f"{entry.get('workflow')} — "
+                            f"{entry.get('reason')}\n", "warning")
         if result.get("already_gone"):
             message.add(f"{result['already_gone']} workspace(s) already "
                         "gone, skipped\n")
