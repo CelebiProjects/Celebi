@@ -22,6 +22,7 @@ class ChernCache:  # pylint: disable=too-many-instance-attributes
         self.update_table = {}
         self.project_path = ""
         self.deposit_consult_table = {}
+        self.file_status_cache = {}
         self.count = 0
         self.impression_check_count = {}
         self.generic_cache = {}

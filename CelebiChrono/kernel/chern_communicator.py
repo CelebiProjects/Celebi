@@ -68,6 +68,7 @@ Method Usage Status:
 
 import json
 import tarfile
+import time
 import os
 from logging import getLogger
 from os.path import join
@@ -562,9 +563,22 @@ class ChernCommunicator():
         Notes carry {"runner", "level", "message"} entries explaining e.g. an
         unreachable runner or a cached listing (server-side), or a Yuki server
         that cannot be reached at all (transport error, reported here).
+
+        The listing is cached client-side and refreshed at the same cadence
+        as the status consult: a cached result is reused while it is no
+        older than 1 second, mirroring is_impressed_fast's project mtime
+        refresh window. The age is measured from when the listing was
+        fetched, so a slow request still yields a fresh cache entry.
+        Failed requests are not cached, so the next call retries.
         """
         url = self.serverurl()
         imp = impression.uuid if hasattr(impression, "uuid") else impression
+        cache_key = f"{url}/{self.project_uuid}/{imp}/{machine}/{kind}"
+        cached_time, cached_payload = CHERN_CACHE.file_status_cache.get(
+            cache_key, (-1, None)
+        )
+        if cached_payload is not None and time.time() - cached_time <= 1:
+            return cached_payload
         try:
             r = requests.get(
                 f"http://{url}/file-status/{self.project_uuid}/{imp}/{machine}"
@@ -587,10 +601,11 @@ class ChernCommunicator():
                 "message": f"cannot reach Yuki server: {exc}",
             }]}
         if isinstance(payload, list):        # legacy server without detailed mode
-            return {"files": payload, "notes": []}
-        if isinstance(payload, dict) and "files" in payload:
-            return payload
-        return {"files": [], "notes": []}
+            payload = {"files": payload, "notes": []}
+        if not isinstance(payload, dict) or "files" not in payload:
+            payload = {"files": [], "notes": []}
+        CHERN_CACHE.file_status_cache[cache_key] = (time.time(), payload)
+        return payload
 
     def watermark(self, impression):
         """ Set the water mark to the png files"""
