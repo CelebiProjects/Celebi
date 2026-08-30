@@ -51,7 +51,7 @@
 + Runner cache management in the shell.
   - `purge-ssh-runner-cache <runner>`: purge the current impression's cache entry from an ssh runner. In a folder it fans out over every impressed subobject (one confirmation for the whole batch); it never purges the whole runner cache, and warns to restore registered data with `register-data` afterwards.
   - `cache-results <runner>`: save the current impression's runner-resident results (the workflow's stageout) into the runner's managed impressions cache. Runs as a background job on Yuki with live polling; in a folder it processes every impressed subobject and reports per-impression totals.
-  - `whereabouts`: report where the current impression's data lives — yuki storage, each runner's workflow/cache states, and the registration host — in aligned columns.
+  - `whereabouts`: report where the current impression's data lives as a columnar table — one row per (location, storage kind) covering yuki storage (`local`), each runner's `workflow`/`cache` states, and the registration host. Column widths grow to fit the data (long runner names cannot break the table), a `size` column appears when any entry carries bytes, missing yuki data reads `✗ not in yuki`, and every row carries a trailing newline so lines no longer concatenate in the shell.
   - All three commands exist in the Chern shell (`do_*`), `celebi-cli`, and the shell-function layer, with runner-name tab completion where a runner is taken.
 + Bump version to 1.0.0b3.
 

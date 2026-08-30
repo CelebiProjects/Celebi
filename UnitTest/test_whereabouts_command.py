@@ -94,18 +94,29 @@ class TestWhereaboutsShellFunction(unittest.TestCase):
             cls.instance.return_value = cc
             message = communication.whereabouts()
         lines = [text for text, _tag in message.messages]
-        self.assertIn("  yuki                  ✓ collected      3 files · 10 B",
-                      lines)
+        self.assertIn("Data whereabouts for imp-cur…:\n", lines)
         self.assertIn(
-            "  cern         workflow ✓ produced       1 files · "
-            "cache    ✗ —              0 files", lines)
+            "  location    storage   state  origin       files  size\n",
+            lines)
         self.assertIn(
-            "  pkufarm212   workflow ✗ —              0 files · "
-            "cache    ✓ transferred    3 files", lines)
+            "  yuki        local     ✓      collected        3  10 B\n",
+            lines)
+        self.assertIn(
+            "  cern        workflow  ✓      produced         1\n",
+            lines)
+        self.assertIn(
+            "  cern        cache     ✗      —                0\n",
+            lines)
+        self.assertIn(
+            "  pkufarm212  workflow  ✗      —                0\n",
+            lines)
+        self.assertIn(
+            "  pkufarm212  cache     ✓      transferred      3\n",
+            lines)
         # The first mark of every row starts in the same column.
         marks = []
         for line in lines:
-            if "Data whereabouts" in line:
+            if "Data whereabouts" in line or line.startswith("  location"):
                 continue
             positions = [line.find(mark) for mark in ("✓", "✗")]
             marks.append(min(p for p in positions if p >= 0))
@@ -141,9 +152,14 @@ class TestWhereaboutsShellFunction(unittest.TestCase):
             manager.current_object.return_value = self._current_object()
             cls.instance.return_value = cc
             message = communication.whereabouts()
-        text = str(message)
-        self.assertIn("distribution.json not recorded", text)
-        self.assertIn("not in local storage", text)
+        lines = [text for text, _tag in message.messages]
+        self.assertIn("  note: distribution.json not recorded\n", lines)
+        self.assertIn(
+            "  yuki        local     ✗      not in yuki\n", lines)
+        self.assertIn(
+            "  pkufarm212  workflow  ✗      —           0\n", lines)
+        self.assertIn(
+            "  pkufarm212  cache     ✗      —           0\n", lines)
 
     def test_whereabouts_folder_fans_out(self):
         """Test whereabouts in a folder reports every impressed subobject."""

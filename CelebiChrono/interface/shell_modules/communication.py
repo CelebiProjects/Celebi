@@ -482,45 +482,79 @@ def _human_bytes(num_bytes):
     return f"{size:.1f} GB"  # pragma: no cover
 
 
+def _whereabouts_rows(resp):
+    """Collect table rows from a whereabouts response.
+
+    Each row is (location, storage, ok, origin, files, size); absent
+    states carry None/0 placeholders.
+    """
+    rows = []
+    yuki = resp.get("yuki")
+    if yuki:
+        rows.append(("yuki", "local", True, yuki.get("origin") or "stored",
+                     yuki.get("files", 0), yuki.get("bytes")))
+    else:
+        rows.append(("yuki", "local", None, None, None, None))
+    for name, states in (resp.get("runners") or {}).items():
+        for storage in ("workflow", "cache"):
+            state = states.get(storage)
+            if state:
+                rows.append((name, storage, True,
+                             state.get("origin") or "—",
+                             state.get("files", 0), state.get("bytes")))
+            else:
+                rows.append((name, storage, False, None, 0, None))
+    return rows
+
+
+def _whereabouts_row(entry, location_w, origin_w):
+    """Render one table row as a padded line."""
+    location, storage, ok, origin, files, size = entry
+    row = (f"  {location:<{location_w}}  {storage:<8}  "
+           f"{'✓' if ok else '✗':<5}")
+    if ok:
+        row += f"  {origin:<{origin_w}}  {files:>5}"
+        if size is not None:
+            row += f"  {_human_bytes(size)}"
+    elif location == "yuki":
+        row += "  not in yuki"
+    else:
+        row += f"  {'—':<{origin_w}}  {0:>5}"
+    return row
+
+
 def _render_whereabouts(scope_project, scope_imp, cherncc, message):
     """Fetch and render one impression's data whereabouts.
 
-    Rows use fixed column widths so marks, origins, and file counts
-    align across locations:
-      {location:<13}{state:<9}{mark} {origin:<11} {files:>4} files
+    Renders a table with one row per (location, storage kind) so marks,
+    origins, and file counts align across rows:
+      location  storage  state  origin  files  [size]
+    Column widths grow to fit the data present. Every entry carries a
+    trailing newline — Message.colored() concatenates without separators.
     """
     resp = cherncc.whereabouts(scope_project, scope_imp)
     if "error" in resp:
-        message.add(resp["error"], "error")
+        message.add(f"{resp['error']}\n", "error")
         return
-    message.add(f"Data whereabouts for {scope_imp[:7]}…:")
-    yuki = resp.get("yuki")
-    if yuki:
-        message.add(f"  {'yuki':<13}{'':<9}{'✓'} "
-                    f"{(yuki.get('origin') or 'stored'):<11} "
-                    f"{yuki.get('files', 0):>4} files · "
-                    f"{_human_bytes(yuki.get('bytes'))}")
-    else:
-        message.add(f"  {'yuki':<13}{'':<9}✗ not in local storage")
-    for name, states in (resp.get("runners") or {}).items():
-        workflow = states.get("workflow")
-        cache = states.get("cache")
-        row = f"  {name:<13}workflow "
-        row += (f"{'✓' if workflow else '✗'} "
-                f"{(workflow.get('origin') if workflow else '—'):<11} "
-                f"{workflow.get('files', 0) if workflow else 0:>4} files")
-        row += " · cache    "
-        row += (f"{'✓' if cache else '✗'} "
-                f"{(cache.get('origin') if cache else '—'):<11} "
-                f"{cache.get('files', 0) if cache else 0:>4} files")
-        message.add(row)
+    message.add(f"Data whereabouts for {scope_imp[:7]}…:\n")
+    rows = _whereabouts_rows(resp)
+    location_w = max([len("location")] + [len(entry[0]) for entry in rows])
+    origin_w = max([len("origin")] + [len(entry[3]) for entry in rows
+                                      if entry[2]])
+    size_col = any(entry[5] is not None for entry in rows)
+    header = (f"  {'location':<{location_w}}  {'storage':<8}  "
+              f"{'state':<5}  {'origin':<{origin_w}}  {'files':>5}")
+    if size_col:
+        header += "  size"
+    message.add(header + "\n")
+    for entry in rows:
+        message.add(_whereabouts_row(entry, location_w, origin_w) + "\n")
     registered = resp.get("registered")
     if registered:
-        message.add(f"  {'registered':<13}{'':<9}on "
-                    f"{registered.get('host_runner')} "
-                    f"(source: {registered.get('source_path')})")
+        message.add(f"  registered: on {registered.get('host_runner')} "
+                    f"(source: {registered.get('source_path')})\n")
     if resp.get("note"):
-        message.add(f"  note: {resp['note']}", "warning")
+        message.add(f"  note: {resp['note']}\n", "warning")
 
 
 def whereabouts() -> Message:
