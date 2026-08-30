@@ -143,17 +143,17 @@ class Core(VObject):
             message.add(f"{validated_str}")
             message.add("\n")
 
-            message.add("Cache on runner: ", "title0")
+            message.add("Request runner: ", "title0")
+            message.add(f"{self.default_runner()}")
+            message.add("\n")
+
+            message.add("Request cache: ", "title0")
             message.add(f"{self.cache_on_runner()}", "message")
             message.add("\n")
 
         # message.add("Auto download: ", "title0")
         # message.add(f"{self.auto_download()}")
         # message.add("\n")
-
-        message.add("Default runner: ", "title0")
-        message.add(f"{self.default_runner()}")
-        message.add("\n")
 
         return message
 
