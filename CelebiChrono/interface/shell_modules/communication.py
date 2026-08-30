@@ -793,12 +793,10 @@ def purge_stale_cache(runner: str, dry_run: bool = False) -> Message:
             runner, dry_run=dry_run, project_uuid=project_uuid)
         message.data["purge_count"] = len(result.get("purged", []))
         for entry in result.get("purged", []):
-            message.add(f"Purged cache: {entry.get('project')}/"
-                        f"{entry.get('impression')}\n")
+            message.add(f"Purged cache: {entry.get('impression')}\n")
         for entry in result.get("skipped", []):
-            message.add(f"Skipped cache: {entry.get('project')}/"
-                        f"{entry.get('impression')} — {entry.get('reason')}\n",
-                        "warning")
+            message.add(f"Skipped cache: {entry.get('impression')} — "
+                        f"{entry.get('reason')}\n", "warning")
         if result.get("dry_run"):
             message.add(f"Dry run — {len(result.get('purged', []))} cache "
                         "entries would be purged, nothing was deleted.\n")
@@ -830,12 +828,10 @@ def purge_stale_workflows(runner: str, dry_run: bool = False) -> Message:
             runner, dry_run=dry_run, project_uuid=project_uuid)
         message.data["purge_count"] = len(result.get("purged", []))
         for entry in result.get("purged", []):
-            message.add(f"Purged workflow: {entry.get('project')}/"
-                        f"{entry.get('workflow')}\n")
+            message.add(f"Purged workflow: {entry.get('workflow')}\n")
         for entry in result.get("skipped", []):
-            message.add(f"Skipped workflow: {entry.get('project')}/"
-                        f"{entry.get('workflow')} — {entry.get('reason')}\n",
-                        "warning")
+            message.add(f"Skipped workflow: {entry.get('workflow')} — "
+                        f"{entry.get('reason')}\n", "warning")
         if result.get("already_gone"):
             message.add(f"{result['already_gone']} workspace(s) already "
                         "gone, skipped\n")

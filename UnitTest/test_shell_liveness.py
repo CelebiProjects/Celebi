@@ -171,3 +171,42 @@ def test_purge_stale_workflows_reports_already_gone(monkeypatch, tmp_path):
         result = comm.purge_stale_workflows("pkufarm")
     assert any("3 workspace(s) already gone" in text
                for text, _ in result.messages)
+
+
+def test_purge_lines_omit_project_uuid(monkeypatch, tmp_path):
+    """Purged/skipped lines name only the workflow — the purge is
+    already scoped to the current project."""
+    monkeypatch.setattr("CelebiChrono.utils.path_utils.project_path",
+                        lambda: _project(tmp_path))
+    cherncc = mock.MagicMock()
+    cherncc.purge_stale_workflows.return_value = {
+        "purged": [{"project": "proj-1", "workflow": "wf-1"}],
+        "skipped": [{"project": "proj-1", "workflow": "wf-2",
+                     "reason": "workflow is live"}],
+        "already_gone": 0, "dry_run": True}
+    with mock.patch.object(comm, "ChernCommunicator") as cc:
+        cc.instance.return_value = cherncc
+        result = comm.purge_stale_workflows("pkufarm")
+    texts = [text for text, _ in result.messages]
+    assert any("Purged workflow: wf-1" in t for t in texts)
+    assert any("Skipped workflow: wf-2" in t for t in texts)
+    assert not any("proj-1/wf" in t for t in texts)
+
+
+def test_cache_purge_lines_omit_project_uuid(monkeypatch, tmp_path):
+    """Cache purge lines name only the impression."""
+    monkeypatch.setattr("CelebiChrono.utils.path_utils.project_path",
+                        lambda: _project(tmp_path))
+    cherncc = mock.MagicMock()
+    cherncc.purge_stale_cache.return_value = {
+        "purged": [{"project": "proj-1", "impression": "imp-1"}],
+        "skipped": [{"project": "proj-1", "impression": "imp-2",
+                     "reason": "registered"}],
+        "dry_run": True}
+    with mock.patch.object(comm, "ChernCommunicator") as cc:
+        cc.instance.return_value = cherncc
+        result = comm.purge_stale_cache("pkufarm")
+    texts = [text for text, _ in result.messages]
+    assert any("Purged cache: imp-1" in t for t in texts)
+    assert any("Skipped cache: imp-2" in t for t in texts)
+    assert not any("proj-1/imp" in t for t in texts)
