@@ -32,7 +32,7 @@ from .shell_modules.communication import (
     dite, set_dite, add_host, hosts, runners, register_runner, update_runner,
     remove_runner, request_runner, search_impression, test_runner,
     runner_envs, purge_ssh_runner_cache, cache_results, whereabouts,
-    sync_live, purge_stale_cache, purge_stale_workflows
+    sync_live, purge_stale_cache, purge_stale_workflows, kill_workflow
 )
 from .shell_modules.visualization import (
     view, viewurl, impress, impress_objects, trace, imgcat, draw_dag_graphviz

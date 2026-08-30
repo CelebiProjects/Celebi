@@ -767,6 +767,25 @@ def sync_live() -> Message:
     return message
 
 
+def kill_workflow(workflow_uuid: str) -> Message:
+    """Force-stop a workflow (works even for zombie runs)."""
+    message = Message()
+    project_uuid = _current_project_uuid()
+    if not project_uuid:
+        message.add("No project found — run inside a Celebi project.\n",
+                    "error")
+        return message
+    try:
+        result = ChernCommunicator.instance().kill_workflow(
+            project_uuid, workflow_uuid)
+        message.add(f"Killed workflow: {workflow_uuid}\n")
+        if result.get("backend_type"):
+            message.add(f"backend: {result['backend_type']}\n")
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        message.add(f"Kill failed: {exc}\n", "error")
+    return message
+
+
 def _merge_sync_lines(message, sync):
     """Merge a best-effort sync-live result into a message."""
     for text, color in sync.messages:

@@ -372,6 +372,23 @@ class TestRunnerShellCommands(unittest.TestCase):
         shell.purge_stale_workflows.assert_called_once_with(
             "pkufarm", dry_run=True)
 
+    def test_do_kill_workflow(self):
+        """Test do kill workflow."""
+        with mock.patch.object(commands_environment, "shell") as shell, \
+                mock.patch("builtins.print"):
+            shell.kill_workflow.return_value = mock.MagicMock(
+                messages=[("Killed workflow: wf-1\n", "")],
+                colored=lambda: "rendered")
+            self.cmds.do_kill_workflow("wf-1")
+        shell.kill_workflow.assert_called_once_with("wf-1")
+
+    def test_do_kill_workflow_requires_id(self):
+        """Test do kill workflow requires a workflow id."""
+        with mock.patch.object(commands_environment, "shell") as shell, \
+                mock.patch("builtins.print") as pr:
+            self.cmds.do_kill_workflow("")
+        shell.kill_workflow.assert_not_called()
+        self.assertTrue(pr.called)
 class TestRunnerCompletions(unittest.TestCase):
 
     """Test Runner Completions."""

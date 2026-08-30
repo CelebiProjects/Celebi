@@ -1096,6 +1096,14 @@ class ChernCommunicator():
         r.raise_for_status()
         return r.json()
 
+    def kill_workflow(self, project_uuid, workflow_uuid):
+        """Ask DITE to force-stop a workflow (works for zombie runs)."""
+        url = (f"http://{self.serverurl()}/kill-workflow/"
+               f"{project_uuid}/{workflow_uuid}")
+        r = requests.get(url, timeout=self.timeout)
+        r.raise_for_status()
+        return r.json()
+
     def purge_stale_workflows(self, runner, dry_run=False,
                               project_uuid=None):
         """Ask DITE to delete non-live workflow workspaces on a runner.

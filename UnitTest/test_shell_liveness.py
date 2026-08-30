@@ -214,3 +214,27 @@ def test_cache_purge_lines_omit_project_uuid(monkeypatch, tmp_path):
     assert sum(t.strip() == "Skipped cache:" for t in texts) == 1
     assert any(t.strip() == "imp-2 — registered" for t in texts)
     assert not any("proj-1" in t for t in texts)
+
+
+def test_kill_workflow_delegates(monkeypatch, tmp_path):
+    """kill_workflow resolves the current project and delegates."""
+    monkeypatch.setattr("CelebiChrono.utils.path_utils.project_path",
+                        lambda: _project(tmp_path))
+    cherncc = mock.MagicMock()
+    cherncc.kill_workflow.return_value = {"status": "killed",
+                                          "workflow": "wf-1"}
+    with mock.patch.object(comm, "ChernCommunicator") as cc:
+        cc.instance.return_value = cherncc
+        result = comm.kill_workflow("wf-1")
+    cherncc.kill_workflow.assert_called_once_with("proj-1", "wf-1")
+    assert any("wf-1" in text for text, _ in result.messages)
+
+
+def test_kill_workflow_no_project_returns_error(monkeypatch):
+    """Without a project, kill_workflow refuses to run."""
+    monkeypatch.setattr("CelebiChrono.utils.path_utils.project_path",
+                        lambda: None)
+    with mock.patch.object(comm, "ChernCommunicator") as cc:
+        result = comm.kill_workflow("wf-1")
+    cc.instance.assert_not_called()
+    assert any("No project" in text for text, _ in result.messages)

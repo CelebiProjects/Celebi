@@ -81,3 +81,18 @@ def test_purge_stale_workflows_posts_project_scope():
         req.post.return_value = response
         cherncc.purge_stale_workflows("pkufarm", project_uuid="proj")
     assert req.post.call_args[1]["json"]["project_uuid"] == "proj"
+
+
+def test_kill_workflow_gets_route():
+    """kill_workflow GETs the workflow kill route."""
+    cherncc = _communicator()
+    response = mock.MagicMock()
+    response.json.return_value = {"status": "killed", "workflow": "wf-1"}
+    with mock.patch("CelebiChrono.kernel.chern_communicator.requests") as req:
+        req.get.return_value = response
+        result = cherncc.kill_workflow("proj", "wf-1")
+    req.get.assert_called_once_with(
+        "http://dite.example:3315/kill-workflow/proj/wf-1",
+        timeout=5)
+    response.raise_for_status.assert_called_once_with()
+    assert result == {"status": "killed", "workflow": "wf-1"}

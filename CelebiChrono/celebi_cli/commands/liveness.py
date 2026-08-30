@@ -16,6 +16,22 @@ def sync_live_command() -> None:
         _handle_error(f"Command failed: {e}")
 
 
+@click.command(name="kill-workflow")
+@click.argument("workflow_uuid", type=str)
+def kill_workflow_command(workflow_uuid) -> None:
+    """Force-stop a workflow (works even for zombie runs).
+
+    WORKFLOW_UUID is the workflow id shown by purge-stale-workflows.
+    """
+    try:
+        from CelebiChrono.interface.shell import kill_workflow
+        _handle_result(kill_workflow(workflow_uuid))
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
 @click.command(name="purge-stale-cache")
 @click.argument("runner", type=str)
 @click.option("--dry-run", is_flag=True,

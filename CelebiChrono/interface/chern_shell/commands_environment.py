@@ -369,6 +369,22 @@ class EnvironmentCommands:
         except Exception as e:
             print(f"Error syncing live set: {e}")
 
+    def do_kill_workflow(self, arg: str) -> None:
+        """Force-stop a workflow (works even for zombie runs).
+
+        Usage: kill-workflow <workflow_uuid>
+        """
+        try:
+            workflow_uuid = arg.strip()
+            if not workflow_uuid:
+                print("Usage: kill-workflow <workflow_uuid>")
+                return
+            result = shell.kill_workflow(workflow_uuid)
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error killing workflow: {e}")
+
     def do_purge_stale_cache(self, arg: str) -> None:
         """Purge superseded impressions' cache entries from a runner.
 

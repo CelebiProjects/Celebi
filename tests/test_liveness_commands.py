@@ -51,3 +51,13 @@ def test_impress_hook_fires_and_survives_raising_sync():
     assert result.exit_code == 0
     impress_fn.assert_called_once_with()
     sync_fn.assert_called_once_with()
+
+
+def test_kill_workflow_command_calls_shell():
+    """kill-workflow delegates to the shell function."""
+    runner = CliRunner()
+    with mock.patch("CelebiChrono.interface.shell.kill_workflow") as fn:
+        fn.return_value = "Killed workflow: wf-1"
+        result = runner.invoke(cli, ["kill-workflow", "wf-1"])
+    assert result.exit_code == 0
+    fn.assert_called_once_with("wf-1")
