@@ -182,14 +182,14 @@ def test_purge_lines_omit_project_uuid(monkeypatch, tmp_path):
     cherncc.purge_stale_workflows.return_value = {
         "purged": [{"project": "proj-1", "workflow": "wf-1"}],
         "skipped": [{"project": "proj-1", "workflow": "wf-2",
-                     "reason": "workflow is live"}],
+                     "reason": "live"}],
         "already_gone": 0, "dry_run": True}
     with mock.patch.object(comm, "ChernCommunicator") as cc:
         cc.instance.return_value = cherncc
         result = comm.purge_stale_workflows("pkufarm")
     texts = [text for text, _ in result.messages]
     assert any("Purged workflow: wf-1" in t for t in texts)
-    assert any("Skipped workflow: wf-2" in t for t in texts)
+    assert any("Skipped workflow: wf-2 — live" in t for t in texts)
     assert not any("proj-1/wf" in t for t in texts)
 
 
