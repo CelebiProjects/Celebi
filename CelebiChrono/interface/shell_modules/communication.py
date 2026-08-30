@@ -752,7 +752,7 @@ def sync_live() -> Message:
     try:
         project_dir, project_uuid = _current_project()
         if not project_uuid:
-            message.add("No project found — run inside a Celebi project.",
+            message.add("No project found — run inside a Celebi project.\n",
                         "error")
             return message
         live, superseded = compute_live_sets(project_dir)
@@ -760,9 +760,9 @@ def sync_live() -> Message:
             project_uuid, live, superseded)
         message.add(f"Synced live set: {result.get('live')} live, "
                     f"{result.get('superseded')} superseded, "
-                    f"{result.get('live_workflows')} live workflows")
+                    f"{result.get('live_workflows')} live workflows\n")
     except Exception as exc:
-        message.add(f"Live-set sync failed (safe to ignore): {exc}",
+        message.add(f"Live-set sync failed (safe to ignore): {exc}\n",
                     "warning")
     return message
 
@@ -770,7 +770,7 @@ def sync_live() -> Message:
 def _merge_sync_lines(message, sync):
     """Merge a best-effort sync-live result into a message."""
     for text, color in sync.messages:
-        message.add(f"[sync-live] {text}", color)
+        message.add(f"[sync-live] {text}\n", color)
 
 
 def purge_stale_cache(runner: str, dry_run: bool = False) -> Message:
@@ -784,7 +784,7 @@ def purge_stale_cache(runner: str, dry_run: bool = False) -> Message:
     message.data["purge_count"] = 0
     project_uuid = _current_project_uuid()
     if not project_uuid:
-        message.add("No project found — run inside a Celebi project.",
+        message.add("No project found — run inside a Celebi project.\n",
                     "error")
         return message
     _merge_sync_lines(message, sync_live())
@@ -794,19 +794,19 @@ def purge_stale_cache(runner: str, dry_run: bool = False) -> Message:
         message.data["purge_count"] = len(result.get("purged", []))
         for entry in result.get("purged", []):
             message.add(f"Purged cache: {entry.get('project')}/"
-                        f"{entry.get('impression')}")
+                        f"{entry.get('impression')}\n")
         for entry in result.get("skipped", []):
             message.add(f"Skipped cache: {entry.get('project')}/"
-                        f"{entry.get('impression')} — {entry.get('reason')}",
+                        f"{entry.get('impression')} — {entry.get('reason')}\n",
                         "warning")
         if result.get("dry_run"):
             message.add(f"Dry run — {len(result.get('purged', []))} cache "
-                        "entries would be purged, nothing was deleted.")
+                        "entries would be purged, nothing was deleted.\n")
         else:
             message.add(f"Purged {len(result.get('purged', []))} cache "
-                        f"entries from runner '{runner}'")
+                        f"entries from runner '{runner}'\n")
     except Exception as exc:
-        message.add(f"Purge failed: {exc}", "error")
+        message.add(f"Purge failed: {exc}\n", "error")
     return message
 
 
@@ -821,7 +821,7 @@ def purge_stale_workflows(runner: str, dry_run: bool = False) -> Message:
     message.data["purge_count"] = 0
     project_uuid = _current_project_uuid()
     if not project_uuid:
-        message.add("No project found — run inside a Celebi project.",
+        message.add("No project found — run inside a Celebi project.\n",
                     "error")
         return message
     _merge_sync_lines(message, sync_live())
@@ -831,20 +831,20 @@ def purge_stale_workflows(runner: str, dry_run: bool = False) -> Message:
         message.data["purge_count"] = len(result.get("purged", []))
         for entry in result.get("purged", []):
             message.add(f"Purged workflow: {entry.get('project')}/"
-                        f"{entry.get('workflow')}")
+                        f"{entry.get('workflow')}\n")
         for entry in result.get("skipped", []):
             message.add(f"Skipped workflow: {entry.get('project')}/"
-                        f"{entry.get('workflow')} — {entry.get('reason')}",
+                        f"{entry.get('workflow')} — {entry.get('reason')}\n",
                         "warning")
         if result.get("already_gone"):
             message.add(f"{result['already_gone']} workspace(s) already "
-                        "gone, skipped")
+                        "gone, skipped\n")
         if result.get("dry_run"):
             message.add(f"Dry run — {len(result.get('purged', []))} "
-                        "workflows would be purged, nothing was deleted.")
+                        "workflows would be purged, nothing was deleted.\n")
         else:
             message.add(f"Purged {len(result.get('purged', []))} workflows "
-                        f"from runner '{runner}'")
+                        f"from runner '{runner}'\n")
     except Exception as exc:
-        message.add(f"Purge failed: {exc}", "error")
+        message.add(f"Purge failed: {exc}\n", "error")
     return message

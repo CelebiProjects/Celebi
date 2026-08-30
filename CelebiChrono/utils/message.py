@@ -40,15 +40,11 @@ class Message:
             raise TypeError("Expected a Message instance")
 
     def colored(self) -> str:
-        """ Return colored messages, one per line.
+        """ Return colored messages.
 
-        Each entry's trailing newline is stripped before colorizing
-        (colorize wraps the text in ANSI codes, so stripping afterwards
-        would miss it); entries whose text is empty after the strip are
-        dropped, so entries that already carry their own newlines do
-        not double-space.
+        Entries carry their own newlines: fragments without a trailing
+        newline concatenate with the next entry, so callers build lines
+        by adding label/value fragments and explicit "\\n" spacers.
         """
-        return "\n".join(
-            colorize(text.rstrip("\n"), msg_type)
-            for text, msg_type in self.messages
-            if text.rstrip("\n"))
+        return "".join(colorize(text, msg_type)
+                       for text, msg_type in self.messages)
