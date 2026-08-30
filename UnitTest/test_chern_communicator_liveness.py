@@ -93,6 +93,6 @@ def test_kill_workflow_gets_route():
         result = cherncc.kill_workflow("proj", "wf-1")
     req.get.assert_called_once_with(
         "http://dite.example:3315/kill-workflow/proj/wf-1",
-        timeout=5)
+        timeout=120)
     response.raise_for_status.assert_called_once_with()
     assert result == {"status": "killed", "workflow": "wf-1"}

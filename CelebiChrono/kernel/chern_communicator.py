@@ -105,6 +105,9 @@ class ChernCommunicator():
         # Runner purges delete many remote dirs one by one server-side; a
         # control-request timeout would give up while the server still works.
         self.purge_timeout = 600
+        # Force-kills wait for TERM and check liveness over ssh; the 10s
+        # control timeout would give up while the server still works.
+        self.kill_timeout = 120
         project_path = csys.project_path()
         self.project_uuid = metadata.ConfigFile(
                 join(project_path, ".celebi/config.json")
@@ -1100,7 +1103,7 @@ class ChernCommunicator():
         """Ask DITE to force-stop a workflow (works for zombie runs)."""
         url = (f"http://{self.serverurl()}/kill-workflow/"
                f"{project_uuid}/{workflow_uuid}")
-        r = requests.get(url, timeout=self.timeout)
+        r = requests.get(url, timeout=self.kill_timeout)
         r.raise_for_status()
         return r.json()
 
