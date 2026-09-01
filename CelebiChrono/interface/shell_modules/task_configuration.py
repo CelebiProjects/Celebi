@@ -559,7 +559,7 @@ def get_script_path(filename: str) -> Message:
 
     Examples:
         get_script_path("script.py")  # Path in current object
-        get_script_path("code/main.py")  # Path in associated algorithm
+        get_script_path("code/main.py")  # Path in task's code root (task dir or linked algorithm dir)
         get_script_path("code:utils.py")  # Alternative prefix syntax
 
     Returns:
@@ -567,7 +567,9 @@ def get_script_path(filename: str) -> Message:
 
     Note:
         - Current object must be a task or algorithm
-        - "code/" prefix resolves to associated algorithm's path
+        - "code/" and "code:" prefixes resolve to the task's code root
+          (code_path(): the task directory for inline-code tasks, else the
+          linked algorithm's directory)
         - Returns absolute filesystem path
         - Useful for script execution or file operations
     """
@@ -576,15 +578,14 @@ def get_script_path(filename: str) -> Message:
         message.add("Not able to get script path if you are not in a task or algorithm.", "error")
         return message
     if MANAGER.current_object().object_type() == "task":
-        if filename.startswith("code/"):
-            algorithm = MANAGER.current_object().algorithm()
-            path = f"{algorithm.path}/{filename[5:]}"
-            message.add(path, "normal")
-            message.data["path"] = path
-            return message
-        if filename.startswith("code:"):
-            algorithm = MANAGER.current_object().algorithm()
-            path = f"{algorithm.path}/{filename[5:]}"
+        if filename.startswith("code/") or filename.startswith("code:"):
+            code_root = MANAGER.current_object().code_path()
+            if code_root is None:
+                message.add(
+                    "No code root for this task (no algorithm and no inline commands).",
+                    "error")
+                return message
+            path = f"{code_root}/{filename[5:]}"
             message.add(path, "normal")
             message.data["path"] = path
             return message

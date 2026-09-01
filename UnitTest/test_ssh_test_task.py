@@ -94,6 +94,7 @@ def _cherncc(connected=True, ssh_config=None):
 def _task_with_workdirs(tmp_path):
     """A task stub whose pre_docker_test points at real temp dirs."""
     task = _task()
+    task.path = str(tmp_path / "task")
     base_dir = tmp_path / "base"
     base_dir.mkdir()
     (base_dir / "stageout").mkdir()
@@ -277,6 +278,7 @@ def test_ssh_test_warns_when_preparation_fails(tmp_path):
     """A failed pre_docker_test yields a warning."""
     _reset_fakes()
     task = _task()
+    task.path = str(tmp_path / "task")
     task.environment = mock.MagicMock(return_value="env_root_6.38.04")
     task.inputs = mock.MagicMock(return_value=[])
     algorithm = mock.MagicMock()

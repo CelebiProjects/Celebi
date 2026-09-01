@@ -15,11 +15,13 @@ from CelebiChrono.kernel.vtask_job import JobManager
 class FakeJobManager(JobManager):
     """Minimal JobManager stand-in that only implements the helpers under test."""
 
-    def __init__(self, project_path, inputs=None):
+    def __init__(self, project_path, inputs=None, commands=None, code_path=None):
         # pylint: disable=super-init-not-called
         """Init."""
         self._project_path = project_path
         self._inputs = inputs or []
+        self._commands = commands if commands is not None else []
+        self._code_path = code_path
 
     # Required abstract stubs
     def algorithm(self):
@@ -64,6 +66,14 @@ class FakeJobManager(JobManager):
     def cache_on_runner(self):
         """Cache on runner."""
         return False
+
+    def commands(self):
+        """Effective commands."""
+        return self._commands
+
+    def code_path(self):
+        """Code root."""
+        return self._code_path
 
     def validated(self):
         """Validated."""
@@ -168,3 +178,132 @@ def test_link_preceding_jobs_skips_existing_temp_dir():
 
         cherncc.output_files.assert_not_called()
         cherncc.export.assert_not_called()
+
+
+def _write(path, text):
+    """Write a text file, creating parent directories."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(text)
+
+
+def test_test_commands_uses_effective_commands():
+    """_test_commands substitutes parameters into the effective commands."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        jm = FakeJobManager(tmpdir, commands=["echo ${n}"])
+        jm.parameters = mock.Mock(return_value=(["n"], {"n": "5"}))
+        assert jm._test_commands() == ["echo 5"]
+
+
+def test_prepare_algorithm_code_copies_inline_task_tree():
+    """Inline tasks copy their own directory as the workaround code tree."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        task_dir = os.path.join(tmpdir, "task")
+        os.makedirs(task_dir)
+        _write(os.path.join(task_dir, "main.py"), "print('hi')")
+        _write(os.path.join(task_dir, "celebi.yaml"), "descriptor: t\n")
+
+        jm = FakeJobManager(tmpdir, code_path=task_dir)
+        workspace = os.path.join(tmpdir, "workspace")
+        os.makedirs(workspace)
+
+        with mock.patch.object(jm, "algorithm", return_value=None), \
+             mock.patch("CelebiChrono.kernel.vtask_job.csys.symlink") as mock_symlink:
+            jm._prepare_algorithm_code(workspace)
+
+        assert mock_symlink.call_count == 1
+        symlink_source = mock_symlink.call_args.args[0]
+        assert os.path.exists(os.path.join(symlink_source, "main.py"))
+        assert os.path.exists(os.path.join(symlink_source, "celebi.yaml"))
+
+
+def test_prepare_algorithm_code_returns_when_no_code_root():
+    """No code root means nothing to copy or link."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        jm = FakeJobManager(tmpdir, code_path=None)
+        workspace = os.path.join(tmpdir, "workspace")
+        os.makedirs(workspace)
+
+        with mock.patch("CelebiChrono.kernel.vtask_job.csys.symlink") as mock_symlink:
+            jm._prepare_algorithm_code(workspace)
+
+        mock_symlink.assert_not_called()
+
+
+def test_workaround_preshell_writes_exec_sh_for_inline_commands():
+    """Inline commands become exec.sh inside the workaround workspace."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        jm = FakeJobManager(tmpdir, commands=["echo inline"])
+        workspace = os.path.join(tmpdir, "workspace")
+        os.makedirs(workspace)
+
+        cherncc = mock.Mock()
+        cherncc.dite_status.return_value = "connected"
+
+        with mock.patch(
+                "CelebiChrono.kernel.vtask_job.ChernCommunicator.instance",
+                return_value=cherncc), \
+             mock.patch.object(jm, "_check_preceding_jobs",
+                               return_value=(True, "")), \
+             mock.patch.object(jm, "_create_workaround_dir",
+                               return_value=workspace), \
+             mock.patch.object(jm, "_prepare_data_dir"), \
+             mock.patch.object(jm, "_link_preceding_jobs"), \
+             mock.patch.object(jm, "_prepare_algorithm_code"), \
+             mock.patch.object(jm, "_generate_workaround_filelist"), \
+             mock.patch.object(jm, "parameters", return_value=([], {})):
+            success, _ = jm.workaround_preshell()
+
+        assert success
+        script_path = os.path.join(workspace, "exec.sh")
+        assert os.path.exists(script_path)
+        with open(script_path, encoding="utf-8") as f:
+            content = f.read()
+        assert "echo inline" in content
+
+
+def test_workaround_postshell_syncs_back_to_inline_task_dir():
+    """Postshell syncs code/ back to the task dir, deleting stray files."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        task_dir = os.path.join(tmpdir, "task")
+        os.makedirs(task_dir)
+        _write(os.path.join(task_dir, "main.py"), "old")
+        _write(os.path.join(task_dir, "celebi.yaml"), "descriptor: t\n")
+        _write(os.path.join(task_dir, "README.md"), "readme\n")
+        _write(os.path.join(task_dir, "stale.py"), "stale\n")
+
+        workspace = os.path.join(tmpdir, "workspace")
+        code_dir = os.path.join(workspace, "code")
+        os.makedirs(code_dir)
+        _write(os.path.join(code_dir, "main.py"), "new")
+        _write(os.path.join(code_dir, "celebi.yaml"), "descriptor: t\n")
+        _write(os.path.join(workspace, "filelist.yaml"),
+               "files:\n- rel_path: main.py\n- rel_path: celebi.yaml\n")
+
+        jm = FakeJobManager(tmpdir, code_path=task_dir)
+        assert jm.workaround_postshell(workspace)
+
+        with open(os.path.join(task_dir, "main.py"), encoding="utf-8") as f:
+            assert f.read() == "new"
+        assert not os.path.exists(os.path.join(task_dir, "stale.py"))
+        assert os.path.exists(os.path.join(task_dir, "celebi.yaml"))
+        assert os.path.exists(os.path.join(task_dir, "README.md"))
+
+
+def test_prepare_mounting_algorithm_code_mounts_inline_task_dir():
+    """Docker-test mounts point at /workspace/code for inline tasks."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        task_dir = os.path.join(tmpdir, "task")
+        os.makedirs(task_dir)
+        _write(os.path.join(task_dir, "main.py"), "print('hi')")
+
+        jm = FakeJobManager(tmpdir, code_path=task_dir)
+        mount_config = {"base_dir": tmpdir, "mounts": []}
+
+        with mock.patch.object(jm, "algorithm", return_value=None):
+            jm._prepare_mounting_algorithm_code(tmpdir, mount_config)
+
+        assert len(mount_config["mounts"]) == 1
+        entry = mount_config["mounts"][0]
+        assert entry["target"] == "/workspace/code"
+        assert os.path.exists(os.path.join(entry["source"], "main.py"))

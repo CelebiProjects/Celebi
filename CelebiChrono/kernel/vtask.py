@@ -85,6 +85,7 @@
 import os
 import shlex
 from logging import getLogger
+from typing import List, Optional
 from os.path import join
 
 from ..utils import metadata
@@ -265,6 +266,25 @@ class VTask(InputManager, SettingManager, FileManager, JobManager,
         """Set descriptor in celebi.yaml."""
         yaml_file = metadata.YamlFile(join(self.path, "celebi.yaml"))
         yaml_file.write_variable("descriptor", descriptor)
+
+    def commands(self) -> List[str]:
+        """Effective commands: task-level if non-empty, else the algorithm's."""
+        task_commands = self.task_commands()
+        if task_commands:
+            return task_commands
+        algorithm = self.algorithm()
+        if algorithm is not None:
+            return algorithm.commands() or []
+        return []
+
+    def code_path(self) -> Optional[str]:
+        """The code root: task dir when inline, else the algorithm dir."""
+        if self.task_commands():
+            return self.path
+        algorithm = self.algorithm()
+        if algorithm is not None:
+            return algorithm.path
+        return None
 
 
 def create_task(path):

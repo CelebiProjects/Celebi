@@ -10,6 +10,7 @@ import CelebiChrono.kernel.vtask as vtsk
 from CelebiChrono.kernel.chern_cache import ChernCache
 from CelebiChrono.kernel.chern_communicator import ChernCommunicator
 from CelebiChrono.utils import user_config
+from CelebiChrono.utils import metadata
 
 CHERN_CACHE = ChernCache.instance()
 
@@ -139,6 +140,93 @@ class TestChernVTask(unittest.TestCase):  # pylint: disable=too-many-public-meth
             mock_yaml_instance.write_variable.assert_called_once_with(
                 "descriptor", "Updated Task Descriptor"
             )
+
+    def test_task_commands_reads_yaml(self):
+        """task_commands reads the task's own commands from celebi.yaml."""
+        prepare.create_chern_project("demo_complex")
+        os.chdir("demo_complex")
+        obj_tsk = vtsk.VTask(os.getcwd() + "/tasks/taskAna1")
+
+        # Default: no commands field
+        self.assertEqual(obj_tsk.task_commands(), [])
+
+        yaml_file = metadata.YamlFile(os.path.join(obj_tsk.path, "celebi.yaml"))
+        yaml_file.write_variable("commands", ["echo hi", "echo bye"])
+        self.assertEqual(obj_tsk.task_commands(), ["echo hi", "echo bye"])
+
+        os.chdir("..")
+        prepare.remove_chern_project("demo_complex")
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
+
+    def test_effective_commands_precedence(self):
+        """Task-level commands win; algorithm commands are the fallback."""
+        prepare.create_chern_project("demo_complex")
+        os.chdir("demo_complex")
+        obj_tsk = vtsk.VTask(os.getcwd() + "/tasks/taskAna1")
+
+        mock_algorithm = MagicMock()
+        mock_algorithm.commands.return_value = ["echo algorithm"]
+
+        # No task-level commands: fall back to the algorithm
+        with patch.object(obj_tsk, 'algorithm', return_value=mock_algorithm):
+            self.assertEqual(obj_tsk.commands(), ["echo algorithm"])
+
+        # No task-level commands and no algorithm: empty
+        with patch.object(obj_tsk, 'algorithm', return_value=None):
+            self.assertEqual(obj_tsk.commands(), [])
+
+        # Task-level commands win over the algorithm
+        yaml_file = metadata.YamlFile(os.path.join(obj_tsk.path, "celebi.yaml"))
+        yaml_file.write_variable("commands", ["echo inline"])
+        with patch.object(obj_tsk, 'algorithm', return_value=mock_algorithm):
+            self.assertEqual(obj_tsk.commands(), ["echo inline"])
+        with patch.object(obj_tsk, 'algorithm', return_value=None):
+            self.assertEqual(obj_tsk.commands(), ["echo inline"])
+
+        os.chdir("..")
+        prepare.remove_chern_project("demo_complex")
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
+
+    def test_effective_commands_none_guard_on_algorithm_fallback(self):
+        """commands() returns [] when the algorithm's commands read as null."""
+        prepare.create_chern_project("demo_complex")
+        os.chdir("demo_complex")
+        obj_tsk = vtsk.VTask(os.getcwd() + "/tasks/taskAna1")
+
+        mock_algorithm = MagicMock()
+        mock_algorithm.commands.return_value = None
+        with patch.object(obj_tsk, 'algorithm', return_value=mock_algorithm):
+            self.assertEqual(obj_tsk.commands(), [])
+
+        os.chdir("..")
+        prepare.remove_chern_project("demo_complex")
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
+
+    def test_code_path(self):
+        """code_path is the task dir when inline, else the algorithm dir."""
+        prepare.create_chern_project("demo_complex")
+        os.chdir("demo_complex")
+        obj_tsk = vtsk.VTask(os.getcwd() + "/tasks/taskAna1")
+
+        mock_algorithm = MagicMock()
+        mock_algorithm.path = "/mock/algorithm/path"
+
+        with patch.object(obj_tsk, 'algorithm', return_value=None):
+            self.assertIsNone(obj_tsk.code_path())
+
+        with patch.object(obj_tsk, 'algorithm', return_value=mock_algorithm):
+            self.assertEqual(obj_tsk.code_path(), "/mock/algorithm/path")
+
+        yaml_file = metadata.YamlFile(os.path.join(obj_tsk.path, "celebi.yaml"))
+        yaml_file.write_variable("commands", ["echo inline"])
+        with patch.object(obj_tsk, 'algorithm', return_value=mock_algorithm):
+            self.assertEqual(obj_tsk.code_path(), obj_tsk.path)
+        with patch.object(obj_tsk, 'algorithm', return_value=None):
+            self.assertEqual(obj_tsk.code_path(), obj_tsk.path)
+
+        os.chdir("..")
+        prepare.remove_chern_project("demo_complex")
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
     def test_job_manager_methods(self):
         """Test JobManager methods inherited by VTask"""
@@ -503,6 +591,27 @@ class TestChernVTask(unittest.TestCase):  # pylint: disable=too-many-public-meth
         # prepare.remove_chern_project("demo_complex")
         CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
 
+    def test_ls_shows_effective_commands_for_inline_task(self):
+        """ls lists the task's own commands when the task is inline."""
+        prepare.create_chern_project("demo_complex")
+        os.chdir("demo_complex")
+        obj_tsk = vtsk.VTask(os.getcwd() + "/tasks/taskAna1")
+        yaml_file = metadata.YamlFile(os.path.join(obj_tsk.path, "celebi.yaml"))
+        yaml_file.write_variable("commands", ["echo inline"])
+
+        with patch.object(obj_tsk, 'algorithm', return_value=None), \
+             patch('os.get_terminal_size') as mock_terminal_size:
+            mock_terminal_size.return_value.columns = 80
+            message = obj_tsk.ls()
+
+        msg_str = str(message)
+        self.assertIn("Commands", msg_str)
+        self.assertIn("echo inline", msg_str)
+
+        os.chdir("..")
+        prepare.remove_chern_project("demo_complex")
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
+
     def test_file_manager_methods(self):
         """Test FileManager methods inherited by VTask"""
         print(Fore.BLUE + "Testing FileManager Methods..." + Style.RESET)
@@ -810,6 +919,30 @@ class TestChernVTask(unittest.TestCase):  # pylint: disable=too-many-public-meth
             mock_print.assert_called_with(
                 "Already have algorithm, will replace it"
             )
+
+        os.chdir("..")
+        prepare.remove_chern_project("demo_complex")
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
+
+    def test_add_algorithm_notices_task_commands_precedence(self):
+        """add_algorithm warns when task commands will shadow the algorithm."""
+        prepare.create_chern_project("demo_complex")
+        os.chdir("demo_complex")
+        obj_tsk = vtsk.VTask(os.getcwd() + "/tasks/taskAna1")
+
+        mock_algo_obj = MagicMock()
+        mock_algo_obj.object_type.return_value = "algorithm"
+        mock_algo_obj.has_predecessor_recursively.return_value = False
+
+        with patch.object(obj_tsk, 'get_vobject', return_value=mock_algo_obj), \
+             patch.object(obj_tsk, 'algorithm', return_value=None), \
+             patch.object(obj_tsk, 'task_commands', return_value=["echo hi"]), \
+             patch.object(obj_tsk, 'add_arc_from'), \
+             patch("builtins.print") as mock_print:
+            obj_tsk.add_algorithm(os.getcwd() + "/code/ana1")
+
+        printed = " ".join(str(call.args[0]) for call in mock_print.call_args_list)
+        self.assertIn("take precedence", printed)
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
@@ -1365,6 +1498,35 @@ class TestChernVTask(unittest.TestCase):  # pylint: disable=too-many-public-meth
         with patch.object(obj_tsk, 'env_validated', return_value=False):
             result = obj_tsk.validated()
             self.assertFalse(result)
+
+        os.chdir("..")
+        prepare.remove_chern_project("demo_complex")
+        CHERN_CACHE.__init__()  # pylint: disable=unnecessary-dunder-call
+
+    def test_env_validated_inline_commands(self):
+        """Inline-code tasks validate on their own commands and environment."""
+        prepare.create_chern_project("demo_complex")
+        os.chdir("demo_complex")
+        obj_tsk = vtsk.VTask(os.getcwd() + "/tasks/taskAna1")
+        yaml_file = metadata.YamlFile(os.path.join(obj_tsk.path, "celebi.yaml"))
+        yaml_file.write_variable("commands", ["echo hi"])
+
+        # Inline commands with an environment: valid
+        with patch.object(obj_tsk, 'environment', return_value='python:3.9'), \
+             patch.object(obj_tsk, 'algorithm', return_value=None):
+            self.assertTrue(obj_tsk.env_validated())
+
+        # Inline commands without an environment: invalid
+        with patch.object(obj_tsk, 'environment', return_value=''), \
+             patch.object(obj_tsk, 'algorithm', return_value=None):
+            self.assertFalse(obj_tsk.env_validated())
+
+        # Inline commands win: algorithm environment mismatch is irrelevant
+        mock_algorithm = MagicMock()
+        mock_algorithm.environment.return_value = "ubuntu:20.04"
+        with patch.object(obj_tsk, 'environment', return_value='python:3.9'), \
+             patch.object(obj_tsk, 'algorithm', return_value=mock_algorithm):
+            self.assertTrue(obj_tsk.env_validated())
 
         os.chdir("..")
         prepare.remove_chern_project("demo_complex")
