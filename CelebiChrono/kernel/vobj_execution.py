@@ -18,7 +18,7 @@ CHERN_CACHE = ChernCache.instance()
 logger = getLogger("ChernLogger")
 
 
-class ExecutionManagement(Core):
+class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
     """ Manage the contact with dite and runner. """
     def is_submitted(self, runner: str = "local") -> bool: # pylint: disable=unused-argument
         """ Judge whether submitted or not. Return a True or False.
@@ -384,6 +384,15 @@ class ExecutionManagement(Core):
             msg.add("SSH test can only be run on a task.", "warning")
             return msg
         return self.get_vtask(self.path).ssh_test(runner)
+
+    def check_results(self, runner: str = "") -> Message:
+        """Mount the task's cached impression results into a check dir on
+        the runner."""
+        if not self.is_task():
+            msg = Message()
+            msg.add("Check results can only be run on a task.", "warning")
+            return msg
+        return self.get_vtask(self.path).check_results(runner)
 
     def collect(self, contents="") -> Message:
         """ Collect the results from the runner. """

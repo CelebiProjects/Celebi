@@ -1,5 +1,6 @@
 """Command execution module for Chern shell."""
-from ..shell_modules.execution_management import test, ssh_test, engine_logs
+from ..shell_modules.execution_management import (
+    test, ssh_test, engine_logs, check_results)
 
 class CommandsExecution:
     """Execution commands for Chern shell."""
@@ -45,6 +46,28 @@ class CommandsExecution:
         print(f"Error: Unknown test mode '{args[0]}'. "
               "Usage: test docker <docker_image> <command> | "
               "test ssh <runner>")
+
+    def do_check_results(self, arg: str) -> None:
+        """
+        Mount the current impression's cached results into a check dir on
+        an ssh runner.
+
+        Usage:
+            check-results <runner>
+
+        Example:
+            check-results mycluster
+        """
+        runner = arg.strip()
+        if not runner:
+            print("Error: Missing runner name. Usage: check-results <runner>")
+            return
+        try:
+            result = check_results(runner)
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error checking results: {e}")
 
     def do_engine_logs(self, arg):
         """

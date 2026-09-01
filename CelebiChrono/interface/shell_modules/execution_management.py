@@ -191,6 +191,22 @@ def ssh_test(runner: str = "") -> Message:
     return MANAGER.current_object().ssh_test(runner)
 
 
+def check_results(runner: str = "") -> Message:
+    """Mount the current impression's cached results into a check dir on an
+    ssh runner.
+
+    Each cache entry is symlinked individually into a fresh timestamped
+    check dir under ``<remote_workdir>/tests/check/``; the remote path is
+    reported for manual inspection.
+
+    Note:
+        - The current object must be a task
+        - Requires connection to DITE server to look up the runner config
+        - Related function: `cache_results()` to cache results on the runner
+    """
+    return MANAGER.current_object().check_results(runner)
+
+
 def engine_logs(fetch: bool = False) -> Message:
     """Fetch and display engine logs for the current task.
 

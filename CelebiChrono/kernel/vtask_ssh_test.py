@@ -126,6 +126,82 @@ class SshTestMixin(Core):
                     "info")
         return msg
 
+    def check_results(self, runner: str = "") -> Message:  # pylint: disable=too-many-return-statements
+        """Mount the impression's cached results into a check dir on an ssh
+        runner.
+
+        Each cache entry is symlinked individually into a fresh timestamped
+        check dir under ``<remote_workdir>/tests/check/``, so diagnosing the
+        results never modifies the cache itself.
+        """
+        impression = self.impression()
+        if impression is None:
+            msg = Message()
+            msg.add("Current object has no impression — impress it first.",
+                    "error")
+            return msg
+
+        cherncc = ChernCommunicator.instance()
+        if cherncc.dite_status() != "connected":
+            msg = Message()
+            msg.add("DITE is not connected. Please check the connection.",
+                    "warning")
+            return msg
+
+        ssh_config = cherncc.runner_ssh_config(runner,
+                                               environment=self.environment())
+        if ssh_config is None:
+            msg = Message()
+            msg.add(f"Runner '{runner}' not found on the DITE server.",
+                    "warning")
+            return msg
+        if not ssh_config.get("host") or not ssh_config.get("user"):
+            msg = Message()
+            msg.add(f"Runner '{runner}' has no ssh host or user configured.",
+                    "warning")
+            return msg
+
+        base = ssh_config.get("remote_workdir", "/tmp/yuki-workflows")
+        cache_dir = f"{base}/impressions/{self.project_uuid()}/{impression.uuid}"
+
+        ssh = SshRunner(host=ssh_config["host"], user=ssh_config["user"],
+                        port=ssh_config.get("port", 22),
+                        key_content=ssh_config.get("key", ""),
+                        key_path=ssh_config.get("key_path", ""))
+        msg = Message()
+        try:
+            ssh.connect()
+            timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+            check_dir = f"{base}/tests/check/{timestamp}"
+            # One round trip covers both the cached check and the linking:
+            # each remote exec costs seconds of shell startup overhead.
+            # Exit code 3 means the impression is not cached on the runner.
+            command = (
+                f"test -d {shlex.quote(cache_dir)} || exit 3; "
+                f"mkdir -p {shlex.quote(check_dir)} && "
+                f"for f in {shlex.quote(cache_dir)}/*; do "
+                f"[ -e \"$f\" ] || [ -L \"$f\" ] || continue; "
+                f"ln -s \"$f\" {shlex.quote(check_dir)}/; done")
+            print(f"Final command to execute on remote: {command}")
+            code = ssh.exec_stream(command)
+            if code == 3:
+                msg.add(f"Impression '{impression.uuid}' is not cached on "
+                        f"runner '{runner}' — run cache-results {runner} "
+                        f"first.", "error")
+                return msg
+            if code:
+                msg.add(f"Remote link exited with code {code}.", "error")
+                return msg
+            msg.add(f"Results mounted at {ssh_config['host']}:{check_dir}\n",
+                    "success")
+            msg.add("Each entry is a symlink into the runner cache.\n",
+                    "info")
+        except (OSError, RuntimeError, ValueError) as e:
+            msg.add(f"Check results failed: {e}", "error")
+        finally:
+            ssh.close()
+        return msg
+
     @staticmethod
     def _impression_cached_on_runner(ssh, ssh_config, project_uuid, impression):
         """True when the impression lives in the runner-side cache."""

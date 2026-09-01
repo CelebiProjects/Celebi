@@ -313,6 +313,13 @@ class ChernShellCompletions:
         runners = self.readline_file.read_variable("runners", [])
         return [r for r in runners if r.startswith(text)]
 
+    def complete_check_results(
+        self, text: str, _line: str, _begidx: int, _endidx: int
+    ) -> list:
+        """Complete check-results with existing runners."""
+        runners = self.readline_file.read_variable("runners", [])
+        return [r for r in runners if r.startswith(text)]
+
     def complete_register_ssh_data(
         self, text: str, line: str, _begidx: int, _endidx: int
     ) -> list:
