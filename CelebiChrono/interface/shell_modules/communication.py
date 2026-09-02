@@ -846,16 +846,13 @@ def purge_stale_cache(runner: str, dry_run: bool = False) -> Message:
             runner, dry_run=dry_run, project_uuid=project_uuid)
         message.data["purge_count"] = len(result.get("purged", []))
         purged_entries = result.get("purged", [])
-        if purged_entries:
-            message.add("Purged cache:\n")
-            for entry in purged_entries:
-                message.add(f"{entry.get('impression')}\n")
+        action = "would be purged" if result.get("dry_run") else "purged"
+        for entry in purged_entries:
+            message.add(f"[{entry.get('impression')}] {action} in cache\n")
         skipped_entries = result.get("skipped", [])
-        if skipped_entries:
-            message.add("Skipped cache:\n")
-            for entry in skipped_entries:
-                message.add(f"{entry.get('impression')} — "
-                            f"{entry.get('reason')}\n", "warning")
+        for entry in skipped_entries:
+            message.add(f"[{entry.get('impression')}] skipped in cache — "
+                        f"{entry.get('reason')}\n", "warning")
         if result.get("dry_run"):
             message.add(f"Dry run — {len(result.get('purged', []))} cache "
                         "entries would be purged, nothing was deleted.\n")

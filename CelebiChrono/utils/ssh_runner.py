@@ -23,6 +23,17 @@ def _noop(_line):
     """Default line consumer doing nothing."""
 
 
+def _sftp_makedirs(sftp, path):
+    """Create a remote directory tree with SFTP (os.makedirs equivalent)."""
+    current = ""
+    for part in path.strip("/").split("/"):
+        current += "/" + part
+        try:
+            sftp.stat(current)
+        except IOError:
+            sftp.mkdir(current)
+
+
 def sanitized_env_prefix(conda_base=""):
     """Shell prefix that resets PYTHONPATH/LD_LIBRARY_PATH and curates PATH.
 
@@ -142,18 +153,17 @@ class SshRunner:
         return lines[0].strip() if lines else ""
 
     def put_tar(self, local_tar, remote_dir):
-        """Upload a tar.gz and extract it into remote_dir on the remote."""
+        """Upload a tar.gz and extract it into remote_dir on the remote.
+
+        The remote dir tree is created over SFTP (no extra exec round trip),
+        and a single exec extracts the tar and removes it — each exec costs
+        seconds of remote shell startup.
+        """
         name = os.path.basename(local_tar)
         remote_tar = f"{remote_dir.rstrip('/')}/{name}"
-        # The remote parent dir must exist before SFTP can put into it.
-        lines = []
-        code = self.exec_stream(f"mkdir -p {shlex.quote(remote_dir)}",
-                                on_line=lines.append)
-        if code:
-            raise RuntimeError(
-                f"Failed to create remote dir {remote_dir}: {'; '.join(lines)}")
         sftp = self._client.open_sftp()
         try:
+            _sftp_makedirs(sftp, remote_dir)
             sftp.put(local_tar, remote_tar)
         finally:
             sftp.close()

@@ -237,16 +237,14 @@ def get_files_in_directory(root, exclude=()):
         for f in files:
             if f.endswith(".~undo-tree~"):
                 continue
+            rel = os.path.relpath(os.path.join(dirpath, f), root)
             file_excluded = False
             for excl in exclude:
-                if os.path.normpath(os.path.join(dirpath, f)).startswith(
-                    os.path.normpath(os.path.join(root, excl))
-                ):
+                if rel == excl or rel.startswith(excl + os.sep):
                     file_excluded = True
                     break
             if file_excluded:
                 continue
-            rel = os.path.relpath(os.path.join(dirpath, f), root)
             files_list.append(rel)
     return files_list
 

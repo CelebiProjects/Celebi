@@ -209,10 +209,8 @@ def test_cache_purge_lines_omit_project_uuid(monkeypatch, tmp_path):
         cc.instance.return_value = cherncc
         result = comm.purge_stale_cache("pkufarm")
     texts = [text for text, _ in result.messages]
-    assert sum(t.strip() == "Purged cache:" for t in texts) == 1
-    assert any(t.strip() == "imp-1" for t in texts)
-    assert sum(t.strip() == "Skipped cache:" for t in texts) == 1
-    assert any(t.strip() == "imp-2 — registered" for t in texts)
+    assert any("[imp-1] would be purged in cache" in t for t in texts)
+    assert any("[imp-2] skipped in cache — registered" in t for t in texts)
     assert not any("proj-1" in t for t in texts)
 
 

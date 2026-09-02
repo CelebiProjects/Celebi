@@ -627,8 +627,13 @@ class JobManager(Core):
         cherncc = ChernCommunicator.instance()
         cherncc.deposit_with_data(self.impression(), path, progress_callback)
 
-    def _check_preceding_jobs(self, cherncc) -> tuple[bool, str]:
-        """Check whether all the preceding jobs are finished"""
+    def _check_preceding_jobs(self, cherncc, skip_impressions=None) -> tuple[bool, str]:
+        """Check whether all the preceding jobs are finished
+
+        Impressions in ``skip_impressions`` live in the runner-side cache and
+        are never exported through DITE, so their outputs are not collected.
+        """
+        skip_impressions = set(skip_impressions or ())
         for pre in self.inputs():
             if not pre.is_impressed_fast():
                 return False, f"Preceding job {pre} is not impressed"
@@ -640,7 +645,10 @@ class JobManager(Core):
             if pre_status not in ("finished", "archived", "coda"):
                 print(f"Preceding job {pre} status: {pre_status!r}")
                 return False, f"Preceding job {pre} is not finished"
-            cherncc.collect_outputs(pre.impression())
+            impression = pre.impression()
+            if impression.uuid in skip_impressions:
+                continue
+            cherncc.collect_outputs(impression)
         return True, ""
 
     def _prepare_data_dir(self, temp_dir):
@@ -860,7 +868,8 @@ class JobManager(Core):
         if status != "connected":
             return False, ""
 
-        success, message = self._check_preceding_jobs(cherncc)
+        success, message = self._check_preceding_jobs(
+            cherncc, skip_impressions=skip_impressions)
         if not success:
             return False, message
 

@@ -23,8 +23,7 @@ class FakeSshRunner:
     # Responses consumed per exec_stream call: (code, [lines]). When empty,
     # exec_stream returns exit_code without delivering lines.
     script = [
-        (0, ["/home/zhaomr/workdir/miniconda3"]),  # conda info --base probe
-        (0, ["/home/zhaomr/workdir/miniconda3/envs/env_root_6.38.04/bin/python"]),
+        (0, ["CBASE=/home/zhaomr/workdir/miniconda3", "CPY=ok"]),  # conda probe
     ]
 
     def __init__(self, **kwargs):
@@ -73,8 +72,7 @@ def _reset_fakes():
     FakeSshRunner.instances = []
     FakeSshRunner.exit_code = 0
     FakeSshRunner.script = [
-        (0, ["/home/zhaomr/workdir/miniconda3"]),
-        (0, ["/home/zhaomr/workdir/miniconda3/envs/env_root_6.38.04/bin/python"]),
+        (0, ["CBASE=/home/zhaomr/workdir/miniconda3", "CPY=ok"]),
     ]
 
 
@@ -175,7 +173,9 @@ def test_ssh_test_uploads_staged_tree_and_substitutes_parameters(tmp_path):
     assert "data.txt" in names
     assert "code/run.py" in names
     command, cwd = runner.exec_args[-1]
-    assert "mkdir -p stageout && echo 20000" in command
+    assert ("mkdir -p stageout && "
+            "echo -e \"=== start running ===\\n\" && "
+            "echo 20000") in command
     assert cwd == remote_dir
 
 
@@ -189,37 +189,39 @@ def test_ssh_test_activates_resolved_conda_environment(tmp_path):
     runner = FakeSshRunner.instances[0]
     command, _cwd = runner.exec_args[-1]
     assert "conda run --no-capture-output -n env_root_6.38.04 -- bash -c" in command
-    assert "mkdir -p stageout && echo 20000" in command
+    assert ("mkdir -p stageout && "
+            "echo -e \"=== start running ===\\n\" && "
+            "echo 20000") in command
 
 
 def test_ssh_test_sanitizes_remote_environment(tmp_path):
     """The run command resets PYTHONPATH/LD_LIBRARY_PATH and curates PATH."""
     _reset_fakes()
     FakeSshRunner.script = [
-        (0, ["/home/zhaomr/workdir/miniconda3"]),
-        (0, ["/home/zhaomr/workdir/miniconda3/envs/env_root_6.38.04/bin/python"]),
+        (0, ["CBASE=/home/zhaomr/workdir/miniconda3", "CPY=ok"]),
         (0, []),
     ]
     task = _task_with_workdirs(tmp_path)
     message = _run(task)
     assert "exited with code 0" in str(message)
     runner = FakeSshRunner.instances[0]
-    # first call probes the conda base dir
+    # first call probes the conda base and the env's python
     assert "conda info --base" in runner.exec_args[0][0]
     command, _cwd = runner.exec_args[-1]
     assert command.startswith("unset PYTHONPATH LD_LIBRARY_PATH; ")
     assert ("export PATH=\"/home/zhaomr/workdir/miniconda3/bin"
             ":$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin\"; "
             ) in command
-    assert "mkdir -p stageout && echo 20000" in command
+    assert ("mkdir -p stageout && "
+            "echo -e \"=== start running ===\\n\" && "
+            "echo 20000") in command
 
 
 def test_ssh_test_fails_when_env_lacks_python(tmp_path):
     """A conda env without python aborts the run with a clear message."""
     _reset_fakes()
     FakeSshRunner.script = [
-        (0, ["/home/zhaomr/workdir/miniconda3"]),
-        (1, []),  # test -x on the env's python fails
+        (0, ["CBASE=/home/zhaomr/workdir/miniconda3"]),  # no CPY=ok
     ]
     task = _task_with_workdirs(tmp_path)
     message = _run(task, ssh_config=dict(SSH_CONFIG, conda_env="env_root_6.38.04"))
@@ -228,23 +230,22 @@ def test_ssh_test_fails_when_env_lacks_python(tmp_path):
     assert "envs/env_root_6.38.04/bin/python" in str(message)
     assert not message.success
     runner = FakeSshRunner.instances[0]
-    # only the probe and the verification ran — no command execution
-    assert len(runner.exec_args) == 2
-    assert runner.exec_args[1][0].startswith("test -x ")
+    # only the probe ran — no command execution
+    assert len(runner.exec_args) == 1
+    assert "test -x" in runner.exec_args[0][0]
 
 
 def test_ssh_test_verify_failure_aborts_run(tmp_path):
     """A failing env probe (nonzero exit) aborts the run."""
     _reset_fakes()
     FakeSshRunner.script = [
-        (0, ["/home/zhaomr/workdir/miniconda3"]),
-        (1, ["CondaEnvironmentNotFoundError"]),
+        (1, ["CondaEnvironmentNotFoundError"]),  # probe exec fails
     ]
     task = _task_with_workdirs(tmp_path)
     message = _run(task, ssh_config=dict(SSH_CONFIG, conda_env="env_root_6.38.04"))
     assert "not usable" in str(message)
     assert not message.success
-    assert len(FakeSshRunner.instances[0].exec_args) == 2
+    assert len(FakeSshRunner.instances[0].exec_args) == 1
 
 
 def test_ssh_test_reports_error_on_nonzero_exit(tmp_path):
@@ -343,6 +344,74 @@ def test_prepare_mounting_preceding_jobs_records_impression(tmp_path):
     assert mount_config["mounts"][0]["target"] == "/workspace/bkg"
 
 
+def test_cached_impressions_on_runner_batches_one_exec():
+    """One exec checks all impressions; echoed cache dirs are parsed."""
+    _reset_fakes()
+    ssh = FakeSshRunner()
+    FakeSshRunner.script = [(0, ["/data/yuki/impressions/proj-123/imp-bkg-1"])]
+    cached = vtask_ssh_test.SshTestMixin._cached_impressions_on_runner(
+        ssh, {"remote_workdir": "/data/yuki"}, "proj-123",
+        ["imp-bkg-1", "imp-sig-2"])
+    assert cached == {"imp-bkg-1"}
+    assert len(ssh.exec_args) == 1
+    command = ssh.exec_args[0][0]
+    assert "test -d" in command
+    assert "impressions/proj-123/imp-bkg-1" in command
+    assert "impressions/proj-123/imp-sig-2" in command
+
+
+def test_conda_probe_resolves_base_and_verifies_python():
+    """One exec returns the conda base and confirms the env's python."""
+    _reset_fakes()
+    ssh = FakeSshRunner()
+    FakeSshRunner.script = [
+        (0, ["CBASE=/home/zhaomr/workdir/miniconda3", "CPY=ok"]),
+    ]
+    base, ok, resolved = vtask_ssh_test.SshTestMixin._conda_probe(
+        ssh, "env_root_6.38.04")
+    assert ok
+    assert base == "/home/zhaomr/workdir/miniconda3"
+    assert resolved == ("/home/zhaomr/workdir/miniconda3"
+                        "/envs/env_root_6.38.04/bin/python")
+    assert len(ssh.exec_args) == 1
+    command = ssh.exec_args[0][0]
+    assert "conda info --base" in command
+    assert "echo CBASE=$base" in command
+    assert "envs/env_root_6.38.04/bin/python" in command
+
+
+def test_conda_probe_reports_missing_python():
+    """A base without the env's python is not usable."""
+    _reset_fakes()
+    ssh = FakeSshRunner()
+    FakeSshRunner.script = [(0, ["CBASE=/home/zhaomr/workdir/miniconda3"])]
+    base, ok, _resolved = vtask_ssh_test.SshTestMixin._conda_probe(
+        ssh, "env_root_6.38.04")
+    assert not ok
+    assert base == "/home/zhaomr/workdir/miniconda3"
+
+
+def test_conda_probe_reports_conda_missing():
+    """A failed probe is not usable."""
+    _reset_fakes()
+    ssh = FakeSshRunner()
+    FakeSshRunner.script = [(1, [])]
+    base, ok, _resolved = vtask_ssh_test.SshTestMixin._conda_probe(
+        ssh, "env_root_6.38.04")
+    assert not ok
+    assert base == ""
+
+
+def test_cached_impressions_on_runner_no_impressions_no_exec():
+    """No impressions -> no remote round trip."""
+    _reset_fakes()
+    ssh = FakeSshRunner()
+    cached = vtask_ssh_test.SshTestMixin._cached_impressions_on_runner(
+        ssh, {"remote_workdir": "/data/yuki"}, "proj-123", [])
+    assert cached == set()
+    assert ssh.exec_args == []
+
+
 def test_ssh_test_symlinks_cached_inputs_instead_of_tarring(tmp_path):
     """Inputs already on the runner are symlinked, not uploaded in the tar."""
     _reset_fakes()
@@ -358,10 +427,9 @@ def test_ssh_test_symlinks_cached_inputs_instead_of_tarring(tmp_path):
         True, {"base_dir": str(tmp_path / "base"),
                "mounts": [mount]})
     FakeSshRunner.script = [
-        (0, []),                                     # cached check: present
+        (0, ["/data/yuki/impressions/proj-123/imp-bkg-1"]),  # cached: present
         (0, []),                                     # symlink exec
-        (0, ["/home/zhaomr/workdir/miniconda3"]),     # conda probe
-        (0, []),                                     # env verify
+        (0, ["CBASE=/home/zhaomr/workdir/miniconda3", "CPY=ok"]),  # conda probe
         (0, []),                                     # run
     ]
     message = _run(task)
@@ -372,7 +440,7 @@ def test_ssh_test_symlinks_cached_inputs_instead_of_tarring(tmp_path):
         names = tar.getnames()
     assert "run.py" not in names  # cached mount not uploaded
     check = runner.exec_args[0][0]
-    assert check.startswith("test -d ")
+    assert check.startswith("for d in ")
     assert "impressions/proj-123/imp-bkg-1" in check
     symlink_cmd = runner.exec_args[1][0]
     assert "ln -s" in symlink_cmd
@@ -397,8 +465,7 @@ def test_ssh_test_tars_inputs_not_on_runner(tmp_path):
                "mounts": [mount]})
     FakeSshRunner.script = [
         (1, []),                                     # cached check: missing
-        (0, ["/home/zhaomr/workdir/miniconda3"]),     # conda probe
-        (0, []),                                     # env verify
+        (0, ["CBASE=/home/zhaomr/workdir/miniconda3", "CPY=ok"]),  # conda probe
         (0, []),                                     # run
     ]
     message = _run(task)
@@ -410,6 +477,45 @@ def test_ssh_test_tars_inputs_not_on_runner(tmp_path):
     assert "bkg/run.py" in names  # not cached -> uploaded under the alias
     for _cmd, _cwd in runner.exec_args:
         assert "ln -s" not in _cmd
+
+
+def test_check_preceding_jobs_skips_collect_for_cached_impressions():
+    """Runner-cached impressions skip the DITE output download."""
+    from CelebiChrono.kernel import vtask_job  # pylint: disable=unused-import
+    task = _task()
+    preds = []
+    for uuid in ("imp-cached-1", "imp-fresh-2"):
+        pre = mock.MagicMock()
+        pre.is_impressed_fast.return_value = True
+        pre.run_status.return_value = "finished"
+        pre.impression.return_value.uuid = uuid
+        preds.append(pre)
+    task.inputs = mock.MagicMock(return_value=preds)
+    cherncc = mock.MagicMock()
+    ok, _msg = task._check_preceding_jobs(
+        cherncc, skip_impressions={"imp-cached-1"})
+    assert ok
+    for pre in preds:
+        pre.run_status.assert_called_once()
+    cherncc.collect_outputs.assert_called_once()
+    assert cherncc.collect_outputs.call_args[0][0].uuid == "imp-fresh-2"
+
+
+def test_check_preceding_jobs_collects_all_without_skip():
+    """Without skip_impressions every pred's outputs are collected."""
+    task = _task()
+    preds = []
+    for uuid in ("imp-1", "imp-2"):
+        pre = mock.MagicMock()
+        pre.is_impressed_fast.return_value = True
+        pre.run_status.return_value = "finished"
+        pre.impression.return_value.uuid = uuid
+        preds.append(pre)
+    task.inputs = mock.MagicMock(return_value=preds)
+    cherncc = mock.MagicMock()
+    ok, _msg = task._check_preceding_jobs(cherncc)
+    assert ok
+    assert cherncc.collect_outputs.call_count == 2
 
 
 def test_prepare_mounting_skips_download_for_cached_impressions(tmp_path):
@@ -450,10 +556,9 @@ def test_ssh_test_skips_download_for_cached_inputs(tmp_path):
         True, {"base_dir": str(tmp_path / "base"),
                "mounts": [mount]})
     FakeSshRunner.script = [
-        (0, []),                                     # cached check: present
+        (0, ["/data/yuki/impressions/proj-123/imp-bkg-1"]),  # cached: present
         (0, []),                                     # symlink exec
-        (0, ["/home/zhaomr/workdir/miniconda3"]),     # conda probe
-        (0, []),                                     # env verify
+        (0, ["CBASE=/home/zhaomr/workdir/miniconda3", "CPY=ok"]),  # conda probe
         (0, []),                                     # run
     ]
     message = _run(task)
@@ -479,8 +584,7 @@ def test_ssh_test_downloads_inputs_not_on_runner(tmp_path):
                "mounts": [mount]})
     FakeSshRunner.script = [
         (1, []),                                     # cached check: missing
-        (0, ["/home/zhaomr/workdir/miniconda3"]),     # conda probe
-        (0, []),                                     # env verify
+        (0, ["CBASE=/home/zhaomr/workdir/miniconda3", "CPY=ok"]),  # conda probe
         (0, []),                                     # run
     ]
     message = _run(task)

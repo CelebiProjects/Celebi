@@ -20,6 +20,16 @@ CHERN_CACHE = ChernCache.instance()
 logger = getLogger("ChernLogger")
 
 
+def _filter_hidden_files(files: List[str]) -> List[str]:
+    """Drop paths with hidden (dot-prefixed) components, mirroring walk().
+
+    Impressions never contain dotfiles (walk() skips them), so files like
+    .DS_Store in the working tree must not show up as added in a diff.
+    """
+    return [f for f in files
+            if not any(part.startswith(".") for part in f.split(os.sep))]
+
+
 class FileManagementOperations(Core):
     """ File operations methods for file management.
     """
@@ -395,7 +405,7 @@ class FileManagementOperations(Core):
 
         return message
 
-    def changes(self):  # pylint: disable=too-many-locals
+    def changes(self):  # pylint: disable=too-many-locals # UnitTest: DONE
         """
         Get the changes with respect to the latest impression
         """
@@ -407,7 +417,7 @@ class FileManagementOperations(Core):
         message = Message()
         impression = self.impression()
 
-        if impression.is_zombie():
+        if impression is None or impression.is_zombie():
             message.add("The object has no history impressed yet.", "warning")
             return message
 
@@ -420,14 +430,16 @@ class FileManagementOperations(Core):
             "title0",
         )
 
-        old_root = os.path.join(old_impr.path, "contents")
+        old_root = old_impr.materialize_contents()
         new_root = self.path
 
         # --------------------------------------------------------
         #  Compare file lists (sorted, relative paths)
         # --------------------------------------------------------
-        old_files = csys.get_files_in_directory(old_root)
-        new_files = csys.get_files_in_directory(new_root, exclude=(".celebi","README.md"))
+        old_files = _filter_hidden_files(csys.get_files_in_directory(old_root))
+        new_files = _filter_hidden_files(
+            csys.get_files_in_directory(new_root, exclude=("README.md",))
+        )
 
         old_files_set = set(old_files)
         new_files_set = set(new_files)
@@ -436,9 +448,11 @@ class FileManagementOperations(Core):
         removed_files = sorted(old_files_set - new_files_set)
         added_files   = sorted(new_files_set - old_files_set)
 
-        if added_files != removed_files:
+        has_changes = bool(added_files or removed_files)
+        if added_files:
             message.add("Added files: ", "title0")
             message.add(f"{added_files}\n", "info")
+        if removed_files:
             message.add("Removed files: ", "title0")
             message.add(f"{removed_files}\n", "info")
 
@@ -461,13 +475,26 @@ class FileManagementOperations(Core):
             diff = list(difflib.unified_diff(
                 old_txt,
                 new_txt,
-                fromfile=f"impressed:{rel}",   # ✅ fixed
-                tofile=f"current:{rel}"       # ✅ fixed
+                fromfile=f"impressed:{rel}",
+                tofile=f"current:{rel}"
             ))
 
             if diff:
+                has_changes = True
                 diff = colorize_diff(diff).splitlines(keepends=True)
                 message.add(f"\nDiff in file: {rel}\n", "title0")
                 message.add("".join(diff), "raw")
+
+        if not has_changes:
+            reasons = self.unimpressed_reasons(impression)
+            if reasons:
+                message.add(
+                    "No file-level changes, but the object is not impressed:\n",
+                    "info",
+                )
+                for reason in reasons:
+                    message.add(f"  - {reason}\n", "info")
+            else:
+                message.add("No file-level changes detected.\n", "info")
 
         return message

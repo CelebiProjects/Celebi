@@ -230,6 +230,67 @@ class ImpressionManagement(Core):
                     return False
         return True
 
+    def unimpressed_reasons(self, impression=None): # UnitTest: DONE
+        """ Human-readable reasons why the object is not impressed.
+
+        Covers the is_impressed() checks that a file-content diff cannot
+        see: unimpressed predecessors, changed dependency impressions and
+        changed alias impressions. An empty list means the object is
+        impressed (or has no impression yet).
+        """
+        if impression is None:
+            impression = self.impression()
+        if impression is None or impression.is_zombie():
+            return []
+
+        reasons = []
+
+        # Predecessors that are themselves not impressed
+        for pred in self.predecessors():
+            if not pred.is_impressed_fast():
+                reasons.append(
+                    f"Predecessor {pred.invariant_path()} is not impressed"
+                )
+
+        # Dependency impressions changed since this object was impressed,
+        # paired with predecessors through the impression's current_path.
+        recorded = {
+            dep.read_metadata("current_path", ""): dep.uuid
+            for dep in impression.pred_impressions()
+        }
+        current = {}
+        for pred in self.predecessors():
+            pred_impression = pred.impression()
+            current[pred.invariant_path()] = \
+                pred_impression.uuid if pred_impression else ""
+        changed_pred_paths = set()
+        for path in sorted(set(recorded) | set(current)):
+            old_uuid = recorded.get(path, "")
+            new_uuid = current.get(path, "")
+            if old_uuid != new_uuid:
+                changed_pred_paths.add(path)
+                reasons.append(
+                    f"Predecessor {path} changed impression: "
+                    f"{old_uuid} -> {new_uuid}"
+                )
+
+        # Aliases pointing to a different impression than when impressed.
+        # Skip aliases whose target is already reported as a changed
+        # predecessor to avoid duplicating the same information.
+        alias_to_path = self.config_file.read_variable("alias_to_path", {})
+        for alias in alias_to_path:
+            if alias_to_path[alias] in changed_pred_paths:
+                continue
+            alias_impression = self.alias_to_impression(alias)
+            new_uuid = alias_impression.uuid if alias_impression else ""
+            old_uuid = impression.alias_to_impression_uuid(alias)
+            if old_uuid != new_uuid:
+                reasons.append(
+                    f"Alias {alias} changed impression: {old_uuid} -> {new_uuid}"
+                )
+
+        return reasons
+
     def clean_impressions(self): # UnitTest: DONE
         """ Clean the impressions of the object,
         this is used only when it is copied to a new place and

@@ -242,6 +242,10 @@ class Core(ABC):
     def is_impressed_fast(self):
         """ Abstract method for future implementation"""
 
+    @abstractmethod
+    def unimpressed_reasons(self, impression=None):
+        """ Abstract method for future implementation"""
+
     # Other methods
     @abstractmethod
     def readme(self):

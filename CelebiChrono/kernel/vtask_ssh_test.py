@@ -8,6 +8,7 @@ import os
 import shlex
 import shutil
 import tarfile
+import time
 from datetime import datetime
 
 from ..utils.message import Message
@@ -21,6 +22,13 @@ class SshTestMixin(Core):
 
     def ssh_test(self, runner: str = "") -> Message:  # pylint: disable=too-many-locals,too-many-statements,too-many-branches,too-many-return-statements
         """Run the task's algorithm commands on a registered ssh runner."""
+        def _log(label: str, t0: float = None) -> None:
+            now = time.strftime("%Y-%m-%d %H:%M:%S")
+            elapsed = f" [+{time.time() - t0:.2f}s]" if t0 is not None else ""
+            print(f"[ssh_test:{runner or 'none'}] {now} {label}{elapsed}")
+
+        t_start = time.time()
+        _log("start")
         cherncc = ChernCommunicator.instance()
         if cherncc.dite_status() != "connected":
             msg = Message()
@@ -39,18 +47,25 @@ class SshTestMixin(Core):
                     "warning")
             return msg
 
+        _log("ssh config fetched", t_start)
+
         remote_workdir = ssh_config.get("remote_workdir", "/tmp/yuki-workflows")
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         remote_test_dir = f"{remote_workdir}/tests/{timestamp}"
 
         commands = " && ".join(self._test_commands())
-        command = f"mkdir -p stageout && {commands}"
+        command = (f'mkdir -p stageout && '
+                   f'echo -e "=== start running ===\\n" && '
+                   f'{commands}')
         conda_env = ssh_config.get("conda_env", "")
         if conda_env:
             print(f"Activating conda environment '{conda_env}' on the runner...")
             command = (f"conda run --no-capture-output -n {shlex.quote(conda_env)} "
                        f"-- bash -c {shlex.quote(command)}")
+        _log("command built", t_start)
         print(f"Final command to execute on remote: {command}")
+
+        _log("initializing ssh runner", t_start)
 
         ssh = SshRunner(host=ssh_config["host"], user=ssh_config["user"],
                         port=ssh_config.get("port", 22),
@@ -59,38 +74,52 @@ class SshTestMixin(Core):
         msg = Message()
         uploaded = False
         try:
+            _log("connecting ssh...", t_start)
             ssh.connect()
+            _log("ssh connected", t_start)
             # Inputs already cached on the runner (runner-side impressions)
             # are symlinked there instead of being downloaded and packed.
+            _log("resolving inputs...", t_start)
+            inputs = list(self.inputs())
+            impression_uuids = [pre.impression().uuid for pre in inputs
+                                if pre.impression()]
             cached_impressions = set()
-            for pre in self.inputs():
+            if impression_uuids:
+                _log(f"checking {len(impression_uuids)} cached impressions on runner...",
+                     t_start)
+                cached_impressions = self._cached_impressions_on_runner(
+                    ssh, ssh_config, self.project_uuid(), impression_uuids)
+                _log(f"found {len(cached_impressions)} cached impressions", t_start)
+            for pre in inputs:
                 impression = pre.impression()
-                if impression and self._impression_cached_on_runner(
-                        ssh, ssh_config, self.project_uuid(), impression.uuid):
-                    cached_impressions.add(impression.uuid)
+                if impression and impression.uuid in cached_impressions:
                     print(f"Using runner cache for {pre}")
 
-            print("Preparing test workdir...")
+            _log("preparing test workdir...", t_start)
             success, mount_config = self.pre_docker_test(
                 skip_impressions=cached_impressions)
             if not success:
                 msg = Message()
                 msg.add(f"Pre-test preparation failed: {mount_config}", "warning")
                 return msg
+            _log("test workdir prepared", t_start)
 
             cached_mounts = [mount for mount in mount_config["mounts"]
                              if mount.get("impression") in cached_impressions]
             skip_sources = {mount["source"] for mount in cached_mounts}
 
             stage_dir = self._create_workaround_dir(prefix="chernsshtest_")
+            _log("packaging test workdir...", t_start)
             tar_path = self._package_test_workdir(mount_config, stage_dir,
                                                   skip_sources=skip_sources)
+            _log(f"test workdir packaged: {tar_path}", t_start)
 
-            print("Uploading test workdir to the runner...")
+            _log("uploading tar to runner...", t_start)
             ssh.put_tar(tar_path, remote_test_dir)
             uploaded = True
+            _log("tar uploaded", t_start)
             if cached_mounts:
-                print("Linking cached inputs on the runner...")
+                _log("linking cached inputs on runner...", t_start)
                 code = ssh.exec_stream(
                     self._cached_input_link_command(
                         cached_mounts, ssh_config, self.project_uuid(),
@@ -99,12 +128,14 @@ class SshTestMixin(Core):
                     msg.add("Failed to link cached inputs on the runner.",
                             "error")
                     return msg
+                _log("cached inputs linked", t_start)
             # Deterministic remote environment: ignore the submitter's shell
-            # configuration so the run never inherits it.
-            conda_base = ssh.conda_base_dir()
-            prefix = sanitized_env_prefix(conda_base)
-            if conda_env and conda_base:
-                ok, resolved = self._verify_conda_env(ssh, conda_env, conda_base)
+            # configuration so the run never inherits it. One round trip
+            # resolves the conda base and verifies the env's own python.
+            conda_base = ""
+            if conda_env:
+                _log("probing conda environment...", t_start)
+                conda_base, ok, resolved = self._conda_probe(ssh, conda_env)
                 if not ok:
                     msg.add(
                         f"conda environment '{conda_env}' is not usable on the "
@@ -113,17 +144,28 @@ class SshTestMixin(Core):
                         f"-c conda-forge root python",
                         "error")
                     return msg
+                _log("conda probe ok", t_start)
+            else:
+                _log("resolving conda base dir...", t_start)
+                conda_base = ssh.conda_base_dir()
+                _log(f"conda base dir: {conda_base!r}", t_start)
+            prefix = sanitized_env_prefix(conda_base)
             command = prefix + command
+            _log("executing test command...", t_start)
             code = ssh.exec_stream(command, cwd=remote_test_dir, on_line=print)
+            _log("test command finished", t_start)
             msg.add(f"Remote test exited with code {code}.",
                     "info" if not code else "error")
         except (OSError, RuntimeError, ValueError) as e:
             msg.add(f"SSH test failed: {e}", "error")
         finally:
+            _log("closing ssh...", t_start)
             ssh.close()
+            _log("ssh closed", t_start)
         if uploaded:
             msg.add(f"Remote workdir kept at {ssh_config['host']}:{remote_test_dir}",
                     "info")
+        _log("finished", t_start)
         return msg
 
     def check_results(self, runner: str = "") -> Message:  # pylint: disable=too-many-return-statements
@@ -203,12 +245,24 @@ class SshTestMixin(Core):
         return msg
 
     @staticmethod
-    def _impression_cached_on_runner(ssh, ssh_config, project_uuid, impression):
-        """True when the impression lives in the runner-side cache."""
+    def _cached_impressions_on_runner(ssh, ssh_config, project_uuid,
+                                      impressions):
+        """Return the impressions present in the runner-side cache.
+
+        One remote round trip checks every cache dir at once: each existing
+        dir is echoed back and parsed on the client.
+        """
+        if not impressions:
+            return set()
         base = ssh_config.get("remote_workdir", "/tmp/yuki-workflows")
-        cache_dir = f"{base}/impressions/{project_uuid}/{impression}"
-        code = ssh.exec_stream(f"test -d {shlex.quote(cache_dir)}")
-        return not code
+        prefix = f"{base}/impressions/{project_uuid}/"
+        lines = []
+        command = ("for d in "
+                   + " ".join(shlex.quote(prefix + imp) for imp in impressions)
+                   + "; do test -d \"$d\" && echo \"$d\"; done")
+        ssh.exec_stream(command, on_line=lines.append)
+        return {line[len(prefix):] for line in lines
+                if line.startswith(prefix)}
 
     @staticmethod
     def _cached_input_link_command(cached_mounts, ssh_config, project_uuid,
@@ -235,19 +289,32 @@ class SshTestMixin(Core):
         return " && ".join(parts)
 
     @staticmethod
-    def _verify_conda_env(ssh, conda_env, conda_base):
-        """Check that the conda env actually provides python.
+    def _conda_probe(ssh, conda_env):
+        """Resolve the conda base and verify the env's own python in one exec.
 
         ``conda run`` strips the calling conda's base from the child PATH,
         so a broken env (no bin/python) silently falls back to the system
         python. A cheap existence check of the env's own python catches
         exactly that.
 
-        Returns (ok, resolved_python_path).
+        Returns (base, ok, resolved_python_path).
         """
-        resolved = f"{conda_base}/envs/{conda_env}/bin/python"
-        code = ssh.exec_stream(f"test -x {shlex.quote(resolved)}")
-        return not code, resolved
+        lines = []
+        code = ssh.exec_stream(
+            "base=$(conda info --base 2>/dev/null || true); "
+            "echo CBASE=$base; "
+            f"test -x \"$base/envs/{shlex.quote(conda_env)}/bin/python\" "
+            "&& echo CPY=ok",
+            on_line=lines.append)
+        base = ""
+        py_ok = False
+        for line in lines:
+            if line.startswith("CBASE="):
+                base = line[len("CBASE="):]
+            elif line == "CPY=ok":
+                py_ok = True
+        resolved = f"{base}/envs/{conda_env}/bin/python"
+        return base, (not code and py_ok), resolved
 
     @staticmethod
     def _package_test_workdir(mount_config, stage_dir, skip_sources=()):

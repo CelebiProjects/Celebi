@@ -65,11 +65,23 @@ class FakeTransport:
 
 
 class FakeSFTP:
-    """Records uploaded files."""
+    """Records uploaded files and created directories."""
 
     def __init__(self, order=None):
         self.puts = []
+        self.mkdirs = []
+        self._existing = {"/"}
         self._order = order
+
+    def stat(self, path):
+        """Raise unless the path was created (or is the root)."""
+        if path not in self._existing:
+            raise IOError("No such file")
+
+    def mkdir(self, path):
+        """Record the creation."""
+        self.mkdirs.append(path)
+        self._existing.add(path)
 
     def put(self, local, remote):
         """Record the upload."""
@@ -194,18 +206,29 @@ def test_exec_stream_prepends_cd_for_cwd():
 
 
 def test_put_tar_creates_remote_dir_before_upload():
-    """The remote parent dir is created before the SFTP upload runs."""
+    """SFTP creates the remote dir; one exec extracts and removes the tar."""
     client = FakeClient(channel=FakeChannel([], exit_code=0))
     runner = ssh_runner.SshRunner(host="h", user="u")
     with _patch_paramiko(client):
         runner.connect()
         runner.put_tar("/local/workdir.tar.gz", "/data/yuki/tests/x")
-    assert client.order[0][0] == "exec"
-    assert "mkdir -p" in client.order[0][1]
-    assert client.order[1][0] == "put"
-    assert client.order[1][2] == "/data/yuki/tests/x/workdir.tar.gz"
-    assert client.order[2][0] == "exec"
-    assert "tar -xzf" in client.order[2][1]
+    assert client.order[0][0] == "put"
+    assert client.order[0][2] == "/data/yuki/tests/x/workdir.tar.gz"
+    assert client.order[1][0] == "exec"
+    assert "tar -xzf" in client.order[1][1]
+    assert "rm " in client.order[1][1]
+    assert client._sftp.mkdirs == ["/data", "/data/yuki",
+                                   "/data/yuki/tests", "/data/yuki/tests/x"]
+
+
+def test_sftp_makedirs_creates_only_missing_levels():
+    """Existing remote dir levels are left alone."""
+    sftp = FakeSFTP()
+    sftp.mkdir("/data")
+    sftp.mkdir("/data/yuki")
+    ssh_runner._sftp_makedirs(sftp, "/data/yuki/tests/x")
+    assert sftp.mkdirs == ["/data", "/data/yuki",
+                           "/data/yuki/tests", "/data/yuki/tests/x"]
 
 
 def test_put_tar_uploads_and_extracts():
@@ -224,7 +247,7 @@ def test_put_tar_uploads_and_extracts():
 
 def test_put_tar_failure_raises():
     """A nonzero extract exit code raises RuntimeError."""
-    client = FakeClient(channel=FakeChannel([], exit_codes=[0, 1]))
+    client = FakeClient(channel=FakeChannel([], exit_codes=[1]))
     runner = ssh_runner.SshRunner(host="h", user="u")
     with _patch_paramiko(client):
         runner.connect()
