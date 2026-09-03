@@ -26,7 +26,7 @@ from .shell_modules.task_configuration import (
 )
 from .shell_modules.execution_management import (
     submit, submit_objects, purge, purge_old_impressions, test,
-    collect, collect_outputs, collect_logs, engine_logs
+    collect, collect_outputs, collect_logs, engine_logs, refresh_filelists
 )
 from .shell_modules.communication import (
     dite, set_dite, add_host, hosts, runners, register_runner, update_runner,
@@ -69,6 +69,7 @@ __all__ = [
     # Execution management functions (from execution_management.py)
     'submit', 'submit_objects', 'purge', 'purge_old_impressions', 'test',
     'collect', 'collect_outputs', 'collect_logs', 'engine_logs',
+    'refresh_filelists',
     # Communication functions (from communication.py)
     'dite', 'set_dite', 'add_host', 'hosts', 'runners', 'register_runner', 'update_runner',
     'remove_runner', 'request_runner', 'search_impression', 'test_runner',

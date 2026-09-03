@@ -513,6 +513,28 @@ def collect_logs_command() -> None:
         _handle_error(f"Command failed: {e}")
 
 
+@click.command(name="refresh-filelists")
+def refresh_filelists_command() -> None:
+    """Force a live re-listing of the runner's stageout and logs.
+
+    Terminal workflows are no longer polled, so their saved file listing
+    freezes at the terminal stamp; this re-lists the runner on demand so
+    status shows a fresh table.
+
+    Note:
+        - The current object must be a task
+        - Requires connection to DITE server
+    """
+    try:
+        from CelebiChrono.interface.shell import refresh_filelists
+        result = refresh_filelists()
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
 @click.command(name="engine-logs")
 @click.option("--fetch", is_flag=True, default=False,
               help="Generate the engine logs on the server if missing.")

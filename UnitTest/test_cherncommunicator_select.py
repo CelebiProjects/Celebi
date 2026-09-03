@@ -83,3 +83,16 @@ def test_file_status_detailed_does_not_cache_errors():
         assert "cannot reach Yuki server" in out1["notes"][0]["message"]
         assert rq_get.call_count == 2
         assert out2 == out1
+
+
+def test_refresh_filelists_builds_request():
+    """refresh_filelists GETs the refresh-filelists endpoint."""
+    cc = _cc()
+    imp = mock.Mock(uuid="abc")
+    with mock.patch("CelebiChrono.kernel.chern_communicator.requests") as rq:
+        rq.get.return_value.json.return_value = {"runner": {}}
+        result = cc.refresh_filelists(imp)
+        url = rq.get.call_args.args[0]
+    assert "/refresh-filelists/proj/abc" in url
+    assert result["success"] is True
+    assert result["message"] == {"runner": {}}

@@ -553,6 +553,15 @@ class ChernCommunicator():
             params += f"&names={','.join(names)}"
         return self._collect_request("collect-files", impression, params)
 
+    def refresh_filelists(self, impression):
+        """Force a live re-listing of the runner's stageout and logs.
+
+        Terminal workflows are no longer polled, so their saved listing
+        freezes at the terminal stamp; this asks the server to re-list
+        the runner on demand.
+        """
+        return self._collect_request("refresh-filelists", impression)
+
     def file_status(self, impression, machine="none", kind="stageout"):
         """Return merged runner+Storage file listing for an impression."""
         return self.file_status_detailed(impression, machine, kind).get("files", [])

@@ -264,6 +264,38 @@ class JobManager(Core):
         self._append_skipped_failed(msg, skipped, failed)
         return msg
 
+    def refresh_filelists(self):
+        """Force a live re-listing of the runner's stageout and logs.
+
+        Terminal workflows are no longer polled, so their saved file
+        listing freezes at the terminal stamp; this re-lists the runner
+        on demand so status shows a fresh table.
+        """
+        msg = Message()
+        cherncc = ChernCommunicator.instance()
+        impression = self.impression()
+        msg.add(f"Refreshing filelists of impression {impression}...\n", "info")
+
+        result = cherncc.refresh_filelists(impression)
+        if not result.get("success"):
+            msg.add(f"Failed to refresh filelists: {result.get('message')}\n",
+                    "error")
+            return msg
+        report = result.get("message", {})
+        if not isinstance(report, dict) or not report:
+            msg.add("No runner filelists to refresh "
+                    "(no workflow on a runner?).\n", "warning")
+            return msg
+        for runner, kinds in report.items():
+            for kind, info in kinds.items():
+                if info.get("error"):
+                    msg.add(f"[{runner}] {kind}: kept the previous listing "
+                            f"({info['error']})\n", "warning")
+                else:
+                    msg.add(f"[{runner}] {kind}: {info.get('files', 0)} "
+                            "file(s) listed\n", "info")
+        return msg
+
     def error_log(self, error_index=0, offset=0):
         """ Collect the error logs of the job"""
         cherncc = ChernCommunicator.instance()

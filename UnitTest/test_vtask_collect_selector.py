@@ -276,3 +276,48 @@ def test_collect_files_nested_report():
         msg = jm.collect("*.root")
     assert any("Skipped 1 file(s)" in text for text, _ in msg.messages)
     assert any("[local] plot.png: does not match selector" in text for text, _ in msg.messages)
+
+
+def test_refresh_filelists_calls_communicator():
+    """refresh_filelists calls the communicator and reports per-runner counts."""
+    jm = _jm()
+    imp = mock.Mock(uuid="abc")
+    jm.impression = lambda: imp
+    p, cc = _patch_cc()
+    cc.refresh_filelists.return_value = {
+        "success": True,
+        "message": {"pkufarm212": {"stageout": {"files": 23, "error": None},
+                                   "logs": {"files": 1, "error": None}}},
+    }
+    with p:
+        msg = jm.refresh_filelists()
+    cc.refresh_filelists.assert_called_once_with(imp)
+    assert any("pkufarm212" in text and "23 file(s)" in text
+               for text, _ in msg.messages)
+
+
+def test_refresh_filelists_reports_request_failure():
+    """A failed request is reported as an error."""
+    jm = _jm()
+    p, cc = _patch_cc()
+    cc.refresh_filelists.return_value = {"success": False,
+                                         "message": "connection refused"}
+    with p:
+        msg = jm.refresh_filelists()
+    assert not msg.success
+    assert any("connection refused" in text for text, _ in msg.messages)
+
+
+def test_refresh_filelists_warns_on_kept_listing():
+    """A listing kept because of an error is reported as a warning."""
+    jm = _jm()
+    p, cc = _patch_cc()
+    cc.refresh_filelists.return_value = {
+        "success": True,
+        "message": {"pkufarm212": {
+            "stageout": {"files": 23, "error": "ConnectionError: boom"}}},
+    }
+    with p:
+        msg = jm.refresh_filelists()
+    assert msg.success
+    assert any("ConnectionError: boom" in text for text, _ in msg.messages)

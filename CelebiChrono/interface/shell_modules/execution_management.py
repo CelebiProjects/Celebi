@@ -140,6 +140,23 @@ def collect_outputs() -> Message:
     return MANAGER.current_object().collect("outputs")
 
 
+def refresh_filelists() -> Message:
+    """Force a live re-listing of the runner's stageout and logs.
+
+    Terminal workflows are no longer polled, so their saved file listing
+    freezes at the terminal stamp; this re-lists the runner on demand so
+    status shows a fresh table.
+
+    Returns:
+        Message with per-runner listing counts (or kept-listing warnings).
+
+    Note:
+        - The current object must be a task
+        - Requires connection to DITE server
+    """
+    return MANAGER.current_object().refresh_filelists()
+
+
 def collect_logs() -> Message:
     """Collect only task logs.
 
