@@ -37,7 +37,10 @@ def _natural_sort_key(obj: 'VObject') -> tuple:
     """
     type_priority = OBJECT_TYPE_ORDER.get(obj.object_type(), 99)
     basename = os.path.basename(obj.path)
-    natural_key = [int(part) if part.isdigit() else part for part in basename.split('_')]
+    natural_key = [
+        (0, int(part)) if part.isdigit() else (1, part)
+        for part in basename.split('_')
+    ]
     return (type_priority, natural_key)
 
 
