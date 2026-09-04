@@ -157,6 +157,23 @@ def refresh_filelists() -> Message:
     return MANAGER.current_object().refresh_filelists()
 
 
+def purge_data(force: bool = False) -> Message:
+    """Purge the collected data of the current task's impression.
+
+    Removes locally collected stageout, logs, and watermarks on the
+    DITE server, freeing local disk. The server refuses when the runner
+    no longer holds a copy unless force is True.
+
+    Returns:
+        Message with the freed byte counts or the refusal reason.
+
+    Note:
+        - The current object must be a task
+        - Requires connection to DITE server
+    """
+    return MANAGER.current_object().purge_data(force=force)
+
+
 def collect_logs() -> Message:
     """Collect only task logs.
 

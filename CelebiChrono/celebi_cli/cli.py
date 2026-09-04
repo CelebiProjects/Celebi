@@ -87,6 +87,7 @@ cli.add_command(execution_management.collect_outputs_command)
 cli.add_command(execution_management.collect_logs_command)
 cli.add_command(execution_management.engine_logs_command)
 cli.add_command(execution_management.refresh_filelists_command)
+cli.add_command(execution_management.purge_data_command)
 
 cli.add_command(liveness.kill_workflow_command)
 cli.add_command(liveness.sync_live_command)

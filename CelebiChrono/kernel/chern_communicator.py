@@ -937,6 +937,31 @@ class ChernCommunicator():
             return {"error": f"purge failed (HTTP {r.status_code})"}
         return r.json()
 
+    def purge_impression_data(self, impression, force=False):
+        """Purge the impression's locally collected data on the server.
+
+        force bypasses the server's re-collectability check. Returns the
+        server report or {"error": reason} for refusals and failures.
+        """
+        url = self.serverurl()
+        path = (f"http://{url}/purge-impression-data/"
+                f"{self.project_uuid}/{impression.uuid}")
+        try:
+            r = requests.post(path, json={"force": force},
+                              timeout=self.transfer_timeout)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(
+                f"Failed to connect to DITE server: {e}") from e
+        if r.status_code != 200:
+            try:
+                body = r.json()
+            except ValueError:
+                body = None
+            if isinstance(body, dict) and "error" in body:
+                return {"error": body["error"]}
+            return {"error": f"purge failed (HTTP {r.status_code})"}
+        return r.json()
+
     def cache_results(self, runner, project_uuid, impression):
         """Start a cache-results job on Yuki (stageout -> runner cache)."""
         url = self.serverurl()

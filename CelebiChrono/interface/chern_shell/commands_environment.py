@@ -288,6 +288,29 @@ class EnvironmentCommands:
         except Exception as e:
             print(f"Error purging old impressions: {e}")
 
+    def do_purge_data(self, arg: str) -> None:
+        """Purge collected data of the current impression.
+
+        Usage: purge_data [--force]
+
+        Removes locally collected stageout, logs, and watermarks for the
+        current task's impression on the DITE server. The server refuses
+        when the runner no longer holds a copy; --force deletes anyway.
+        """
+        try:
+            force = "--force" in arg.split()
+            # Ask for confirmation
+            answer = input("Are you sure you want to purge the collected "
+                           "data? This action cannot be undone. (N/y): ")
+            if answer.lower() != 'y':
+                print("Purge data cancelled.")
+                return
+            result = shell.purge_data(force=force)
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error purging data: {e}")
+
     def do_whereabouts(self, _arg: str) -> None:
         """Show where the current impression's data lives."""
         try:

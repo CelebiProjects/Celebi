@@ -296,6 +296,33 @@ class JobManager(Core):
                             "file(s) listed\n", "info")
         return msg
 
+    def purge_data(self, force=False):
+        """Purge the impression's locally collected data on the server.
+
+        Removes stageout, logs, and watermarks collected into Yuki for
+        the current impression. The server refuses when the runner no
+        longer holds a copy unless force is True.
+        """
+        msg = Message()
+        cherncc = ChernCommunicator.instance()
+        impression = self.impression()
+        msg.add(f"Purging collected data of impression {impression.uuid}...\n",
+                "info")
+
+        result = cherncc.purge_impression_data(impression, force=force)
+        if "error" in result:
+            msg.add(f"Purge refused: {result['error']}\n", "error")
+            return msg
+        report = result or {}
+        freed = report.get("freed_bytes", 0)
+        machines = report.get("machines", {})
+        if freed:
+            msg.add(f"Purged {freed} bytes of collected data "
+                    f"across {len(machines)} machine(s).\n", "info")
+        else:
+            msg.add("Nothing collected to purge.\n", "info")
+        return msg
+
     def error_log(self, error_index=0, offset=0):
         """ Collect the error logs of the job"""
         cherncc = ChernCommunicator.instance()

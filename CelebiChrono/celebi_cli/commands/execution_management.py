@@ -535,6 +535,32 @@ def refresh_filelists_command() -> None:
         _handle_error(f"Command failed: {e}")
 
 
+@click.command(name="purge-data")
+@click.option("--force", is_flag=True, default=False,
+              help="Purge even when the data cannot be re-collected "
+                   "from a runner.")
+def purge_data_command(force: bool) -> None:
+    """Purge the collected data of the current impression.
+
+    Removes the locally collected stageout, logs, and watermarks of the
+    current task's impression on the DITE server, freeing local disk.
+    The server refuses when the runner no longer holds a copy of the
+    data unless --force is given.
+
+    Note:
+        - The current object must be a task
+        - Requires connection to DITE server
+    """
+    try:
+        from CelebiChrono.interface.shell import purge_data
+        result = purge_data(force=force)
+        _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
 @click.command(name="engine-logs")
 @click.option("--fetch", is_flag=True, default=False,
               help="Generate the engine logs on the server if missing.")
