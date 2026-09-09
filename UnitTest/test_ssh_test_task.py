@@ -188,7 +188,7 @@ def test_ssh_test_activates_resolved_conda_environment(tmp_path):
     assert "exited with code 0" in str(message)
     runner = FakeSshRunner.instances[0]
     command, _cwd = runner.exec_args[-1]
-    assert "conda run --no-capture-output -n env_root_6.38.04 -- bash -c" in command
+    assert "conda run --no-capture-output -n env_root_6.38.04 bash -c" in command
     assert ("mkdir -p stageout && "
             "echo -e \"=== start running ===\\n\" && "
             "echo 20000") in command

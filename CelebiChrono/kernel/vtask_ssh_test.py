@@ -61,7 +61,7 @@ class SshTestMixin(Core):
         if conda_env:
             print(f"Activating conda environment '{conda_env}' on the runner...")
             command = (f"conda run --no-capture-output -n {shlex.quote(conda_env)} "
-                       f"-- bash -c {shlex.quote(command)}")
+                       f"bash -c {shlex.quote(command)}")
         _log("command built", t_start)
         print(f"Final command to execute on remote: {command}")
 
