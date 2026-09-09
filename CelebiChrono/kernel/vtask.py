@@ -130,6 +130,24 @@ class VTask(InputManager, SettingManager, FileManager, JobManager,
             num /= 1024
         return result
 
+    @staticmethod
+    def _format_listing_note(note):
+        """Render an offset-aware server listing timestamp in client local time."""
+        from datetime import datetime
+
+        message = note.get("message", "")
+        stamp = note.get("listing_time")
+        if not stamp:
+            return message
+        try:
+            listed_at = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+            if listed_at.tzinfo is None:
+                return message  # Do not guess a remote server's timezone.
+            local_time = listed_at.astimezone().strftime("%Y-%m-%d %H:%M %z")
+        except (AttributeError, TypeError, ValueError):
+            return message
+        return message.replace(stamp, local_time, 1)
+
     def _stageout_table(self, cherncc, runner, rows=None, notes=None):
         """Build a Message listing stageout files: name, size, type, in-Yuki.
 
@@ -149,7 +167,7 @@ class VTask(InputManager, SettingManager, FileManager, JobManager,
                 for note in notes:
                     style = "warning" if note.get("level") in ("error", "warning") \
                         else "normal"
-                    message.add(f"    ({note.get('message', '')})\n", style)
+                    message.add(f"    ({self._format_listing_note(note)})\n", style)
             else:
                 message.add("    (nothing to show yet — run 'collect', "
                             "or the runner may be unreachable)\n")
@@ -163,7 +181,7 @@ class VTask(InputManager, SettingManager, FileManager, JobManager,
         for note in notes or []:
             style = "warning" if note.get("level") in ("error", "warning") \
                 else "normal"
-            message.add(f"    ({note.get('message', '')})\n", style)
+            message.add(f"    ({self._format_listing_note(note)})\n", style)
         return message
 
     def get_file(self, filename):

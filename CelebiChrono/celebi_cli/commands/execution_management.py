@@ -231,6 +231,30 @@ def test_runner_command(runner: str, timeout: int) -> None:
         _handle_error(f"Command failed: {e}")
 
 
+@click.command(name="yuki-overview")
+def yuki_overview_command() -> None:
+    """Show an aggregate overview of Yuki runners and usage."""
+    try:
+        from CelebiChrono.interface.shell import yuki_overview
+        _handle_result(yuki_overview())
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="refresh-distribution")
+def refresh_distribution_command() -> None:
+    """Refresh the current project's distribution registry."""
+    try:
+        from CelebiChrono.interface.shell import refresh_distribution
+        _handle_result(refresh_distribution())
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
 @click.command(name="purge-ssh-runner-cache")
 @click.argument("runner", type=str)
 @click.option("--project", type=str, default=None,

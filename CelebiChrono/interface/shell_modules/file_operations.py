@@ -608,7 +608,7 @@ def upload_data(path: str) -> Message:
 
 
 def transfer(source: str, destination: str, pattern: str = None,
-             force: bool = False) -> Message:
+             force: bool = False, timeout: int = None) -> Message:
     """Transfer stageout results between Yuki and a runner cache.
 
     SOURCE and DESTINATION are 'yuki' or 'runner:<runner-id>'.
@@ -626,8 +626,9 @@ def transfer(source: str, destination: str, pattern: str = None,
     impression = impression.uuid
 
     cherncc = ChernCommunicator.instance()
+    request_options = {"timeout": timeout} if timeout is not None else {}
     resp = cherncc.transfer(project_uuid, impression, source, destination,
-                            pattern=pattern, force=force)
+                            pattern=pattern, force=force, **request_options)
     if "error" in resp:
         message.add(resp["error"], "error")
         return message
@@ -641,7 +642,7 @@ def transfer(source: str, destination: str, pattern: str = None,
     consecutive_unknowns = 0
     try:
         while True:
-            state = cherncc.transfer_status(job_id)
+            state = cherncc.transfer_status(job_id, **request_options)
             status = state.get("status", "unknown")
             if status == "unknown":
                 consecutive_unknowns += 1

@@ -6,6 +6,7 @@ algorithms, and data objects.
 """
 # pylint: disable=broad-exception-caught
 import os
+from ._timeout import parse_timeout
 from ...interface import shell
 from ...interface.ChernManager import get_manager
 
@@ -312,10 +313,17 @@ class TaskCommands:
         except Exception as e:
             print(f"Error attaching impression: {e}")
 
-    def do_verify_data(self, _: str) -> None:
-        """Verify the current data task: recompute md5 vs registered uuid."""
+    def do_verify_data(self, arg: str) -> None:
+        """Verify the current data task: recompute md5 vs registered uuid.
+
+        Usage: verify-data [--timeout SECONDS]
+        Timeout is per HTTP request (default: 3600 seconds).
+        """
         try:
-            result = shell.verify_data()
+            args, options = parse_timeout(arg)
+            if args:
+                raise ValueError("Usage: verify-data [--timeout SECONDS]")
+            result = shell.verify_data(**options)
             if result.messages:
                 print(result.colored())
         except Exception as e:
@@ -324,10 +332,11 @@ class TaskCommands:
     def do_register_ssh_data(self, arg: str) -> None:
         """Register data living on an ssh runner (MD5 + managed staging).
 
-        Usage: register-ssh-data <runner> <remote_path> [--descriptor DESC]
+        Usage: register-ssh-data <runner> <remote_path> [--descriptor DESC] [--timeout SECONDS]
+        Timeout is per HTTP request, including polls (default: 10 seconds).
         """
         try:
-            args = arg.split()
+            args, options = parse_timeout(arg)
             if len(args) < 2:
                 print("Error: Please provide a runner name and a remote path.")
                 return
@@ -338,7 +347,7 @@ class TaskCommands:
                 idx = args.index("--descriptor")
                 if idx + 1 < len(args):
                     descriptor = args[idx + 1]
-            result = shell.register_ssh_data(runner, remote_path, descriptor)
+            result = shell.register_ssh_data(runner, remote_path, descriptor, **options)
             if result.messages:
                 print(result.colored())
         except Exception as e:

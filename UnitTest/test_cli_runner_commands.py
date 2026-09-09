@@ -6,8 +6,9 @@ from click.testing import CliRunner
 
 from CelebiChrono.celebi_cli.commands.execution_management import (
     cache_results_command, purge_ssh_runner_cache_command,
-    register_runner_command, runner_envs_command, test_runner_command,
-    update_runner_command, whereabouts_command,
+    refresh_distribution_command, register_runner_command,
+    runner_envs_command, test_runner_command, update_runner_command,
+    whereabouts_command, yuki_overview_command,
 )
 
 
@@ -94,6 +95,13 @@ class TestCliRunnerCommands(unittest.TestCase):
         self.assertEqual(result.exit_code, 0, result.output)
         fn.assert_called_once_with("farm")
 
+    def test_refresh_distribution_command(self):
+        """Test refresh distribution command delegates to the shell function."""
+        with mock.patch("CelebiChrono.interface.shell.refresh_distribution") as fn:
+            result = self.runner.invoke(refresh_distribution_command, [])
+        self.assertEqual(result.exit_code, 0, result.output)
+        fn.assert_called_once_with()
+
     def test_whereabouts_command(self):
         """Test whereabouts command delegates to the shell function."""
         with mock.patch("CelebiChrono.interface.shell.whereabouts") as fn:
@@ -101,9 +109,13 @@ class TestCliRunnerCommands(unittest.TestCase):
         self.assertEqual(result.exit_code, 0, result.output)
         fn.assert_called_once_with()
 
+    def test_yuki_overview_command(self):
+        """Test yuki overview command delegates to the shell function."""
+        with mock.patch("CelebiChrono.interface.shell.yuki_overview") as fn:
+            result = self.runner.invoke(yuki_overview_command, [])
+        self.assertEqual(result.exit_code, 0, result.output)
+        fn.assert_called_once_with()
 
-if __name__ == "__main__":
-    unittest.main()
 
     def test_runner_envs_command(self):
         """Test the runner envs command."""
@@ -111,3 +123,7 @@ if __name__ == "__main__":
             result = self.runner.invoke(runner_envs_command, ["cluster"])
         self.assertEqual(result.exit_code, 0, result.output)
         fn.assert_called_once_with("cluster")
+
+
+if __name__ == "__main__":
+    unittest.main()

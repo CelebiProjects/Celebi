@@ -291,7 +291,7 @@ def mkdir(line: str) -> Message:
     return message
 
 
-def verify_data() -> Message:
+def verify_data(timeout: int = None) -> Message:
     """Verify the current data task: recompute its md5 against the
     registered uuid (remote-hosted data is hashed on the host runner)."""
     message = Message()
@@ -310,7 +310,8 @@ def verify_data() -> Message:
     cherncc = ChernCommunicator.instance()
     try:
         result = cherncc.verify_data(current_obj.project_uuid(),
-                                     impression.uuid)
+                                     impression.uuid,
+                                     **({"timeout": timeout} if timeout is not None else {}))
     except ConnectionError as e:
         message.add(str(e), "error")
         return message
@@ -468,7 +469,7 @@ def _update_progress_bar(progress_bar, state):
 
 
 def register_ssh_data(runner: str, remote_path: str,
-                      descriptor: str = "") -> Message:
+                      descriptor: str = "", timeout: int = None) -> Message:
     # pylint: disable=too-many-return-statements,too-many-branches
     """Register data living on an ssh runner into Yuki's managed staging.
 
@@ -494,9 +495,10 @@ def register_ssh_data(runner: str, remote_path: str,
         return message
 
     cherncc = ChernCommunicator.instance()
+    request_options = {"timeout": timeout} if timeout is not None else {}
     resp = cherncc.register_remote_data(runner, remote_path,
                                         current_obj.project_uuid(),
-                                        descriptor or None)
+                                        descriptor or None, **request_options)
     if "error" in resp:
         message.add(resp["error"], "error")
         return message
@@ -521,9 +523,26 @@ def register_ssh_data(runner: str, remote_path: str,
     progress_bar = tqdm(unit="B", unit_scale=True, unit_divisor=1024,
                         desc="register-ssh-data: hashing")
     consecutive_unknowns = 0
+    consecutive_connection_errors = 0
     try:
         while True:
-            state = cherncc.register_remote_data_status(job_id)
+            try:
+                state = cherncc.register_remote_data_status(job_id, **request_options)
+            except ConnectionError as exc:
+                consecutive_connection_errors += 1
+                if consecutive_connection_errors >= 10:
+                    message.add(
+                        f"Stopped polling registration job {job_id} after "
+                        "10 consecutive connection failures. The server job "
+                        "may still be running; no local data task was updated. "
+                        f"Last error: {exc}", "error")
+                    return message
+                progress_bar.set_description(
+                    "register-ssh-data: status unavailable; retrying "
+                    f"({consecutive_connection_errors}/10)")
+                time.sleep(3)
+                continue
+            consecutive_connection_errors = 0
             status = state.get("status", "unknown")
             if status == "unknown":
                 consecutive_unknowns += 1

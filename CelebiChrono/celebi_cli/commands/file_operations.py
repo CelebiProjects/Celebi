@@ -177,15 +177,19 @@ def add_source_command(path: str) -> None:
               help="Glob pattern to filter transferred files")
 @click.option("--force", is_flag=True, default=False,
               help="Overwrite existing files at destination")
+@click.option("--timeout", type=click.IntRange(min=1), default=None,
+              help="HTTP request timeout in seconds (default: 10); not a total job limit")
 def transfer_command(source: str, destination: str,
-                     pattern: str = None, force: bool = False) -> None:
+                     pattern: str = None, force: bool = False,
+                     timeout: int = None) -> None:
     """Transfer stageout results between Yuki and runner cache.
 
     SOURCE and DESTINATION are 'yuki' or 'runner:<runner-id>'.
     """
     try:
         from CelebiChrono.interface.shell import transfer
-        result = transfer(source, destination, pattern=pattern, force=force)
+        result = transfer(source, destination, pattern=pattern, force=force,
+                          **({"timeout": timeout} if timeout is not None else {}))
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")

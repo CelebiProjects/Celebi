@@ -31,6 +31,7 @@ Machine & Runner Management:
 - POST /register-runner - Register new compute runner
 - GET /remove-runner/{runner} - Remove compute runner
 - GET /runner-connection/{runner} - Check runner connection status
+- GET /yuki-overview - Aggregate runner and usage overview
 
 File Operations:
 - GET /collect/{uuid} - Collect impression results
@@ -53,6 +54,7 @@ Runner Cache Management:
 - POST /cache-results - Cache a workflow's stageout on its runner
 - GET /cache-results/{job_id} - Poll a cache-results job's state
 - GET /whereabouts/{project}/{impression} - Data-location registry
+- POST /refresh-distribution/{project}/{impression} - Refresh distribution.json
 
 All requests use configurable timeout (default: 10s) and support both local and remote execution.
 
@@ -333,6 +335,20 @@ class ChernCommunicator():
             files=files,
             timeout=self.timeout
         )
+
+    def yuki_overview(self, project_uuid=None, timeout=None):
+        """Get an aggregate overview of runners and usage from Yuki."""
+        url = self.serverurl()
+        query = f"?project_uuid={project_uuid}" if project_uuid else ""
+        try:
+            r = requests.get(
+                f"http://{url}/yuki-overview{query}",
+                timeout=timeout or self.transfer_timeout,
+            )
+            r.raise_for_status()
+            return r.json()
+        except Exception as e:
+            return {"error": str(e)}
 
     def get_impression_info(self, impression_uuid: str):
         """Get descriptor, md5 and environment from Yuki impression."""
@@ -800,7 +816,7 @@ class ChernCommunicator():
         return r.json()
 
     def register_remote_data(self, runner, remote_path, project_uuid,
-                             descriptor=None):
+                             descriptor=None, timeout=None):
         """ Register data living on an ssh runner (hashing/copy run on Yuki) """
         url = self.serverurl()
         data = {'runner': runner, 'remote_path': remote_path,
@@ -809,7 +825,7 @@ class ChernCommunicator():
             data['descriptor'] = descriptor
         try:
             r = requests.post(f"http://{url}/register-remote-data",
-                              json=data, timeout=self.timeout)
+                              json=data, timeout=self.timeout if timeout is None else timeout)
         except requests.exceptions.RequestException as e:
             raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
         if r.status_code != 200:
@@ -822,12 +838,12 @@ class ChernCommunicator():
             return {"error": f"register failed (HTTP {r.status_code})"}
         return r.json()
 
-    def register_remote_data_status(self, job_id):
+    def register_remote_data_status(self, job_id, timeout=None):
         """ Poll a remote data registration job's state """
         url = self.serverurl()
         try:
             r = requests.get(f"http://{url}/register-remote-data/{job_id}",
-                             timeout=self.timeout)
+                             timeout=self.timeout if timeout is None else timeout)
         except requests.exceptions.RequestException as e:
             raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
         if r.status_code == 404:
@@ -851,7 +867,7 @@ class ChernCommunicator():
         return r.json()
 
     def transfer(self, project_uuid, impression, source, destination,
-                 pattern=None, force=False):
+                 pattern=None, force=False, timeout=None):
         """Start a result transfer job on Yuki."""
         url = self.serverurl()
         data = {
@@ -865,7 +881,7 @@ class ChernCommunicator():
             data["pattern"] = pattern
         try:
             r = requests.post(f"http://{url}/transfer",
-                              json=data, timeout=self.timeout)
+                              json=data, timeout=self.timeout if timeout is None else timeout)
         except requests.exceptions.RequestException as e:
             raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
         if r.status_code != 200:
@@ -878,25 +894,25 @@ class ChernCommunicator():
             return {"error": f"transfer failed (HTTP {r.status_code})"}
         return r.json()
 
-    def transfer_status(self, job_id):
+    def transfer_status(self, job_id, timeout=None):
         """Poll a transfer job's state."""
         url = self.serverurl()
         try:
             r = requests.get(f"http://{url}/transfer/{job_id}",
-                             timeout=self.timeout)
+                             timeout=self.timeout if timeout is None else timeout)
         except requests.exceptions.RequestException as e:
             raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
         if r.status_code == 404:
             return {"status": "unknown", "error": "job not found"}
         return r.json()
 
-    def verify_data(self, project_uuid, impression_uuid):
+    def verify_data(self, project_uuid, impression_uuid, timeout=None):
         """ Recompute the data md5 on Yuki and compare with the registered uuid """
         url = self.serverurl()
         try:
             r = requests.get(
                 f"http://{url}/verify-data/{project_uuid}/{impression_uuid}",
-                timeout=3600)
+                timeout=3600 if timeout is None else timeout)
         except requests.exceptions.RequestException as e:
             raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
         if r.status_code == 404:
@@ -1013,6 +1029,25 @@ class ChernCommunicator():
             if isinstance(body, dict) and "error" in body:
                 return {"error": body["error"]}
             return {"error": f"whereabouts failed (HTTP {r.status_code})"}
+        return r.json()
+
+    def refresh_distribution(self, project_uuid, impression):
+        """Refresh an impression's distribution.json registry on Yuki."""
+        url = self.serverurl()
+        try:
+            r = requests.post(
+                f"http://{url}/refresh-distribution/{project_uuid}/{impression}",
+                timeout=self.transfer_timeout)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        if r.status_code != 200:
+            try:
+                body = r.json()
+            except ValueError:
+                body = None
+            if isinstance(body, dict) and "error" in body:
+                return {"error": body["error"]}
+            return {"error": f"refresh failed (HTTP {r.status_code})"}
         return r.json()
 
     # === File Operations ===
@@ -1147,6 +1182,17 @@ class ChernCommunicator():
         r = requests.post(url, json=data, timeout=self.purge_timeout)
         r.raise_for_status()
         return r.json()
+
+    def kill_running_workflows(self, runner, project_uuid, dry_run=True,
+                               workflows=None):
+        """Preview or force-stop selected non-live workflows on a runner."""
+        url = f"http://{self.serverurl()}/kill-running-workflows"
+        response = requests.post(url, json={
+            "runner": runner, "project": project_uuid,
+            "dry_run": dry_run, "workflows": workflows,
+        }, timeout=self.purge_timeout)
+        response.raise_for_status()
+        return response.json()
 
     def kill_workflow(self, project_uuid, workflow_uuid):
         """Ask DITE to force-stop a workflow (works for zombie runs)."""

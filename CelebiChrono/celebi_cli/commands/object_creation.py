@@ -100,11 +100,13 @@ def mkdir_command(name):
 
 
 @click.command(name="verify-data")
-def verify_data_command() -> None:
+@click.option("--timeout", type=click.IntRange(min=1), default=None,
+              help="HTTP request timeout in seconds (default: 3600); not a total job limit")
+def verify_data_command(timeout: int = None) -> None:
     """Verify the current data task: recompute md5 vs registered uuid."""
     try:
         from CelebiChrono.interface.shell import verify_data
-        _handle_result(verify_data())
+        _handle_result(verify_data(**({"timeout": timeout} if timeout is not None else {})))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
@@ -131,8 +133,10 @@ def attach_data_command(impression_uuid, path):
 @click.argument("remote_path", type=str)
 @click.option("--descriptor", type=str, default="",
               help="Task descriptor (defaults to remote path basename)")
+@click.option("--timeout", type=click.IntRange(min=1), default=None,
+              help="HTTP request timeout in seconds (default: 10); not a total job limit")
 def register_ssh_data_command(runner: str, remote_path: str,
-                              descriptor: str) -> None:
+                              descriptor: str, timeout: int = None) -> None:
     """Register data living on an ssh runner (MD5 + managed staging).
 
     RUNNER is an ssh runner; REMOTE_PATH is a directory on that runner.
@@ -142,7 +146,9 @@ def register_ssh_data_command(runner: str, remote_path: str,
     """
     try:
         from CelebiChrono.interface.shell import register_ssh_data
-        _handle_result(register_ssh_data(runner, remote_path, descriptor))
+        _handle_result(register_ssh_data(
+            runner, remote_path, descriptor,
+            **({"timeout": timeout} if timeout is not None else {})))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:

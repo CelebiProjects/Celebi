@@ -16,6 +16,30 @@ def sync_live_command() -> None:
         _handle_error(f"Command failed: {e}")
 
 
+@click.command(name="kill-running-workflows")
+@click.argument("runner", type=str)
+@click.option("--dry-run", is_flag=True, help="Preview without stopping workflows.")
+@click.option("--yes", "-y", is_flag=True, help="Skip confirmation after the preview.")
+def kill_running_workflows_command(runner, dry_run, yes) -> None:
+    """Force-stop unreferenced workflows recorded running on RUNNER.
+
+    Scoped to the current project. Live workflows are protected and
+    workspaces are retained. Recorded running may be stale.
+    """
+    from CelebiChrono.interface.shell import kill_running_workflows
+    plan = kill_running_workflows(runner, dry_run=True)
+    _handle_result(plan)
+    workflows = plan.data.get("workflows", [])
+    if dry_run or not plan.success or not workflows:
+        return
+    if not yes and not click.confirm(
+            f"Force-stop {len(workflows)} unreferenced workflows on runner '{runner}'?",
+            default=False):
+        click.echo("Kill running workflows cancelled.")
+        return
+    _handle_result(kill_running_workflows(runner, dry_run=False, workflows=workflows))
+
+
 @click.command(name="kill-workflow")
 @click.argument("workflow_uuid", type=str)
 def kill_workflow_command(workflow_uuid) -> None:

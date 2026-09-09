@@ -63,6 +63,21 @@ celebi
 
 ## Documentation
 
+For slow remote data operations, set a positive HTTP timeout in seconds:
+
+```sh
+celebi-cli register-ssh-data pkufarm212 /remote/data/2018 --timeout 120
+celebi-cli transfer yuki runner:pkufarm212 --timeout 120
+celebi-cli verify-data --timeout 7200
+```
+
+The interactive shell accepts the same options without the `celebi-cli` prefix.
+The timeout applies to each HTTP request, including registration and transfer status
+polls; it does not limit the total job duration. Defaults remain 10 seconds for
+registration and transfer requests, and 3600 seconds for verification. Registration
+polling retries connection failures and stops after 10 consecutive failures; the
+server job may continue after polling stops.
+
 - Online Docs: http://celebi.readthedocs.io/en/latest/
 - Ask DeepWiki: https://deepwiki.com/CelebiProjects/Celebi
 

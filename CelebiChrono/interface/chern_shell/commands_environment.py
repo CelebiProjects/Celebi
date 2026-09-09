@@ -320,6 +320,24 @@ class EnvironmentCommands:
         except Exception as e:
             print(f"Error whereabouts: {e}")
 
+    def do_yuki_overview(self, _arg: str) -> None:
+        """Show an aggregate overview of Yuki runners and usage."""
+        try:
+            result = shell.yuki_overview()
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error yuki-overview: {e}")
+
+    def do_refresh_distribution(self, _arg: str) -> None:
+        """Refresh the current project's distribution registry."""
+        try:
+            result = shell.refresh_distribution()
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error refresh-distribution: {e}")
+
     def do_cache_results(self, arg: str) -> None:
         """Cache the current impression's results on an ssh runner.
 
@@ -391,6 +409,37 @@ class EnvironmentCommands:
                 print(result.colored())
         except Exception as e:
             print(f"Error syncing live set: {e}")
+
+    def do_kill_running_workflows(self, arg: str) -> None:
+        """Force-stop unreferenced workflows recorded running on a runner.
+
+        Usage: kill-running-workflows [--dry-run] [--yes] <runner>
+        Scoped to this project; live workflows and workspaces are retained.
+        """
+        try:
+            parsed = _parse_purge_args(arg)
+            if parsed is None:
+                return
+            runner, dry_run, yes = parsed
+            if not runner or runner.startswith("-"):
+                print("Usage: kill-running-workflows [--dry-run] [--yes] <runner>")
+                return
+            plan = shell.kill_running_workflows(runner, dry_run=True)
+            print(plan.colored())
+            workflows = plan.data.get("workflows", [])
+            if dry_run or not plan.success or not workflows:
+                return
+            if not yes:
+                answer = input(f"Force-stop {len(workflows)} unreferenced workflows "
+                               f"on runner '{runner}'? (N/y): ")
+                if answer.lower() != "y":
+                    print("Kill running workflows cancelled.")
+                    return
+            result = shell.kill_running_workflows(
+                runner, dry_run=False, workflows=workflows)
+            print(result.colored())
+        except Exception as exc:
+            print(f"Error killing running workflows: {exc}")
 
     def do_kill_workflow(self, arg: str) -> None:
         """Force-stop a workflow (works even for zombie runs).

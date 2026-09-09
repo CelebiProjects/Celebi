@@ -6,6 +6,7 @@ This module contains command handlers for file and directory operations.
 # pylint: disable=broad-exception-caught
 import re
 import os
+from ._timeout import parse_timeout
 from ...interface import shell
 from ...interface.ChernManager import get_manager
 
@@ -177,11 +178,12 @@ class FileCommands:
     def do_transfer(self, arg: str) -> None:
         """Transfer stageout results.
 
-        Usage: transfer <source> <destination> [--pattern GLOB] [--force]
+        Usage: transfer <source> <destination> [--pattern GLOB] [--force] [--timeout SECONDS]
+        Timeout is per HTTP request, including polls (default: 10 seconds).
         SOURCE and DESTINATION are 'yuki' or 'runner:<runner-id>'.
         """
         try:
-            args = arg.split()
+            args, options = parse_timeout(arg)
             if len(args) < 2:
                 print("Error: Please provide source and destination "
                       "('yuki' or 'runner:<runner-id>').")
@@ -195,7 +197,7 @@ class FileCommands:
             if "--force" in args:
                 force = True
             result = shell.transfer(args[0], args[1],
-                                    pattern=pattern, force=force)
+                                    pattern=pattern, force=force, **options)
             if result.messages:
                 print(result.colored())
         except Exception as e:

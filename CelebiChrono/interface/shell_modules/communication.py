@@ -579,6 +579,97 @@ def whereabouts() -> Message:
     return message
 
 
+def refresh_distribution() -> Message:
+    """Refresh the current project's distribution registry for selected impressions."""
+    message = Message()
+    _, project_uuid = _current_project()
+    if not project_uuid:
+        message.add("No project found — run inside a Celebi project.",
+                    "error")
+        return message
+    scopes = _impression_scopes()
+    if not scopes:
+        message.add("Current object has no impression — open an impression or folder.",
+                    "error")
+        return message
+    cherncc = ChernCommunicator.instance()
+    total = 0
+    for scope_project, scope_imp in scopes:
+        try:
+            result = cherncc.refresh_distribution(scope_project, scope_imp)
+        except ConnectionError as e:
+            message.add(str(e), "error")
+            return message
+        if result.get("error"):
+            message.add(result["error"], "error")
+            return message
+        total += 1
+        live = result.get("live", 0)
+        superseded = result.get("superseded", 0)
+        live_workflows = result.get("live_workflows", 0)
+        message.add(f"Refreshed distribution for {scope_imp[:7]}… "
+                    f"(live={live}, superseded={superseded}, "
+                    f"live_workflows={live_workflows})\n", "success")
+    if total > 1:
+        message.add(f"Total refreshed: {total}\n", "success")
+    return message
+
+
+def yuki_overview() -> Message:
+    """Show an aggregate overview of Yuki runners and usage."""
+    message = Message()
+    cherncc = ChernCommunicator.instance()
+    _, project_uuid = _current_project()
+    if not project_uuid:
+        message.add("No project found — run inside a Celebi project.",
+                    "error")
+        return message
+    overview = cherncc.yuki_overview(project_uuid=project_uuid)
+    if isinstance(overview, dict) and overview.get("error"):
+        message.add(f"Yuki overview failed: {overview['error']}", "error")
+        return message
+    distribution = overview.get("distribution", {}) if isinstance(overview, dict) else {}
+    storage = overview.get("storage", {}) if isinstance(overview, dict) else {}
+    workflows = overview.get("workflows", {}) if isinstance(overview, dict) else {}
+    message.add(f"Yuki overview for current project {project_uuid}\n",
+                "title0")
+    message.add("Scope: current project only\n", "info")
+    message.add("Known from distribution.json\n", "title0")
+    message.add(f"Distribution root: {distribution.get('path', '~/.Yuki/Storage')}\n",
+                "normal")
+    live_set_status = "present" if distribution.get("has_live_set") else "missing"
+    message.add(f"  live-set snapshot: {live_set_status}\n", "normal")
+    message.add(f"  project footprint: {_human_bytes(distribution.get('bytes', 0))} in "
+                f"{distribution.get('impressions', 0)} impressions\n", "normal")
+    message.add(f"  live: {_human_bytes(distribution.get('live_bytes', 0))} in "
+                f"{distribution.get('live_files', 0)} files\n", "success")
+    message.add(f"  stale: {_human_bytes(distribution.get('stale_bytes', 0))} in "
+                f"{distribution.get('stale_files', 0)} files\n", "warning")
+    if distribution.get("unknown_files"):
+        message.add(f"  unknown: {_human_bytes(distribution.get('unknown_bytes', 0))} in "
+                    f"{distribution.get('unknown_files', 0)} files\n", "normal")
+    for runner_name, entry in sorted((distribution.get("runners", {}) or {}).items()):
+        cache = entry.get("kinds", {}).get("cache", {})
+        workflow = entry.get("kinds", {}).get("workflow", {})
+        message.add(f"  {runner_name}: {_human_bytes(entry.get('bytes', 0))} total\n",
+                    "normal")
+        if cache.get("files") or workflow.get("files"):
+            message.add(f"    cache: {_human_bytes(cache.get('bytes', 0))} in "
+                        f"{cache.get('files', 0)} files\n", "normal")
+            message.add(f"    workflow: {_human_bytes(workflow.get('bytes', 0))} in "
+                        f"{workflow.get('files', 0)} files\n", "normal")
+    message.add("\nLocal Yuki mirror\n", "title0")
+    message.add(f"Storage root: {storage.get('path', '~/.Yuki/Storage')}\n",
+                "normal")
+    message.add(f"Workflows root: {workflows.get('path', '~/.Yuki/Workflows')}\n",
+                "normal")
+    message.add(f"  Storage: {_human_bytes(storage.get('bytes', 0))} in "
+                f"{storage.get('files', 0)} files\n", "normal")
+    message.add(f"  Workflows: {_human_bytes(workflows.get('bytes', 0))} in "
+                f"{workflows.get('files', 0)} files\n", "normal")
+    return message
+
+
 def remove_runner(runner: str) -> Message:
     """Remove a runner from DITE.
 
@@ -798,6 +889,47 @@ def sync_live() -> Message:
     except Exception as exc:
         message.add(f"Live-set sync failed (safe to ignore): {exc}\n",
                     "warning")
+    return message
+
+
+def kill_running_workflows(runner: str, dry_run: bool = True,
+                           workflows=None) -> Message:
+    """Force-stop unreferenced workflows recorded running in this project.
+
+    Execution requires the workflow IDs returned by a preview. A successful
+    live-set sync is required on both calls; workspaces are retained.
+    """
+    message = Message()
+    message.data["workflows"] = []
+    project_uuid = _current_project_uuid()
+    if not project_uuid:
+        message.add("No project found — run inside a Celebi project.\n", "error")
+        return message
+    sync = sync_live()
+    _merge_sync_lines(message, sync)
+    if any(kind in ("error", "warning") for _, kind in sync.messages):
+        message.add("Kill cancelled: a successful live-set sync is required.\n", "error")
+        return message
+    try:
+        result = ChernCommunicator.instance().kill_running_workflows(
+            runner, project_uuid, dry_run=dry_run, workflows=workflows)
+        entries = result.get("selected" if dry_run else "killed", [])
+        message.data["workflows"] = [entry["workflow"] for entry in entries]
+        action = "Would force-stop" if dry_run else "Force-stop completed for"
+        for entry in entries:
+            message.add(f"{action}: {entry['workflow']}\n")
+        for entry in result.get("skipped", []):
+            message.add(f"Skipped {entry['workflow']}: {entry['reason']}\n")
+        for entry in result.get("failed", []):
+            message.add(f"Failed {entry['workflow']}: {entry['reason']}\n", "error")
+        if dry_run:
+            message.add(f"Dry run — {len(entries)} unreferenced workflows recorded "
+                        "running would be force-stopped. Nothing was stopped.\n")
+        else:
+            message.add(f"Force-stop completed for {len(entries)} workflows on "
+                        f"runner '{runner}'. Workspaces retained.\n")
+    except Exception as exc:
+        message.add(f"Kill failed: {exc}\n", "error")
     return message
 
 
