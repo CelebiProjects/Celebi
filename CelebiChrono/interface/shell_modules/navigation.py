@@ -5,6 +5,7 @@ Functions for changing directories, navigating projects, and path operations.
 """
 import os
 
+from ...kernel.vobj_file_display import _natural_sort_key
 from ...utils import csys
 from ...utils.message import Message
 from ._manager import MANAGER
@@ -112,7 +113,7 @@ def _cd_by_index(index: int) -> Message:
     total = len(sub_objects)
 
     if index < total:
-        sub_objects.sort(key=lambda x: (x.object_type(), x.path))
+        sub_objects.sort(key=_natural_sort_key)
         return cd(MANAGER.current_object().relative_path(sub_objects[index].path))
 
     index -= total
