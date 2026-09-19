@@ -80,6 +80,15 @@ class BasicCommands:
         except Exception as e:
             print(f"Error collecting data: {e}")
 
+    def do_refresh_filelists(self, _: str) -> None:
+        """Refresh the current task's stageout and log listings. Usage: refresh-filelists"""
+        try:
+            result = shell.refresh_filelists()
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error refreshing file listings: {e}")
+
     def do_display(self, arg: str) -> None:
         """Display a file from current object."""
         try:
