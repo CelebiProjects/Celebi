@@ -308,21 +308,24 @@ class ChernCommunicator():
             # Add extra data
             tar.add(extra_path, arcname="rawdata")
 
-    def execute(self, impressions, cache_on_runner, machine="local"):
-        """ Execute the impressions on the server """
+    def execute(self, impressions, cache_on_runner, machine="local", timeout=None):
+        """Execute impressions, optionally overriding the submission response timeout."""
         files = {"impressions": " ".join(impressions)}
         url = self.serverurl()
         machine_id = requests.get(
             f"http://{url}/machine-id/{machine}",
             timeout=self.timeout
         ).text
+        data = {'machine': machine_id,
+                'cache_on_runner': json.dumps(cache_on_runner),
+                'project_uuid': self.project_uuid}
+        if timeout is not None:
+            data['timeout'] = timeout
         requests.post(
             f"http://{url}/execute",
-            data={'machine': machine_id,
-                  'cache_on_runner': json.dumps(cache_on_runner),
-                  'project_uuid': self.project_uuid},
+            data=data,
             files=files,
-            timeout=self.timeout
+            timeout=self.timeout if timeout is None else timeout
         )
 
     def purge(self, impressions):

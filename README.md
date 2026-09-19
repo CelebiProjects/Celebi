@@ -97,3 +97,23 @@ Apache License, Version 2.0
 - 2017–2025 — Department of Nuclear Physics, China Institute of Atomic Energy  
 - 2020–2025 — Niels Bohr Institute, University of Copenhagen  
 - 2025–now — Peking University
+
+### Submission timeout
+
+For a slow server response, increase the submission request timeout (in seconds):
+
+```bash
+celebi-cli submit my_runner --timeout 300
+```
+
+In the interactive Celebi shell, use:
+
+```text
+submit --runner my_runner --timeout 3000
+```
+
+The HTTP response timeout defaults to 10 seconds. An explicit timeout also
+extends Yuki SSH command, connection, and startup-confirmation limits for the
+submitted workflow, preserving any longer existing limits. Yuki saves this
+setting for later workflow operations. It does not limit workflow runtime.
+A timed-out request may still be processed by the server; check task status before submitting again.

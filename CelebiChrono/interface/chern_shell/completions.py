@@ -90,17 +90,33 @@ class ChernShellCompletions:
         return [f for f in alias if f.startswith(text)]
 
     def complete_submit(
-        self, _: str, line: str, _begidx: int, _endidx: int
+        self, _text: str, line: str, begidx: int, endidx: int
     ) -> list:
-        """Complete submit command with readline file"""
-        runners = self.readline_file.read_variable("runners", [])
-        if line.strip() == "submit":
-            return runners
-        matches = []
-        for runner in runners:
-            if runner.startswith(line.strip().split()[-1]):
-                matches.append(runner)
-        return matches
+        """Complete submit options and runner values at the cursor."""
+        prefix = line[:endidx]
+        token_start = len(prefix.rstrip())
+        while token_start > 0 and not prefix[token_start - 1].isspace():
+            token_start -= 1
+        if prefix and prefix[-1].isspace():
+            token_start = len(prefix)
+        token = prefix[token_start:]
+        previous = prefix[:token_start].split()
+        if token.startswith("--runner="):
+            runners = self.readline_file.read_variable("runners", [])
+            candidates = [f"--runner={runner}" for runner in runners]
+        elif previous and previous[-1] == "--runner":
+            candidates = self.readline_file.read_variable("runners", [])
+        elif token.startswith("--timeout=") or (
+            previous and previous[-1] == "--timeout"
+        ):
+            return []
+        elif "--" in previous:
+            return []
+        else:
+            candidates = ["--runner", "--timeout"]
+        # Readline may begin replacement after '=' rather than at the token start.
+        offset = max(0, begidx - token_start)
+        return [candidate[offset:] for candidate in candidates if candidate.startswith(token)]
 
     def complete_import_file(
         self, _: str, line: str, _begidx: int, _endidx: int

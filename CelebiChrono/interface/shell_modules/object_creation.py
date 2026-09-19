@@ -427,7 +427,7 @@ def attach_data(impression_uuid: str, path_override: str = "") -> Message:
 
 
 def _fill_registered_data(project_path, current_obj, descriptor, data_md5,  # pylint: disable=too-many-arguments, too-many-positional-arguments
-                          origin, default_runner=None):
+                          origin, default_runner=None, impression_uuid=None):
     """Dual-mode tail of register-ssh-data: fill the current rawdata task,
     or create/update a pointer task via the shared tail."""
     message = Message()
@@ -439,6 +439,9 @@ def _fill_registered_data(project_path, current_obj, descriptor, data_md5,  # py
         yaml_file.write_variable("descriptor", descriptor)
         if default_runner:
             current_obj.set_default_runner(default_runner)
+        if impression_uuid:
+            message.append(_refresh_registered_impression(
+                current_obj.path, project_path, impression_uuid))
         message.add(
             f"Updated rawdata task at {task_path} ({origin}) with new "
             "impression data", "success")
@@ -446,6 +449,33 @@ def _fill_registered_data(project_path, current_obj, descriptor, data_md5,  # py
     message.messages.extend(_fill_or_create_pointer_task(
         project_path, current_obj, descriptor, data_md5, "", origin,
         default_runner=default_runner).messages)
+    if impression_uuid and not any(
+            kind in ("warning", "error") for _, kind in message.messages):
+        task_path = csys.refine_path(descriptor, current_obj.path)
+        message.append(_refresh_registered_impression(
+            os.path.join(current_obj.path, task_path), project_path, impression_uuid))
+    return message
+
+
+def _refresh_registered_impression(task_path, project_path, expected_uuid):
+    """Refresh the local snapshot and check that Yuki registered that impression."""
+    from ...kernel.chern_cache import ChernCache
+
+    cache = ChernCache.instance()
+    cache.impression_consult_table.clear()
+    cache.status_consult_table.clear()
+    cache.job_status_consult_table.clear()
+    cache.project_modification_time = (None, -1)
+    task = VObject(task_path, project_path)
+    task.impress()
+    local_uuid = task.config_file.read_variable("impression", "")
+    message = Message()
+    if local_uuid != expected_uuid:
+        message.add(
+            f"Registration impression mismatch: local={local_uuid}, "
+            f"Yuki={expected_uuid}. The local task configuration differs from "
+            "the registered rawdata impression; its data is not attached to "
+            "the local impression.", "error")
     return message
 
 
@@ -494,6 +524,13 @@ def register_ssh_data(runner: str, remote_path: str,
                     "error")
         return message
 
+    # Keep the current task's descriptor unless the caller explicitly overrides it.
+    # Send it to Yuki too, so newly synthesized impressions use the same metadata.
+    if not descriptor and current_obj.object_type() == "task":
+        descriptor = metadata.YamlFile(
+            os.path.join(current_obj.path, "celebi.yaml")
+        ).read_variable("descriptor", "")
+
     cherncc = ChernCommunicator.instance()
     request_options = {"timeout": timeout} if timeout is not None else {}
     resp = cherncc.register_remote_data(runner, remote_path,
@@ -510,9 +547,9 @@ def register_ssh_data(runner: str, remote_path: str,
             f"Registered: md5={result['uuid']} "
             f"impression={result['impression_uuid']}", "success")
         message.messages.extend(_fill_registered_data(
-            project_path, current_obj, result["descriptor"],
+            project_path, current_obj, descriptor or result["descriptor"],
             result["uuid"], "register-ssh-data",
-            default_runner=runner).messages)
+            default_runner=runner, impression_uuid=result["impression_uuid"]).messages)
         return message
     if "job_id" not in resp:
         message.add("Registration failed: server returned neither a job id "
@@ -563,9 +600,10 @@ def register_ssh_data(runner: str, remote_path: str,
                     f"Registered: md5={result['uuid']} "
                     f"impression={result['impression_uuid']}\n", "success")
                 message.messages.extend(_fill_registered_data(
-                    project_path, current_obj, result["descriptor"],
+                    project_path, current_obj, descriptor or result["descriptor"],
                     result["uuid"], "register-ssh-data",
-                    default_runner=runner).messages)
+                    default_runner=runner,
+                    impression_uuid=result["impression_uuid"]).messages)
                 return message
             if status == "copying" and state.get("result"):
                 # The hash is done: the copy continues in the background.
@@ -575,9 +613,10 @@ def register_ssh_data(runner: str, remote_path: str,
                     f"impression={result['impression_uuid']} — "
                     "copying in background\n", "success")
                 message.messages.extend(_fill_registered_data(
-                    project_path, current_obj, result["descriptor"],
+                    project_path, current_obj, descriptor or result["descriptor"],
                     result["uuid"], "register-ssh-data",
-                    default_runner=runner).messages)
+                    default_runner=runner,
+                    impression_uuid=result["impression_uuid"]).messages)
                 return message
             if status == "failed":
                 message.add(

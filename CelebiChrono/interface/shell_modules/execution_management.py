@@ -7,7 +7,7 @@ from ...utils.message import Message
 from ._manager import MANAGER
 
 
-def submit(runner: str = "local") -> Message:
+def submit(runner: str = "local", timeout: float = None) -> Message:
     """Submit current task for execution.
 
     Sends the current task to a runner for processing. The runner executes
@@ -17,6 +17,7 @@ def submit(runner: str = "local") -> Message:
     Args:
         runner (str, optional): Name of the runner to use for execution.
             Defaults to "local" for local execution.
+        timeout: Submission response timeout in seconds; None uses the client default.
 
     Examples:
         submit              # Submit to local runner
@@ -32,11 +33,11 @@ def submit(runner: str = "local") -> Message:
         - The task must have a valid algorithm and inputs configured
         - Runner must be available and configured
     """
-    message = MANAGER.current_object().submit(runner)
+    message = MANAGER.current_object().submit(runner, timeout=timeout)
     return message
 
 
-def submit_objects(object_names: list[str], runner: str = "local") -> Message:
+def submit_objects(object_names: list[str], runner: str = "local", timeout: float = None) -> Message:
     """Submit named sub-objects of the current object for execution.
 
     Resolves each name relative to the current working directory, then calls
@@ -46,6 +47,7 @@ def submit_objects(object_names: list[str], runner: str = "local") -> Message:
 
     Args:
         object_names: List of sub-object names or relative paths.
+        timeout: Submission response timeout in seconds; None uses the client default.
         runner (str, optional): Name of the runner to use. Defaults to "local".
 
     Returns:
@@ -59,7 +61,7 @@ def submit_objects(object_names: list[str], runner: str = "local") -> Message:
         except Exception as e:  # pylint: disable=broad-except
             message.add(f"Error resolving {name}: {e}", "error")
             return message
-    return MANAGER.current_object().submit_objects(objects, runner)
+    return MANAGER.current_object().submit_objects(objects, runner, timeout=timeout)
 
 
 def purge() -> Message:

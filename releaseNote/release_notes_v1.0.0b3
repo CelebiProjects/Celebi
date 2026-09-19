@@ -1,4 +1,8 @@
 ## v1.0.0b3
++ Fix `register-ssh-data` descriptor and impression handling.
+  - Preserve the current rawdata task's descriptor unless `--descriptor` explicitly overrides it, and send the selected descriptor to Yuki when registering.
+  - Refresh the local impression after registration, clearing stale status caches, so subsequent status queries use the updated snapshot.
+  - Check the local impression ID against Yuki's returned ID and report configuration mismatches instead of silently leaving the task associated with a different impression.
 + Add `transfer` to the Chern shell.
   - `transfer <source> <destination> [--pattern GLOB] [--force]` moves the current impression's stageout results between `yuki` and SSH runners (`runner:<name>`), and from REANA runners to SSH runners via the destination's own reana-cli.
   - Shows a byte-level progress bar and reports transferred/skipped/failed counts; tab completion offers `yuki` and `runner:<id>` for both arguments.

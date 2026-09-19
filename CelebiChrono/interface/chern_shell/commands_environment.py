@@ -5,6 +5,8 @@ This module contains command handlers for environment settings
 and job execution management.
 """
 # pylint: disable=broad-exception-caught
+import shlex
+
 from ...interface import shell
 from ...interface.ChernManager import get_manager
 from ..shell_modules.communication import _impression_scopes
@@ -68,24 +70,39 @@ def _parse_update_runner_args(arg: str):
 
 
 def _parse_submit_args(arg: str):
-    """Parse submit shell argument into (runner, object_names).
-
-    Syntax:
-        submit                     -> runner="local", object_names=[]
-        submit --runner cern       -> runner="cern", object_names=[]
-        submit --runner cern a b   -> runner="cern", object_names=["a", "b"]
-        submit a b                 -> runner="local", object_names=["a", "b"]
-
-    The --runner flag is optional. Any positional arguments after the
-    runner (if provided) are treated as object names.
-    """
-    parts = arg.split()
-    if "--runner" in parts:
-        ridx = parts.index("--runner")
-        runner = parts[ridx + 1] if ridx + 1 < len(parts) else "local"
-        object_names = parts[:ridx] + parts[ridx + 2:]
-        return runner, object_names
-    return "local", parts
+    """Parse runner, object names, and a positive response timeout in seconds."""
+    parts = shlex.split(arg)
+    runner = "local"
+    timeout = None
+    object_names = []
+    index = 0
+    while index < len(parts):
+        token = parts[index]
+        if token == "--":
+            object_names.extend(parts[index + 1:])
+            break
+        option, separator, value = token.partition("=")
+        if option in ("--runner", "--timeout"):
+            if not separator:
+                index += 1
+                value = parts[index] if index < len(parts) else ""
+            if not value or value.startswith("--"):
+                raise ValueError(f"{option} requires a value")
+            if option == "--runner":
+                runner = value
+            else:
+                try:
+                    timeout = int(value)
+                except ValueError as exc:
+                    raise ValueError("--timeout must be a positive integer in seconds") from exc
+                if timeout < 1:
+                    raise ValueError("--timeout must be a positive integer in seconds")
+        elif token.startswith("-"):
+            raise ValueError(f"Unknown option: {token}")
+        else:
+            object_names.append(token)
+        index += 1
+    return runner, object_names, timeout
 
 
 def _parse_purge_args(arg: str):
@@ -247,14 +264,15 @@ class EnvironmentCommands:
             submit
             submit --runner cern
             submit --runner cern a b
+            submit --runner cern --timeout 3000
             submit a b
         """
         try:
-            runner, object_names = _parse_submit_args(arg)
+            runner, object_names, timeout = _parse_submit_args(arg)
             if not object_names:
-                result = shell.submit(runner)
+                result = shell.submit(runner, timeout=timeout)
             else:
-                result = shell.submit_objects(object_names, runner)
+                result = shell.submit_objects(object_names, runner, timeout=timeout)
             if result.messages:
                 print(result.colored())
         except Exception as e:

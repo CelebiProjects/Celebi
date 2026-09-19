@@ -120,9 +120,6 @@ class GitOptionalIntegration:
 # Only run if Celebi git integration is enabled
 if [ -f ".celebi/git_config.json" ]; then
     python -c "
-import sys
-import os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 try:
     from CelebiChrono.utils.git_merge_coordinator import GitMergeCoordinator
     coordinator = GitMergeCoordinator()

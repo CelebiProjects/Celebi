@@ -42,7 +42,7 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             return []
         return [impression.uuid]
 
-    def submit(self, runner: str = "local") -> Message:
+    def submit(self, runner: str = "local", timeout: Optional[float] = None) -> Message:
         """ Submit the impression to the runner. """
         now = time.time()
         cherncc = ChernCommunicator.instance()
@@ -90,12 +90,12 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             task = self.get_vtask(sub_object.path)
             cache_on_runner[task.impression().uuid] = task.cache_on_runner()
         impressions = self.get_impressions()
-        cherncc.execute(impressions, cache_on_runner, runner)
+        cherncc.execute(impressions, cache_on_runner, runner, timeout=timeout)
         msg = Message()
         msg.add(f"Impressions {impressions} submitted to {runner}.", "info")
         return msg
 
-    def submit_objects(self, objects, runner: str = "local") -> Message:
+    def submit_objects(self, objects, runner: str = "local", timeout: Optional[float] = None) -> Message:
         """ Submit multiple objects collectively.
 
         Similar to submit() on a directory, but only processes the given
@@ -147,7 +147,7 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             cache_on_runner[task.impression().uuid] = task.cache_on_runner()
             impressions.append(task.impression().uuid)
 
-        cherncc.execute(impressions, cache_on_runner, runner)
+        cherncc.execute(impressions, cache_on_runner, runner, timeout=timeout)
         msg = Message()
         msg.add(f"Impressions {impressions} submitted to {runner}.", "info")
         return msg

@@ -25,7 +25,7 @@ from .shell_modules.task_configuration import (
     jobs, status, get_script_path, config, add_apd_token, user_config
 )
 from .shell_modules.execution_management import (
-    submit, submit_objects, purge, purge_old_impressions, test,
+    submit, submit_objects, purge, purge_old_impressions, test, ssh_test,
     collect, collect_outputs, collect_logs, engine_logs, refresh_filelists,
     purge_data
 )
@@ -71,7 +71,7 @@ __all__ = [
     'set_environment', 'set_memory_limit', 'set_descriptor', 'rm_parameter', 'remove_input',
     'jobs', 'status', 'get_script_path', 'config', 'add_apd_token', 'user_config',
     # Execution management functions (from execution_management.py)
-    'submit', 'submit_objects', 'purge', 'purge_old_impressions', 'test',
+    'submit', 'submit_objects', 'purge', 'purge_old_impressions', 'test', 'ssh_test',
     'collect', 'collect_outputs', 'collect_logs', 'engine_logs',
     'refresh_filelists', 'purge_data',
     # Communication functions (from communication.py)

@@ -66,20 +66,25 @@ def _collect_cli_settings(kwargs):
 
 
 @click.command(name="test")
-def test_command() -> None:
-    """Test execution management functions.
+@click.argument("backend", type=click.Choice(["docker", "ssh"]), default="docker")
+@click.argument("runner", required=False)
+def test_command(backend: str = "docker", runner: Optional[str] = None) -> None:
+    """Test the current task's algorithm with Docker or SSH.
 
-    Run a specified command inside a Docker container using the given Docker image.
+    Run `celebi-cli test` (or `celebi-cli test docker`) for a local Docker test.
+    Run `celebi-cli test ssh RUNNER` to test on a registered SSH runner,
+    for example `celebi-cli test ssh pkufarm212`.
 
-    Must be used within a task context. The current task's algorithm is tested
-    in a Docker container to verify execution environment compatibility.
-
-    Note:
-        This is a placeholder function for testing purposes and may not be fully implemented.
+    Must be used within a task context. SSH tests stream remote output
+    without creating an impression.
     """
+    if backend == "ssh" and not runner:
+        raise click.UsageError("SSH testing requires a runner: celebi-cli test ssh RUNNER")
+    if backend == "docker" and runner is not None:
+        raise click.UsageError("Docker testing does not accept a runner.")
     try:
-        from CelebiChrono.interface.shell import test
-        result = test()
+        from CelebiChrono.interface.shell import test, ssh_test
+        result = ssh_test(runner) if backend == "ssh" else test()
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
@@ -342,7 +347,11 @@ def runner_envs_command(runner: str) -> None:
 
 @click.command(name="submit")
 @click.argument("runner", type=str, default="local", required=False)
-def submit_command(runner: str) -> None:
+@click.option(
+    "--timeout", type=click.IntRange(min=1), default=None, metavar="SECONDS",
+    help="Submission response timeout; also extends SSH operation limits (seconds; default: 10).",
+)
+def submit_command(runner: str, timeout: int = None) -> None:
     """Submit current task for execution.
 
     Sends the current task to a runner for processing. The runner executes
@@ -352,7 +361,7 @@ def submit_command(runner: str) -> None:
     """
     try:
         from CelebiChrono.interface.shell import submit
-        result = submit(runner)
+        result = submit(runner, timeout=timeout)
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")

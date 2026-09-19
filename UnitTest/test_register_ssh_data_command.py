@@ -3,6 +3,8 @@ import os
 import shutil
 import tempfile
 import unittest
+
+import pytest
 from unittest import mock
 
 from CelebiChrono.interface.shell_modules import object_creation
@@ -438,3 +440,12 @@ class TestRegisterSshDataProgressBar(unittest.TestCase):
             cccls.instance.return_value = cc
             object_creation.register_ssh_data("cluster", "/src/data", "d")
         tqdm_mock.assert_not_called()
+
+
+@pytest.fixture(autouse=True)
+def mock_registration_snapshot():
+    """Snapshot behavior is covered with real tasks in the identity tests."""
+    from CelebiChrono.utils.message import Message
+    with mock.patch.object(object_creation, "_refresh_registered_impression",
+                           return_value=Message()):
+        yield
