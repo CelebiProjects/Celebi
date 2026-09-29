@@ -300,7 +300,7 @@ class FileManagementOperations(Core):
             for succ_object in obj.successors():
                 if self.relative_path(succ_object.path).startswith(".."):
                     obj.remove_arc_to(succ_object)
-                    alias = succ_object.path_to_alias(succ_object.path)
+                    alias = succ_object.path_to_alias(obj.invariant_path())
                     succ_object.remove_alias(alias)
 
         shutil.rmtree(self.path)
