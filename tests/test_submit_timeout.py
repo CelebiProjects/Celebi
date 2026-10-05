@@ -7,6 +7,7 @@ from click.testing import CliRunner
 
 from CelebiChrono.celebi_cli.cli import cli
 from CelebiChrono.kernel.chern_communicator import ChernCommunicator
+from CelebiChrono.kernel.chern_communicator import SubmissionError
 from CelebiChrono.kernel.vobj_execution import ExecutionManagement
 from CelebiChrono.interface.shell_modules import execution_management as shell
 
@@ -78,3 +79,97 @@ def test_timeout_does_not_report_success_or_retry():
     assert 'timed out' in result.output
     assert 'submitted' not in result.output
     submit.assert_called_once()
+
+
+def _response(status_code, payload=None, text=''):
+    response = MagicMock(status_code=status_code, text=text)
+    response.json.return_value = payload
+    return response
+
+
+def test_execute_waits_for_scheduled_submission():
+    communicator = object.__new__(ChernCommunicator)
+    communicator.timeout = 10
+    communicator.transfer_timeout = 600
+    communicator.project_uuid = 'project'
+    communicator.serverurl = lambda: 'localhost:3315'
+    machine = _response(200, text='runner-id')
+    accepted = _response(202, {'submission_id': 'sub-1', 'status': 'accepted'})
+    building = _response(200, {'submission_id': 'sub-1', 'status': 'building'})
+    scheduled = _response(200, {
+        'submission_id': 'sub-1', 'status': 'scheduled', 'workflow_id': 'wf-1'})
+
+    with patch('CelebiChrono.kernel.chern_communicator.requests.get',
+               side_effect=[machine, building, scheduled]), \
+         patch('CelebiChrono.kernel.chern_communicator.requests.post',
+               return_value=accepted), \
+         patch('CelebiChrono.kernel.chern_communicator.time.sleep'):
+        result = communicator.execute(['imp'], {'imp': False}, 'cluster')
+
+    assert result['status'] == 'scheduled'
+    assert result['workflow_id'] == 'wf-1'
+
+
+def test_execute_raises_on_blocked_submission():
+    communicator = object.__new__(ChernCommunicator)
+    communicator.timeout = 10
+    communicator.transfer_timeout = 600
+    communicator.project_uuid = 'project'
+    communicator.serverurl = lambda: 'localhost:3315'
+    machine = _response(200, text='runner-id')
+    accepted = _response(202, {'submission_id': 'sub-1', 'status': 'accepted'})
+    blocked = _response(200, {
+        'submission_id': 'sub-1', 'status': 'blocked',
+        'error': 'Jobs already belong to active workflows',
+        'conflicts': {'upstream': 'wf-existing'},
+    })
+
+    with patch('CelebiChrono.kernel.chern_communicator.requests.get',
+               side_effect=[machine, blocked]), \
+         patch('CelebiChrono.kernel.chern_communicator.requests.post',
+               return_value=accepted), \
+         pytest.raises(SubmissionError, match='wf-existing'):
+        communicator.execute(['imp'], {'imp': False}, 'cluster')
+
+
+def test_execute_raises_when_dispatch_is_rejected():
+    communicator = object.__new__(ChernCommunicator)
+    communicator.timeout = 10
+    communicator.transfer_timeout = 600
+    communicator.project_uuid = 'project'
+    communicator.serverurl = lambda: 'localhost:3315'
+    machine = _response(200, text='runner-id')
+    rejected = _response(503, {
+        'submission_id': 'sub-1', 'status': 'failed',
+        'error': 'Failed to dispatch submission: broker unavailable',
+    })
+
+    with patch('CelebiChrono.kernel.chern_communicator.requests.get',
+               return_value=machine), \
+         patch('CelebiChrono.kernel.chern_communicator.requests.post',
+               return_value=rejected), \
+         pytest.raises(SubmissionError, match='broker unavailable'):
+        communicator.execute(['imp'], {'imp': False}, 'cluster')
+
+
+def test_execute_accepts_synchronous_deduplication():
+    """A duplicate active workflow is a successful terminal submission result."""
+    communicator = object.__new__(ChernCommunicator)
+    communicator.timeout = 10
+    communicator.transfer_timeout = 600
+    communicator.project_uuid = 'project'
+    communicator.serverurl = lambda: 'localhost:3315'
+    machine = _response(200, text='runner-id')
+    deduplicated = _response(200, {
+        'submission_id': 'sub-1', 'status': 'deduplicated',
+        'workflow_id': 'wf-existing', 'deduplicated': True,
+    })
+
+    with patch('CelebiChrono.kernel.chern_communicator.requests.get',
+               return_value=machine), \
+         patch('CelebiChrono.kernel.chern_communicator.requests.post',
+               return_value=deduplicated):
+        result = communicator.execute(['imp'], {'imp': False}, 'cluster')
+
+    assert result['status'] == 'deduplicated'
+    assert result['workflow_id'] == 'wf-existing'

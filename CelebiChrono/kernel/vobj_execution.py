@@ -95,11 +95,15 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             runner,
             len(impressions),
         )
-        cherncc.execute(impressions, cache_on_runner, runner, timeout=timeout)
+        submission = cherncc.execute(
+            impressions, cache_on_runner, runner, timeout=timeout)
         logger.info(
-            "event=workflow_submit_completed runner=%s impressions=%d duration=%dms",
+            "event=workflow_submit_completed runner=%s impressions=%d "
+            "submission_status=%s workflow=%s duration=%dms",
             runner,
             len(impressions),
+            submission.get("status", "unknown"),
+            submission.get("workflow_id", ""),
             round((time.time() - now) * 1000),
         )
         msg = Message()
@@ -108,7 +112,7 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
 
     def submit_objects(
             self, objects, runner: str = "local",
-            timeout: Optional[float] = None) -> Message:
+            timeout: Optional[float] = None) -> Message:  # pylint: disable=too-many-locals
         """ Submit multiple objects collectively.
 
         Similar to submit() on a directory, but only processes the given
@@ -165,11 +169,15 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             runner,
             len(impressions),
         )
-        cherncc.execute(impressions, cache_on_runner, runner, timeout=timeout)
+        submission = cherncc.execute(
+            impressions, cache_on_runner, runner, timeout=timeout)
         logger.info(
-            "event=workflow_submit_completed runner=%s impressions=%d duration=%dms",
+            "event=workflow_submit_completed runner=%s impressions=%d "
+            "submission_status=%s workflow=%s duration=%dms",
             runner,
             len(impressions),
+            submission.get("status", "unknown"),
+            submission.get("workflow_id", ""),
             round((time.time() - now) * 1000),
         )
         msg = Message()

@@ -13,6 +13,7 @@ Job Submission & Management:
 - POST /upload - Upload impression tar.gz and config files
 - GET /run/{uuid}/{machine_id} - Execute impression on specified machine
 - POST /execute - Execute multiple impressions with machine specification
+- GET /submissions/{project}/{submission} - Poll workflow construction outcome
 - GET /kill/{uuid} - Kill running impression
 - GET /resubmit/{uuid}/{machine_id} - Resubmit failed impression
 
@@ -90,6 +91,18 @@ from ..utils.message import Message
 
 logger = getLogger("ChernLogger")
 CHERN_CACHE = ChernCache.instance()
+
+
+class SubmissionError(RuntimeError):
+    """A submission was accepted by HTTP but rejected during construction."""
+
+    def __init__(self, record):
+        self.record = record
+        detail = record.get("error") or f"Submission {record.get('status', 'failed')}"
+        conflicts = record.get("conflicts") or {}
+        if conflicts:
+            detail = f"{detail}. Conflicts: {conflicts}"
+        super().__init__(detail)
 
 
 class ChernCommunicator():
@@ -363,8 +376,9 @@ class ChernCommunicator():
             # Add extra data
             tar.add(extra_path, arcname="rawdata")
 
-    def execute(self, impressions, cache_on_runner, machine="local", timeout=None):
-        """Execute impressions, optionally overriding the submission response timeout."""
+    def execute(self, impressions, cache_on_runner, machine="local",
+                timeout=None):  # pylint: disable=too-many-locals
+        """Submit impressions and wait for a durable scheduling decision."""
         files = {"impressions": " ".join(impressions)}
         url = self.serverurl()
         machine_id = self._request(
@@ -379,7 +393,7 @@ class ChernCommunicator():
                 'project_uuid': self.project_uuid}
         if timeout is not None:
             data['timeout'] = timeout
-        self._request(
+        response = self._request(
             "POST",
             f"http://{url}/execute",
             "execute",
@@ -388,6 +402,68 @@ class ChernCommunicator():
             timeout=self.timeout if timeout is None else timeout,
             log_context={"runner": machine, "impressions": len(impressions)},
         )
+        try:
+            accepted = response.json()
+        except (ValueError, AttributeError):
+            accepted = None
+
+        response_status = getattr(response, "status_code", None)
+        if isinstance(response_status, int) and response_status >= 400:
+            raise SubmissionError(
+                accepted if isinstance(accepted, dict) else {
+                    "status": "failed",
+                    "error": f"Yuki rejected the submission with HTTP {response_status}",
+                })
+        if isinstance(accepted, dict) and accepted.get("status") in (
+                "scheduled", "deduplicated"):
+            return accepted
+        if isinstance(accepted, dict) and accepted.get("status") in (
+                "blocked", "failed"):
+            raise SubmissionError(accepted)
+
+        # Compatibility with Yuki versions that return a plain Celery task ID.
+        if response_status != 202 or not isinstance(accepted, dict):
+            return {
+                "status": "legacy_accepted",
+                "celery_task_id": getattr(response, "text", ""),
+            }
+
+        submission_id = accepted.get("submission_id")
+        if not submission_id:
+            raise SubmissionError({
+                "status": "failed",
+                "error": "Yuki accepted the request without a submission ID",
+            })
+        wait_timeout = float(timeout if timeout is not None else self.transfer_timeout)
+        deadline = time.monotonic() + wait_timeout
+        record = accepted
+        while record.get("status") in ("accepted", "building"):
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise RequestsTimeout(
+                    f"Timed out waiting for submission {submission_id}; "
+                    f"last status: {record.get('status')}")
+            poll = self._request(
+                "GET",
+                f"http://{url}/submissions/{self.project_uuid}/{submission_id}",
+                "submission_status",
+                timeout=min(self.timeout, remaining),
+                log_context={"runner": machine, "submission_id": submission_id},
+            )
+            poll.raise_for_status()
+            record = poll.json()
+            if not isinstance(record, dict):
+                raise SubmissionError({
+                    "status": "failed",
+                    "error": (f"Invalid status response for submission "
+                              f"{submission_id}"),
+                })
+            if record.get("status") in ("accepted", "building"):
+                time.sleep(min(0.25, max(0, deadline - time.monotonic())))
+
+        if record.get("status") in ("scheduled", "deduplicated"):
+            return record
+        raise SubmissionError(record)
 
     def purge(self, impressions):
         """ Execute the impressions on the server """
