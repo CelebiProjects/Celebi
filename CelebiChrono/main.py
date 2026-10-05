@@ -32,6 +32,7 @@ from .kernel import vproject
 from .interface.shell_modules.reana_booking import book_reana
 from .utils import csys
 from .utils import metadata
+from .utils.debug_logging import setup_logging
 from .interface.ChernShell import ChernShell
 from .celebi_cli.commands.object_creation import attach_data_command
 
@@ -50,8 +51,7 @@ def start_first_time():
 
 def start_chern_command_line():
     """Start the Chern command line interface."""
-    from .utils.debug_logging import setup_debug_logging
-    setup_debug_logging()
+    setup_logging()
     logger = getLogger("ChernLogger")
 
     logger.debug("def start_chern_command_line")
@@ -102,17 +102,16 @@ def _get_command_docstring(func_name: str) -> str:
 
 @click.group(invoke_without_command=True)
 @click.option("--debug", is_flag=True, default=False,
-              help="Enable debug logging to ~/.celebi/logs/celebi.log")
+              help="Enable verbose logging in ~/.celebi/logs/celebi.log")
 @click.option("--workon", "workon_project", type=str, default=None,
               help="Switch to PROJECT and start the Chern shell.")
 @click.pass_context
 def cli(ctx, debug, workon_project):
     """ Chern command only is equal to `Chern ipython`
     """
-    if debug:
-        os.environ["CELEBI_DEBUG"] = "1"
     if is_first_time():
         start_first_time()
+    setup_logging(debug=debug)
     if ctx.invoked_subcommand is None:
         try:
             config_file = metadata.ConfigFile(
@@ -280,8 +279,11 @@ def prologue():
 # ----------------------------------------------------------------------
 
 @click.group()
-def git_cli():
+@click.option("--debug", is_flag=True, default=False,
+              help="Enable verbose logging in ~/.celebi/logs/celebi.log")
+def git_cli(debug):
     """Celebi git integration commands."""
+    setup_logging(debug=debug)
 
 
 @git_cli.command(name="merge")

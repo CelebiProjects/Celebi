@@ -1,7 +1,6 @@
 """Celebi CLI main entry point for command grouping."""
-import os
 import click
-from CelebiChrono.utils.debug_logging import setup_debug_logging
+from CelebiChrono.utils.debug_logging import setup_logging
 from .commands import (
     navigation, file_operations, object_creation, task_configuration,
     execution_management, communication, visualization, utilities, booking
@@ -10,12 +9,10 @@ from .commands import liveness
 
 @click.group()
 @click.option("--debug", is_flag=True, default=False,
-              help="Enable debug logging to ~/.celebi/logs/celebi.log")
+              help="Enable verbose logging in ~/.celebi/logs/celebi.log")
 def cli(debug):
     """Celebi CLI commands for project management."""
-    if debug:
-        os.environ["CELEBI_DEBUG"] = "1"
-    setup_debug_logging()
+    setup_logging(debug=debug)
 
 # Commands will be registered here
 cli.add_command(navigation.cd_command)
@@ -79,6 +76,7 @@ cli.add_command(execution_management.yuki_overview_command)
 cli.add_command(execution_management.cache_results_command)
 cli.add_command(execution_management.whereabouts_command)
 cli.add_command(execution_management.submit_command)
+cli.add_command(execution_management.kill_command)
 cli.add_command(execution_management.collect_command)
 cli.add_command(execution_management.log_command)
 cli.add_command(execution_management.edit_command)

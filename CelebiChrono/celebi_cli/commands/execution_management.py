@@ -369,6 +369,18 @@ def submit_command(runner: str, timeout: int = None) -> None:
         _handle_error(f"Command failed: {e}")
 
 
+@click.command(name="kill")
+def kill_command() -> None:
+    """Cancel running impressions for the current task or directory."""
+    try:
+        from CelebiChrono.interface.shell import kill
+        _handle_result(kill())
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
 @click.command(name="collect")
 @click.argument("contents", type=str, default="", required=False)
 def collect_command(contents: str) -> None:

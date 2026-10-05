@@ -209,23 +209,6 @@ class FileManagementOperations(Core):
 
         queue = self.sub_objects_recursively()
 
-        # Make sure the related objects are all impressed
-        all_impressed = True
-        not_impressed_objects = []
-        for obj in queue:
-            if not obj.is_task_or_algorithm():
-                continue
-            if not obj.is_impressed_fast():
-                all_impressed = False
-                not_impressed_objects.append(obj)
-
-        if not all_impressed:
-            message = Message()
-            for obj in not_impressed_objects:
-                message.add(f"The {obj.object_type()} {obj} is not impressed, "
-                           f"please impress it and try again\n", "warning")
-            return message
-
         shutil.copytree(self.path, new_path)
 
         # self.move_to_deal_with_arcs(queue, new_path)

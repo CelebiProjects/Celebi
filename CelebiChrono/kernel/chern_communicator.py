@@ -74,8 +74,10 @@ import time
 import os
 from logging import getLogger
 from os.path import join
+from urllib.parse import urlsplit
 
 import requests
+from requests.exceptions import Timeout as RequestsTimeout
 
 from ..utils import csys
 from ..utils import metadata
@@ -142,6 +144,38 @@ class ChernCommunicator():
             return impression.ensure_tarfile()
         return impression.tarfile
 
+    def _request(self, method, url, operation, **kwargs):
+        """Send an HTTP request and emit a safe, machine-readable summary."""
+        started = time.monotonic()
+        endpoint = urlsplit(url).path
+        context = kwargs.pop("log_context", {})
+        context_text = "".join(
+            f" {key}={''.join('_' if char.isspace() else char for char in str(value))}"
+            for key, value in context.items()
+            if value not in (None, "")
+        )
+        try:
+            response = getattr(requests, method.lower())(url, **kwargs)
+        except Exception as exc:
+            latency_ms = round((time.monotonic() - started) * 1000)
+            timeout = isinstance(exc, RequestsTimeout)
+            message = (
+                f"event=http_request_error operation={operation} "
+                f"method={method.upper()} endpoint={endpoint} latency={latency_ms}ms "
+                f"timeout={str(timeout).lower()} error_type={type(exc).__name__} "
+                f"project_uuid={self.project_uuid}{context_text}"
+            )
+            logger.error(message)
+            raise
+        latency_ms = round((time.monotonic() - started) * 1000)
+        message = (
+            f"event=http_request operation={operation} method={method.upper()} "
+            f"endpoint={endpoint} status={getattr(response, 'status_code', 'unknown')} "
+            f"latency={latency_ms}ms project_uuid={self.project_uuid}{context_text}"
+        )
+        logger.info(message)
+        return response
+
     # === Server Status & Connection ===
     def dite_status(self): # UnitTest: DONE
         """ Get the status of the DITE """
@@ -150,7 +184,10 @@ class ChernCommunicator():
         logger.debug("url: %s", url)
         try:
             logger.debug("http://%s/dite-status", url)
-            r = requests.get(f"http://{url}/dite-status", timeout=self.timeout)
+            r = self._request(
+                "GET", f"http://{url}/dite-status", "dite_status",
+                timeout=self.timeout,
+            )
             logger.debug(r)
         except Exception:
             return "unconnected"
@@ -182,24 +219,33 @@ class ChernCommunicator():
             "config.json": open(impression.path + "/config.json", "rb").read()
         }
         url = self.serverurl()
-        machine_id = requests.get(
+        machine_id = self._request(
+            "GET",
             f"http://{url}/machine-id/{machine}",
-            timeout=self.timeout
+            "machine_id",
+            timeout=self.timeout,
+            log_context={"runner": machine},
         ).text
-        requests.post(
+        self._request(
+            "POST",
             f"http://{url}/upload",
+            "upload",
             data={
                 'tarname': f"{impression.uuid}.tar.gz",
                 'config': "config.json",
                 'project_uuid': self.project_uuid,
             },
             files=files,
-            timeout=self.timeout
+            timeout=self.timeout,
+            log_context={"impression_uuid": impression.uuid, "runner": machine},
         )
         # FIXME: here we simply assume that the upload is always correct
-        requests.get(
+        self._request(
+            "GET",
             f"http://{url}/run/{self.project_uuid}/{impression.uuid}/{machine_id}",
-            timeout=self.timeout
+            "run",
+            timeout=self.timeout,
+            log_context={"impression_uuid": impression.uuid, "runner": machine},
         )
 
     def deposit(self, impression, obj_path=""):
@@ -213,15 +259,18 @@ class ChernCommunicator():
         if obj_path and os.path.exists(local_config_path):
             files["config.local.json"] = open(local_config_path, "rb").read()
         url = self.serverurl()
-        requests.post(
+        self._request(
+            "POST",
             f"http://{url}/upload",
+            "deposit",
             data={
                 'tarname': f"{impression.uuid}.tar.gz",
                 'config': "config.json",
                 'project_uuid': self.project_uuid,
             },
             files=files,
-            timeout=self.transfer_timeout
+            timeout=self.transfer_timeout,
+            log_context={"impression_uuid": impression.uuid},
         )
 
     def deposit_with_data(self, impression, path, progress_callback=None):
@@ -265,16 +314,22 @@ class ChernCommunicator():
             with open(config_path, "rb") as f:
                 config_data = f.read()
 
-            requests.post(
+            self._request(
+                "POST",
                 f"http://{url}/upload-config/{self.project_uuid}/{impression.uuid}",
+                "upload_config",
                 files={"config": ("config.json", config_data)},
-                timeout=self.timeout
+                timeout=self.timeout,
+                log_context={"impression_uuid": impression.uuid},
             )
 
             # Set status to archived
-            requests.get(
+            self._request(
+                "GET",
                 f"http://{url}/set-job-status/{self.project_uuid}/{impression.uuid}/archived",
-                timeout=self.timeout
+                "set_job_status",
+                timeout=self.timeout,
+                log_context={"impression_uuid": impression.uuid},
             )
 
         except UploadError:
@@ -312,20 +367,26 @@ class ChernCommunicator():
         """Execute impressions, optionally overriding the submission response timeout."""
         files = {"impressions": " ".join(impressions)}
         url = self.serverurl()
-        machine_id = requests.get(
+        machine_id = self._request(
+            "GET",
             f"http://{url}/machine-id/{machine}",
-            timeout=self.timeout
+            "machine_id",
+            timeout=self.timeout,
+            log_context={"runner": machine},
         ).text
         data = {'machine': machine_id,
                 'cache_on_runner': json.dumps(cache_on_runner),
                 'project_uuid': self.project_uuid}
         if timeout is not None:
             data['timeout'] = timeout
-        requests.post(
+        self._request(
+            "POST",
             f"http://{url}/execute",
+            "execute",
             data=data,
             files=files,
-            timeout=self.timeout if timeout is None else timeout
+            timeout=self.timeout if timeout is None else timeout,
+            log_context={"runner": machine, "impressions": len(impressions)},
         )
 
     def purge(self, impressions):
@@ -402,9 +463,12 @@ class ChernCommunicator():
         """ Get the status of the impression """
         url = self.serverurl()
         try:
-            r = requests.get(
+            r = self._request(
+                "GET",
                 f"http://{url}/status/{self.project_uuid}/{impression.uuid}",
-                timeout=self.timeout
+                "status",
+                timeout=self.timeout,
+                log_context={"impression_uuid": impression.uuid},
             )
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -422,9 +486,12 @@ class ChernCommunicator():
         """ Get the run status of the impression """
         url = self.serverurl()
         try:
-            r = requests.get(
+            r = self._request(
+                "GET",
                 f"http://{url}/run-status/{self.project_uuid}/{impression.uuid}/{machine}",
-                timeout=self.timeout
+                "run_status",
+                timeout=self.timeout,
+                log_context={"impression_uuid": impression.uuid, "runner": machine},
             )
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -513,9 +580,12 @@ class ChernCommunicator():
         """ Kill the impression on the server """
         url = self.serverurl()
         try:
-            r = requests.get(
+            r = self._request(
+                "GET",
                 f"http://{url}/kill/{self.project_uuid}/{impression.uuid}",
-                timeout=self.timeout
+                "kill",
+                timeout=self.timeout,
+                log_context={"impression_uuid": impression.uuid},
             )
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -536,7 +606,11 @@ class ChernCommunicator():
         if params:
             path = f"{path}?{params}"
         try:
-            r = requests.get(path, timeout=self.transfer_timeout)
+            r = self._request(
+                "GET", path, endpoint.replace("-", "_"),
+                timeout=self.transfer_timeout,
+                log_context={"impression_uuid": impression.uuid},
+            )
             r.raise_for_status()
             try:
                 payload = r.json()
@@ -715,8 +789,12 @@ class ChernCommunicator():
         if settings:
             data.update(settings)
         try:
-            r = requests.post(f"http://{url}/register-runner",
-                              data=data, timeout=self.timeout)
+            r = self._request(
+                "POST", f"http://{url}/register-runner", "register_runner",
+                data=data,
+                timeout=self.timeout,
+                log_context={"runner": runner, "backend": backend_type},
+            )
             r.raise_for_status()
         except requests.exceptions.RequestException as e:
             raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
@@ -728,10 +806,13 @@ class ChernCommunicator():
         """ Update settings for an existing runner on the server """
         url = self.serverurl()
         try:
-            r = requests.patch(
+            r = self._request(
+                "PATCH",
                 f"http://{url}/update-runner/{runner}",
+                "update_runner",
                 json=settings,
-                timeout=self.timeout
+                timeout=self.timeout,
+                log_context={"runner": runner},
             )
             r.raise_for_status()
         except requests.exceptions.RequestException as e:
@@ -757,9 +838,12 @@ class ChernCommunicator():
         """ Get the connection status of the runner """
         url = self.serverurl()
         try:
-            r = requests.get(
+            r = self._request(
+                "GET",
                 f"http://{url}/runner-connection/{runner}",
-                timeout=self.timeout
+                "runner_connection",
+                timeout=self.timeout,
+                log_context={"runner": runner},
             )
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -771,8 +855,13 @@ class ChernCommunicator():
         url = self.serverurl()
         timeout_param = f"?timeout={timeout}" if timeout else ""
         try:
-            r = requests.get(
-                f"http://{url}/test-runner/{runner}{timeout_param}", timeout=30)
+            r = self._request(
+                "GET",
+                f"http://{url}/test-runner/{runner}{timeout_param}",
+                "test_runner",
+                timeout=30,
+                log_context={"runner": runner},
+            )
         except requests.exceptions.RequestException as e:
             raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
         if r.status_code == 404:
@@ -1154,10 +1243,13 @@ class ChernCommunicator():
         """ Get the index_th error log, starting at byte offset."""
         url = self.serverurl()
         try:
-            r = requests.get(
+            r = self._request(
+                "GET",
                 f"http://{url}/error-log/{self.project_uuid}/{impression.uuid}/{index}",
+                "error_log",
                 params={"offset": offset},
-                timeout=self.timeout
+                timeout=self.timeout,
+                log_context={"impression_uuid": impression.uuid, "log_index": index},
             )
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -1201,7 +1293,10 @@ class ChernCommunicator():
         """Ask DITE to force-stop a workflow (works for zombie runs)."""
         url = (f"http://{self.serverurl()}/kill-workflow/"
                f"{project_uuid}/{workflow_uuid}")
-        r = requests.get(url, timeout=self.kill_timeout)
+        r = self._request(
+            "GET", url, "kill_workflow", timeout=self.kill_timeout,
+            log_context={"workflow_uuid": workflow_uuid},
+        )
         r.raise_for_status()
         return r.json()
 

@@ -90,12 +90,25 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             task = self.get_vtask(sub_object.path)
             cache_on_runner[task.impression().uuid] = task.cache_on_runner()
         impressions = self.get_impressions()
+        logger.info(
+            "event=workflow_submit_started runner=%s impressions=%d",
+            runner,
+            len(impressions),
+        )
         cherncc.execute(impressions, cache_on_runner, runner, timeout=timeout)
+        logger.info(
+            "event=workflow_submit_completed runner=%s impressions=%d duration=%dms",
+            runner,
+            len(impressions),
+            round((time.time() - now) * 1000),
+        )
         msg = Message()
         msg.add(f"Impressions {impressions} submitted to {runner}.", "info")
         return msg
 
-    def submit_objects(self, objects, runner: str = "local", timeout: Optional[float] = None) -> Message:
+    def submit_objects(
+            self, objects, runner: str = "local",
+            timeout: Optional[float] = None) -> Message:
         """ Submit multiple objects collectively.
 
         Similar to submit() on a directory, but only processes the given
@@ -147,9 +160,45 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             cache_on_runner[task.impression().uuid] = task.cache_on_runner()
             impressions.append(task.impression().uuid)
 
+        logger.info(
+            "event=workflow_submit_started runner=%s impressions=%d",
+            runner,
+            len(impressions),
+        )
         cherncc.execute(impressions, cache_on_runner, runner, timeout=timeout)
+        logger.info(
+            "event=workflow_submit_completed runner=%s impressions=%d duration=%dms",
+            runner,
+            len(impressions),
+            round((time.time() - now) * 1000),
+        )
         msg = Message()
         msg.add(f"Impressions {impressions} submitted to {runner}.", "info")
+        return msg
+
+    def kill(self) -> Message:
+        """Kill the current impressions of every task in this directory."""
+        tasks = [
+            self.get_vtask(obj.path)
+            for obj in self.sub_objects_recursively()
+            if obj.is_task()
+        ]
+        msg = Message()
+        impressions = []
+        for task in tasks:
+            impression = task.impression()
+            if impression is None:
+                continue
+            impressions.append(impression)
+
+        if not impressions:
+            msg.add("No task impressions to kill.", "warning")
+            return msg
+        cherncc = ChernCommunicator.instance()
+        for impression in impressions:
+            cherncc.kill(impression)
+        impression_uuids = [impression.uuid for impression in impressions]
+        msg.add(f"Impressions {impression_uuids} killed.", "info")
         return msg
 
     def purge(self, _: str = "local") -> Message:

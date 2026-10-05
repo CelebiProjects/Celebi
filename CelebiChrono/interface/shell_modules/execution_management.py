@@ -37,6 +37,11 @@ def submit(runner: str = "local", timeout: float = None) -> Message:
     return message
 
 
+def kill():
+    """Kill running impressions for the current task or directory."""
+    return MANAGER.current_object().kill()
+
+
 def submit_objects(object_names: list[str], runner: str = "local", timeout: float = None) -> Message:
     """Submit named sub-objects of the current object for execution.
 

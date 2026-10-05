@@ -3,6 +3,9 @@ from unittest import mock
 
 from click.testing import CliRunner
 from CelebiChrono.celebi_cli.cli import cli
+from CelebiChrono.interface.shell_modules import execution_management
+from CelebiChrono.kernel.chern_communicator import ChernCommunicator
+from CelebiChrono.kernel.vobj_execution import ExecutionManagement
 
 
 def test_sync_live_command_calls_shell():
@@ -61,3 +64,54 @@ def test_kill_workflow_command_calls_shell():
         result = runner.invoke(cli, ["kill-workflow", "wf-1"])
     assert result.exit_code == 0
     fn.assert_called_once_with("wf-1")
+
+
+def test_kill_command_calls_shell_for_current_task():
+    """kill delegates to the shell function for the current task."""
+    runner = CliRunner()
+    with mock.patch("CelebiChrono.interface.shell.kill") as fn:
+        fn.return_value = "Killed impression"
+        result = runner.invoke(cli, ["kill"])
+    assert result.exit_code == 0
+    assert "Killed impression" in result.output
+    fn.assert_called_once_with()
+
+
+def test_kill_directory_kills_all_nested_tasks():
+    """Directory kill recursively kills each task impression."""
+    directory = mock.MagicMock(spec=ExecutionManagement)
+    directory.is_task.return_value = False
+    nested_directory = mock.MagicMock()
+    nested_directory.is_task.return_value = False
+    first_object = mock.MagicMock(path="first")
+    first_object.is_task.return_value = True
+    second_object = mock.MagicMock(path="nested/second")
+    second_object.is_task.return_value = True
+    new_object = mock.MagicMock(path="new-task")
+    new_object.is_task.return_value = True
+    directory.sub_objects_recursively.return_value = [
+        directory, first_object, nested_directory, second_object, new_object
+    ]
+
+    first_task = mock.MagicMock()
+    first_task.impression.return_value.uuid = "impression-1"
+    second_task = mock.MagicMock()
+    second_task.impression.return_value.uuid = "impression-2"
+    new_task = mock.MagicMock()
+    new_task.impression.return_value = None
+    directory.get_vtask.side_effect = [first_task, second_task, new_task]
+    directory.kill.side_effect = lambda: ExecutionManagement.kill(directory)
+
+    with mock.patch.object(execution_management.MANAGER, "current_object",
+                           return_value=directory), \
+            mock.patch.object(ChernCommunicator, "instance") as communicator:
+        result = execution_management.kill()
+
+    assert result.success
+    assert result.data == {}
+    assert "impression-1" in result.colored()
+    assert "impression-2" in result.colored()
+    assert communicator.return_value.kill.call_args_list == [
+        mock.call(first_task.impression.return_value),
+        mock.call(second_task.impression.return_value),
+    ]
