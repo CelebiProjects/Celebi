@@ -682,3 +682,13 @@ def transfer(source: str, destination: str, pattern: str = None,
             time.sleep(3)
     finally:
         progress_bar.close()
+
+
+def export(pattern: str = "*") -> None:
+    """Export current task outputs matching a glob pattern."""
+    MANAGER.current_object().export(pattern)
+
+
+def workaround_vre(pattern: str = "*"):
+    """Export task results and create a notebook for viewing them."""
+    return MANAGER.current_object().workaround_vre(pattern)

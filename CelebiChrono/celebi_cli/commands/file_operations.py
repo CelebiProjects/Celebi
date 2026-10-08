@@ -113,6 +113,19 @@ def import_command(path: str) -> None:
         _handle_error(f"Command failed: {e}")
 
 
+@click.command(name="workaround-vre")
+@click.argument("pattern", required=False, default="*", type=str)
+def workaround_vre_command(pattern: str) -> None:
+    """Export matching results and create a Jupyter notebook to view them."""
+    try:
+        from CelebiChrono.interface.shell import workaround_vre
+        _handle_result(workaround_vre(pattern))
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
 @click.command(name="replace")
 @click.argument("a", type=str)
 @click.argument("b", type=str)

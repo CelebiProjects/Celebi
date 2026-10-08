@@ -2,8 +2,10 @@
 """ JobManager class for managing tasks
 """
 import fnmatch
+import json
 import os
 import shutil
+from datetime import datetime
 from logging import getLogger
 from typing import Tuple, Union
 
@@ -644,8 +646,8 @@ class JobManager(Core):
         cherncc = ChernCommunicator.instance()
         return cherncc.impview(impression)
 
-    def export(self, pattern="*"):
-        """Export files matching glob pattern to {project_path}/export/."""
+    def export(self, pattern="*", timestamped=False):
+        """Export files matching a glob pattern to a local workaround directory."""
         cherncc = ChernCommunicator.instance()
         impression = self.impression()
 
@@ -664,9 +666,18 @@ class JobManager(Core):
             print(f"No files matching pattern '{pattern}' found")
             return
 
-        export_dir = os.path.join(self.project_path(), ".celebi-workaround", "export")
-        if os.path.exists(export_dir):
-            shutil.rmtree(export_dir)
+        if timestamped:
+            directory_name = (
+                f"{datetime.now().strftime('%Y%m%d-%H%M%S')}-"
+                f"{impression.short_uuid()}"
+            )
+            export_dir = os.path.join(
+                self.project_path(), "_celebi_workaround", directory_name)
+        else:
+            export_dir = os.path.join(
+                self.project_path(), ".celebi-workaround", "export")
+            if os.path.exists(export_dir):
+                shutil.rmtree(export_dir)
         os.makedirs(export_dir, exist_ok=True)
 
         for f in matched:
@@ -674,6 +685,92 @@ class JobManager(Core):
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             cherncc.export(impression, f, output_path)
             print(f"Exported {f} to {output_path}")
+
+        return export_dir
+
+    def workaround_vre(self, pattern="*"):
+        """Export results to a timestamped directory and create a VRE notebook."""
+        impression = self.impression()
+        export_dir = self.export(pattern, timestamped=True)
+        if export_dir is None or impression is None:
+            return None
+
+        notebook_path = os.path.join(export_dir, "view_results.ipynb")
+        export_dir_literal = repr(os.path.abspath(export_dir))
+        notebook = {
+            "cells": [
+                {
+                    "cell_type": "markdown",
+                    "metadata": {},
+                    "source": (
+                        "# Celebi VRE results\n\n"
+                        f"Impression: `{impression.uuid}`  \n"
+                        f"Export pattern: `{pattern}`"
+                    ),
+                },
+                {
+                    "cell_type": "code",
+                    "execution_count": None,
+                    "metadata": {},
+                    "outputs": [],
+                    "source": (
+                        "from pathlib import Path\n"
+                        "from IPython.display import Image, Markdown, display\n\n"
+                        f"EXPORT_DIR = Path({export_dir_literal})\n"
+                        "RESULT_FILES = sorted(\n"
+                        "    path for path in EXPORT_DIR.rglob('*')\n"
+                        "    if path.is_file() and path.name != 'view_results.ipynb'\n"
+                        ")\n"
+                        "[(str(path.relative_to(EXPORT_DIR)), path.stat().st_size) "
+                        "for path in RESULT_FILES]"
+                    ),
+                },
+                {
+                    "cell_type": "code",
+                    "execution_count": None,
+                    "metadata": {},
+                    "outputs": [],
+                    "source": (
+                        "IMAGE_SUFFIXES = {'.png', '.jpg', '.jpeg', '.gif', '.webp'}\n"
+                        "TEXT_SUFFIXES = {'.txt', '.log', '.json', '.yaml', '.yml', "
+                        "'.csv', '.md'}\n\n"
+                        "for path in RESULT_FILES:\n"
+                        "    relative = path.relative_to(EXPORT_DIR)\n"
+                        "    display(Markdown(f'### `{relative}`'))\n"
+                        "    suffix = path.suffix.lower()\n"
+                        "    if suffix in IMAGE_SUFFIXES:\n"
+                        "        display(Image(filename=str(path)))\n"
+                        "    elif suffix in TEXT_SUFFIXES and path.stat().st_size <= 1_000_000:\n"
+                        "        print(path.read_text(errors='replace'))\n"
+                        "    elif suffix == '.root':\n"
+                        "        try:\n"
+                        "            import uproot\n"
+                        "            with uproot.open(path) as root_file:\n"
+                        "                print(root_file.keys())\n"
+                        "        except ImportError:\n"
+                        "            print('Install uproot to inspect this ROOT file.')\n"
+                        "    else:\n"
+                        "        print(f'{path.stat().st_size:,} bytes')"
+                    ),
+                },
+            ],
+            "metadata": {
+                "kernelspec": {
+                    "display_name": "Python 3",
+                    "language": "python",
+                    "name": "python3",
+                },
+                "language_info": {"name": "python", "version": "3"},
+            },
+            "nbformat": 4,
+            "nbformat_minor": 5,
+        }
+        with open(notebook_path, "w", encoding="utf-8") as notebook_file:
+            json.dump(notebook, notebook_file, indent=2)
+            notebook_file.write("\n")
+
+        print(f"Created VRE notebook at {notebook_path}")
+        return notebook_path
 
     def send_data(self, path, progress_callback=None):
         """ Send data to the job with optional progress tracking.
