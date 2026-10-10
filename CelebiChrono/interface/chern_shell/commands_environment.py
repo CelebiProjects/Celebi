@@ -70,10 +70,11 @@ def _parse_update_runner_args(arg: str):
 
 
 def _parse_submit_args(arg: str):
-    """Parse runner, object names, and a positive response timeout in seconds."""
+    """Parse runner, objects, timeout, and unknown-workflow refresh opt-in."""
     parts = shlex.split(arg)
     runner = "local"
     timeout = None
+    with_unknown = False
     object_names = []
     index = 0
     while index < len(parts):
@@ -81,6 +82,10 @@ def _parse_submit_args(arg: str):
         if token == "--":
             object_names.extend(parts[index + 1:])
             break
+        if token == "--with-unknown":
+            with_unknown = True
+            index += 1
+            continue
         option, separator, value = token.partition("=")
         if option in ("--runner", "--timeout"):
             if not separator:
@@ -102,7 +107,7 @@ def _parse_submit_args(arg: str):
         else:
             object_names.append(token)
         index += 1
-    return runner, object_names, timeout
+    return runner, object_names, timeout, with_unknown
 
 
 def _parse_purge_args(arg: str):
@@ -265,14 +270,18 @@ class EnvironmentCommands:
             submit --runner cern
             submit --runner cern a b
             submit --runner cern --timeout 3000
+            submit --runner cern --with-unknown
             submit a b
         """
         try:
-            runner, object_names, timeout = _parse_submit_args(arg)
+            runner, object_names, timeout, with_unknown = _parse_submit_args(arg)
             if not object_names:
-                result = shell.submit(runner, timeout=timeout)
+                result = shell.submit(
+                    runner, timeout=timeout, with_unknown=with_unknown)
             else:
-                result = shell.submit_objects(object_names, runner, timeout=timeout)
+                result = shell.submit_objects(
+                    object_names, runner, timeout=timeout,
+                    with_unknown=with_unknown)
             if result.messages:
                 print(result.colored())
         except Exception as e:

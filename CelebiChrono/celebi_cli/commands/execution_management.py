@@ -351,7 +351,12 @@ def runner_envs_command(runner: str) -> None:
     "--timeout", type=click.IntRange(min=1), default=None, metavar="SECONDS",
     help="Submission response timeout; also extends SSH operation limits (seconds; default: 10).",
 )
-def submit_command(runner: str, timeout: int = None) -> None:
+@click.option(
+    "--with-unknown", is_flag=True,
+    help="Refresh an unknown workflow before deciding whether to resubmit it.",
+)
+def submit_command(runner: str, timeout: int = None,
+                   with_unknown: bool = False) -> None:
     """Submit current task for execution.
 
     Sends the current task to a runner for processing. The runner executes
@@ -361,7 +366,7 @@ def submit_command(runner: str, timeout: int = None) -> None:
     """
     try:
         from CelebiChrono.interface.shell import submit
-        result = submit(runner, timeout=timeout)
+        result = submit(runner, timeout=timeout, with_unknown=with_unknown)
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")

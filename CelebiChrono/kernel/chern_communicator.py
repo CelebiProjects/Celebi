@@ -105,7 +105,7 @@ class SubmissionError(RuntimeError):
         super().__init__(detail)
 
 
-class ChernCommunicator():
+class ChernCommunicator():  # pylint: disable=too-many-instance-attributes
     """ Communicator for Chern """
     ins = None
 
@@ -376,8 +376,10 @@ class ChernCommunicator():
             # Add extra data
             tar.add(extra_path, arcname="rawdata")
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    # pylint: disable=too-many-locals,too-many-branches
     def execute(self, impressions, cache_on_runner, machine="local",
-                timeout=None):  # pylint: disable=too-many-locals
+                timeout=None, with_unknown=False):
         """Submit impressions and wait for a durable scheduling decision."""
         files = {"impressions": " ".join(impressions)}
         url = self.serverurl()
@@ -393,6 +395,8 @@ class ChernCommunicator():
                 'project_uuid': self.project_uuid}
         if timeout is not None:
             data['timeout'] = timeout
+        if with_unknown:
+            data['with_unknown'] = 'true'
         response = self._request(
             "POST",
             f"http://{url}/execute",

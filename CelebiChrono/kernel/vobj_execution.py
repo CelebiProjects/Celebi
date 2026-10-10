@@ -18,6 +18,58 @@ CHERN_CACHE = ChernCache.instance()
 logger = getLogger("ChernLogger")
 
 
+def _submission_message(impressions, runner, submission):  # pylint: disable=too-many-return-statements
+    """Describe whether submit created, replaced, or reused a workflow."""
+    workflow_id = submission.get("workflow_id", "")
+    reason = submission.get("submission_reason", "")
+    workflow_status = submission.get("workflow_status", "") or "unknown"
+    if reason == "active":
+        return (f"Workflow {workflow_id} is already active "
+                f"({workflow_status}) on {runner}; no duplicate workflow "
+                "was created.")
+    if reason == "completed":
+        return (f"Workflow {workflow_id} is already complete "
+                f"({workflow_status}) on {runner}; existing results were reused.")
+    if reason == "unknown":
+        return (f"Workflow {workflow_id} is still unknown after a status "
+                f"refresh on {runner}; no new workflow was created.")
+    if reason == "refresh_failed":
+        detail = submission.get("refresh_error", "status refresh failed")
+        return (f"Could not refresh unknown workflow {workflow_id} on {runner}: "
+                f"{detail}. No new workflow was created.")
+    if reason == "not_retryable":
+        return (f"Workflow {workflow_id} refreshed to {workflow_status} on "
+                f"{runner}; no new workflow was created.")
+    if reason == "replacement":
+        previous = submission.get("previous_workflows", {})
+        attempts = sorted({
+            (details.get("workflow_id", ""),
+             details.get("workflow_status")
+             or details.get("job_status", "failed"))
+            for details in previous.values()
+            if details.get("workflow_id")
+        })
+        labels = ", ".join(f"{old_id} ({status})"
+                           for old_id, status in attempts)
+        if labels and workflow_id:
+            noun = "workflow" if len(attempts) == 1 else "workflows"
+            verb = "was" if len(attempts) == 1 else "were"
+            return (f"Previous {noun} {labels} {verb} replaced by workflow "
+                    f"{workflow_id} on {runner}.")
+    if submission.get("status") == "scheduled" and workflow_id:
+        return (f"Created workflow {workflow_id} on {runner} for impressions "
+                f"{impressions}.")
+    return f"Impressions {impressions} submitted to {runner}."
+
+
+def _submission_level(submission):
+    """Warn when an explicit unknown refresh did not permit submission."""
+    if submission.get("submission_reason") in (
+            "unknown", "refresh_failed", "not_retryable"):
+        return "warning"
+    return "info"
+
+
 class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
     """ Manage the contact with dite and runner. """
     def is_submitted(self, runner: str = "local") -> bool: # pylint: disable=unused-argument
@@ -42,7 +94,8 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             return []
         return [impression.uuid]
 
-    def submit(self, runner: str = "local", timeout: Optional[float] = None) -> Message:
+    def submit(self, runner: str = "local", timeout: Optional[float] = None,
+               with_unknown: bool = False) -> Message:
         """ Submit the impression to the runner. """
         now = time.time()
         cherncc = ChernCommunicator.instance()
@@ -96,7 +149,8 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             len(impressions),
         )
         submission = cherncc.execute(
-            impressions, cache_on_runner, runner, timeout=timeout)
+            impressions, cache_on_runner, runner, timeout=timeout,
+            with_unknown=with_unknown)
         logger.info(
             "event=workflow_submit_completed runner=%s impressions=%d "
             "submission_status=%s workflow=%s duration=%dms",
@@ -107,12 +161,15 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             round((time.time() - now) * 1000),
         )
         msg = Message()
-        msg.add(f"Impressions {impressions} submitted to {runner}.", "info")
+        msg.add(_submission_message(impressions, runner, submission),
+                _submission_level(submission))
         return msg
 
+    # pylint: disable=too-many-locals
     def submit_objects(
             self, objects, runner: str = "local",
-            timeout: Optional[float] = None) -> Message:  # pylint: disable=too-many-locals
+            timeout: Optional[float] = None,
+            with_unknown: bool = False) -> Message:
         """ Submit multiple objects collectively.
 
         Similar to submit() on a directory, but only processes the given
@@ -170,7 +227,8 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             len(impressions),
         )
         submission = cherncc.execute(
-            impressions, cache_on_runner, runner, timeout=timeout)
+            impressions, cache_on_runner, runner, timeout=timeout,
+            with_unknown=with_unknown)
         logger.info(
             "event=workflow_submit_completed runner=%s impressions=%d "
             "submission_status=%s workflow=%s duration=%dms",
@@ -181,7 +239,8 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             round((time.time() - now) * 1000),
         )
         msg = Message()
-        msg.add(f"Impressions {impressions} submitted to {runner}.", "info")
+        msg.add(_submission_message(impressions, runner, submission),
+                _submission_level(submission))
         return msg
 
     def kill(self) -> Message:

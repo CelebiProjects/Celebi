@@ -19,7 +19,8 @@ def test_current_object_submit(args, runner, timeout):
     with patch.object(shell, 'submit') as submit, \
          patch.object(shell, 'submit_objects') as batch:
         EnvironmentCommands().do_submit(args)
-    submit.assert_called_once_with(runner, timeout=timeout)
+    submit.assert_called_once_with(
+        runner, timeout=timeout, with_unknown=False)
     batch.assert_not_called()
 
 
@@ -28,7 +29,19 @@ def test_named_objects_submit():
          patch.object(shell, 'submit_objects') as batch:
         EnvironmentCommands().do_submit('a --timeout 3000 "b c" --runner pkufarm212')
     submit.assert_not_called()
-    batch.assert_called_once_with(['a', 'b c'], 'pkufarm212', timeout=3000)
+    batch.assert_called_once_with(
+        ['a', 'b c'], 'pkufarm212', timeout=3000, with_unknown=False)
+
+
+def test_submit_with_unknown_option():
+    """The interactive option is forwarded for the current object."""
+    with patch.object(shell, 'submit') as submit, \
+         patch.object(shell, 'submit_objects') as batch:
+        EnvironmentCommands().do_submit(
+            '--runner pkufarm212 --with-unknown')
+    submit.assert_called_once_with(
+        'pkufarm212', timeout=None, with_unknown=True)
+    batch.assert_not_called()
 
 
 @pytest.mark.parametrize('args', [

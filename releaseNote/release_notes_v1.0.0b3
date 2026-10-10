@@ -1,4 +1,8 @@
 ## v1.0.0b3
++ Use `submit` for both initial execution and re-submission.
+  - Report whether a workflow was newly created, replaced a failed workflow, is still active (including `unknown` startup state), or was already complete with reusable results.
+  - Do not create a separate retry command: Yuki's execution lease remains the authority preventing duplicate active workflows.
+  - Add `submit --with-unknown` to the CLI and interactive shell. It asks Yuki to refresh an `unknown` workflow first and resubmits only after that refresh confirms failure.
 + Fix `register-ssh-data` descriptor and impression handling.
   - Preserve the current rawdata task's descriptor unless `--descriptor` explicitly overrides it, and send the selected descriptor to Yuki when registering.
   - Refresh the local impression after registration, clearing stale status caches, so subsequent status queries use the updated snapshot.

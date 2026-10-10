@@ -7,7 +7,8 @@ from ...utils.message import Message
 from ._manager import MANAGER
 
 
-def submit(runner: str = "local", timeout: float = None) -> Message:
+def submit(runner: str = "local", timeout: float = None,
+           with_unknown: bool = False) -> Message:
     """Submit current task for execution.
 
     Sends the current task to a runner for processing. The runner executes
@@ -33,7 +34,8 @@ def submit(runner: str = "local", timeout: float = None) -> Message:
         - The task must have a valid algorithm and inputs configured
         - Runner must be available and configured
     """
-    message = MANAGER.current_object().submit(runner, timeout=timeout)
+    message = MANAGER.current_object().submit(
+        runner, timeout=timeout, with_unknown=with_unknown)
     return message
 
 
@@ -42,7 +44,9 @@ def kill():
     return MANAGER.current_object().kill()
 
 
-def submit_objects(object_names: list[str], runner: str = "local", timeout: float = None) -> Message:
+def submit_objects(object_names: list[str], runner: str = "local",
+                   timeout: float = None,
+                   with_unknown: bool = False) -> Message:
     """Submit named sub-objects of the current object for execution.
 
     Resolves each name relative to the current working directory, then calls
@@ -66,7 +70,8 @@ def submit_objects(object_names: list[str], runner: str = "local", timeout: floa
         except Exception as e:  # pylint: disable=broad-except
             message.add(f"Error resolving {name}: {e}", "error")
             return message
-    return MANAGER.current_object().submit_objects(objects, runner, timeout=timeout)
+    return MANAGER.current_object().submit_objects(
+        objects, runner, timeout=timeout, with_unknown=with_unknown)
 
 
 def purge() -> Message:
