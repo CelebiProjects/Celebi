@@ -29,48 +29,6 @@ def _resolve_project_path(path: str) -> str:
     return path
 
 
-def jobs(_: str) -> Message:
-    """Display job information for current algorithm or task.
-
-    Shows execution jobs associated with the current algorithm or task object.
-    Jobs represent individual executions with their status, parameters, and
-    results. This command provides visibility into the execution history
-    and current state of computational workflows.
-
-    Args:
-        _ (str): Unused parameter (maintained for interface consistency).
-
-    Returns:
-        Message: Message with job information or error message.
-
-    Examples:
-        jobs          # Show jobs for current algorithm/task
-        jobs          # No arguments needed, parameter is unused
-
-    Note:
-        - Works within algorithm, task, directory, or project contexts
-        - Shows job ID, status, creation time, and parameters
-        - Jobs can be in states: pending, running, completed, failed
-        - Use this command to monitor execution progress
-    """
-    message = Message()
-    object_type = MANAGER.current_object().object_type()
-    if object_type in ("directory", "project"):
-        sub_objects = MANAGER.current_object().sub_objects()
-        for obj in sub_objects:
-            if obj.object_type() not in ("algorithm", "task"):
-                continue
-            obj_path = MANAGER.current_object().relative_path(obj.path)
-            task = MANAGER.sub_object(obj_path)
-            task.jobs()
-        return message
-    if object_type not in ("algorithm", "task"):
-        message.add("Not able to found job", "error")
-        return message
-    MANAGER.current_object().jobs()
-    return message
-
-
 def status() -> Message:
     """Display status information for the current Celebi object.
 

@@ -134,15 +134,6 @@ class BasicCommands:
         except Exception as e:
             print(f"Error showing short listing: {e}")
 
-    def do_jobs(self, _: str) -> None:
-        """Show jobs for current algorithm or task."""
-        try:
-            result = shell.jobs("")
-            if result.messages:
-                print(result.colored())
-        except Exception as e:
-            print(f"Error showing jobs: {e}")
-
     def do_log(self, arg: str) -> None:
         """Show log for current object. Usage: log [index] [--follow] [-i SECONDS]
 

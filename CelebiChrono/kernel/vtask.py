@@ -23,9 +23,6 @@
             Copy the output to some directory
         + remove
             Remove the task.
-        + jobs
-            Query the jobs of the task throught ChernCommunicator.
-
         + view
             Open the file through ChernCommunicator. This is quite temporatory.
             Because it can only open local file.

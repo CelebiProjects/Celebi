@@ -65,16 +65,6 @@ def short_ls_command():
         print(output)
 
 
-@click.command(name="jobs")
-def jobs_command():
-    """Show jobs."""
-    from CelebiChrono.interface.shell import jobs
-    result = jobs("")
-    output = format_output(result)
-    if output:
-        print(output)
-
-
 @click.command(name="project-uuid")
 def project_uuid_command():
     """Print the current project's UUID."""

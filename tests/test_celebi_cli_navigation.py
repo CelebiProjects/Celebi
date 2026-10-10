@@ -38,11 +38,9 @@ def test_short_ls_command():
     result = runner.invoke(cli, ['short-ls'])
     assert not result.exit_code
 
-def test_jobs_command():
-    """Test jobs command."""
-    runner = CliRunner()
-    result = runner.invoke(cli, ['jobs'])
-    assert not result.exit_code
+def test_jobs_command_is_not_registered():
+    """The obsolete jobs command is no longer exposed."""
+    assert 'jobs' not in cli.commands
 
 def test_set_descriptor_command():
     """Test set descriptor command."""

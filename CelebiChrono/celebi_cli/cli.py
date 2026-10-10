@@ -21,7 +21,6 @@ cli.add_command(navigation.status_command)
 cli.add_command(navigation.navigate_command)
 cli.add_command(navigation.cdproject_command)
 cli.add_command(navigation.short_ls_command)
-cli.add_command(navigation.jobs_command)
 cli.add_command(navigation.project_uuid_command)
 
 # File operations commands (9 commands)

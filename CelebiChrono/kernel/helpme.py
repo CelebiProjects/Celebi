@@ -46,7 +46,6 @@ The following commands can be used, and type ``helpme [COMMAND]'' or ``[COMMAND]
     status           : Get the status of the objects.
     impress          : Create a new impression for the task.
     submit           : Submit the impression to the backend.
-    jobs             : Consult the jobs.
     stdout           : Get the stdout.
     readme           : Read or write the readme.
 """,

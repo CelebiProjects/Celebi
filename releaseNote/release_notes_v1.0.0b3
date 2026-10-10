@@ -70,6 +70,7 @@
 + Allow explicit collection of diagnostic outputs from failed workflows.
   - `collect --allow-failed <selector>` is available in both `celebi-cli` and the interactive Chern shell, including selectors such as `all`, `plots`, `data`, globs, and filenames.
   - Default collection remains restricted to successful workflows. Opted-in results are clearly marked as unofficial diagnostic output, together with the failed job status and source workflow ID.
++ Remove the obsolete `jobs` command from `celebi-cli`, the interactive Chern shell, and help text; it had no implementation on Task or Algorithm objects. Use `status`, `history`, and `engine-logs` for workflow inspection.
 + Bump version to 1.0.0b3.
 
 ## v1.0.0b2
