@@ -36,7 +36,7 @@ def test_submit_timeout_reaches_http_request(timeout, expected):
          patch('CelebiChrono.kernel.chern_communicator.requests.post') as post:
         get.return_value.text = 'machine'
         result = CliRunner().invoke(cli, args)
-    assert result.exit_code == 0, result.output
+    assert not result.exit_code, result.output
     assert 'submitted' in result.output
     assert post.call_args.kwargs['timeout'] == expected
     if timeout is None:
@@ -52,6 +52,25 @@ def test_invalid_timeout_does_not_submit(value):
     with patch('CelebiChrono.interface.shell.submit') as submit:
         result = CliRunner().invoke(cli, ['submit', '--timeout', value])
     assert result.exit_code == 2
+    submit.assert_not_called()
+
+
+def test_cli_submit_uses_runner_option():
+    """The CLI and interactive shell use the same --runner spelling."""
+    with patch('CelebiChrono.interface.shell.submit') as submit:
+        result = CliRunner().invoke(
+            cli, ['submit', '--runner', 'ihep'])
+    assert not result.exit_code, result.output
+    submit.assert_called_once_with(
+        'ihep', timeout=None, with_unknown=False)
+
+
+def test_cli_submit_rejects_positional_runner():
+    """The former positional runner syntax is no longer ambiguous."""
+    with patch('CelebiChrono.interface.shell.submit') as submit:
+        result = CliRunner().invoke(cli, ['submit', 'ihep'])
+    assert result.exit_code == 2
+    assert 'unexpected extra argument' in result.output.lower()
     submit.assert_not_called()
 
 

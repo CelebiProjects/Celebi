@@ -346,7 +346,10 @@ def runner_envs_command(runner: str) -> None:
 
 
 @click.command(name="submit")
-@click.argument("runner", type=str, default="local", required=False)
+@click.option(
+    "--runner", type=str, default="local", show_default=True,
+    help="Execution runner name.",
+)
 @click.option(
     "--timeout", type=click.IntRange(min=1), default=None, metavar="SECONDS",
     help="Submission response timeout; also extends SSH operation limits (seconds; default: 10).",
@@ -362,7 +365,7 @@ def submit_command(runner: str, timeout: int = None,
     Sends the current task to a runner for processing. The runner executes
     the task's algorithm with the specified inputs and parameters.
 
-    RUNNER is the name of the execution environment to use (defaults to "local").
+    Use --runner to select the execution environment.
     """
     try:
         from CelebiChrono.interface.shell import submit

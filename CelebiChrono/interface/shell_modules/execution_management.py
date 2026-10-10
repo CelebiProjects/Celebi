@@ -22,8 +22,8 @@ def submit(runner: str = "local", timeout: float = None,
 
     Examples:
         submit              # Submit to local runner
-        submit my_runner    # Submit to specific runner
-        submit cluster-01   # Submit to cluster runner
+        submit --runner my_runner    # Submit to specific runner
+        submit --runner cluster-01   # Submit to cluster runner
 
     Returns:
         Message containing submission confirmation, runner assignment details,

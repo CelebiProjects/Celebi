@@ -103,7 +103,7 @@ Apache License, Version 2.0
 For a slow server response, increase the submission request timeout (in seconds):
 
 ```bash
-celebi-cli submit my_runner --timeout 300
+celebi-cli submit --runner my_runner --timeout 300
 ```
 
 In the interactive Celebi shell, use:
