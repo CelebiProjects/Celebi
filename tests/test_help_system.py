@@ -33,12 +33,11 @@ class TestHelpSystem(unittest.TestCase):
             # Call the function
             result = _get_command_docstring('mock_func')
 
-            # Verify the result doesn't include the first line
-            # Note: Implementation preserves original formatting (does not dedent)
+            # Verify the result is normalized and doesn't include the first line.
             expected = """This is the detailed description.
-            It has multiple lines.
+It has multiple lines.
 
-            More details here."""
+More details here."""
 
             self.assertEqual(result, expected)
             self.assertNotIn('First line summary.', result)

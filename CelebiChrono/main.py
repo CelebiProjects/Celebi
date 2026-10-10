@@ -23,6 +23,7 @@
 
 # pylint: disable=broad-exception-caught
 import os
+import inspect
 from os.path import join
 from logging import getLogger
 
@@ -78,11 +79,11 @@ def _get_command_docstring(func_name: str) -> str:
         if func is None:
             return ""
 
-        docstring = func.__doc__
+        docstring = inspect.cleandoc(func.__doc__ or "")
         if not docstring:
             return ""
 
-        lines = docstring.strip().split('\n')
+        lines = docstring.split('\n')
         if len(lines) > 1:
             remaining_lines = lines[1:]
             while remaining_lines and not remaining_lines[0].strip():

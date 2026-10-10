@@ -71,6 +71,10 @@
   - `collect --allow-failed <selector>` is available in both `celebi-cli` and the interactive Chern shell, including selectors such as `all`, `plots`, `data`, globs, and filenames.
   - Default collection remains restricted to successful workflows. Opted-in results are clearly marked as unofficial diagnostic output, together with the failed job status and source workflow ID.
 + Remove the obsolete `jobs` command from `celebi-cli`, the interactive Chern shell, and help text; it had no implementation on Task or Algorithm objects. Use `status`, `history`, and `engine-logs` for workflow inspection.
++ Make navigation commands safe outside a Celebi project.
+  - `tree`, `status`, and `short-ls` now return a clear message instead of raising `KeyError(None)`.
+  - `cdproject` validates the requested project before changing directory, and `navigate` handles an empty project registry.
++ Normalize shell command docstrings with Python's standard indentation cleanup so generated long help is stable across Python versions.
 + Bump version to 1.0.0b3.
 
 ## v1.0.0b2

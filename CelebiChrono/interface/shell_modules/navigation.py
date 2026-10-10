@@ -42,8 +42,14 @@ def cd_project(line: str) -> Message:
         Current working directory will change to the project's root path.
     """
     message = Message()
+    if line not in MANAGER.get_all_projects():
+        message.add(f"No such project: {line}\n", "error")
+        return message
     MANAGER.switch_project(line)
-    os.chdir(MANAGER.current_object().path)
+    if MANAGER.c is None:
+        message.add(f"Unable to open project: {line}\n", "error")
+        return message
+    os.chdir(MANAGER.c.path)
     message.add(f"Switched to project: {line}", "success")
     return message
 
@@ -69,7 +75,8 @@ def shell_cd_project(line: str) -> Message:
         Uses the same project validation as cd_project.
     """
     message = cd_project(line)
-    message.add(MANAGER.current_object().path, "normal")
+    if message.success:
+        message.add(MANAGER.c.path, "normal")
     return message
 
 
@@ -175,6 +182,9 @@ def navigate() -> Message:
     message = Message()
     manager = ChernProjectManager().get_manager()
     project_name = manager.get_current_project()
+    if not project_name:
+        message.add("No current Celebi project.\n", "error")
+        return message
     path = manager.get_project_path(project_name)
     message.add(path, "normal")
     message.data["path"] = path

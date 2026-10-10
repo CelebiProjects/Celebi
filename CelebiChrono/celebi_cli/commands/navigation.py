@@ -1,6 +1,17 @@
 """Navigation commands for Celebi CLI."""
+import os
+
 import click
 from CelebiChrono.celebi_cli.utils import format_output
+
+
+def _require_project():
+    """Return whether the command is running inside a Celebi project."""
+    from CelebiChrono.utils import csys
+    if csys.project_path(os.getcwd()):
+        return True
+    print("Error: Not inside a Celebi project.")
+    return False
 
 
 @click.command(name="cd")
@@ -17,6 +28,8 @@ def cd_command(path):
 @click.command(name="tree")
 def tree_command():
     """Show tree view."""
+    if not _require_project():
+        return
     from CelebiChrono.interface.shell import tree
     result = tree()
     output = format_output(result)
@@ -27,6 +40,8 @@ def tree_command():
 @click.command(name="status")
 def status_command():
     """Show status."""
+    if not _require_project():
+        return
     from CelebiChrono.interface.shell import status
     result = status()
     output = format_output(result)
@@ -58,6 +73,8 @@ def cdproject_command(project):
 @click.command(name="short-ls")
 def short_ls_command():
     """Short listing."""
+    if not _require_project():
+        return
     from CelebiChrono.interface.shell import short_ls
     result = short_ls("")
     output = format_output(result)
@@ -68,7 +85,6 @@ def short_ls_command():
 @click.command(name="project-uuid")
 def project_uuid_command():
     """Print the current project's UUID."""
-    import os
     from CelebiChrono.utils import csys
     from CelebiChrono.kernel.vproject import VProject
     project_path = csys.project_path(os.getcwd())
