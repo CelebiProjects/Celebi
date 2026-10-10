@@ -1,4 +1,4 @@
-## v0.0.4
+## v1.0.0b4
 
 Changes since v1.0.0b3:
 
@@ -36,4 +36,4 @@ Changes since v1.0.0b3:
     registry safely.
 + Refresh the README, Read the Docs command reference, bilingual website documentation,
   and Celebi skills to match the new command organization and help behavior.
-+ Set the CelebiChrono package version to `0.0.4`.
++ Set the CelebiChrono package version to `1.0.0b4`.
