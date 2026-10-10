@@ -1,0 +1,39 @@
+## v0.0.4
+
+Changes since v1.0.0b3:
+
++ Clarify and separate the three command entry points.
+  - `celebi` opens the interactive Chern shell and supports project selection.
+  - `celebi-cli` provides the complete non-interactive command-line interface.
+  - `celebi-git` contains the Git-specific commands.
++ Reorganize `celebi-cli` and shell commands into clearer project, navigation, object,
+  configuration, execution, data, runner, inspection, file, and maintenance groups.
+  - Prefer explicit command names such as `project-path`, `set-parameter`,
+    `set-environment`, `set-memory-limit`, `runner-environments`, and `view-url`.
+  - Keep earlier spellings as hidden compatibility aliases for existing scripts.
+  - Remove the obsolete `jobs` command; use `status`, `history`, and `engine-logs`.
+  - Expose previously missing operations including `add-multi-inputs`,
+    `remove-multi-inputs`, `create-multi-tasks`, `create-multi-data`, `auto-download`,
+    `cache-on-runner`, `check-results`, `comment`, `edit-readme`, `cat`, `display`,
+    `export`, `impression`, `homekeep`, `purge-impressions`, and `open-bookkeeping`.
++ Complete the interactive shell help system.
+  - `helpme` shows the categorized overview.
+  - `help <command>` and `<command> --help` show command-specific usage and details.
+  - Normalize command docstrings so generated help remains stable across Python versions.
++ Use `submit` for both initial execution and re-submission.
+  - Report whether a workflow was created, replaced after failure, remains active, or
+    already has reusable results.
+  - Add `submit --with-unknown` to refresh an unknown workflow before deciding whether
+    it can be resubmitted.
+  - Standardize runner selection as `submit --runner <name>`.
++ Add live status waiting to `celebi-cli` and the interactive shell.
+  - `status --wait` asks Yuki for synchronous runner refreshes and prints changed status
+    snapshots until the current object reaches a terminal state or the user presses Ctrl-C.
+  - `--poll-interval` / `-i` controls the refresh delay and defaults to two seconds.
++ Harden navigation outside Celebi projects.
+  - `tree`, `status`, and `short-ls` now fail cleanly when no project is active.
+  - `cdproject` validates the requested project, and project navigation handles an empty
+    registry safely.
++ Refresh the README, Read the Docs command reference, bilingual website documentation,
+  and Celebi skills to match the new command organization and help behavior.
++ Set the CelebiChrono package version to `0.0.4`.

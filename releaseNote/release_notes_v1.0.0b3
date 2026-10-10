@@ -1,12 +1,4 @@
 ## v1.0.0b3
-+ Add `status --wait` to `celebi-cli` and the interactive shell.
-  - Poll Yuki with synchronous runner refreshes instead of repeatedly reading its saved workflow snapshot; report changed status views until the current object becomes terminal or the user presses Ctrl-C.
-  - Add `--poll-interval` / `-i` to control the delay between live refreshes (default: 2 seconds).
-+ Use `submit` for both initial execution and re-submission.
-  - Report whether a workflow was newly created, replaced a failed workflow, is still active (including `unknown` startup state), or was already complete with reusable results.
-  - Do not create a separate retry command: Yuki's execution lease remains the authority preventing duplicate active workflows.
-  - Add `submit --with-unknown` to the CLI and interactive shell. It asks Yuki to refresh an `unknown` workflow first and resubmits only after that refresh confirms failure.
-  - Standardize runner selection as `submit --runner <name>` in both `celebi-cli` and the interactive shell; the CLI no longer accepts a positional runner.
 + Fix `register-ssh-data` descriptor and impression handling.
   - Preserve the current rawdata task's descriptor unless `--descriptor` explicitly overrides it, and send the selected descriptor to Yuki when registering.
   - Refresh the local impression after registration, clearing stale status caches, so subsequent status queries use the updated snapshot.
@@ -78,11 +70,6 @@
 + Allow explicit collection of diagnostic outputs from failed workflows.
   - `collect --allow-failed <selector>` is available in both `celebi-cli` and the interactive Chern shell, including selectors such as `all`, `plots`, `data`, globs, and filenames.
   - Default collection remains restricted to successful workflows. Opted-in results are clearly marked as unofficial diagnostic output, together with the failed job status and source workflow ID.
-+ Remove the obsolete `jobs` command from `celebi-cli`, the interactive Chern shell, and help text; it had no implementation on Task or Algorithm objects. Use `status`, `history`, and `engine-logs` for workflow inspection.
-+ Make navigation commands safe outside a Celebi project.
-  - `tree`, `status`, and `short-ls` now return a clear message instead of raising `KeyError(None)`.
-  - `cdproject` validates the requested project before changing directory, and `navigate` handles an empty project registry.
-+ Normalize shell command docstrings with Python's standard indentation cleanup so generated long help is stable across Python versions.
 + Bump version to 1.0.0b3.
 
 ## v1.0.0b2
