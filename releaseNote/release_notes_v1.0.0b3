@@ -57,6 +57,19 @@
   - `cache-results <runner>`: save the current impression's runner-resident results (the workflow's stageout) into the runner's managed impressions cache. Runs as a background job on Yuki with live polling; in a folder it processes every impressed subobject and reports per-impression totals.
   - `whereabouts`: report where the current impression's data lives as a columnar table — one row per (location, storage kind) covering yuki storage (`local`), each runner's `workflow`/`cache` states, and the registration host. Column widths grow to fit the data (long runner names cannot break the table), a `size` column appears when any entry carries bytes, missing yuki data reads `✗ not in yuki`, and every row carries a trailing newline so lines no longer concatenate in the shell.
   - All three commands exist in the Chern shell (`do_*`), `celebi-cli`, and the shell-function layer, with runner-name tab completion where a runner is taken.
++ Add persistent application and HTTP diagnostics.
+  - Normal commands always write operational INFO records to the rotating `~/.celebi/logs/celebi.log`; `--debug` upgrades the same file to DEBUG without duplicating handlers or writing debug noise to the terminal.
+  - HTTP requests log safe structured fields including operation, endpoint, status, latency, runner/impression context, and timeout/error type without recording query secrets or request bodies.
+  - Workflow submissions log start and confirmed-completion events with elapsed time and the resolved submission/workflow state.
++ Add a top-level `kill` command for the current task or directory, recursively issuing per-impression kill requests for impressed nested tasks.
++ Allow moving task/algorithm working trees before they are impressed; unsnapshotted files, existing impression history, dependencies, aliases, and successor arcs are preserved.
++ Wait for Yuki's durable workflow-submission decision (YD-17).
+  - Poll the submission endpoint after HTTP 202 and report success only for `scheduled` or `deduplicated` outcomes.
+  - Surface `blocked`/`failed` details and conflicting workflow IDs directly to the caller; a timeout includes the submission ID for later inspection.
+  - Continue to accept the legacy plain-text Celery task response from older Yuki servers.
++ Allow explicit collection of diagnostic outputs from failed workflows.
+  - `collect --allow-failed <selector>` is available in both `celebi-cli` and the interactive Chern shell, including selectors such as `all`, `plots`, `data`, globs, and filenames.
+  - Default collection remains restricted to successful workflows. Opted-in results are clearly marked as unofficial diagnostic output, together with the failed job status and source workflow ID.
 + Bump version to 1.0.0b3.
 
 ## v1.0.0b2
