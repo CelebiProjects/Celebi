@@ -5,6 +5,7 @@ Functions for configuring tasks and algorithms: inputs, parameters, environment,
 """
 import os
 import subprocess
+import time
 
 import yaml
 
@@ -29,7 +30,7 @@ def _resolve_project_path(path: str) -> str:
     return path
 
 
-def status() -> Message:
+def status(live: bool = False) -> Message:
     """Display status information for the current Celebi object.
 
     Shows comprehensive status information including object type, metadata,
@@ -52,7 +53,9 @@ def status() -> Message:
         - For rawdata tasks with a registered impression: shows the
           background copy state (Data registration line)
     """
-    message = MANAGER.current_object().printed_status()
+    current_object = MANAGER.current_object()
+    message = (current_object.printed_status(live=True) if live
+               else current_object.printed_status())
     current = MANAGER.current_object()
     if current.object_type() == "task":
         from .object_creation import _is_rawdata_task
@@ -62,6 +65,27 @@ def status() -> Message:
             if impression_uuid:
                 message.append(_registration_status_line(impression_uuid))
     return message
+
+
+_WAIT_TERMINAL_STATUSES = {
+    "new", "raw", "finished", "success", "failed", "dissonance",
+    "stopped", "deleted", "archived", "coda", "final note",
+}
+
+
+def status_updates(poll_interval: float = 2.0):
+    """Yield changed live status snapshots until the current object is terminal."""
+    previous = None
+    while True:
+        message = status(live=True)
+        snapshot = tuple(message.messages)
+        if snapshot != previous:
+            yield message
+            previous = snapshot
+        current = str(message.data.get("job_status", "")).lower()
+        if current in _WAIT_TERMINAL_STATUSES:
+            return
+        time.sleep(poll_interval)
 
 
 def _registration_status_line(impression_uuid):

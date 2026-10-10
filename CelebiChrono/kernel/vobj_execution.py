@@ -353,7 +353,8 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
         cherncc = ChernCommunicator.instance()
         return cherncc.is_deposited(self.impression()) == "TRUE"
 
-    def job_status(self, consult_id = None, runner: Optional[str] = None) -> str:
+    def job_status(self, consult_id=None, runner: Optional[str] = None,
+                   live: bool = False) -> str:
         """ Get the status of the job"""
         consult_table = CHERN_CACHE.job_status_consult_table
         if consult_id is not None:
@@ -375,7 +376,8 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             for sub_object in sub_objects:
                 if sub_object.object_type() == "algorithm":
                     continue
-                status = sub_object.job_status(consult_id, runner)
+                status = (sub_object.job_status(consult_id, runner, live=True)
+                          if live else sub_object.job_status(consult_id, runner))
                 if status == "failed":
                     consult_table[self.path] = (consult_id, "failed", "")
                     return "failed"
@@ -388,7 +390,8 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             return "finished"
         cherncc = ChernCommunicator.instance()
         if runner is None:
-            job_status_data = cherncc.job_status(self.impression())
+            job_status_data = (cherncc.job_status(self.impression(), wait=True)
+                               if live else cherncc.job_status(self.impression()))
             # Extract legacy status string from dict returned by communicator
             job_status = (
                 job_status_data.get("status_legacy", "unknown")
@@ -402,7 +405,9 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
                 job_status = "finished"
             consult_table[self.path] = (consult_id, job_status, detailed_status)
             return job_status
-        job_status_data = cherncc.job_status(self.impression(), runner)
+        job_status_data = (cherncc.job_status(
+            self.impression(), runner, wait=True) if live
+                           else cherncc.job_status(self.impression(), runner))
         job_status = (
             job_status_data.get("status_legacy", "unknown")
             if isinstance(job_status_data, dict) else job_status_data

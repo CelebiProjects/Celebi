@@ -37,6 +37,27 @@ def _parse_log_args(arg: str):
     return 0, follow, poll_interval
 
 
+def _parse_status_args(arg: str):
+    """Parse `status [--wait] [-i SECONDS]`."""
+    tokens = arg.split()
+    wait = "--wait" in tokens
+    poll_interval = 2.0
+    consumed = {"--wait"}
+    for option in ("-i", "--poll-interval"):
+        if option in tokens:
+            position = tokens.index(option)
+            if position + 1 >= len(tokens):
+                raise ValueError(f"{option} requires a value")
+            poll_interval = float(tokens[position + 1])
+            if poll_interval < 0.1:
+                raise ValueError("poll interval must be at least 0.1 seconds")
+            consumed.update((option, tokens[position + 1]))
+    unknown = [token for token in tokens if token not in consumed]
+    if unknown:
+        raise ValueError(f"Unknown status option: {unknown[0]}")
+    return wait, poll_interval
+
+
 class BasicCommands:
     """Mixin class providing basic operation command handlers."""
 
@@ -48,10 +69,20 @@ class BasicCommands:
         except Exception as e:
             print(f"Error listing contents: {e}")
 
-    def do_status(self, _: str) -> None:
-        """Show status of current object."""
+    def do_status(self, arg: str) -> None:
+        """Show status. Usage: status [--wait] [-i SECONDS]"""
         try:
-            print(shell.status().colored())
+            wait, poll_interval = _parse_status_args(arg)
+            updates = (shell.status_updates(poll_interval)
+                       if wait else [shell.status()])
+            first = True
+            for result in updates:
+                if not first:
+                    print("---")
+                print(result.colored())
+                first = False
+        except KeyboardInterrupt:
+            return
         except Exception as e:
             print(f"Error showing status: {e}")
 

@@ -199,10 +199,12 @@ class VTask(InputManager, SettingManager, FileManager, JobManager,
             with open_subprocess(f"{opener} {shlex.quote(path)}"):
                 pass
 
-    def printed_status(self):
+    # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    def printed_status(self, live=False):
         """ Print the status of the task
         """
-        message = super().printed_status()
+        message = (super().printed_status(live=True) if live
+                   else super().printed_status())
 
         if self.status() != "impressed":
             return message
@@ -211,10 +213,12 @@ class VTask(InputManager, SettingManager, FileManager, JobManager,
         dite_status = cherncc.dite_status()
         if dite_status != "connected":
             return message
-        job_status = cherncc.job_status(self.impression())
+        job_status = (cherncc.job_status(self.impression(), wait=True) if live
+                      else cherncc.job_status(self.impression()))
         if not isinstance(job_status, dict):
             message.add("Job status: ")
             message.add(f"[{job_status}]\n")
+            message.data["job_status"] = job_status
             return message
         musical_status = job_status.get("status_musical", job_status["status"])
         real_status = job_status.get("status_legacy", job_status["status"])
@@ -224,13 +228,18 @@ class VTask(InputManager, SettingManager, FileManager, JobManager,
             musical_status = "coda"
         if real_status in ("prelude", "orchestrating"):
             real_status = "undecided"
+        message.data["job_status"] = real_status
         detailed_status = job_status["detailed_status"]
+        refresh_error = job_status.get("refresh_error", "")
+        if refresh_error:
+            detailed_status = f"Live status refresh failed: {refresh_error}"
         message.add("Job status: ")
         message.add(f"{'['+musical_status+']'}")
         message.add(f"{'['+real_status+']'}")
         message.add("\n")
-        message.add(f"Details: {detailed_status}\n",
-                    "warning" if musical_status in ("failed") else "normal")
+        message.add(
+            f"Details: {detailed_status}\n",
+            "warning" if musical_status == "failed" or refresh_error else "normal")
 
         environment = self.environment()
         if environment == "rawdata":

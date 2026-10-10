@@ -147,7 +147,8 @@ class Core(ABC):
         """ Abstract method for future implementation"""
 
     @abstractmethod
-    def job_status(self, consult_id = None, runner: Optional[str] = None) -> str:
+    def job_status(self, consult_id=None, runner: Optional[str] = None,
+                   live: bool = False) -> str:
         """ Abstract method for future implementation"""
 
     @abstractmethod

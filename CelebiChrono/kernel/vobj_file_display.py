@@ -120,7 +120,7 @@ class FileManagementDisplay(Core):
         message.add("\n")
         return message
 
-    def printed_status(self) -> Message:  # pylint: disable=too-many-branches,too-many-statements
+    def printed_status(self, live=False) -> Message:  # pylint: disable=too-many-branches,too-many-statements
         """ Printed the status of the object"""
 
         message = Message()
@@ -136,6 +136,7 @@ class FileManagementDisplay(Core):
                 message.add("Impression: ")
                 message.add("[new]")
                 message.add("\n")
+                message.data["job_status"] = "new"
                 return message
         else:
             if self.status(now) == "impressed":
@@ -179,7 +180,9 @@ class FileManagementDisplay(Core):
                 return message
 
         if not self.is_task_or_algorithm():
-            job_status = self.job_status(now)
+            job_status = (self.job_status(now, live=True) if live
+                          else self.job_status(now))
+            message.data["job_status"] = job_status
             message.add(f"{'Job status':<10}: ")
             message.add(f"{'['+job_status+']'}")
             message.add("\n---------------\n")
@@ -191,7 +194,8 @@ class FileManagementDisplay(Core):
             for sub_object in sub_objects:
                 # only append the base name
                 name = os.path.basename(sub_object.path)
-                status = sub_object.job_status(now)
+                status = (sub_object.job_status(now, live=True) if live
+                          else sub_object.job_status(now))
                 detail = ""
                 if status == "failed":
                     detail = sub_object.job_status_detail(now)

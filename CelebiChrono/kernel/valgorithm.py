@@ -27,9 +27,10 @@ class VAlgorithm(VObject):
         message.add(helpme.algorithm_helpme.get(command, "No such command, try ``helpme'' alone."))
         return message
 
-    def printed_status(self) -> Message:
+    def printed_status(self, live=False) -> Message:
         """ Print the status """
-        message = super().printed_status()
+        message = (super().printed_status(live=True) if live
+                   else super().printed_status())
         cherncc = ChernCommunicator.instance()
         dite_status = cherncc.dite_status()
         if dite_status != "connected":

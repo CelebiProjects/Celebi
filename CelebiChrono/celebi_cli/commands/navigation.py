@@ -38,15 +38,28 @@ def tree_command():
 
 
 @click.command(name="status")
-def status_command():
-    """Show status."""
+@click.option("--wait", is_flag=True, default=False,
+              help="Poll live runner state until the job becomes terminal.")
+@click.option("--poll-interval", "-i", type=click.FloatRange(min=0.1),
+              default=2.0, show_default=True,
+              help="Seconds between live status refreshes.")
+def status_command(wait, poll_interval):
+    """Show status, optionally waiting on live runner refreshes."""
     if not _require_project():
         return
-    from CelebiChrono.interface.shell import status
-    result = status()
-    output = format_output(result)
-    if output:
-        print(output)
+    from CelebiChrono.interface.shell import status, status_updates
+    try:
+        updates = status_updates(poll_interval) if wait else [status()]
+        first = True
+        for result in updates:
+            output = format_output(result)
+            if output:
+                if not first:
+                    print("---")
+                print(output)
+                first = False
+    except KeyboardInterrupt:
+        return
 
 
 @click.command(name="project-path")

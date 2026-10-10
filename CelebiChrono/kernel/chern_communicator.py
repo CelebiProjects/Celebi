@@ -595,13 +595,14 @@ class ChernCommunicator():  # pylint: disable=too-many-instance-attributes
             return "FALSE"
         return r.text
 
-    def job_status(self, impression):
+    def job_status(self, impression, runner=None, wait=False):  # pylint: disable=unused-argument
         """ Get the job status of the impression """
         url = self.serverurl()
+        query = "?wait=true" if wait else ""
         try:
             r = requests.get(
-                f"http://{url}/status/{self.project_uuid}/{impression.uuid}",
-                timeout=self.timeout
+                f"http://{url}/status/{self.project_uuid}/{impression.uuid}{query}",
+                timeout=(self.transfer_timeout if wait else self.timeout)
             )
         except Exception as e:
             print(f"An error occurred: {e}")
