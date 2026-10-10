@@ -16,7 +16,7 @@ def sync_live_command() -> None:
         _handle_error(f"Command failed: {e}")
 
 
-@click.command(name="kill-running-workflows")
+@click.command(name="stop-orphaned-workflows")
 @click.argument("runner", type=str)
 @click.option("--dry-run", is_flag=True, help="Preview without stopping workflows.")
 @click.option("--yes", "-y", is_flag=True, help="Skip confirmation after the preview.")
@@ -40,7 +40,7 @@ def kill_running_workflows_command(runner, dry_run, yes) -> None:
     _handle_result(kill_running_workflows(runner, dry_run=False, workflows=workflows))
 
 
-@click.command(name="kill-workflow")
+@click.command(name="stop-workflow")
 @click.argument("workflow_uuid", type=str)
 def kill_workflow_command(workflow_uuid) -> None:
     """Force-stop a workflow (works even for zombie runs).

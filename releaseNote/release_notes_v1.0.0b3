@@ -1,4 +1,7 @@
 ## v1.0.0b3
++ Add `status --wait` to `celebi-cli` and the interactive shell.
+  - Poll Yuki with synchronous runner refreshes instead of repeatedly reading its saved workflow snapshot; report changed status views until the current object becomes terminal or the user presses Ctrl-C.
+  - Add `--poll-interval` / `-i` to control the delay between live refreshes (default: 2 seconds).
 + Use `submit` for both initial execution and re-submission.
   - Report whether a workflow was newly created, replaced a failed workflow, is still active (including `unknown` startup state), or was already complete with reusable results.
   - Do not create a separate retry command: Yuki's execution lease remains the authority preventing duplicate active workflows.

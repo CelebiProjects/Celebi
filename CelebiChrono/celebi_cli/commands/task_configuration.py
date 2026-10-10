@@ -29,6 +29,69 @@ def remove_input_command(input_file):
     except Exception as e:
         _handle_error(f"Command failed: {e}")
 
+
+def _numbered_range(start: int, stop: int) -> range:
+    """Validate and return a bounded half-open range for bulk commands."""
+    count = stop - start
+    if count <= 0 or count > 10000:
+        raise click.BadParameter(
+            "STOP must be greater than START and select at most 10000 items"
+        )
+    return range(start, stop)
+
+
+@click.command(name="add-multi-inputs")
+@click.argument("path_base", type=str)
+@click.argument("alias_base", type=str)
+@click.argument("stop", type=int)
+@click.option("--start", type=int, default=0, show_default=True)
+def add_multi_inputs_command(path_base, alias_base, stop, start):
+    """Add a numbered range of task inputs and aliases.
+
+    Adds PATH_BASE_N as ALIAS_BASE_N for every N in the half-open range
+    START <= N < STOP. At most 10000 inputs may be added in one invocation.
+
+    Example: add-multi-inputs ../sim/run input 10 --start 2
+    """
+    try:
+        from CelebiChrono.interface.shell import add_input
+        for index in _numbered_range(start, stop):
+            result = add_input(
+                f"{path_base}_{index}",
+                f"{alias_base}_{index}",
+            )
+            _handle_result(result)
+    except click.ClickException:
+        raise
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="remove-multi-inputs")
+@click.argument("alias_base", type=str)
+@click.argument("stop", type=int)
+@click.option("--start", type=int, default=0, show_default=True)
+def remove_multi_inputs_command(alias_base, stop, start):
+    """Remove a numbered range of input aliases.
+
+    Removes ALIAS_BASE_N for every N in the half-open range START <= N < STOP.
+    At most 10000 inputs may be removed in one invocation.
+
+    Example: remove-multi-inputs input 10 --start 2
+    """
+    try:
+        from CelebiChrono.interface.shell import remove_input
+        for index in _numbered_range(start, stop):
+            _handle_result(remove_input(f"{alias_base}_{index}"))
+    except click.ClickException:
+        raise
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
 @click.command(name="add-algorithm")
 @click.argument("algorithm", type=str)
 def add_algorithm_command(algorithm):
@@ -42,21 +105,21 @@ def add_algorithm_command(algorithm):
     except Exception as e:
         _handle_error(f"Command failed: {e}")
 
-@click.command(name="add-parameter")
-@click.argument("task", type=str)
-@click.argument("parameter", type=str)
-def add_parameter_command(task, parameter):
-    """Add parameter to task."""
+@click.command(name="set-parameter")
+@click.argument("name", type=str)
+@click.argument("value", type=str)
+def add_parameter_command(name, value):
+    """Set a parameter on the current task."""
     try:
         from CelebiChrono.interface.shell import add_parameter
-        result = add_parameter(task, parameter)
+        result = add_parameter(name, value)
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
 
-@click.command(name="rm-parameter")
+@click.command(name="remove-parameter")
 @click.argument("parameter", type=str)
 def rm_parameter_command(parameter):
     """Remove parameter from task."""
@@ -70,21 +133,21 @@ def rm_parameter_command(parameter):
         _handle_error(f"Command failed: {e}")
 
 @click.command(name="add-parameter-subtask")
-@click.argument("task", type=str)
-@click.argument("parameter", type=str)
 @click.argument("subtask", type=str)
-def add_parameter_subtask_command(task, parameter, subtask):
-    """Add parameter subtask to task."""
+@click.argument("name", type=str)
+@click.argument("value", type=str)
+def add_parameter_subtask_command(subtask, name, value):
+    """Set a parameter on one subtask of the current directory."""
     try:
         from CelebiChrono.interface.shell import add_parameter_subtask
-        result = add_parameter_subtask(task, parameter, subtask)
+        result = add_parameter_subtask(subtask, name, value)
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
 
-@click.command(name="set-env")
+@click.command(name="set-environment")
 @click.argument("environment", type=str)
 def set_env_command(environment):
     """Set environment for task."""
@@ -97,7 +160,7 @@ def set_env_command(environment):
     except Exception as e:
         _handle_error(f"Command failed: {e}")
 
-@click.command(name="set-mem")
+@click.command(name="set-memory-limit")
 @click.argument("memory", type=str)
 def set_mem_command(memory):
     """Set memory limit for task."""
@@ -118,6 +181,39 @@ def set_descriptor_command(descriptor):
         from CelebiChrono.interface.shell import set_descriptor
         result = set_descriptor(descriptor)
         _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="auto-download")
+@click.argument("state", type=click.Choice(["on", "off"]))
+def auto_download_command(state):
+    """Enable or disable automatic result downloads for the current task.
+
+    STATE is `on` or `off`. The setting applies to subsequent executions.
+    """
+    try:
+        from CelebiChrono.interface.shell import MANAGER
+        MANAGER.current_object().set_auto_download(state == "on")
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="cache-on-runner")
+@click.argument("state", type=click.Choice(["on", "off"]))
+def cache_on_runner_command(state):
+    """Enable or disable retaining results in the runner cache.
+
+    STATE is `on` or `off`. Retained results can later be inspected or
+    transferred without an immediate local collection.
+    """
+    try:
+        from CelebiChrono.interface.shell import MANAGER
+        MANAGER.current_object().set_cache_on_runner(state == "on")
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:

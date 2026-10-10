@@ -24,6 +24,7 @@
 # pylint: disable=broad-exception-caught
 import os
 import inspect
+import copy
 from os.path import join
 from logging import getLogger
 
@@ -101,15 +102,21 @@ def _get_command_docstring(func_name: str) -> str:
 # command_func = cli_sh.command(name=cname, short_help=desc, help=full_doc)(command_func)
 
 
-@click.group(invoke_without_command=True)
+class ShellEntryGroup(click.Group):
+    """Keep legacy subcommands callable without advertising them as the API."""
+
+    def format_usage(self, ctx, formatter):
+        formatter.write_usage(ctx.command_path, "[OPTIONS]")
+
+
+@click.group(cls=ShellEntryGroup, invoke_without_command=True)
 @click.option("--debug", is_flag=True, default=False,
               help="Enable verbose logging in ~/.celebi/logs/celebi.log")
-@click.option("--workon", "workon_project", type=str, default=None,
-              help="Switch to PROJECT and start the Chern shell.")
+@click.option("--project", "--workon", "workon_project", type=str, default=None,
+              help="Open PROJECT in the interactive Celebi shell.")
 @click.pass_context
 def cli(ctx, debug, workon_project):
-    """ Chern command only is equal to `Chern ipython`
-    """
+    """Start the interactive Celebi shell."""
     if is_first_time():
         start_first_time()
     setup_logging(debug=debug)
@@ -119,7 +126,7 @@ def cli(ctx, debug, workon_project):
                 csys.local_config_dir() + "/config.json"
             )
 
-            # If --workon is specified, switch project first
+            # If --project is specified, switch project first.
             if workon_project:
                 projects_list = config_file.read_variable("projects_path")
                 if workon_project in projects_list:
@@ -139,17 +146,16 @@ def cli(ctx, debug, workon_project):
             ):
 
                 print("No project is selected as the current project")
-                msg = "Please use ``chern workon PROJECT''' to select"
-                print(msg + " a project")
-                print("Please use ``chern projects'' to list all the projects")
+                print("Use `celebi-cli use-project PROJECT` to select a project")
+                print("Use `celebi-cli list-projects` to list registered projects")
             else:
                 start_chern_command_line()
         except Exception as e:
             print(e)
-            print("Chern shell ended")
+            print("Celebi shell ended")
 
 
-@cli.command()
+@cli.command(hidden=True)
 def config():
     """ Configure the software"""
     print("Use `celebi-cli user-config` to edit your user settings")
@@ -157,7 +163,7 @@ def config():
     print("to see the settings in force.")
 
 
-@cli.command()
+@cli.command(hidden=True)
 def chern_command_line():
     """ Start Chern command line with cmd """
     try:
@@ -166,7 +172,7 @@ def chern_command_line():
         print("Fail to start Chern command line:", e)
 
 
-@cli.command()
+@cli.command(hidden=True)
 def init():
     """ Add the current directory to project """
     try:
@@ -177,7 +183,7 @@ def init():
         print("Chern Shell Ended")
 
 
-@cli.command()
+@cli.command(hidden=True)
 @click.argument("path", type=str)
 def use(path):
     """ Use a directory as the project"""
@@ -188,7 +194,7 @@ def use(path):
         print("Fail to start ipython:", e)
 
 
-@cli.command()
+@cli.command(hidden=True)
 def projects():
     """ List all the projects """
     try:
@@ -205,7 +211,7 @@ def projects():
         print("Fail to list all the projects:", e)
 
 
-@cli.command()
+@cli.command(hidden=True)
 @click.argument("project", type=str)
 def workon(project):
     """ Switch to the project ``PROJECT' """
@@ -223,13 +229,13 @@ def workon(project):
         print("Fail to switch to the project:", e)
 
 
-@cli.command()
+@cli.command(hidden=True)
 @click.argument("project", type=str)
 def remove(project):
     """ Remove the project ``PROJECT' """
     try:
         config_file = metadata.ConfigFile(
-            join(csys.local_config_dir, "config.json")
+            join(csys.local_config_dir(), "config.json")
         )
         projects_list = config_file.read_variable("projects_path")
         current_project = config_file.read_variable("current_project")
@@ -245,7 +251,7 @@ def remove(project):
     except Exception:
         print("Fail to remove the project")
 
-@cli.command(name="project-uuid")
+@cli.command(name="project-uuid", hidden=True)
 def project_uuid_command():
     """Print the current project's UUID."""
     project_path = csys.project_path(os.getcwd())
@@ -256,7 +262,7 @@ def project_uuid_command():
     print(uuid)
 
 
-@cli.command()
+@cli.command(hidden=True)
 def prologue():
     """ A prologue from the author """
     print("""
@@ -572,10 +578,12 @@ def git_config(key, value):
     except Exception as e:
         print(f"Error setting configuration: {e}")
 
-cli.add_command(attach_data_command)
+_legacy_attach_data_command = copy.copy(attach_data_command)
+_legacy_attach_data_command.hidden = True
+cli.add_command(_legacy_attach_data_command)
 
 
-@cli.command(name="booking-server")
+@cli.command(name="booking-server", hidden=True)
 def booking_server_command():
     """Check the registered booking server URL and status."""
     try:
@@ -588,7 +596,7 @@ def booking_server_command():
         print(f"Error: {e}")
 
 
-@cli.command(name="register-booking-server")
+@cli.command(name="register-booking-server", hidden=True)
 @click.option("--server", "server_url", default="",
               help="REANA server URL (or set REANA_SERVER_URL env var)")
 @click.option("--token", "access_token", default="",
@@ -612,7 +620,7 @@ def register_booking_server_command(server_url, access_token):
         print(f"Error: {e}")
 
 
-@cli.command(name="book-reana")
+@cli.command(name="book-reana", hidden=True)
 @click.option("--server", "server_url", default="",
               help="REANA server URL (overrides stored credentials)")
 @click.option("--token", "access_token", default="",

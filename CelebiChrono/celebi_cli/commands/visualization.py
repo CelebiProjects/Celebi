@@ -46,7 +46,7 @@ def view_command(impression):
         _handle_error(f"Command failed: {e}")
 
 
-@click.command(name="viewurl")
+@click.command(name="view-url")
 @click.argument("impression", type=str, required=False, default=None)
 def viewurl_command(impression):
     """Get the impression URL for current task.

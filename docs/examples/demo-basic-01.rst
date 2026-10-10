@@ -25,7 +25,7 @@ Initialize and enter the **Celebi shell**:
 
 .. code-block:: bash
 
-   celebi use .   # Use this legacy project
+   celebi-cli register-project .
    celebi
 
 3. Verify DITE Connection
@@ -74,7 +74,7 @@ And you should also help change the requested runner for running the workflow:
 
 .. code-block:: bash
 
-   set-runner [runner_name]
+   request-runner RUNNER_NAME
 
 5. Submit the Workflow
 ----------------------
@@ -83,7 +83,7 @@ Finally, submit the workflow to the runner for execution:
 
 .. code-block:: bash
 
-   submit [runner_name]
+   submit --runner RUNNER_NAME
 
 This command will make the objects impressed, and then submit the workflow to the selected runner (REANA in this case).
 

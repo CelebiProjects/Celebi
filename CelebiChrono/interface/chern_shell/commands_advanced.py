@@ -177,7 +177,7 @@ class AdvancedCommands:
 
     def do_watermark(self, _arg):
         """
-        Set the watermark.
+        Show the current object's provenance watermark.
         """
         try:
             print(shell.watermark().colored())

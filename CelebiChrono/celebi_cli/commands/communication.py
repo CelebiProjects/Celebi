@@ -41,14 +41,19 @@ def config_command() -> None:
         _handle_error(f"Command failed: {e}")
 
 
-@click.command(name="config-cache-invalidation-mode")
+@click.command(name="cache-policy")
 @click.argument(
     "mode",
     required=False,
     type=click.Choice(["auto", "mtime", "off"], case_sensitive=False),
 )
 def config_cache_invalidation_mode_command(mode: Optional[str]) -> None:
-    """Show or set the local cache invalidation mode for the current project."""
+    """Show or set the current project's local cache policy.
+
+    With no MODE, prints the stored policy and the method resolved for the
+    current filesystem. MODE may be `auto`, `mtime`, or `off`; `auto` lets
+    Celebi select a safe invalidation method.
+    """
     project_root = csys.project_path(os.getcwd())
     if not project_root:
         _handle_error("Not inside a Celebi project")
@@ -144,6 +149,55 @@ def changes_command() -> None:
         _handle_error(f"Command failed: {e}")
 
 
+@click.command(name="comment")
+@click.argument("text", type=str)
+def comment_command(text):
+    """Append a comment to the current object's README.
+
+    TEXT is written as one new line. Quote it in the terminal when it contains
+    spaces.
+    """
+    try:
+        from CelebiChrono.interface.shell import MANAGER
+        MANAGER.current_object().comment(text)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="edit-readme")
+def edit_readme_command():
+    """Open the current object's README in the configured editor.
+
+    The command waits for the configured editor process in the same way as
+    the interactive shell.
+    """
+    try:
+        from CelebiChrono.interface.shell import MANAGER
+        MANAGER.current_object().edit_readme()
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="impression")
+def impression_command():
+    """Print the current object's active impression identifier.
+
+    This reports the same impression selected by status, view, collection,
+    and provenance commands.
+    """
+    try:
+        from CelebiChrono.interface.shell import MANAGER
+        print(MANAGER.current_object().impression())
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
 @click.command(name="preshell")
 def preshell_command() -> None:
     """Pre-shell workaround."""
@@ -172,7 +226,7 @@ def postshell_command(command: str) -> None:
 
 @click.command(name="impress")
 def impress_command() -> None:
-    """Show impression."""
+    """Create an impression of the current object."""
     try:
         from CelebiChrono.interface.shell import impress
         result = impress()

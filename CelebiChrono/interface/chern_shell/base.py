@@ -7,6 +7,7 @@ including initialization, prompt management, command parsing, and completion.
 # pylint: disable=import-outside-toplevel
 import cmd
 import os
+import shlex
 from ...utils import csys
 from ...utils.metadata import YamlFile
 
@@ -18,10 +19,26 @@ class ChernShellBase(cmd.Cmd):
     prompt = '[Celebi]'
     file = None
     readline_file = None
+    hidden_command_aliases = {
+        "add-parameter", "bkkurl", "kill", "kill-running-workflows",
+        "kill-workflow", "mv-file", "navigate", "rm-file", "runner-envs",
+        "setenv", "setdescriptor", "viewbkk", "viewurl",
+    }
 
     def __init__(self):
         """Initialize the shell and set custom completer delimiters."""
         super().__init__()
+
+    def get_names(self):
+        """Return shell members while hiding deprecated command spellings."""
+        names = super().get_names()
+        return [
+            name for name in names
+            if not (
+                name.startswith("do_")
+                and name[3:].replace("_", "-") in self.hidden_command_aliases
+            )
+        ]
 
     def init(self, manager) -> None:
         """Initialize the shell with current project context."""
@@ -147,6 +164,28 @@ class ChernShellBase(cmd.Cmd):
 
     def emptyline(self) -> None:
         """Handle empty line input."""
+
+    def do_help(self, arg: str) -> None:
+        """List commands or show detailed help for one command."""
+        from .help_text import command_help, command_index
+
+        if arg.strip():
+            print(command_help(self, arg))
+        else:
+            print(command_index(self))
+
+    def onecmd(self, line: str):
+        """Dispatch one command, treating -h/--help as shell help."""
+        command, arg, _ = self.parseline(line)
+        if command and getattr(self, f"do_{command}", None) is not None:
+            try:
+                tokens = shlex.split(arg)
+            except ValueError:
+                tokens = arg.split()
+            if "--help" in tokens or "-h" in tokens:
+                self.do_help(command.replace("_", "-"))
+                return None
+        return super().onecmd(line)
 
     def do_EOF(self, _: str) -> bool:  # pylint: disable=invalid-name
         """Handle EOF (Ctrl+D) to exit shell."""

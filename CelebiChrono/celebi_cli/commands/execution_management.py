@@ -238,7 +238,11 @@ def test_runner_command(runner: str, timeout: int) -> None:
 
 @click.command(name="yuki-overview")
 def yuki_overview_command() -> None:
-    """Show an aggregate overview of Yuki runners and usage."""
+    """Show an aggregate overview of Yuki runners and resource usage.
+
+    Queries the configured DITE/Yuki service and summarizes runner state,
+    capacity, and current usage for operational diagnosis.
+    """
     try:
         from CelebiChrono.interface.shell import yuki_overview
         _handle_result(yuki_overview())
@@ -250,7 +254,11 @@ def yuki_overview_command() -> None:
 
 @click.command(name="refresh-distribution")
 def refresh_distribution_command() -> None:
-    """Refresh the current project's distribution registry."""
+    """Refresh the current project's distribution registry.
+
+    Rebuilds the registry used to locate distributed project data. This is a
+    maintenance operation; it does not submit or rerun tasks.
+    """
     try:
         from CelebiChrono.interface.shell import refresh_distribution
         _handle_result(refresh_distribution())
@@ -328,7 +336,7 @@ def cache_results_command(runner: str) -> None:
         _handle_error(f"Command failed: {e}")
 
 
-@click.command(name="runner-envs")
+@click.command(name="runner-environments")
 @click.argument("runner", type=str)
 def runner_envs_command(runner: str) -> None:
     """List conda environments available on a runner (ssh/native).
@@ -377,9 +385,13 @@ def submit_command(runner: str, timeout: int = None,
         _handle_error(f"Command failed: {e}")
 
 
-@click.command(name="kill")
+@click.command(name="cancel")
 def kill_command() -> None:
-    """Cancel running impressions for the current task or directory."""
+    """Cancel running impressions for the current task or directory.
+
+    For a directory, cancellation is applied to its running task impressions.
+    Finished results and the task configuration are not deleted.
+    """
     try:
         from CelebiChrono.interface.shell import kill
         _handle_result(kill())
@@ -520,6 +532,58 @@ def purge_old_impressions_command() -> None:
         from CelebiChrono.interface.shell import purge_old_impressions
         result = purge_old_impressions()
         _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="purge-impressions")
+def purge_impressions_command() -> None:
+    """Purge impressions associated with the current object.
+
+    This is a destructive developer operation retained for shell parity.
+    Prefer `purge-old-impressions` or the scoped CAS maintenance commands
+    when possible.
+    """
+    try:
+        from CelebiChrono.interface.shell import MANAGER
+        _handle_result(MANAGER.current_object().purge_impressions())
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="homekeep")
+def homekeep_command() -> None:
+    """Request cleanup of runner workflow workspaces for this project.
+
+    The request is sent through DITE. It does not remove the local Celebi
+    project or its configuration.
+    """
+    try:
+        from CelebiChrono.interface.shell import MANAGER
+        _handle_result(MANAGER.current_object().homekeep())
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="check-results")
+@click.argument("runner", type=str)
+def check_results_command(runner: str) -> None:
+    """Mount cached results in a temporary check directory on RUNNER.
+
+    RUNNER must be a registered SSH runner containing the cached impression.
+    The command reports the remote directory created for manual inspection.
+    """
+    try:
+        from CelebiChrono.interface.shell_modules.execution_management import (
+            check_results,
+        )
+        _handle_result(check_results(runner))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:

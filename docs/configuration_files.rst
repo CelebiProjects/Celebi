@@ -31,7 +31,7 @@ safe to delete a line rather than guess a value.
 
 *Programs*
 
-* ``editor`` – Editor used by ``config``, ``edit-script``, ``readme`` and
+* ``editor`` – Editor used by ``config``, ``edit``, ``edit-readme`` and
   merge-conflict resolution (e.g., ``code``, ``vim``, ``nano``). Default: ``vi``
 * ``file_opener`` – Program used to open a local file, e.g. by
   ``view local:...``. Default: ``open`` on macOS, ``xdg-open`` elsewhere
@@ -132,7 +132,7 @@ focused on execution commands rather than parameters.
 
     environment: script
     commands:
-      - root -b -q 'code/gendata.C(${events},"outputs/data.root")'
+      - root -b -q 'code/gendata.C(${events},"stageout/data.root")'
 
 **Example (algorithm with Docker environment):**
 
@@ -140,7 +140,7 @@ focused on execution commands rather than parameters.
 
     environment: reanahub/reana-env-root6:6.18.04
     commands:
-      - root -b -q 'code/analysis.C("inputs/data.root","outputs/plot.png")'
+      - root -b -q 'code/analysis.C("inputdata/stageout/data.root","stageout/plot.png")'
 
 **Field descriptions:**
 

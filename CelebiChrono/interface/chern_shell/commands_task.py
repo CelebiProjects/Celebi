@@ -188,7 +188,7 @@ class TaskCommands:
             print(f"Error adding input: {e}")
 
     def do_add_multi_inputs(self, arg: str) -> None:
-        """Create multiple tasks with a base name and number of tasks."""
+        """Add a numbered range of task inputs and aliases."""
         try:
             objs = arg.split()
             if len(objs) < 3:
@@ -218,7 +218,7 @@ class TaskCommands:
             print(f"Error creating task: {e}")
 
     def do_remove_multi_inputs(self, arg: str) -> None:
-        """Create multiple tasks with a base name and number of tasks."""
+        """Remove a numbered range of input aliases."""
         try:
             objs = arg.split()
             if len(objs) < 2:
@@ -258,7 +258,7 @@ class TaskCommands:
             print(f"Error removing input: {e}")
 
     def do_add_parameter(self, arg: str) -> None:
-        """Add a parameter to current task."""
+        """Set a parameter on the current task."""
         try:
             args = arg.split()
             obj1 = args[0]
@@ -270,6 +270,8 @@ class TaskCommands:
             print(f"Error: Please provide parameter name and value. {e}")
         except Exception as e:
             print(f"Error adding parameter: {e}")
+
+    do_set_parameter = do_add_parameter
 
     def do_remove_parameter(self, arg: str) -> None:
         """Remove a parameter from current task."""

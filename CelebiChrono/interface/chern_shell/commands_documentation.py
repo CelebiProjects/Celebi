@@ -49,9 +49,14 @@ class DocumentationCommands:
             print(f"Error editing script: {e}")
 
     def do_helpme(self, arg: str) -> None:
-        """Get help for current object."""
+        """Show object guidance or detailed help for a command."""
         try:
-            print(MANAGER.current_object().helpme(arg).colored())
+            if arg.strip():
+                self.do_help(arg)
+                return
+            from .help_text import object_help
+            current = MANAGER.current_object()
+            print(object_help(current.object_type()))
         except Exception as e:
             print(f"Error getting help: {e}")
 
@@ -106,6 +111,8 @@ class DocumentationCommands:
         except Exception as e:
             print(f"Error getting impression URL: {e}")
 
+    do_view_url = do_viewurl
+
     def do_bookkeep(self, _: str) -> None:
         """Bookkeep impressions (developer only)."""
         try:
@@ -123,6 +130,8 @@ class DocumentationCommands:
         except Exception as e:
             print(f"Error getting bookkeeping URL: {e}")
 
+    do_bookkeeping_url = do_bkkurl
+
     def do_viewbkk(self, _: str) -> None:
         """View bookkeeping URL."""
         try:
@@ -134,6 +143,8 @@ class DocumentationCommands:
                 print(result.colored())
         except Exception as e:
             print(f"Error viewing bookkeeping URL: {e}")
+
+    do_open_bookkeeping = do_viewbkk
 
     def do_clean_impressions(self, _: str) -> None:
         """Clean impressions (developer only)."""

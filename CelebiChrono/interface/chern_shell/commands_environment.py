@@ -440,7 +440,7 @@ class EnvironmentCommands:
     def do_kill_running_workflows(self, arg: str) -> None:
         """Force-stop unreferenced workflows recorded running on a runner.
 
-        Usage: kill-running-workflows [--dry-run] [--yes] <runner>
+        Usage: stop-orphaned-workflows [--dry-run] [--yes] RUNNER
         Scoped to this project; live workflows and workspaces are retained.
         """
         try:
@@ -468,10 +468,12 @@ class EnvironmentCommands:
         except Exception as exc:
             print(f"Error killing running workflows: {exc}")
 
+    do_stop_orphaned_workflows = do_kill_running_workflows
+
     def do_kill_workflow(self, arg: str) -> None:
         """Force-stop a workflow (works even for zombie runs).
 
-        Usage: kill-workflow <workflow_uuid>
+        Usage: stop-workflow WORKFLOW_UUID
         """
         try:
             workflow_uuid = arg.strip()
@@ -483,6 +485,8 @@ class EnvironmentCommands:
                 print(result.colored())
         except Exception as e:
             print(f"Error killing workflow: {e}")
+
+    do_stop_workflow = do_kill_workflow
 
     def do_purge_stale_cache(self, arg: str) -> None:
         """Purge superseded impressions' cache entries from a runner.
@@ -555,11 +559,13 @@ class EnvironmentCommands:
             print(f"Error purging stale workflows: {e}")
 
     def do_kill(self, _: str) -> None:
-        """Kill current object process."""
+        """Cancel running impressions for the current task or directory."""
         try:
             MANAGER.current_object().kill()
         except Exception as e:
             print(f"Error killing process: {e}")
+
+    do_cancel = do_kill
 
     def do_runners(self, _: str) -> None:
         """Show available runners."""
@@ -569,7 +575,15 @@ class EnvironmentCommands:
             print(f"Error showing runners: {e}")
 
     def do_register_runner(self, _: str) -> None:
-        """Register a runner (interactive prompts, ssh-aware)."""
+        """Register a runner through interactive prompts.
+
+        Usage: register-runner
+
+        Select a reana, native, ssh, or dry backend, then provide its name and
+        connection settings. SSH runners additionally ask for the host, user,
+        port, key, and remote work directory. Use `runners` to inspect the
+        saved registration afterwards.
+        """
         try:
             backend_type = input(
                 "Backend type (reana/native/ssh/dry) [reana]: ").strip() or "reana"
@@ -638,6 +652,8 @@ class EnvironmentCommands:
                 print(result.colored())
         except Exception as e:
             print(f"Error listing runner envs: {e}")
+
+    do_runner_environments = do_runner_envs
 
     def do_remove_runner(self, arg: str) -> None:
         """Remove a runner."""

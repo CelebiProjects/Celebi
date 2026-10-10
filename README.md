@@ -55,9 +55,32 @@ pip install .
 ## Getting Started
 
 ```sh
-celebi init
+celebi-cli init
 celebi
 ```
+
+Celebi provides three deliberately separate command interfaces:
+
+- `celebi` starts the stateful interactive shell.
+- `celebi-cli` runs one command for scripts and automation; its flat command
+  list is organized into functional sections in `celebi-cli --help`.
+- `celebi-git` contains Celebi-aware Git integration commands.
+
+Select a registered project before starting the shell with
+`celebi-cli use-project PROJECT`, or start the shell for a project directly
+with `celebi --project PROJECT`.
+
+Inside the interactive shell, help is available in three complementary forms:
+
+```text
+helpme                 # Object-aware guidance for the current context
+help status            # Detailed help for one command
+status --help          # The same command help, inline with the command
+```
+
+`helpme COMMAND`, `help COMMAND`, and `COMMAND --help` share the same command
+documentation. Run `help` without an argument for the categorized shell index;
+run `celebi-cli --help` for the categorized one-shot CLI index.
 
 ---
 
@@ -117,3 +140,15 @@ extends Yuki SSH command, connection, and startup-confirmation limits for the
 submitted workflow, preserving any longer existing limits. Yuki saves this
 setting for later workflow operations. It does not limit workflow runtime.
 A timed-out request may still be processed by the server; check task status before submitting again.
+
+### Live status
+
+Wait for terminal state while querying the runner rather than repeatedly
+reading the saved workflow status:
+
+```bash
+celebi-cli status --wait
+```
+
+The interactive shell uses the same syntax. Use `-i 5` or
+`--poll-interval 5` to change the default two-second polling interval.

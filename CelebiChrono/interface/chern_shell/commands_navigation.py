@@ -63,6 +63,8 @@ class NavigationCommands:
         except Exception as e:
             print(f"Error navigating: {e}")
 
+    do_project_path = do_navigate
+
     def do_project_uuid(self, _: str) -> None:
         """Print the UUID of the current project."""
         try:

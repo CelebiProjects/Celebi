@@ -57,13 +57,35 @@ def bookkeep_command() -> None:
         _handle_error(f"Command failed: {e}")
 
 
-@click.command(name="bookkeep-url")
+@click.command(name="bookkeeping-url")
 def bookkeep_url_command() -> None:
     """Get the bookkeeping URL."""
     try:
         from CelebiChrono.interface.shell import bookkeep_url
         result = bookkeep_url()
         _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="open-bookkeeping")
+def open_bookkeeping_command() -> None:
+    """Open the bookkeeping page in the default browser.
+
+    Resolves the bookkeeping URL for the current project and opens it using
+    the operating system's configured browser.
+    """
+    try:
+        from CelebiChrono.interface.shell import bookkeep_url
+        from CelebiChrono.utils.file_utils import open_url
+        result = bookkeep_url()
+        url = result.data.get("url", "") if result.success else ""
+        if url:
+            open_url(url)
+        else:
+            _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
@@ -100,7 +122,11 @@ def predecessors_command() -> None:
 @click.option("--grace-days", type=int, default=14, show_default=True)
 @click.option("--dry-run/--execute", default=True, show_default=True)
 def gc_impressions_command(grace_days: int, dry_run: bool) -> None:
-    """Garbage collect unreachable CAS impression objects."""
+    """Garbage collect unreachable CAS impression objects.
+
+    Dry-run is the default. Objects remain protected for GRACE_DAYS after
+    becoming unreachable; pass `--execute` to delete eligible objects.
+    """
     try:
         from CelebiChrono.interface.shell import gc_impressions
         result = gc_impressions(grace_days=grace_days, dry_run=dry_run)
@@ -114,7 +140,11 @@ def gc_impressions_command(grace_days: int, dry_run: bool) -> None:
 @click.command(name="pack-impressions")
 @click.option("--force/--no-force", default=False, show_default=True)
 def pack_impressions_command(force: bool) -> None:
-    """Evaluate packing thresholds for CAS impression objects."""
+    """Pack eligible CAS impression objects.
+
+    Normally Celebi evaluates its configured packing thresholds. `--force`
+    requests packing even when those thresholds have not been reached.
+    """
     try:
         from CelebiChrono.interface.shell import pack_impressions
         result = pack_impressions(force=force)
@@ -129,7 +159,11 @@ def pack_impressions_command(force: bool) -> None:
 @click.option("--dry-run/--execute", default=False, show_default=True)
 @click.option("--prune-legacy/--keep-legacy", default=False, show_default=True)
 def migrate_impressions_command(dry_run: bool, prune_legacy: bool) -> None:
-    """Migrate legacy impressions into CAS-backed refs."""
+    """Migrate legacy impressions into CAS-backed references.
+
+    Use `--dry-run` to preview the migration. Legacy storage is retained by
+    default; `--prune-legacy` removes it after successful migration.
+    """
     try:
         from CelebiChrono.interface.shell import migrate_impressions
         result = migrate_impressions(dry_run=dry_run, prune_legacy=prune_legacy)
@@ -140,9 +174,13 @@ def migrate_impressions_command(dry_run: bool, prune_legacy: bool) -> None:
         _handle_error(f"Command failed: {e}")
 
 
-@click.command(name="stats-impressions")
+@click.command(name="impression-stats")
 def stats_impressions_command() -> None:
-    """Show impression storage stats and dedup indicators."""
+    """Show impression storage statistics and deduplication indicators.
+
+    Reports legacy and CAS-backed storage so migration, packing, and garbage
+    collection decisions can be reviewed before modifying data.
+    """
     try:
         from CelebiChrono.interface.shell import stats_impressions
         result = stats_impressions()

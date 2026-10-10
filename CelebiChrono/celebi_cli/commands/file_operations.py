@@ -32,6 +32,40 @@ def ls_command(args: Tuple[str, ...]) -> None:
         _handle_error(f"Command failed: {e}")
 
 
+@click.command(name="cat")
+@click.argument("path", type=str)
+def cat_command(path: str) -> None:
+    """Print a text file from the current Celebi object.
+
+    PATH is resolved relative to the current object. This is the one-shot
+    equivalent of `cat` in the interactive Celebi shell.
+    """
+    try:
+        from CelebiChrono.interface.shell import MANAGER
+        MANAGER.current_object().cat(path)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="display")
+@click.argument("filename", type=str)
+def display_command(filename: str) -> None:
+    """Open a result file from the current task in the default browser.
+
+    FILENAME identifies a file belonging to the current impression. Its DITE
+    display URL is opened using the operating system's configured browser.
+    """
+    try:
+        from CelebiChrono.interface.shell import MANAGER
+        MANAGER.current_object().display(filename)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
 @click.command(name="mv")
 @click.argument("src", type=str)
 @click.argument("dst", type=str)
@@ -73,7 +107,7 @@ def rm_command(path: str) -> None:
         _handle_error(f"Command failed: {e}")
 
 
-@click.command(name="rmfile")
+@click.command(name="remove-file")
 @click.argument("path", type=str)
 def rmfile_command(path: str) -> None:
     """Remove file."""
@@ -86,7 +120,7 @@ def rmfile_command(path: str) -> None:
         _handle_error(f"Command failed: {e}")
 
 
-@click.command(name="mvfile")
+@click.command(name="move-file")
 @click.argument("src", type=str)
 @click.argument("dst", type=str)
 def mvfile_command(src: str, dst: str) -> None:
@@ -156,13 +190,13 @@ def upload_data_command(path: str) -> None:
 
 
 @click.command(name="add-input")
-@click.argument("task", type=str)
-@click.argument("input_file", type=str)
-def add_input_command(task: str, input_file: str) -> None:
-    """Add input to task."""
+@click.argument("path", type=str)
+@click.argument("alias", type=str)
+def add_input_command(path: str, alias: str) -> None:
+    """Add an input object at PATH under ALIAS."""
     try:
         from CelebiChrono.interface.shell import add_input
-        _handle_result(add_input(task, input_file))
+        _handle_result(add_input(path, alias))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
@@ -204,6 +238,23 @@ def transfer_command(source: str, destination: str,
         result = transfer(source, destination, pattern=pattern, force=force,
                           **({"timeout": timeout} if timeout is not None else {}))
         _handle_result(result)
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="export")
+@click.argument("pattern", type=str, default="*", required=False)
+def export_command(pattern: str) -> None:
+    """Export matching result files to the project's export directory.
+
+    PATTERN is a glob evaluated against the current task's results and
+    defaults to all files.
+    """
+    try:
+        from CelebiChrono.interface.shell import export
+        _handle_result(export(pattern))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:

@@ -404,3 +404,11 @@ class ChernShellCompletions:
         # Suggest flags and the docker option
         options = ["docker", "--reference", "--skip-input"]
         return [opt for opt in options if opt.startswith(text)]
+
+
+# Canonical command names share the established completion behavior.
+ChernShellCompletions.complete_remove_file = ChernShellCompletions.complete_rm_file
+ChernShellCompletions.complete_move_file = ChernShellCompletions.complete_mv_file
+ChernShellCompletions.complete_runner_environments = (
+    ChernShellCompletions.complete_runner_envs
+)

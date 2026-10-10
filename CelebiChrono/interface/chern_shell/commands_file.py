@@ -131,6 +131,8 @@ class FileCommands:
         except Exception as e:
             print(f"Error removing files: {e}")
 
+    do_remove_file = do_rm_file
+
     def do_mv_file(self, arg: str) -> None:
         """Move a file within current object."""
         try:
@@ -144,6 +146,8 @@ class FileCommands:
             print(f"Error: Please provide source and destination files. {e}")
         except Exception as e:
             print(f"Error moving file: {e}")
+
+    do_move_file = do_mv_file
 
     def do_replace(self, arg: str) -> None:
         """Replace a substring in names, inputs, and aliases. Usage: replace A B."""

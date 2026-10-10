@@ -49,9 +49,9 @@ def status_command():
         print(output)
 
 
-@click.command(name="navigate")
+@click.command(name="project-path")
 def navigate_command():
-    """Change to current project directory."""
+    """Print the current project's filesystem path."""
     from CelebiChrono.interface.shell import navigate
     result = navigate()
     output = format_output(result)
@@ -84,7 +84,11 @@ def short_ls_command():
 
 @click.command(name="project-uuid")
 def project_uuid_command():
-    """Print the current project's UUID."""
+    """Print the stable UUID of the project containing the current directory.
+
+    The command fails cleanly outside a Celebi project. The UUID identifies
+    the project in DITE, Yuki, and impression metadata.
+    """
     from CelebiChrono.utils import csys
     from CelebiChrono.kernel.vproject import VProject
     project_path = csys.project_path(os.getcwd())

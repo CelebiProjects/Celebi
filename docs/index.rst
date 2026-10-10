@@ -44,12 +44,17 @@ Core Concepts
 Getting Started
 ---------------
 
-To initialize a Celebi project and start the CLI:
+To initialize a Celebi project and enter the interactive shell:
 
 .. code-block:: bash
 
-   celebi init
-   celebi <command>
+   celebi-cli init
+   celebi
+
+Use ``celebi-cli COMMAND`` for one-shot automation and ``celebi-git COMMAND``
+for Git integration. Inside ``celebi``, use ``helpme`` for object-aware guidance;
+``help COMMAND``, ``helpme COMMAND``, and ``COMMAND --help`` show the same command
+documentation.
 
 Documentation
 -------------
