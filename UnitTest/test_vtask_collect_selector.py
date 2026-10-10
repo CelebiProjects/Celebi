@@ -79,6 +79,19 @@ def test_all_calls_outputs_and_logs():
     cc.collect_logs.assert_called_once()
 
 
+def test_allow_failed_all_is_forwarded_and_warned():
+    """Failed stageout collection is explicit and visibly unofficial."""
+    jm = _jm()
+    p, cc = _patch_cc()
+    cc.collect_outputs.return_value = {"success": True, "message": {}}
+    cc.collect_logs.return_value = {"success": True, "message": {}}
+    cc.file_status.return_value = []
+    with p:
+        msg = jm.collect("all", allow_failed=True)
+    assert cc.collect_outputs.call_args.kwargs == {"allow_failed": True}
+    assert any("not official results" in text for text, _ in msg.messages)
+
+
 def test_plots_keyword():
     """Test plots keyword."""
     jm = _jm()

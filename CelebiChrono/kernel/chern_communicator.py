@@ -696,13 +696,15 @@ class ChernCommunicator():
         except requests.RequestException as exc:
             return {"success": False, "message": str(exc)}
 
-    def collect(self, impression): # UnitTest: DONE
+    def collect(self, impression, allow_failed=False): # UnitTest: DONE
         """ Collect the impression from the server """
-        return self._collect_request("collect", impression)
+        params = "allow_failed=1" if allow_failed else ""
+        return self._collect_request("collect", impression, params)
 
-    def collect_outputs(self, impression): # UnitTest: DONE
+    def collect_outputs(self, impression, allow_failed=False): # UnitTest: DONE
         """ Collect the impression from the server """
-        return self._collect_request("collect-outputs", impression)
+        params = "allow_failed=1" if allow_failed else ""
+        return self._collect_request("collect-outputs", impression, params)
 
     def collect_logs(self, impression): # UnitTest: DONE
         """ Collect the impression from the server """
@@ -711,7 +713,8 @@ class ChernCommunicator():
     # Multiple mutually-exclusive filter arguments for file selection.
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def collect_files(self, impression, kind="stageout",
-                      spec_type=None, pattern=None, names=None):
+                      spec_type=None, pattern=None, names=None,
+                      allow_failed=False):
         """Collect a subset of files matching a type, glob, or name list."""
         params = f"kind={kind}"
         if spec_type:
@@ -720,6 +723,8 @@ class ChernCommunicator():
             params += f"&pattern={pattern}"
         elif names:
             params += f"&names={','.join(names)}"
+        if allow_failed:
+            params += "&allow_failed=1"
         return self._collect_request("collect-files", impression, params)
 
     def refresh_filelists(self, impression):

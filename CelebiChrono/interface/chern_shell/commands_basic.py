@@ -72,9 +72,14 @@ class BasicCommands:
             print(f"Error listing predecessors: {e}")
 
     def do_collect(self, arg: str) -> None:
-        """Collect results. Usage: collect [all|plots|data|logs|<glob>|<name>]"""
+        """Collect results. Usage: collect [--allow-failed] [selector]"""
         try:
-            result = shell.collect(arg.strip())
+            tokens = arg.split()
+            allow_failed = "--allow-failed" in tokens
+            tokens = [token for token in tokens if token != "--allow-failed"]
+            contents = " ".join(tokens)
+            result = (shell.collect(contents, allow_failed=True)
+                      if allow_failed else shell.collect(contents))
             if result.messages:
                 print(result.colored())
         except Exception as e:

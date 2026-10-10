@@ -129,28 +129,36 @@ class JobManager(Core):
         return cherncc.status(self.impression())
 
     # Communicator Interaction Methods
-    def _dispatch_collect(self, cherncc, impression, selector):
+    def _dispatch_collect(self, cherncc, impression, selector,
+                          allow_failed=False):
         """Return a list of (label, result) tuples for the given selector."""
         calls = []
+        failed_option = {"allow_failed": True} if allow_failed else {}
         if selector in ("", "outputs"):
             if selector == "outputs":
-                calls.append(("outputs", cherncc.collect_outputs(impression)))
+                calls.append(("outputs", cherncc.collect_outputs(
+                    impression, **failed_option)))
             else:
-                calls.append(("plots+logs", cherncc.collect(impression)))
+                calls.append(("plots+logs", cherncc.collect(
+                    impression, **failed_option)))
         elif selector == "all":
-            calls.append(("outputs", cherncc.collect_outputs(impression)))
+            calls.append(("outputs", cherncc.collect_outputs(
+                impression, **failed_option)))
             calls.append(("logs", cherncc.collect_logs(impression)))
         elif selector in ("plots", "data"):
             calls.append((selector, cherncc.collect_files(
-                impression, kind="stageout", spec_type=selector)))
+                impression, kind="stageout", spec_type=selector,
+                **failed_option)))
         elif selector == "logs":
             calls.append(("logs", cherncc.collect_logs(impression)))
         elif any(ch in selector for ch in "*?["):
             calls.append((selector, cherncc.collect_files(
-                impression, kind="stageout", pattern=selector)))
+                impression, kind="stageout", pattern=selector,
+                **failed_option)))
         else:
             calls.append((selector, cherncc.collect_files(
-                impression, kind="stageout", names=[selector])))
+                impression, kind="stageout", names=[selector],
+                **failed_option)))
         return calls
 
     def _count_collected_files(self, cherncc, impression):
@@ -227,7 +235,7 @@ class JobManager(Core):
             for runner, filename, reason in failed:
                 msg.add(f"    [{runner}] {filename}: {reason}\n")
 
-    def collect(self, contents=""):
+    def collect(self, contents="", allow_failed=False):
         """Collect job results by selector.
 
         "" -> plots+logs (light); "all" -> outputs+logs; "plots"/"data" ->
@@ -240,7 +248,12 @@ class JobManager(Core):
         impression = self.impression()
 
         msg.add(f"Collecting '{label}' from impression {impression}...\n", "info")
-        results = self._dispatch_collect(cherncc, impression, selector)
+        if allow_failed and selector != "logs":
+            msg.add(
+                "Allowing diagnostic stageout from failed workflows; "
+                "these files are not official results.\n", "warning")
+        results = self._dispatch_collect(
+            cherncc, impression, selector, allow_failed=allow_failed)
 
         request_errors = self._request_errors(results)
         if request_errors:

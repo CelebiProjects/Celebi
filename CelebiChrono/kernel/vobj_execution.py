@@ -451,7 +451,7 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             return msg
         return self.get_vtask(self.path).check_results(runner)
 
-    def collect(self, contents="") -> Message:
+    def collect(self, contents="", allow_failed=False) -> Message:
         """ Collect the results from the runner. """
         cherncc = ChernCommunicator.instance()
         # Check the connection
@@ -467,7 +467,8 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             for sub_object in sub_objects:
                 if not sub_object.is_task():
                     continue
-                sub_msg = sub_object.collect(contents)
+                sub_msg = (sub_object.collect(contents, allow_failed=True)
+                           if allow_failed else sub_object.collect(contents))
                 if sub_msg:
                     msg.append(sub_msg)
             if not msg.messages:
@@ -477,7 +478,8 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             return msg
         if self.is_task():
             task = self.get_vtask(self.path)
-            return task.collect(contents)
+            return (task.collect(contents, allow_failed=True)
+                    if allow_failed else task.collect(contents))
         # It's an algorithm
         msg = Message()
         msg.add(f"Algorithm {self.path} doesn't have results to collect.", "info")

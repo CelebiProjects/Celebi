@@ -119,9 +119,11 @@ def purge_old_impressions() -> Message:
     return message
 
 
-def collect(contents: str = "") -> Message:
+def collect(contents: str = "", allow_failed: bool = False) -> Message:
     """Collect task results. contents: '', 'all', 'plots', 'data', 'logs',
     or a glob/filename. Default ('') collects plots + logs."""
+    if allow_failed:
+        return MANAGER.current_object().collect(contents, allow_failed=True)
     return MANAGER.current_object().collect(contents)
 
 

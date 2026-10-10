@@ -26,6 +26,17 @@ def test_collect_files_builds_type_query():
     assert "/collect-files/proj/abc" in url and "type=plots" in url and "kind=stageout" in url
 
 
+def test_collect_files_builds_allow_failed_query():
+    """Failed workflow collection is forwarded as an explicit query flag."""
+    cc = _cc()
+    imp = mock.Mock(uuid="abc")
+    with mock.patch("CelebiChrono.kernel.chern_communicator.requests") as rq:
+        rq.get.return_value.text = "ok"
+        cc.collect_files(imp, spec_type="all", allow_failed=True)
+        url = rq.get.call_args.args[0]
+    assert "allow_failed=1" in url
+
+
 def test_file_status_parses_json():
     """Test file status parses json."""
     cc = _cc()

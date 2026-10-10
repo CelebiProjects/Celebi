@@ -383,11 +383,15 @@ def kill_command() -> None:
 
 @click.command(name="collect")
 @click.argument("contents", type=str, default="", required=False)
-def collect_command(contents: str) -> None:
+@click.option("--allow-failed", is_flag=True, default=False,
+              help="Collect diagnostic stageout from failed workflows.")
+def collect_command(contents: str, allow_failed: bool) -> None:
     """Collect task results: [all|plots|data|logs|<glob>|<name>] (default: plots+logs)."""
     try:
         from CelebiChrono.interface.shell import collect
-        _handle_result(collect(contents))
+        result = (collect(contents, allow_failed=True)
+                  if allow_failed else collect(contents))
+        _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
