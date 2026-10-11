@@ -70,6 +70,7 @@ SHELL_USAGE = {
     "import-file": "import-file PATH",
     "impress": "impress [OBJECT ...]",
     "impression": "impression",
+    "install-environment": "install-environment RUNNER NAME [--file YAML]",
     "input": "input PATH ALIAS",
     "ls-projects": "ls-projects",
     "project-path": "project-path",

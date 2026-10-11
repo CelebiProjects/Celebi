@@ -36,4 +36,13 @@ Changes since v1.0.0b3:
     registry safely.
 + Refresh the README, Read the Docs command reference, bilingual website documentation,
   and Celebi skills to match the new command organization and help behavior.
++ Add project-scoped Conda environment installation for SSH and IHEP runners.
+  - ``install-environment RUNNER NAME`` reads ``.celebi-env/NAME.yaml`` (or
+    ``--file PATH``), creates or updates the prefix, and waits for completion.
+  - Isolate prefixes below
+    ``<remote_workdir>/environments/<project_uuid>/<environment_name>`` and list
+    only the current project's managed environments.
+  - Keep explicit legacy ``conda_env_map`` entries and reserved environment semantics;
+    do not record a specification digest because project environment definitions are
+    trusted mutable state.
 + Set the CelebiChrono package version to `1.0.0b4`.

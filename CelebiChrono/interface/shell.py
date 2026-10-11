@@ -32,7 +32,7 @@ from .shell_modules.execution_management import (
 from .shell_modules.communication import (
     dite, set_dite, add_host, hosts, runners, register_runner, update_runner,
     remove_runner, request_runner, search_impression, test_runner,
-    runner_envs, purge_ssh_runner_cache, cache_results, whereabouts,
+    runner_envs, install_environment, purge_ssh_runner_cache, cache_results, whereabouts,
     refresh_distribution,
     yuki_overview,
     kill_running_workflows,
@@ -79,7 +79,7 @@ __all__ = [
     # Communication functions (from communication.py)
     'dite', 'set_dite', 'add_host', 'hosts', 'runners', 'register_runner', 'update_runner',
     'remove_runner', 'request_runner', 'search_impression', 'test_runner',
-    'runner_envs', 'purge_ssh_runner_cache', 'cache_results', 'whereabouts',
+    'runner_envs', 'install_environment', 'purge_ssh_runner_cache', 'cache_results', 'whereabouts',
     'refresh_distribution',
     'yuki_overview',
     # Visualization functions (from visualization.py)

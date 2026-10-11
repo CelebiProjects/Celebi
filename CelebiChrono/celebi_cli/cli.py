@@ -55,7 +55,8 @@ COMMAND_SECTIONS = (
     )),
     ("Runners and capacity", (
         "runners", "register-runner", "update-runner", "remove-runner",
-        "test-runner", "runner-environments", "yuki-overview", "hosts",
+        "test-runner", "install-environment", "runner-environments",
+        "yuki-overview", "hosts",
         "add-host", "refresh-distribution",
     )),
     ("Settings and services", (
@@ -217,6 +218,7 @@ cli.add_command(execution_management.register_runner_command)
 cli.add_command(execution_management.update_runner_command)
 cli.add_command(execution_management.remove_runner_command)
 cli.add_command(execution_management.runner_envs_command)
+cli.add_command(execution_management.install_environment_command)
 cli.add_command(execution_management.test_runner_command)
 cli.add_command(execution_management.purge_ssh_runner_cache_command)
 cli.add_command(execution_management.refresh_distribution_command)

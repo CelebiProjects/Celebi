@@ -35,8 +35,12 @@ class SshTestMixin(Core):
             msg.add("DITE is not connected. Please check the connection.", "warning")
             return msg
 
-        ssh_config = cherncc.runner_ssh_config(runner,
-                                               environment=self.environment())
+        try:
+            project_uuid = self.project_uuid()
+        except (AttributeError, RuntimeError):
+            project_uuid = ""
+        ssh_config = cherncc.runner_ssh_config(
+            runner, environment=self.environment(), project_uuid=project_uuid)
         if ssh_config is None:
             msg = Message()
             msg.add(f"Runner '{runner}' not found on the DITE server.", "warning")
@@ -60,7 +64,10 @@ class SshTestMixin(Core):
         conda_env = ssh_config.get("conda_env", "")
         if conda_env:
             print(f"Activating conda environment '{conda_env}' on the runner...")
-            command = (f"conda run --no-capture-output -n {shlex.quote(conda_env)} "
+            selector = "-p" if conda_env.startswith("/") else "-n"
+            conda = ssh_config.get("conda_path") or "conda"
+            command = (f"{shlex.quote(conda)} run --no-capture-output "
+                       f"{selector} {shlex.quote(conda_env)} "
                        f"bash -c {shlex.quote(command)}")
         _log("command built", t_start)
         print(f"Final command to execute on remote: {command}")
@@ -135,13 +142,17 @@ class SshTestMixin(Core):
             conda_base = ""
             if conda_env:
                 _log("probing conda environment...", t_start)
-                conda_base, ok, resolved = self._conda_probe(ssh, conda_env)
+                conda_base, ok, resolved = self._conda_probe(
+                    ssh, conda_env, ssh_config.get("conda_path") or "conda")
                 if not ok:
+                    repair = (f"Run: celebi-cli install-environment {runner} "
+                              f"{self.environment()}"
+                              if conda_env.startswith("/") else
+                              f"Recreate it, e.g.: conda create -n {conda_env} "
+                              "-c conda-forge root python")
                     msg.add(
                         f"conda environment '{conda_env}' is not usable on the "
-                        f"runner (no python found at {resolved}). Recreate it, "
-                        f"e.g.: conda create -n {conda_env} "
-                        f"-c conda-forge root python",
+                        f"runner (no python found at {resolved}). {repair}",
                         "error")
                     return msg
                 _log("conda probe ok", t_start)
@@ -191,7 +202,8 @@ class SshTestMixin(Core):
             return msg
 
         ssh_config = cherncc.runner_ssh_config(runner,
-                                               environment=self.environment())
+                                               environment=self.environment(),
+                                               project_uuid=self.project_uuid())
         if ssh_config is None:
             msg = Message()
             msg.add(f"Runner '{runner}' not found on the DITE server.",
@@ -289,7 +301,7 @@ class SshTestMixin(Core):
         return " && ".join(parts)
 
     @staticmethod
-    def _conda_probe(ssh, conda_env):
+    def _conda_probe(ssh, conda_env, conda="conda"):
         """Resolve the conda base and verify the env's own python in one exec.
 
         ``conda run`` strips the calling conda's base from the child PATH,
@@ -300,10 +312,13 @@ class SshTestMixin(Core):
         Returns (base, ok, resolved_python_path).
         """
         lines = []
+        python_path = (f"{conda_env.rstrip('/')}/bin/python"
+                       if conda_env.startswith("/") else
+                       f"$base/envs/{conda_env}/bin/python")
         code = ssh.exec_stream(
-            "base=$(conda info --base 2>/dev/null || true); "
+            f"base=$({shlex.quote(conda)} info --base 2>/dev/null || true); "
             "echo CBASE=$base; "
-            f"test -x \"$base/envs/{shlex.quote(conda_env)}/bin/python\" "
+            f"test -x {shlex.quote(python_path) if conda_env.startswith('/') else python_path} "
             "&& echo CPY=ok",
             on_line=lines.append)
         base = ""
@@ -313,7 +328,8 @@ class SshTestMixin(Core):
                 base = line[len("CBASE="):]
             elif line == "CPY=ok":
                 py_ok = True
-        resolved = f"{base}/envs/{conda_env}/bin/python"
+        resolved = (python_path if conda_env.startswith("/") else
+                    f"{base}/envs/{conda_env}/bin/python")
         return base, (not code and py_ok), resolved
 
     @staticmethod

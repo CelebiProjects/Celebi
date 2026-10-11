@@ -4,7 +4,10 @@ Communication functions for shell interface.
 Functions for managing hosts, runners, and DITE communication.
 """
 import os
+import re
 import time
+
+import yaml
 
 from ...utils import csys
 from ...utils.message import Message
@@ -754,22 +757,24 @@ def update_runner(runner: str, **kwargs) -> Message:
 
 
 def runner_envs(runner: str) -> Message:
-    """List conda environments available on a runner (ssh/native).
+    """List environments for this project on an SSH/IHEP runner.
 
     Args:
         runner (str): Name of the registered runner.
 
     Examples:
         runner_envs pkufarm212
-        runner_envs local
+        runner_envs ihep
 
     Returns:
-        Message: Formatted list of conda environments with paths.
+        Message: Formatted list of project environments with paths. Outside a
+            project, the runner's global Conda environments are listed for
+            compatibility.
     """
     message = Message()
     cherncc = ChernCommunicator.instance()
     try:
-        result = cherncc.runner_envs(runner)
+        result = cherncc.runner_envs(runner, _current_project_uuid())
     except ConnectionError as e:
         message.add(str(e), "error")
         return message
@@ -783,6 +788,85 @@ def runner_envs(runner: str) -> Message:
         name = env.get("name") or "(unnamed)"
         message.add(f"{marker} {name:<30}{env.get('path', '')}\n", "normal")
     return message
+
+
+def install_environment(runner: str, name: str, file_path: str = None) -> Message:
+    """Install or update a project environment on an SSH/IHEP runner.
+
+    By default the Conda specification is read from ``.celebi-env/NAME.yaml``
+    in the current project. The YAML ``name`` field is ignored because Celebi
+    installs to a project-specific prefix on the runner.
+
+    Args:
+        runner: Registered SSH or IHEP runner name.
+        name: Logical environment name used by ``set-environment``.
+        file_path: Optional Conda YAML path, relative to the current directory.
+
+    Examples:
+        install_environment("ihep", "analysis")
+        install_environment("ssh-cluster", "root", ".celebi-env/root-dev.yaml")
+    """
+    message = Message()
+    project_dir, project_uuid = _current_project()
+    if not project_uuid:
+        message.add("No project found — run inside a Celebi project.", "error")
+        return message
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", name or ""):
+        message.add("Invalid environment name. Use letters, numbers, '.', '_' "
+                    "or '-' only.", "error")
+        return message
+    if name in {"script", "rawdata", "datalist", "lhcb_ap_datalist"}:
+        message.add(f"Environment name '{name}' is reserved by Celebi.", "error")
+        return message
+
+    spec_path = (os.path.abspath(file_path) if file_path else
+                 os.path.join(project_dir, ".celebi-env", f"{name}.yaml"))
+    try:
+        if os.path.getsize(spec_path) > 1024 * 1024:
+            raise ValueError("environment YAML must be at most 1 MiB")
+        with open(spec_path, encoding="utf-8") as spec_file:
+            yaml_text = spec_file.read()
+        document = yaml.safe_load(yaml_text)
+        if not isinstance(document, dict) or not isinstance(
+                document.get("dependencies"), list):
+            raise ValueError("Conda YAML must contain a 'dependencies' list")
+    except (OSError, ValueError, yaml.YAMLError) as exc:
+        message.add(f"Cannot read environment specification '{spec_path}': {exc}",
+                    "error")
+        return message
+
+    communicator = ChernCommunicator.instance()
+    try:
+        started = communicator.install_environment(
+            runner, project_uuid, name, yaml_text)
+        if started.get("error"):
+            message.add(started["error"], "error")
+            return message
+        job_id = started.get("job_id")
+        if not job_id:
+            message.add("DITE did not return an installation job id.", "error")
+            return message
+        message.add(f"Installing environment '{name}' on '{runner}'...\n", "normal")
+        while True:
+            state = communicator.install_environment_status(job_id)
+            status = state.get("status")
+            if status == "done":
+                result = state.get("result") or {}
+                message.add(
+                    f"Environment '{name}' is ready at {result.get('path', '')}.",
+                    "success")
+                return message
+            if status in ("failed", "unknown"):
+                message.add(state.get("error") or "Environment installation failed.",
+                            "error")
+                return message
+            if state.get("error") and not status:
+                message.add(state["error"], "error")
+                return message
+            time.sleep(2)
+    except ConnectionError as exc:
+        message.add(str(exc), "error")
+        return message
 
 
 def request_runner(runner: str) -> Message:

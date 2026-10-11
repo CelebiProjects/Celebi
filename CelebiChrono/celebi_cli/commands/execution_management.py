@@ -339,14 +339,36 @@ def cache_results_command(runner: str) -> None:
 @click.command(name="runner-environments")
 @click.argument("runner", type=str)
 def runner_envs_command(runner: str) -> None:
-    """List conda environments available on a runner (ssh/native).
+    """List environments available to the current project on a runner.
 
-    RUNNER is the name of the registered runner. The list is fetched live
-    from the runner via the DITE server.
+    RUNNER is the name of the registered runner. Inside a project, SSH/IHEP
+    environments are listed from that project's isolated environment path.
     """
     try:
         from CelebiChrono.interface.shell import runner_envs
         _handle_result(runner_envs(runner))
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="install-environment")
+@click.argument("runner", type=str)
+@click.argument("name", type=str)
+@click.option("--file", "file_path", type=click.Path(dir_okay=False), default=None,
+              help="Conda YAML file (default: PROJECT/.celebi-env/NAME.yaml).")
+def install_environment_command(runner: str, name: str,
+                                file_path: str = None) -> None:
+    """Install or update a project environment on an SSH/IHEP runner.
+
+    RUNNER is a registered SSH or IHEP runner. NAME is the logical name used
+    by `set-environment`. The YAML `name` field is ignored; Celebi installs
+    into `<remote_workdir>/environments/<project_uuid>/<name>`.
+    """
+    try:
+        from CelebiChrono.interface.shell import install_environment
+        _handle_result(install_environment(runner, name, file_path))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:

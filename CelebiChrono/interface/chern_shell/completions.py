@@ -315,6 +315,16 @@ class ChernShellCompletions:
         runners = self.readline_file.read_variable("runners", [])
         return [r for r in runners if r.startswith(text)]
 
+    def complete_install_environment(
+        self, text: str, line: str, _begidx: int, _endidx: int
+    ) -> list:
+        """Complete the runner argument for install_environment."""
+        words = line.split()
+        if len(words) <= 2:
+            runners = self.readline_file.read_variable("runners", [])
+            return [r for r in runners if r.startswith(text)]
+        return [option for option in ("--file",) if option.startswith(text)]
+
     def complete_purge_ssh_runner_cache(
         self, text: str, _line: str, _begidx: int, _endidx: int
     ) -> list:

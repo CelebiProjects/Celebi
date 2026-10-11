@@ -57,6 +57,11 @@ Runner Cache Management:
 - GET /whereabouts/{project}/{impression} - Data-location registry
 - POST /refresh-distribution/{project}/{impression} - Refresh distribution.json
 
+Project Environments:
+- POST /runner-environments/{runner}/install - Install/update a project Conda prefix
+- GET /environment-jobs/{job_id} - Poll environment installation state
+- GET /runner-envs/{runner}?project_uuid=... - List project prefixes
+
 All requests use configurable timeout (default: 10s) and support both local and remote execution.
 
 Method Usage Status:
@@ -846,19 +851,29 @@ class ChernCommunicator():  # pylint: disable=too-many-instance-attributes
         except Exception:
             return None
 
-    def runner_ssh_config(self, runner, environment=""):
+    def runner_ssh_config(self, runner, environment="", project_uuid=""):
         """ Get the ssh connection settings (incl. key content) for a runner.
 
         When ``environment`` is given, the server resolves it to a conda
         environment name and includes it as ``conda_env`` in the response.
         """
         url = self.serverurl()
+        url = f"{url}/runner-ssh-config/{runner}"
+        params = {}
         if environment:
-            url = f"{url}/runner-ssh-config/{runner}?environment={environment}"
-        else:
-            url = f"{url}/runner-ssh-config/{runner}"
+            params["environment"] = environment
+        if project_uuid:
+            params["project_uuid"] = project_uuid
         try:
-            r = requests.get(f"http://{url}", timeout=self.timeout)
+            if project_uuid:
+                r = requests.get(f"http://{url}", params=params,
+                                 timeout=self.timeout)
+            elif environment:
+                r = requests.get(
+                    f"http://{url}?environment={environment}",
+                    timeout=self.timeout)
+            else:
+                r = requests.get(f"http://{url}", timeout=self.timeout)
             if r.status_code == 404:
                 return None
             r.raise_for_status()
@@ -974,11 +989,16 @@ class ChernCommunicator():  # pylint: disable=too-many-instance-attributes
             return {"status": "untested"}
         return r.json()
 
-    def runner_envs(self, runner):
-        """ List conda environments available on a runner (ssh/native) """
+    def runner_envs(self, runner, project_uuid=""):
+        """List Conda environments, scoped to a project when requested."""
         url = self.serverurl()
         try:
-            r = requests.get(f"http://{url}/runner-envs/{runner}", timeout=60)
+            if project_uuid:
+                r = requests.get(
+                    f"http://{url}/runner-envs/{runner}",
+                    params={"project_uuid": project_uuid}, timeout=60)
+            else:
+                r = requests.get(f"http://{url}/runner-envs/{runner}", timeout=60)
         except requests.exceptions.RequestException as e:
             raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
         if r.status_code == 404:
@@ -991,6 +1011,36 @@ class ChernCommunicator():  # pylint: disable=too-many-instance-attributes
             return {"envs": [],
                     "error": "DITE server does not support listing runner "
                              "environments (upgrade Yuki)"}
+        return r.json()
+
+    def install_environment(self, runner, project_uuid, name, yaml_text):
+        """Start a project-scoped environment installation."""
+        url = self.serverurl()
+        try:
+            r = requests.post(
+                f"http://{url}/runner-environments/{runner}/install",
+                json={"project_uuid": project_uuid, "name": name,
+                      "yaml": yaml_text}, timeout=self.timeout)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        try:
+            body = r.json()
+        except ValueError:
+            body = {}
+        if r.status_code not in (200, 202):
+            return {"error": body.get("error", f"install failed (HTTP {r.status_code})")}
+        return body
+
+    def install_environment_status(self, job_id):
+        """Poll a project environment installation job."""
+        url = self.serverurl()
+        try:
+            r = requests.get(f"http://{url}/environment-jobs/{job_id}",
+                             timeout=self.timeout)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        if r.status_code == 404:
+            return {"status": "unknown", "error": "job not found"}
         return r.json()
 
     def register_remote_data(self, runner, remote_path, project_uuid,

@@ -51,6 +51,19 @@ def test_runner_ssh_config_passes_environment_param():
             "/runner-ssh-config/farm?environment=env_root")
 
 
+def test_runner_ssh_config_passes_project_scope():
+    """Project UUID accompanies environment resolution for direct SSH tests."""
+    cc = ChernCommunicator.instance()
+    with mock.patch("requests.get") as get:
+        get.return_value = MockResponse(200, {"conda_env": "/work/env"})
+        cc.runner_ssh_config("farm", environment="analysis",
+                             project_uuid="project-1")
+
+    _args, kwargs = get.call_args
+    assert kwargs["params"] == {
+        "environment": "analysis", "project_uuid": "project-1"}
+
+
 def test_runner_ssh_config_unknown_runner_returns_none():
     """A 404 from the server yields None."""
     cc = ChernCommunicator.instance()

@@ -655,6 +655,32 @@ class EnvironmentCommands:
 
     do_runner_environments = do_runner_envs
 
+    def do_install_environment(self, arg: str) -> None:
+        """Install or update a project environment on an SSH/IHEP runner."""
+        import shlex
+        try:
+            args = shlex.split(arg)
+        except ValueError as exc:
+            print(f"Error: {exc}")
+            return
+        file_path = None
+        if "--file" in args:
+            index = args.index("--file")
+            if index + 1 >= len(args):
+                print("Error: --file requires a YAML path.")
+                return
+            file_path = args[index + 1]
+            del args[index:index + 2]
+        if len(args) != 2:
+            print("Usage: install-environment RUNNER NAME [--file YAML]")
+            return
+        try:
+            result = shell.install_environment(args[0], args[1], file_path)
+            if result.messages:
+                print(result.colored())
+        except Exception as exc:
+            print(f"Error installing environment: {exc}")
+
     def do_remove_runner(self, arg: str) -> None:
         """Remove a runner."""
         try:

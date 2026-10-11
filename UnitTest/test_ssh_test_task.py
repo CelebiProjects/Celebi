@@ -194,6 +194,21 @@ def test_ssh_test_activates_resolved_conda_environment(tmp_path):
             "echo 20000") in command
 
 
+def test_ssh_test_activates_absolute_environment_prefix(tmp_path):
+    """Project-scoped absolute prefixes use conda's -p selector."""
+    _reset_fakes()
+    task = _task_with_workdirs(tmp_path)
+    prefix = "/work/environments/project-1/analysis"
+    config_with_env = dict(SSH_CONFIG, conda_env=prefix,
+                           conda_path="/opt/conda/bin/conda")
+    message = _run(task, ssh_config=config_with_env)
+
+    assert "exited with code 0" in str(message)
+    command, _cwd = FakeSshRunner.instances[0].exec_args[-1]
+    assert ("/opt/conda/bin/conda run --no-capture-output -p "
+            f"{prefix} bash -c") in command
+
+
 def test_ssh_test_sanitizes_remote_environment(tmp_path):
     """The run command resets PYTHONPATH/LD_LIBRARY_PATH and curates PATH."""
     _reset_fakes()
