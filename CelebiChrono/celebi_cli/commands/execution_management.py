@@ -341,7 +341,7 @@ def cache_results_command(runner: str) -> None:
 def runner_envs_command(runner: str) -> None:
     """List environments available to the current project on a runner.
 
-    RUNNER is the name of the registered runner. Inside a project, SSH/IHEP
+    RUNNER is the name of the registered runner. Inside a project, SSH/IHEP/native
     environments are listed from that project's isolated environment path.
     """
     try:
@@ -360,11 +360,11 @@ def runner_envs_command(runner: str) -> None:
               help="Conda YAML file (default: PROJECT/.celebi-env/NAME.yaml).")
 def install_environment_command(runner: str, name: str,
                                 file_path: str = None) -> None:
-    """Install or update a project environment on an SSH/IHEP runner.
+    """Install or update a project environment on an SSH/IHEP/native runner.
 
-    RUNNER is a registered SSH or IHEP runner. NAME is the logical name used
+    RUNNER is a registered SSH, IHEP, or native runner. NAME is the logical name used
     by `set-environment`. The YAML `name` field is ignored; Celebi installs
-    into `<remote_workdir>/environments/<project_uuid>/<name>`.
+    into the runner's project-scoped `environments/<project_uuid>/<name>`.
     """
     try:
         from CelebiChrono.interface.shell import install_environment

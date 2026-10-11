@@ -36,7 +36,7 @@ Changes since v1.0.0b3:
     registry safely.
 + Refresh the README, Read the Docs command reference, bilingual website documentation,
   and Celebi skills to match the new command organization and help behavior.
-+ Add project-scoped Conda environment installation for SSH and IHEP runners.
++ Add project-scoped Conda environment installation for SSH, IHEP, and native runners.
   - ``install-environment RUNNER NAME`` reads ``.celebi-env/NAME.yaml`` (or
     ``--file PATH``), creates or updates the prefix, and waits for completion.
   - Isolate prefixes below
@@ -45,4 +45,13 @@ Changes since v1.0.0b3:
   - Keep explicit legacy ``conda_env_map`` entries and reserved environment semantics;
     do not record a specification digest because project environment definitions are
     trusted mutable state.
+  - Resolve native logical environment names to project-isolated prefixes and fail
+    submission early with the corrective install command when a prefix is missing.
++ Isolate native workflow workspaces below
+  ``<runner-workdir>/workflows/<project_uuid>/<workflow_uuid>`` while retaining
+  lookup compatibility for existing flat workspaces.
++ Make ``test-runner`` and runner connectivity verify that the native host agent is alive.
++ Define native data semantics explicitly: stage-out enters Yuki Storage directly,
+  native has no separate managed cache, is not a transfer endpoint, and
+  ``cache-on-runner`` has no additional native effect.
 + Set the CelebiChrono package version to `1.0.0b4`.

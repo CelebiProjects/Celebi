@@ -757,7 +757,7 @@ def update_runner(runner: str, **kwargs) -> Message:
 
 
 def runner_envs(runner: str) -> Message:
-    """List environments for this project on an SSH/IHEP runner.
+    """List environments for this project on an SSH/IHEP/native runner.
 
     Args:
         runner (str): Name of the registered runner.
@@ -791,19 +791,20 @@ def runner_envs(runner: str) -> Message:
 
 
 def install_environment(runner: str, name: str, file_path: str = None) -> Message:
-    """Install or update a project environment on an SSH/IHEP runner.
+    """Install or update a project environment on an SSH/IHEP/native runner.
 
     By default the Conda specification is read from ``.celebi-env/NAME.yaml``
     in the current project. The YAML ``name`` field is ignored because Celebi
     installs to a project-specific prefix on the runner.
 
     Args:
-        runner: Registered SSH or IHEP runner name.
+        runner: Registered SSH, IHEP, or native runner name.
         name: Logical environment name used by ``set-environment``.
         file_path: Optional Conda YAML path, relative to the current directory.
 
     Examples:
         install_environment("ihep", "analysis")
+        install_environment("local", "analysis")
         install_environment("ssh-cluster", "root", ".celebi-env/root-dev.yaml")
     """
     message = Message()

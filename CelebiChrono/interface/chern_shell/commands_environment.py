@@ -656,7 +656,7 @@ class EnvironmentCommands:
     do_runner_environments = do_runner_envs
 
     def do_install_environment(self, arg: str) -> None:
-        """Install or update a project environment on an SSH/IHEP runner."""
+        """Install or update a project environment on an SSH/IHEP/native runner."""
         import shlex
         try:
             args = shlex.split(arg)
