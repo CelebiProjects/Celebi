@@ -99,7 +99,7 @@ class TestGitOptionalIntegration(unittest.TestCase):
         self.assertIn('workflow_suggestions', settings)
 
         # Check specific recommendations
-        self.assertIn('.celebi/impressions/', settings['.gitignore_additions'])
+        self.assertIn('**/.celebi/impressions', settings['.gitignore_additions'])
 
 
 class TestGitMergeCoordinator(unittest.TestCase):

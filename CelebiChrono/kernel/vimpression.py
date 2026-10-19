@@ -259,14 +259,12 @@ class VImpression:  # pylint: disable=too-many-instance-attributes,too-many-publ
             for filename in filenames:
                 rel_path = filename if dirpath == "." else os.path.join(dirpath, filename)
                 file_path = os.path.join(obj.path, rel_path)
-                with open(file_path, "rb") as f:
-                    content = f.read()
-                blob_hash = self.store.put_blob(content)
+                blob_hash = self.store.put_blob_file(file_path)
                 entries.append({
                     "path": rel_path,
                     "type": "blob",
                     "hash": blob_hash,
-                    "size": len(content),
+                    "size": os.path.getsize(file_path),
                 })
         entries = sorted(entries, key=lambda x: x["path"])
         return self.store.put_tree(entries)

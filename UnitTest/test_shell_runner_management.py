@@ -74,6 +74,8 @@ class TestShellRunnerManagement(unittest.TestCase):
         from CelebiChrono.utils.metadata import YamlFile
         cache = YamlFile(os.path.join(tmp, ".celebi", "readline.yaml"))
         self.assertEqual(cache.read_variable("runners", []), ["local"])
+        self.assertEqual(message.data["runners"], [{
+            "name": "local", "backend_type": "native"}])
         self.assertIn("ok", str(message))
 
     def test_add_host_calls_communicator(self):

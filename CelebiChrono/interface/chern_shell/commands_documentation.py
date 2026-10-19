@@ -156,8 +156,9 @@ class DocumentationCommands:
             print(f"Error cleaning impressions: {e}")
 
     def do_homekeep(self, _: str) -> None:
-        """Clean the runner workflow"""
+        """Interactively clean local storage and stale runner data."""
         try:
-            MANAGER.current_object().homekeep()
+            from ...celebi_cli.commands.maintenance import run_homekeep
+            run_homekeep()
         except Exception as e:
             print(f"Error during homekeep: {e}")

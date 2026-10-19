@@ -91,6 +91,27 @@ class ImpressionStore:
                 self._atomic_write_bytes(blob_path, content)
         return blob_hash
 
+    def put_blob_file(self, source: str) -> str:
+        """Hash and store a blob with bounded memory, preserving CAS hashes."""
+        fd, temporary = tempfile.mkstemp(prefix=".stream_", dir=self.blob_root)
+        try:
+            digest = hashlib.sha256()
+            with os.fdopen(fd, "wb") as outgoing, open(source, "rb") as incoming:
+                for block in iter(lambda: incoming.read(1024 * 1024), b""):
+                    digest.update(block)
+                    outgoing.write(block)
+                outgoing.flush()
+                os.fsync(outgoing.fileno())
+            blob_hash = digest.hexdigest()
+            with self._write_lock():
+                destination = self._blob_path(blob_hash)
+                if not os.path.exists(destination):
+                    os.replace(temporary, destination)
+            return blob_hash
+        finally:
+            if os.path.exists(temporary):
+                os.remove(temporary)
+
     def get_blob(self, blob_hash: str) -> bytes:
         """Retrieve blob content by its hash."""
         with open(self._blob_path(blob_hash), "rb") as f:

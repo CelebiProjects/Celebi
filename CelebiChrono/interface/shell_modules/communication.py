@@ -176,13 +176,23 @@ def runners() -> Message:  # pylint: disable=too-many-locals
     cherncc = ChernCommunicator.instance()
     dite_status = cherncc.dite_status()
     if dite_status == "unconnected":
+        message.data["runners"] = []
         message.add("DITE unconnected, please connect first", "warning")
         return message
     runner_list = cherncc.runners()
+    message.data["runners"] = []
     message.add(f"Number of runners: {len(runner_list)}\n", "title0")
     if runner_list:
         configs = cherncc.runners_config() or []
         config_map = {cfg.get("name", ""): cfg for cfg in configs}
+        message.data["runners"] = [
+            {
+                "name": runner,
+                "backend_type": config_map.get(runner, {}).get(
+                    "backend_type", "reana"),
+            }
+            for runner in runner_list
+        ]
         urls = cherncc.runners_url()
         for runner, url in zip(runner_list, urls):
             cfg = config_map.get(runner, {})

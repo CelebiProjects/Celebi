@@ -327,7 +327,10 @@ class ImpressionManagement(Core):
             self.path, (-1, -1)
         )
         now, consult_id = csys.update_time(consult_id)
-        if csys.project_cache_invalidation_method(self.project_path()) == "off":
+        _, modification_consult_time = CHERN_CACHE.project_modification_time
+        snapshot_is_frozen = modification_consult_time == float("inf")
+        if (csys.project_cache_invalidation_method(self.project_path()) == "off"
+                and not snapshot_is_frozen):
             return self.is_impressed(now)
         modification_time_from_cache, modification_consult_time = \
                 CHERN_CACHE.project_modification_time

@@ -54,6 +54,66 @@ pip install .
 
 ## Getting Started
 
+### Immutable, single-pass impressions
+
+For a fixed Git checkout or another input tree that will not be edited while
+the command runs, use:
+
+```sh
+celebi-cli impress --immutable
+# Share the same project's impressions across disposable checkouts:
+celebi-cli impress --immutable --cache-dir /path/outside-checkout/impression-cache
+```
+
+`--immutable` implies offline execution. It evaluates each task/algorithm once
+in topological order, using resolved upstream UUIDs instead of recursive
+freshness checks. It does not scan project mtimes or repeatedly enumerate
+ancestor directories for case checks. UUID rules and CAS payloads are compatible
+with normal `impress`; existing complete payloads are reused without rewriting
+them. Missing cached payloads are rebuilt. Graph work is O(V+E), excluding
+canonical sorting and input-file hashing/storage costs.
+
+The caller must prevent concurrent input edits. Leave this option off in an
+actively edited project. `--cache-dir` is optional, requires `--immutable`, and
+belongs to one project only. Without it, existing `.celebi` impressions are
+reused in place. With it, generated stores are linked into the external cache;
+conflicting nonempty local/cache stores are refused rather than overwritten.
+Do not commit these links or generated runtime files to Git. Bookkeeping's
+server invokes this same local CLI mode against its exact checked-out commit.
+
+### Publish analysis bookkeeping
+
+Initialize and push the Celebi repository first, then create an analysis on the
+password-protected `celebi_server` website and save its one-time analysis token.
+The website reads the project UUID directly from the committed
+`.celebi/config.json`; users do not enter or generate a UUID there.
+
+Configure a GitLab upstream, collect the task results into the updated Yuki
+server, and run inside the project:
+
+```sh
+celebi-cli register-celebi-server --server http://bookkeeping-host:3320 \
+  --token <analysis-token> --yuki http://yuki-host:3315
+celebi-cli bookkeep --commit "Publish fit results" --tag "v1"
+```
+
+The command commits shareable changes, atomically pushes the branch and tag,
+then asks the server to impress that exact commit and compute missing result
+archives. Yuki packages only small collected images/text and uploads them
+using a scoped grant. Local credentials, impression stores, and stageout data
+are excluded from Git. Environment definitions in `.celebi-env/` are shareable
+and are included in bookkeeping commits (normal credential/result exclusions
+still apply inside that directory). Existing tags and behind/diverged branches are rejected.
+Before making any Git change, the CLI checks the locally saved analysis token
+against its server-side hash. An invalid token cannot create a commit or tag and
+cannot push. GitLab still applies the user's normal SSH/HTTPS push permission;
+the bookkeeping server itself only needs read access to fetch the repository.
+Use `--allow-partial` to tolerate results not collected yet, then run
+`celebi-cli bookkeep` again without `--tag` after they arrive. Saved website
+credentials live in `.celebi/bookkeeping.local.json` with mode 0600.
+
+### Initialize a local project
+
 ```sh
 celebi-cli init
 celebi
@@ -69,6 +129,15 @@ Celebi provides three deliberately separate command interfaces:
 Select a registered project before starting the shell with
 `celebi-cli use-project PROJECT`, or start the shell for a project directly
 with `celebi --project PROJECT`.
+
+To register a copied project as a distinct project, generate a fresh project
+UUID while selecting it:
+
+```sh
+celebi use . --new-project
+# Equivalent one-shot command:
+celebi-cli register-project . --new-project
+```
 
 Inside the interactive shell, help is available in three complementary forms:
 

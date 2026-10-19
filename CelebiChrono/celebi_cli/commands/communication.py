@@ -225,13 +225,29 @@ def postshell_command(command: str) -> None:
 
 
 @click.command(name="impress")
-def impress_command() -> None:
+@click.option("--offline", is_flag=True, help="Create snapshots without contacting Yuki.")
+@click.option("--immutable", is_flag=True,
+              help="Evaluate the DAG once, offline. Caller must prevent input changes.")
+@click.option("--cache-dir", type=click.Path(file_okay=False, resolve_path=True), default=None,
+              help="Project-scoped persistent impression cache (requires --immutable).")
+def impress_command(offline=False, immutable=False, cache_dir=None) -> None:
     """Create an impression of the current object."""
     try:
+        if cache_dir and not immutable:
+            raise ValueError("--cache-dir requires --immutable")
+        if immutable:
+            from CelebiChrono.kernel.immutable_impress import impress_immutable
+            from CelebiChrono.interface.shell_modules.server_booking import project_root
+            def report(stats):
+                click.echo(f"Impress {stats['processed']}/{stats['total']}; "
+                           f"created {stats['created']}; reused {stats['reused']}")
+            impress_immutable(project_root(), cache_dir, report)
+            return
         from CelebiChrono.interface.shell import impress
         result = impress()
         _handle_result(result)
-        _best_effort_sync_live()
+        if not offline:
+            _best_effort_sync_live()
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:

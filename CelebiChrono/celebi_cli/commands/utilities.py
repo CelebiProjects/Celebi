@@ -45,12 +45,23 @@ def doctor_command() -> None:
 
 
 @click.command(name="bookkeep")
-def bookkeep_command() -> None:
-    """Perform project-wide impression bookkeeping."""
+@click.option("--commit", "commit_message", help="Stage shareable changes and commit with this message.")
+@click.option("--tag", help="Create and push a new Git tag; existing tags are rejected.")
+@click.option("--server", default="", help="Celebi bookkeeping server URL.")
+@click.option("--token", default="", help="Analysis token (or CELEBI_PROJECT_TOKEN).")
+@click.option("--path", default="", help="Celebi project path.")
+@click.option("--yuki", default="", help="Yuki URL holding collected results.")
+@click.option("--allow-partial", is_flag=True, help="Allow impressions without collected results.")
+def bookkeep_command(commit_message, tag, server, token, path, yuki, allow_partial) -> None:
+    """Publish Git code and small impression results to Celebi bookkeeping.
+
+    Use register-celebi-server once to save the analysis token locally.
+    Run bookkeep --commit 'Publish results' --tag 'v1' to publish a version.
+    To retry missing results, run bookkeep again without --tag.
+    """
     try:
-        from CelebiChrono.interface.shell import bookkeep
-        result = bookkeep()
-        _handle_result(result)
+        from CelebiChrono.interface.shell_modules.server_booking import bookkeep
+        bookkeep(commit_message, tag, server, token, path, yuki, allow_partial)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:

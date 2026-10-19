@@ -578,17 +578,22 @@ def purge_impressions_command() -> None:
 
 
 @click.command(name="homekeep")
-def homekeep_command() -> None:
-    """Request cleanup of runner workflow workspaces for this project.
+@click.option("--grace-days", type=click.IntRange(min=0), default=14,
+              show_default=True,
+              help="Minimum age for unreachable local CAS objects.")
+def homekeep_command(grace_days: int) -> None:
+    """Interactively clean local storage and stale runner data.
 
-    The request is sent through DITE. It does not remove the local Celebi
-    project or its configuration.
+    The wizard previews every selected category before asking for deletion.
+    It can garbage-collect local CAS objects, delete non-live workflow
+    workspaces, and evict superseded impression caches from SSH runners.
+    Live and running data remain protected by the existing purge APIs.
     """
     try:
-        from CelebiChrono.interface.shell import MANAGER
-        _handle_result(MANAGER.current_object().homekeep())
+        from .maintenance import run_homekeep
+        run_homekeep(grace_days)
     except ImportError as e:
-        _handle_error(f"Failed to import shell function: {e}")
+        _handle_error(f"Failed to import homekeep wizard: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
 

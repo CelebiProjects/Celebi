@@ -5,6 +5,25 @@ import os
 import subprocess
 import sys
 import uuid
+from contextlib import contextmanager
+from contextvars import ContextVar
+
+
+_NATIVE_PATH_ACCESS = ContextVar("celebi_native_path_access", default=False)
+
+
+@contextmanager
+def native_path_access():
+    """Use OS path semantics for a discovered, immutable input tree.
+
+    Scoped to this execution context: interactive callers retain strict case
+    checking. Avoid enumerating every ancestor directory on each metadata I/O.
+    """
+    token = _NATIVE_PATH_ACCESS.set(True)
+    try:
+        yield
+    finally:
+        _NATIVE_PATH_ACCESS.reset(token)
 
 
 NETWORK_FILESYSTEM_MARKERS = (
@@ -132,13 +151,17 @@ def exists_case_insensitive(path: str) -> bool:
 def exists(path: str) -> bool:
     """ Check the exists of path
     """
+    if _NATIVE_PATH_ACCESS.get():
+        return os.path.exists(path)
     return exists_case_sensitive(path)
 
 
 def mkdir(directory):
     """ Safely make directory
     """
-    if not exists_case_insensitive(directory):
+    if _NATIVE_PATH_ACCESS.get():
+        os.makedirs(directory, exist_ok=True)
+    elif not exists_case_insensitive(directory):
         os.makedirs(directory)
 
 
@@ -159,16 +182,23 @@ def project_path(path=None):
 def dir_mtime(path):
     """ Get the latest modified time of the directory
 
-    Skips .git, impressions, and .celebi-* auxiliary directories
+    Skips .git, impressions, local runtime configuration, and
+    .celebi-* auxiliary directories
     (.celebi-env, .celebi-workspace, .celebi-workaround) since those
     do not reflect user-data changes.  The main .celebi directory is
     still traversed because it tracks predecessor impression UUIDs
     and other state that must invalidate cached status.
     """
     _skipped_dirs = {".git", "impressions", "impressions_store"}
+    if os.path.basename(path) == "config.local.json":
+        return -1
     if os.path.basename(path).startswith(".celebi-"):
         return -1
-    mtime = os.path.getmtime(path)
+    # Creating ignored runtime entries such as config.local.json or the
+    # impressions store changes their parent .celebi directory's mtime.  Do
+    # not let that metadata-only change look like a user edit; shared files
+    # below .celebi are still traversed and contribute their own mtimes.
+    mtime = -1 if os.path.basename(path) == ".celebi" else os.path.getmtime(path)
     if not os.path.isdir(path):
         return mtime
     for sub_dir in os.listdir(path):

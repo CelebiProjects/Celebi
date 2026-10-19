@@ -78,6 +78,22 @@ class GitOptionalIntegration:
         logger.info("Git integration enabled for project")
         return True
 
+    def create_gitignore_if_missing(self) -> bool:
+        """Create a recommended project .gitignore without replacing one.
+
+        Returns:
+            True when a new file was created, or False when one already exists.
+        """
+        gitignore_path = os.path.join(self.project_path, '.gitignore')
+        additions = self.get_recommended_settings()['.gitignore_additions']
+        try:
+            with open(gitignore_path, 'x', encoding='utf-8') as gitignore:
+                gitignore.write('\n'.join(additions) + '\n')
+        except FileExistsError:
+            return False
+        logger.info("Created recommended .gitignore for project")
+        return True
+
     def disable_integration(self) -> bool:
         """
         Disable git integration for this project.
@@ -484,10 +500,28 @@ fi
                 'diff.algorithm': 'histogram'
             },
             '.gitignore_additions': [
-                '# Celebi-specific',
-                '.celebi/impressions/',
-                '.celebi/impressions_store/',
-                '.celebi/cache/',
+                '# Celebi local state and generated data',
+                '**/.celebi/config.local.json',
+                '**/.celebi/hosts.json',
+                '**/.celebi/bookkeeping.local.json',
+                '.celebi-env/config.local.json',
+                '.celebi-env/hosts.json',
+                '.celebi-env/bookkeeping.local.json',
+                '.celebi/git_config.json',
+                '**/.celebi/impressions',
+                '**/.celebi/impressions_store',
+                '**/.celebi/cache',
+                '**/.celebi/immutable-impress*',
+                '.celebi-workspace',
+                '.celebi-workaround',
+                'stageout',
+                '',
+                '# Local credentials and machine files',
+                '.env',
+                '.env.*',
+                '.DS_Store',
+                '',
+                '# Python-generated files',
                 '*.pyc',
                 '__pycache__/'
             ],

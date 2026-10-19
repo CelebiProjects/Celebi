@@ -646,18 +646,24 @@ def git_enable() -> Message:
 
         if git_integration.enable_integration():
             message.add("Git integration enabled", "success")
+            gitignore_created = git_integration.create_gitignore_if_missing()
+            if gitignore_created:
+                message.add(
+                    "Created .gitignore with recommended Celebi rules",
+                    "success",
+                )
 
             # Offer to install hooks
             message.add("Install git hooks for automatic validation? (Y/n): ", "prompt")
             message.data['needs_hook_decision'] = True
 
-            # Show recommended settings
             recommendations = git_integration.get_recommended_settings()
-            rec_lines = ["Recommended .gitignore additions:"]
-            rec_lines.extend(
-                f"  {line}" for line in recommendations['.gitignore_additions']
-            )
-            message.add("\n".join(rec_lines) + "\n", "info")
+            if not gitignore_created:
+                rec_lines = ["Recommended .gitignore additions:"]
+                rec_lines.extend(
+                    f"  {line}" for line in recommendations['.gitignore_additions']
+                )
+                message.add("\n".join(rec_lines) + "\n", "info")
 
             message.data['recommendations'] = recommendations
         else:

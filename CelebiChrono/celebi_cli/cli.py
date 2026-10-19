@@ -62,6 +62,7 @@ COMMAND_SECTIONS = (
     ("Settings and services", (
         "user-config", "cache-policy", "dite", "set-dite", "booking-server",
         "register-booking-server", "book-reana",
+        "register-celebi-server",
     )),
     ("Maintenance and recovery", (
         "doctor", "purge", "purge-old-impressions", "purge-impressions",
@@ -289,6 +290,7 @@ cli.add_command(utilities.stats_impressions_command)
 cli.add_command(booking.booking_server_command)
 cli.add_command(booking.register_booking_server_command)
 cli.add_command(booking.book_reana_command)
+cli.add_command(booking.register_celebi_server_command)
 
 
 # Old spellings remain callable for scripts, but are omitted from normal help.

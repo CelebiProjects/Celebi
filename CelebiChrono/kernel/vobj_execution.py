@@ -4,6 +4,7 @@ import time
 from logging import getLogger
 from typing import Optional, TYPE_CHECKING
 
+from ..utils import csys
 from ..utils.message import Message
 from .chern_communicator import ChernCommunicator
 from .vobj_core import Core
@@ -94,6 +95,7 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             return []
         return [impression.uuid]
 
+    # pylint: disable=too-many-locals
     def submit(self, runner: str = "local", timeout: Optional[float] = None,
                with_unknown: bool = False) -> Message:
         """ Submit the impression to the runner. """
@@ -110,7 +112,9 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             msg = Message()
             msg.add("Cannot submit an algorithm directly. Please submit its tasks.", "warning")
             return msg
-        self.deposit(now)
+        project_path = self.project_path()
+        with CHERN_CACHE.freeze_project_modification_time(project_path) as initial_mtime:
+            self.deposit(now)
         if not self.is_task_or_algorithm():
             sub_objects = self.sub_objects_recursively()
             for sub_object in sub_objects:
@@ -143,6 +147,15 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             task = self.get_vtask(sub_object.path)
             cache_on_runner[task.impression().uuid] = task.cache_on_runner()
         impressions = self.get_impressions()
+        if (initial_mtime is not None
+                and csys.dir_mtime(project_path) != initial_mtime):
+            msg = Message()
+            msg.add(
+                "Project files changed while the workflow was being prepared; "
+                "submission was stopped. Please submit again.",
+                "warning",
+            )
+            return msg
         logger.info(
             "event=workflow_submit_started runner=%s impressions=%d",
             runner,
@@ -165,7 +178,7 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
                 _submission_level(submission))
         return msg
 
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals,too-many-branches
     def submit_objects(
             self, objects, runner: str = "local",
             timeout: Optional[float] = None,
@@ -201,9 +214,13 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             msg.add("No tasks to submit.", "warning")
             return msg
 
-        # Deposit all tasks and validate runner
+        project_path = self.project_path()
+        with CHERN_CACHE.freeze_project_modification_time(project_path) as initial_mtime:
+            for task in tasks:
+                task.deposit(now)
+
+        # Validate runner after depositing the immutable task impressions.
         for task in tasks:
-            task.deposit(now)
             if task.default_runner() != runner:
                 default_runner = task.default_runner()
                 msg = Message()
@@ -220,6 +237,15 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
         for task in tasks:
             cache_on_runner[task.impression().uuid] = task.cache_on_runner()
             impressions.append(task.impression().uuid)
+        if (initial_mtime is not None
+                and csys.dir_mtime(project_path) != initial_mtime):
+            msg = Message()
+            msg.add(
+                "Project files changed while the workflow was being prepared; "
+                "submission was stopped. Please submit again.",
+                "warning",
+            )
+            return msg
 
         logger.info(
             "event=workflow_submit_started runner=%s impressions=%d",

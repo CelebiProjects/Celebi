@@ -363,7 +363,7 @@ def create_hostsfile(project_path):
 
 ######################################
 # Functions:
-def init_project():
+def init_project(project_uuid=None):
     """ Create a new project from the existing folder
     """
     pwd = os.getcwd()
@@ -390,7 +390,7 @@ def init_project():
         check_project_failed(forbidden_names)
 
     project_path = pwd
-    uuid = csys.generate_uuid()
+    uuid = project_uuid or csys.generate_uuid()
     os.mkdir(project_path+"/.celebi")
     create_readme(project_path)
     create_configfile(project_path, uuid)
@@ -411,9 +411,8 @@ def init_project():
     os.chdir(project_path)
 
 
-def use_project(path):
-    """ Use an exsiting project
-    """
+def use_project(path, new_project=False):
+    """Register an existing project, optionally assigning it a new UUID."""
     path = os.path.abspath(path)
     print(path)
     project_name = path[path.rfind("/")+1:]
@@ -441,6 +440,10 @@ def use_project(path):
         print("The path is not a project")
         return
     print("The project type is ", object_type)
+    if new_project:
+        project_uuid = csys.generate_uuid()
+        config_file.write_variable("project_uuid", project_uuid)
+        print("Generated new project UUID:", project_uuid)
     cache_policy = csys.configure_project_cache_policy(project_path)
     print(
         "Cache invalidation policy:",

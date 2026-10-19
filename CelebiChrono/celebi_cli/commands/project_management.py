@@ -12,7 +12,9 @@ def _registry():
 
 
 @click.command(name="init")
-def init_command():
+@click.option("--uuid", "project_uuid", default=None,
+              help="Use the analysis UUID issued by the bookkeeping website.")
+def init_command(project_uuid=None):
     """Initialize the current empty directory as a Celebi project.
 
     Creates the project metadata and README, registers the project in the
@@ -22,7 +24,14 @@ def init_command():
     directory name as the project name.
     """
     try:
-        vproject.init_project()
+        if project_uuid:
+            import re
+            if not re.fullmatch(r"(?:[0-9a-f]{32}|[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})",
+                                project_uuid):
+                raise ValueError("Invalid project UUID")
+            vproject.init_project(project_uuid=project_uuid)
+        else:
+            vproject.init_project()
     except Exception as error:
         raise click.ClickException(str(error)) from error
 
@@ -63,15 +72,21 @@ def use_project_command(project):
 
 @click.command(name="register-project")
 @click.argument("path", type=click.Path(exists=True, file_okay=False))
-def register_project_command(path):
+@click.option(
+    "--new-project",
+    is_flag=True,
+    help="Assign the registered project a newly generated UUID.",
+)
+def register_project_command(path, new_project):
     """Register an existing Celebi project at PATH.
 
     PATH must contain valid Celebi project metadata. The command adds it to
     the per-user registry and selects it as the current project without
-    copying or moving project files.
+    copying or moving project files. Use ``--new-project`` when registering a
+    copied project that should have an identity distinct from its source.
     """
     try:
-        vproject.use_project(path)
+        vproject.use_project(path, new_project=new_project)
     except Exception as error:
         raise click.ClickException(str(error)) from error
 

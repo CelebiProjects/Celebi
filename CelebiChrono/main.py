@@ -185,10 +185,15 @@ def init():
 
 @cli.command(hidden=True)
 @click.argument("path", type=str)
-def use(path):
-    """ Use a directory as the project"""
+@click.option(
+    "--new-project",
+    is_flag=True,
+    help="Assign the registered project a newly generated UUID.",
+)
+def use(path, new_project):
+    """Use a directory as the project."""
     try:
-        vproject.use_project(path)
+        vproject.use_project(path, new_project=new_project)
         start_chern_command_line()
     except Exception as e:
         print("Fail to start ipython:", e)
@@ -480,6 +485,9 @@ def git_enable():
 
         if git_integration.enable_integration():
             print("✓ Git integration enabled")
+            gitignore_created = git_integration.create_gitignore_if_missing()
+            if gitignore_created:
+                print("✓ Created .gitignore with recommended Celebi rules")
 
             # Offer to install hooks
             choice = input("Install git hooks for automatic validation? [Y/n]: ").strip().lower()
@@ -489,12 +497,12 @@ def git_enable():
                 else:
                     print("⚠ Failed to install git hooks")
 
-            # Show recommended settings
-            recommendations = git_integration.get_recommended_settings()
-            print("\nRecommended settings:")
-            print("  Add to .gitignore:")
-            for line in recommendations['.gitignore_additions']:
-                print(f"    {line}")
+            if not gitignore_created:
+                recommendations = git_integration.get_recommended_settings()
+                print("\nRecommended settings:")
+                print("  Add to .gitignore:")
+                for line in recommendations['.gitignore_additions']:
+                    print(f"    {line}")
 
         else:
             print("✗ Failed to enable git integration")

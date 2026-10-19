@@ -1,6 +1,21 @@
 """Booking commands for celebi-cli."""
 import click
 
+
+@click.command(name="register-celebi-server")
+@click.option("--server", required=True, help="Celebi bookkeeping server URL.")
+@click.option("--token", required=True, help="Token created for this analysis.")
+@click.option("--path", default="", help="Celebi project path.")
+@click.option("--yuki", default="", help="Optional Yuki URL.")
+def register_celebi_server_command(server, token, path, yuki):
+    """Save and verify the analysis token in git-excluded local configuration."""
+    from CelebiChrono.interface.shell_modules.server_booking import register
+    try:
+        url = register(server, token, path, yuki)
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo("Registered Celebi bookkeeping server: " + url)
+
 from CelebiChrono.interface.shell_modules.reana_booking import (
     register_booking_server,
     book_reana,
