@@ -123,11 +123,11 @@ def _cleanup_runner_cache(shell: Any, record: dict[str, str]) -> bool:
     return True
 
 
-def run_homekeep(grace_days: int = 14) -> None:
-    """Run the shared homekeep questionnaire."""
+def run_tidyup(grace_days: int = 14) -> None:
+    """Run the shared tidyup questionnaire."""
     from CelebiChrono.interface import shell
 
-    click.echo("Celebi homekeep wizard")
+    click.echo("Celebi tidyup wizard")
     click.echo("Nothing is deleted until its preview is shown and confirmed.")
 
     clean_local = click.confirm(
@@ -157,6 +157,6 @@ def run_homekeep(grace_days: int = 14) -> None:
                     completed += 1
 
     if completed:
-        click.echo(f"\nHomekeep finished: {completed} confirmed operation(s) executed.")
+        click.echo(f"\nTidyup finished: {completed} confirmed operation(s) executed.")
     else:
-        click.echo("\nHomekeep finished: nothing was deleted.")
+        click.echo("\nTidyup finished: nothing was deleted.")

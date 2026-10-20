@@ -155,10 +155,10 @@ class DocumentationCommands:
         except Exception as e:
             print(f"Error cleaning impressions: {e}")
 
-    def do_homekeep(self, _: str) -> None:
+    def do_tidyup(self, _: str) -> None:
         """Interactively clean local storage and stale runner data."""
         try:
-            from ...celebi_cli.commands.maintenance import run_homekeep
-            run_homekeep()
+            from ...celebi_cli.commands.maintenance import run_tidyup
+            run_tidyup()
         except Exception as e:
-            print(f"Error during homekeep: {e}")
+            print(f"Error during tidyup: {e}")

@@ -66,7 +66,7 @@ SHELL_USAGE = {
     "export": "export GLOB",
     "help": "help [COMMAND]",
     "helpme": "helpme [COMMAND]",
-    "homekeep": "homekeep",
+    "tidyup": "tidyup",
     "import-file": "import-file PATH",
     "impress": "impress [OBJECT ...]",
     "impression": "impression",

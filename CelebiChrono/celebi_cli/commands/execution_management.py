@@ -577,11 +577,11 @@ def purge_impressions_command() -> None:
         _handle_error(f"Command failed: {e}")
 
 
-@click.command(name="homekeep")
+@click.command(name="tidyup")
 @click.option("--grace-days", type=click.IntRange(min=0), default=14,
               show_default=True,
               help="Minimum age for unreachable local CAS objects.")
-def homekeep_command(grace_days: int) -> None:
+def tidyup_command(grace_days: int) -> None:
     """Interactively clean local storage and stale runner data.
 
     The wizard previews every selected category before asking for deletion.
@@ -590,10 +590,10 @@ def homekeep_command(grace_days: int) -> None:
     Live and running data remain protected by the existing purge APIs.
     """
     try:
-        from .maintenance import run_homekeep
-        run_homekeep(grace_days)
+        from .maintenance import run_tidyup
+        run_tidyup(grace_days)
     except ImportError as e:
-        _handle_error(f"Failed to import homekeep wizard: {e}")
+        _handle_error(f"Failed to import tidyup wizard: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
 

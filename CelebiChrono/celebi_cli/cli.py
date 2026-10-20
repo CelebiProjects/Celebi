@@ -66,7 +66,7 @@ COMMAND_SECTIONS = (
     )),
     ("Maintenance and recovery", (
         "doctor", "purge", "purge-old-impressions", "purge-impressions",
-        "homekeep",
+        "tidyup",
         "gc-impressions", "pack-impressions", "migrate-impressions",
         "impression-stats", "purge-ssh-runner-cache", "purge-stale-cache",
         "purge-stale-workflows", "stop-orphaned-workflows", "stop-workflow",
@@ -235,7 +235,7 @@ cli.add_command(execution_management.test_command)
 cli.add_command(execution_management.purge_command)
 cli.add_command(execution_management.purge_old_impressions_command)
 cli.add_command(execution_management.purge_impressions_command)
-cli.add_command(execution_management.homekeep_command)
+cli.add_command(execution_management.tidyup_command)
 cli.add_command(execution_management.check_results_command)
 cli.add_command(execution_management.collect_outputs_command)
 cli.add_command(execution_management.collect_logs_command)

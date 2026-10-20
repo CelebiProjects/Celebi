@@ -45,15 +45,13 @@
 
 ---
 
-### 3. `homekeep` — 英语中不存在的词
+### 3. `homekeep` → `tidyup`（已解决）
 
 | 命令 | 入口 | 实际行为 |
 |------|------|---------|
-| `homekeep` | Shell | 清理 runner workflow |
+| `tidyup` | CLI / Shell | 交互式清理本地存储与 runner 数据 |
 
-**问题**: "homekeep" 是生造词，描述也只有一句 "Clean the runner workflow"。从名字完全看不出功能。
-
-**建议**: `clean-runner` 或 `reset-workflow`。
+**处理**: 删除 `homekeep` 命令，统一使用 `tidyup`，且不保留兼容别名。
 
 ---
 
@@ -356,6 +354,6 @@ Shell 中输入 `system-shell` 进入 bash。
 **优先修复 Top 5**:
 1. `use` / `use-data` / `use-eos` → 拆分并重命名
 2. `bkkurl` / `viewbkk` → 用完整单词
-3. `homekeep` → 描述实际功能
+3. ~~`homekeep` → 描述实际功能~~（已改为 `tidyup`）
 4. `add-source` / `send` → 体现关系（合并或对齐命名）
 5. `danger` / `danger-call` → 描述实际操作

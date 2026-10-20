@@ -15,7 +15,7 @@ Changes since v1.0.0b3:
   - Expose previously missing operations including `add-multi-inputs`,
     `remove-multi-inputs`, `create-multi-tasks`, `create-multi-data`, `auto-download`,
     `cache-on-runner`, `check-results`, `comment`, `edit-readme`, `cat`, `display`,
-    `export`, `impression`, `homekeep`, `purge-impressions`, and `open-bookkeeping`.
+    `export`, `impression`, `tidyup`, `purge-impressions`, and `open-bookkeeping`.
 + Complete the interactive shell help system.
   - `helpme` shows the categorized overview.
   - `help <command>` and `<command> --help` show command-specific usage and details.
