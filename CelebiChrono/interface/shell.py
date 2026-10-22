@@ -17,7 +17,7 @@ from .shell_modules.file_operations import (
 from .shell_modules.replace_operations import replace as _replace
 from .shell_modules.object_creation import (
     mkalgorithm, mktask, mkdata, mkdatalist, create_lhcb_ap_list, mkdir,
-    attach_data, register_ssh_data, verify_data
+    attach_data, register_ssh_data, register_xrootd_data, verify_data
 )
 from .shell_modules.task_configuration import (
     add_input, add_algorithm, add_parameter, add_parameter_subtask,
@@ -65,7 +65,7 @@ __all__ = [
     'workaround_vre', 'replace',
     # Object creation functions (from object_creation.py)
     'mkalgorithm', 'mktask', 'mkdata', 'mkdatalist', 'create_lhcb_ap_list', 'mkdir', 'attach_data',
-    'register_ssh_data',
+    'register_ssh_data', 'register_xrootd_data',
     'verify_data',
     # Task configuration functions (from task_configuration.py)
     'add_input', 'add_algorithm', 'add_parameter', 'add_parameter_subtask',

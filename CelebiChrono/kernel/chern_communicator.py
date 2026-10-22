@@ -45,6 +45,8 @@ File Operations:
 Data Registration:
 - POST /register-remote-data - Register data hosted on an ssh runner
 - GET /register-remote-data/{job_id} - Poll a remote data registration job
+- POST /register-xrootd-data - Register a frozen XRootD file manifest
+- GET /register-xrootd-data/{job_id} - Poll an XRootD registration job
 
 Result Transfer:
 - POST /transfer - Start a result transfer job between yuki and a runner cache
@@ -1077,6 +1079,47 @@ class ChernCommunicator():  # pylint: disable=too-many-instance-attributes
         if r.status_code == 404:
             return {"status": "unknown", "error": "job not found"}
         return r.json()
+
+    def register_xrootd_data(self, runner, root_url, project_uuid,
+                             descriptor=None, checksum="auto", timeout=None):
+        """Register an XRootD manifest discovered from an ssh runner."""
+        url = self.serverurl()
+        data = {
+            "runner": runner,
+            "root_url": root_url,
+            "project_uuid": project_uuid,
+            "checksum": checksum,
+        }
+        if descriptor:
+            data["descriptor"] = descriptor
+        try:
+            response = requests.post(
+                f"http://{url}/register-xrootd-data", json=data,
+                timeout=self.timeout if timeout is None else timeout)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        if response.status_code != 200:
+            try:
+                body = response.json()
+            except ValueError:
+                body = None
+            if isinstance(body, dict) and "error" in body:
+                return {"error": body["error"]}
+            return {"error": f"register failed (HTTP {response.status_code})"}
+        return response.json()
+
+    def register_xrootd_data_status(self, job_id, timeout=None):
+        """Poll an XRootD manifest registration job."""
+        url = self.serverurl()
+        try:
+            response = requests.get(
+                f"http://{url}/register-xrootd-data/{job_id}",
+                timeout=self.timeout if timeout is None else timeout)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Failed to connect to DITE server: {e}") from e
+        if response.status_code == 404:
+            return {"status": "unknown", "error": "job not found"}
+        return response.json()
 
     def register_remote_data_impression_status(self, impression_uuid):
         """ Poll a registration job's state by impression uuid.

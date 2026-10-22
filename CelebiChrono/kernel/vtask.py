@@ -415,6 +415,36 @@ def create_data_list(path):
     yaml_file.write_variable("datalist", [])
 
 
+def create_xrootd_data_list_task(path: str, descriptor: str, source: dict,
+                                 files: list, manifest: dict) -> None:
+    """Create the canonical datalist task for a registered XRootD sample.
+
+    The file URLs are frozen at registration time.  Yuki executes this as a
+    normal ``datalist`` task, so no XRootD payload is copied into Celebi or
+    Yuki storage.
+    """
+    path = csys.strip_path_string(path)
+    parent_path = os.path.abspath(path + "/..")
+    object_type = VObject(parent_path).object_type()
+    if object_type not in ("project", "directory"):
+        raise ValueError(
+            f"Cannot create task under {parent_path}: not a project or directory")
+
+    csys.mkdir(path + "/.celebi")
+    config_file = metadata.ConfigFile(path + "/.celebi/config.json")
+    config_file.write_variable("object_type", "task")
+
+    with open(path + "/README.md", "w", encoding="utf-8") as f:
+        f.write(f"Please write README for task {descriptor}")
+
+    yaml_file = metadata.YamlFile(join(path, "celebi.yaml"))
+    yaml_file.write_variable("environment", "datalist")
+    yaml_file.write_variable("descriptor", descriptor)
+    yaml_file.write_variable("datalist", files)
+    yaml_file.write_variable("data_source", source)
+    yaml_file.write_variable("manifest", manifest)
+
+
 def create_lhcb_ap_data_list(path):
     """ Create an LHCb AP data list
 

@@ -170,6 +170,21 @@ registration and transfer requests, and 3600 seconds for verification. Registrat
 polling retries connection failures and stops after 10 consecutive failures; the
 server job may continue after polling stops.
 
+XRootD samples can be registered without copying their payload through Yuki. The
+inventory runs on the named SSH runner, so that runner must provide `python3`,
+`xrdfs`, and the required XRootD credentials:
+
+```sh
+celebi-cli register-xrootd-data pkufarm212 \
+  root://eos.example.org//eos/path/sample --checksum auto
+```
+
+Registration freezes the URL, size, and available server checksum of every file in
+the task impression. Running the resulting datalist task writes both
+`stageout/filelist.txt` and the backward-compatible `stageout/dataList.txt`. Use
+`--checksum required` to reject files without a server checksum, or `--checksum none`
+to skip checksum queries.
+
 - Online Docs: http://celebi.readthedocs.io/en/latest/
 - Ask DeepWiki: https://deepwiki.com/CelebiProjects/Celebi
 

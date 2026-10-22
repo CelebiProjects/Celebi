@@ -45,7 +45,8 @@ COMMAND_SECTIONS = (
         "refresh-filelists", "check-results", "export", "imgcat",
     )),
     ("Data and transfer", (
-        "upload-data", "register-ssh-data", "attach-data", "verify-data",
+        "upload-data", "register-ssh-data", "register-xrootd-data",
+        "attach-data", "verify-data",
         "transfer", "purge-data", "whereabouts", "cache-results", "add-apd-token",
     )),
     ("Impressions and provenance", (
@@ -193,6 +194,7 @@ cli.add_command(object_creation.mkdir_command)
 cli.add_command(object_creation.attach_data_command)
 cli.add_command(object_creation.verify_data_command)
 cli.add_command(object_creation.register_ssh_data_command)
+cli.add_command(object_creation.register_xrootd_data_command)
 cli.add_command(object_creation.create_lhcb_ap_list_command)
 
 # Task configuration commands (9 commands)

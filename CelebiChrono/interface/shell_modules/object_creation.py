@@ -17,6 +17,7 @@ from ...kernel.vtask import create_data
 from ...kernel.vtask import create_data_list
 from ...kernel.vtask import create_lhcb_ap_data_list
 from ...kernel.vtask import create_rawdata_task
+from ...kernel.vtask import create_xrootd_data_list_task
 from ...kernel.valgorithm import create_algorithm
 from ...kernel.vdirectory import create_directory
 from ...kernel.chern_communicator import ChernCommunicator
@@ -30,6 +31,17 @@ def _is_rawdata_task(obj_path):
         return False
     yaml_file = metadata.YamlFile(yaml_path)
     return yaml_file.read_variable("environment", "") == "rawdata"
+
+
+def _is_xrootd_datalist_task(obj_path):
+    """Return True for a datalist task backed by a frozen XRootD manifest."""
+    yaml_path = os.path.join(obj_path, "celebi.yaml")
+    if not os.path.exists(yaml_path):
+        return False
+    yaml_file = metadata.YamlFile(yaml_path)
+    source = yaml_file.read_variable("data_source", {})
+    return (yaml_file.read_variable("environment", "") == "datalist"
+            and isinstance(source, dict) and source.get("type") == "xrootd")
 
 
 def _fill_or_create_pointer_task(project_path, current_obj, descriptor,  # pylint: disable=too-many-locals
@@ -479,6 +491,66 @@ def _refresh_registered_impression(task_path, project_path, expected_uuid):
     return message
 
 
+def _fill_registered_xrootd_data(project_path, current_obj, result, descriptor,
+                                  runner):
+    """Create/update the local task matching Yuki's XRootD datalist."""
+    message = Message()
+    task_descriptor = descriptor or result.get("descriptor", "")
+    files = result.get("files", [])
+    source = result.get("source", {})
+    manifest = result.get("manifest", {})
+
+    if current_obj.object_type() == "task":
+        if not _is_xrootd_datalist_task(current_obj.path):
+            message.add(
+                "Current task is not an XRootD datalist task; run "
+                "register-xrootd-data outside a task or from an existing "
+                "XRootD datalist task", "error")
+            return message
+        full_path = current_obj.path
+        task_path = current_obj.invariant_path()
+        yaml_file = metadata.YamlFile(os.path.join(full_path, "celebi.yaml"))
+        yaml_file.write_variable("descriptor", task_descriptor)
+        yaml_file.write_variable("datalist", files)
+        yaml_file.write_variable("data_source", source)
+        yaml_file.write_variable("manifest", manifest)
+        current_obj.set_default_runner(runner)
+        message.add(f"Updated XRootD data task at {task_path}", "success")
+    else:
+        task_path = csys.refine_path(task_descriptor, current_obj.path)
+        full_path = os.path.join(current_obj.path, task_path)
+        if os.path.exists(full_path):
+            if not _is_xrootd_datalist_task(full_path):
+                message.add(
+                    f"Path {task_path} exists but is not an XRootD "
+                    "datalist task", "error")
+                return message
+            yaml_file = metadata.YamlFile(os.path.join(full_path, "celebi.yaml"))
+            yaml_file.write_variable("descriptor", task_descriptor)
+            yaml_file.write_variable("datalist", files)
+            yaml_file.write_variable("data_source", source)
+            yaml_file.write_variable("manifest", manifest)
+            VObject(full_path, project_path).set_default_runner(runner)
+            message.add(f"Updated XRootD data task at {task_path}", "success")
+        else:
+            parent_path = os.path.abspath(full_path + "/..")
+            if VObject(parent_path).object_type() not in ("directory", "project"):
+                message.add("Not allowed to create data task here", "error")
+                return message
+            create_xrootd_data_list_task(
+                full_path, task_descriptor, source, files, manifest)
+            metadata.ConfigFile(
+                os.path.join(full_path, ".celebi", "config.json")
+            ).write_variable("default_runner", runner)
+            message.add(f"Created XRootD data task at {task_path}", "success")
+
+    expected_uuid = result.get("impression_uuid", "")
+    if expected_uuid:
+        message.append(_refresh_registered_impression(
+            full_path, project_path, expected_uuid))
+    return message
+
+
 def _update_progress_bar(progress_bar, state):
     """Update the tqdm bar from a poll state's progress payload."""
     status = state.get("status", "unknown")
@@ -617,6 +689,120 @@ def register_ssh_data(runner: str, remote_path: str,
                     result["uuid"], "register-ssh-data",
                     default_runner=runner,
                     impression_uuid=result["impression_uuid"]).messages)
+                return message
+            if status == "failed":
+                message.add(
+                    f"Registration failed: {state.get('error')}", "error")
+                return message
+            time.sleep(3)
+    finally:
+        progress_bar.close()
+
+
+def register_xrootd_data(runner: str, root_url: str, descriptor: str = "",
+                         checksum: str = "auto", timeout: int = None) -> Message:
+    """Register a frozen XRootD file manifest without copying its payload."""
+    # pylint: disable=too-many-return-statements,too-many-branches
+    # pylint: disable=too-many-locals,too-many-statements
+    message = Message()
+    current_obj = MANAGER.current_object()
+    if current_obj is None:
+        message.add("No current object selected", "error")
+        return message
+    project_path = current_obj.project_path()
+    if not project_path:
+        message.add("No current project selected", "error")
+        return message
+    if current_obj.object_type() == "task" and not _is_xrootd_datalist_task(
+            current_obj.path):
+        message.add(
+            "Current task is not an XRootD datalist task; run "
+            "register-xrootd-data outside a task or from an existing XRootD "
+            "datalist task", "error")
+        return message
+    if not root_url.startswith(("root://", "xroot://")):
+        message.add("XRootD URL must start with root:// or xroot://", "error")
+        return message
+    if checksum not in ("auto", "required", "none"):
+        message.add("checksum must be one of: auto, required, none", "error")
+        return message
+
+    if not descriptor and current_obj.object_type() == "task":
+        descriptor = metadata.YamlFile(
+            os.path.join(current_obj.path, "celebi.yaml")
+        ).read_variable("descriptor", "")
+
+    cherncc = ChernCommunicator.instance()
+    request_options = {"timeout": timeout} if timeout is not None else {}
+    response = cherncc.register_xrootd_data(
+        runner, root_url, current_obj.project_uuid(), descriptor or None,
+        checksum=checksum, **request_options)
+    if "error" in response:
+        message.add(response["error"], "error")
+        return message
+    if "result" in response:
+        result = response["result"]
+        message.add(
+            f"Registered {result.get('file_count', len(result.get('files', [])))} "
+            f"XRootD files; impression={result['impression_uuid']}", "success")
+        message.append(_fill_registered_xrootd_data(
+            project_path, current_obj, result, descriptor, runner))
+        return message
+    job_id = response.get("job_id")
+    if not job_id:
+        message.add("Registration failed: server returned neither a job id "
+                    "nor a result", "error")
+        return message
+
+    print(f"register-xrootd-data: job {job_id[:8]}... started on '{runner}'")
+    progress_bar = tqdm(unit="file", desc="register-xrootd-data: listing")
+    connection_errors = 0
+    unknowns = 0
+    try:
+        while True:
+            try:
+                state = cherncc.register_xrootd_data_status(
+                    job_id, **request_options)
+            except ConnectionError as exc:
+                connection_errors += 1
+                if connection_errors >= 10:
+                    message.add(
+                        f"Stopped polling registration job {job_id} after 10 "
+                        "consecutive connection failures. The server job may "
+                        f"still be running. Last error: {exc}", "error")
+                    return message
+                progress_bar.set_description(
+                    "register-xrootd-data: status unavailable; retrying "
+                    f"({connection_errors}/10)")
+                time.sleep(3)
+                continue
+            connection_errors = 0
+            status = state.get("status", "unknown")
+            if status == "unknown":
+                unknowns += 1
+                if unknowns >= 10:
+                    message.add(
+                        f"Registration job {job_id[:8]}... was not found by "
+                        "the server after 10 polls", "error")
+                    return message
+            else:
+                unknowns = 0
+            progress = state.get("progress") or {}
+            if isinstance(progress.get("files_done"), int):
+                progress_bar.n = progress["files_done"]
+            if isinstance(progress.get("files_total"), int):
+                progress_bar.total = progress["files_total"]
+            progress_bar.set_description(
+                f"register-xrootd-data: {progress.get('stage') or status}")
+            progress_bar.refresh()
+            if status == "done":
+                result = state["result"]
+                message.add(
+                    f"Registered {result.get('file_count', len(result.get('files', [])))} "
+                    f"XRootD files; impression={result['impression_uuid']}\n",
+                    "success")
+                message.append(_fill_registered_xrootd_data(
+                    project_path, current_obj, result, descriptor, runner))
                 return message
             if status == "failed":
                 message.add(

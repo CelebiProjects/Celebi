@@ -219,3 +219,28 @@ def register_ssh_data_command(runner: str, remote_path: str,
         _handle_error(f"Failed to import shell function: {e}")
     except Exception as e:
         _handle_error(f"Command failed: {e}")
+
+
+@click.command(name="register-xrootd-data")
+@click.argument("runner", type=str)
+@click.argument("root_url", type=str)
+@click.option("--descriptor", type=str, default="",
+              help="Task descriptor (defaults to the XRootD path basename)")
+@click.option("--checksum", type=click.Choice(["auto", "required", "none"]),
+              default="auto", show_default=True,
+              help="How server-side per-file checksums are handled")
+@click.option("--timeout", type=click.IntRange(min=1), default=None,
+              help="HTTP request timeout in seconds (default: 10); not a total job limit")
+def register_xrootd_data_command(runner: str, root_url: str,
+                                 descriptor: str, checksum: str,
+                                 timeout: int = None) -> None:
+    """Register an XRootD sample as a frozen datalist without copying files."""
+    try:
+        from CelebiChrono.interface.shell import register_xrootd_data
+        _handle_result(register_xrootd_data(
+            runner, root_url, descriptor, checksum,
+            **({"timeout": timeout} if timeout is not None else {})))
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")

@@ -4,7 +4,7 @@ Task Creation and Configuration Command Handlers for Chern Shell.
 This module contains command handlers for creating and configuring tasks,
 algorithms, and data objects.
 """
-# pylint: disable=broad-exception-caught
+# pylint: disable=broad-exception-caught,too-many-public-methods
 import os
 from ._timeout import parse_timeout
 from ...interface import shell
@@ -354,3 +354,35 @@ class TaskCommands:
                 print(result.colored())
         except Exception as e:
             print(f"Error registering data: {e}")
+
+    def do_register_xrootd_data(self, arg: str) -> None:
+        """Register an XRootD sample without copying its payload.
+
+        Usage: register-xrootd-data RUNNER ROOT_URL [--descriptor DESC]
+               [--checksum auto|required|none] [--timeout SECONDS]
+        """
+        try:
+            args, options = parse_timeout(arg)
+            if len(args) < 2:
+                print("Error: Please provide a runner name and an XRootD URL.")
+                return
+            runner = args[0]
+            root_url = args[1]
+            descriptor = ""
+            checksum = "auto"
+            for option, target in (("--descriptor", "descriptor"),
+                                   ("--checksum", "checksum")):
+                if option in args:
+                    index = args.index(option)
+                    if index + 1 >= len(args):
+                        raise ValueError(f"{option} requires a value")
+                    if target == "descriptor":
+                        descriptor = args[index + 1]
+                    else:
+                        checksum = args[index + 1]
+            result = shell.register_xrootd_data(
+                runner, root_url, descriptor, checksum, **options)
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error registering XRootD data: {e}")
