@@ -392,6 +392,7 @@ def init_project(project_uuid=None):
     project_path = pwd
     uuid = project_uuid or csys.generate_uuid()
     os.mkdir(project_path+"/.celebi")
+    os.mkdir(project_path+"/.celebi-env")
     create_readme(project_path)
     create_configfile(project_path, uuid)
     cache_policy = csys.configure_project_cache_policy(project_path)
