@@ -8,18 +8,37 @@ workflows; supported runner types include REANA, SSH, IHEP and native runners.
 Install Celebi
 --------------
 
-Install the released package:
+The recommended installation is an editable install from the GitHub repository.
+This keeps the checkout available for updates and makes local source changes take
+effect without reinstalling the package:
 
 .. code-block:: bash
 
-   pip install celebichrono
+   git clone https://github.com/CelebiProjects/Celebi.git
+   cd Celebi
+   python -m pip install -e .
 
-For development from a checkout, use an editable install:
+Verify both command-line entry points:
 
 .. code-block:: bash
 
-   pip install -e .
    celebi-cli --help
+   celebi --help
+
+To update this installation, pull the repository. Re-run the editable install
+when dependencies or package metadata change:
+
+.. code-block:: bash
+
+   git pull
+   python -m pip install -e .
+
+The packaged release is also available from PyPI when a source checkout is not
+desired:
+
+.. code-block:: bash
+
+   python -m pip install celebichrono
 
 Run Yuki
 --------
