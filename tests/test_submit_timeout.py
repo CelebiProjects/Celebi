@@ -93,6 +93,29 @@ def test_batch_submit_timeout():
     assert instance.return_value.execute.call_args.kwargs['timeout'] == 300
 
 
+def test_batch_submit_deduplicates_identical_impressions(tmp_path):
+    """A repeated content-addressed task is sent to Yuki only once."""
+    obj = MagicMock(spec=ExecutionManagement)
+    task = MagicMock()
+    task.is_algorithm.return_value = False
+    task.is_task.return_value = True
+    task.default_runner.return_value = 'cluster'
+    task.impression.return_value.uuid = 'same-impression'
+    obj.get_vtask.return_value = task
+    obj.project_path.return_value = str(tmp_path)
+    obj.sub_objects_recursively.return_value = []
+
+    with patch.object(ChernCommunicator, 'instance') as instance:
+        instance.return_value.dite_status.return_value = 'connected'
+        ExecutionManagement.submit_objects(
+            obj, [task, task], 'cluster')
+
+    impressions, cache_on_runner, _runner = \
+        instance.return_value.execute.call_args.args[:3]
+    assert impressions == ['same-impression']
+    assert cache_on_runner == {'same-impression': task.cache_on_runner()}
+
+
 def test_cli_submit_forwards_with_unknown():
     """The CLI opt-in reaches Yuki without changing ordinary submissions."""
     obj = MagicMock(spec=ExecutionManagement)

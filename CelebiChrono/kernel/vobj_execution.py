@@ -234,9 +234,13 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
         # Collect cache_on_runner and impressions
         cache_on_runner = {}
         impressions = []
+        seen_impressions = set()
         for task in tasks:
-            cache_on_runner[task.impression().uuid] = task.cache_on_runner()
-            impressions.append(task.impression().uuid)
+            impression = task.impression().uuid
+            cache_on_runner[impression] = task.cache_on_runner()
+            if impression not in seen_impressions:
+                seen_impressions.add(impression)
+                impressions.append(impression)
         if (initial_mtime is not None
                 and csys.dir_mtime(project_path) != initial_mtime):
             msg = Message()
