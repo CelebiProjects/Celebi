@@ -1,16 +1,17 @@
-Workflow Visualization & Provenance
-================================
+Workflow visualization and provenance
+=====================================
 
-Commands for inspecting workflow structure and preserving results.
+* ``impress`` records the current reproducible state and ``impression`` prints
+  its identifier.
+* ``history`` and ``changes`` inspect recorded object history.
+* ``trace IMPRESSION`` compares the current graph with a stored impression.
+* ``search-impression TEXT`` resolves a partial impression identifier.
+* ``watermark`` prints the task or algorithm watermark.
+* ``view [IMPRESSION]`` opens the Yuki view; ``view-url`` prints its URL.
+* ``draw-dag`` renders the dependency graph.
+* ``bookkeeping-url`` prints the project's bookkeeping URL and
+  ``open-bookkeeping`` opens it.
 
-* ``draw-dag`` – Generate a static dependency DAG with Graphviz
-* ``impress`` – Record an important result or state
-* ``impression`` – Print the current impression identifier
-* ``history`` / ``changes`` – Inspect object provenance
-* ``trace IMPRESSION`` – Compare the current DAG with a stored impression
-* ``view [IMPRESSION]`` – Open an impression in the default browser
-* ``view-url [IMPRESSION]`` – Print its URL
-* ``bookkeeping-url`` – Print the project bookkeeping URL
-* ``open-bookkeeping`` – Open the bookkeeping page
-* ``impression-stats`` – Inspect local impression storage
-* ``gc-impressions`` – Preview or execute CAS garbage collection
+Publishing code and selected results is covered under
+:doc:`services_booking`; storage-level impression maintenance is covered under
+:doc:`maintenance`.

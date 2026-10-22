@@ -1,34 +1,49 @@
-Usage
-=====
+Quick start
+===========
 
-.. _installation:
-
-Installation
-------------
-
-To use Lumache, first install it using pip:
+Create an empty directory and initialize it as a project:
 
 .. code-block:: console
 
-   (.venv) $ pip install lumache
+   mkdir my-analysis
+   cd my-analysis
+   celebi-cli init
 
-Creating recipes
-----------------
+Initialization creates ``.celebi/``, ``.celebi-env/`` and ``README.md``, then
+registers and selects the project. The directory must be empty.
 
-To retrieve a list of random ingredients,
-you can use the ``lumache.get_random_ingredients()`` function:
+Create a simple workflow
+------------------------
 
-.. autofunction:: lumache.get_random_ingredients
+.. code-block:: console
 
-The ``kind`` parameter should be either ``"meat"``, ``"fish"``,
-or ``"veggies"``. Otherwise, :py:func:`lumache.get_random_ingredients`
-will raise an exception.
+   celebi-cli create-algorithm algorithms/hello
+   celebi-cli create-task tasks/hello
+   cd tasks/hello
+   celebi-cli add-algorithm @/algorithms/hello
+   celebi-cli set-environment script
 
-.. autoexception:: lumache.InvalidKindError
+Edit ``algorithms/hello/celebi.yaml`` and add a command:
 
-For example:
+.. code-block:: yaml
 
->>> import lumache
->>> lumache.get_random_ingredients()
-['shells', 'gorgonzola', 'parsley']
+   descriptor: hello
+   environment: script
+   commands:
+     - mkdir -p stageout && echo "hello" > stageout/message.txt
+
+Run and inspect it
+------------------
+
+.. code-block:: console
+
+   celebi-cli test
+   celebi-cli submit --runner RUNNER
+   celebi-cli status --wait
+   celebi-cli collect all
+   celebi-cli export message.txt
+
+The interactive ``celebi`` shell provides the same object-aware operations.
+Use ``helpme`` inside it, or ``celebi-cli COMMAND --help`` for complete command
+syntax.
 

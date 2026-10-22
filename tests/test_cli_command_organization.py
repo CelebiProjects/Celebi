@@ -1,5 +1,7 @@
 """Public entry-point roles, categorized help, and compatibility names."""
 
+from pathlib import Path
+import re
 from unittest import mock
 
 from click.testing import CliRunner
@@ -52,6 +54,27 @@ def test_every_public_cli_command_is_categorized_once():
 
     assert len(categorized) == len(set(categorized))
     assert public <= set(categorized)
+
+
+def test_every_public_cli_command_is_named_in_command_docs():
+    """The Read the Docs command reference cannot silently miss a new command."""
+    docs_dir = Path(__file__).parents[1] / "docs"
+    sources = [
+        docs_dir / "commands.rst",
+        *sorted((docs_dir / "commands").glob("*.rst")),
+    ]
+    documentation = "\n".join(path.read_text(encoding="utf-8") for path in sources)
+    public = {
+        name for name, command in cli.commands.items()
+        if not command.hidden and name not in HELP_HIDDEN_COMMANDS
+    }
+
+    missing = {
+        name for name in public
+        if re.search(rf"``{re.escape(name)}(?:``|[ \[])", documentation) is None
+    }
+
+    assert not missing, f"Commands missing from docs/commands: {sorted(missing)}"
 
 
 def test_shell_only_commands_are_session_features_or_named_equivalents():

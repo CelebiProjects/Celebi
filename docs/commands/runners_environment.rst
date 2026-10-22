@@ -12,6 +12,9 @@ Commands for configuring execution backends and environments.
   on an SSH/IHEP/native runner from ``.celebi-env/NAME.yaml``
 * ``runner-environments RUNNER`` – List the current project's environments on
   an SSH/IHEP/native runner (outside a project, list global environments for compatibility)
+* ``yuki-overview`` – Summarize runner state, capacity and current usage
+* ``hosts`` / ``add-host`` – Inspect and configure communicator hosts
+* ``refresh-distribution`` – Rebuild the project's data-location registry
 * ``set-environment`` – Configure execution environment
 * ``set-memory-limit`` – Set task memory limits
 * ``request-runner`` – Select the current task's runner
@@ -20,6 +23,8 @@ Commands for configuring execution backends and environments.
 * ``config`` – Edit the current task or algorithm's ``celebi.yaml``
 * ``user-config`` – Create and edit your user settings (``~/.celebi/config.yaml``);
   ``--list`` shows the settings in force without opening an editor
+* ``cache-policy [auto|mtime|off]`` – Inspect or select the project's local
+  cache invalidation policy
 
 Project environments
 --------------------
@@ -35,6 +40,8 @@ Place a standard Conda environment file in the project, for example:
    dependencies:
      - python=3.12
      - numpy
+
+``celebi-cli init`` creates the ``.celebi-env/`` directory automatically.
 
 Install it on a registered SSH, IHEP, or native runner:
 

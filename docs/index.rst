@@ -66,14 +66,17 @@ For detailed usage, see the following pages:
    :caption: Contents
 
    installation
+   concepts
+   usage
    configuration_files
    commands
    examples
+   api
 
 Additional Resources
 --------------------
 
-* **Online Docs:** `Celebi Documentation <http://celebi.readthedocs.io/en/latest/>`_
+* **Online Docs:** `Celebi Documentation <https://celebi.readthedocs.io/en/latest/>`_
 * **Ask DeepWiki:** `DeepWiki Celebi Page <https://deepwiki.com/CelebiProjects/Celebi>`_
 
 License

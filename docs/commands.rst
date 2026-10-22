@@ -27,5 +27,12 @@ same categories and shows old spellings separately under compatibility aliases.
    commands/navigation
    commands/algorithms_tasks
    commands/execution
+   commands/data_transfer
    commands/runners_environment
+   commands/services_booking
    commands/visualization_provenance
+   commands/maintenance
+
+Command names in these pages are the supported spellings. The final section of
+``celebi-cli --help`` lists compatibility aliases for older projects; new
+scripts should use the canonical names.

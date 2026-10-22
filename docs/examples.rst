@@ -14,4 +14,5 @@ Overview of Examples
 --------------------
 
 * **Simple Gen & Fit**: A foundational workflow demonstrating the "Generation" and "Fitting" components using the REANA backend.
-* **Data Processing**: A guide focused on handling, transforming, and cleaning datasets within the Celebi system.
+* **Data Processing**: Register an XRootD sample without copying it, consume its
+  generated file list, and collect selected outputs.

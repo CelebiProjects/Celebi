@@ -1,260 +1,153 @@
-Configuration File Formats
-==========================
+Configuration files
+===================
 
-Celebi uses YAML files for configuration. This section documents the typical
-file formats you'll encounter when working with Celebi projects.
+Celebi uses YAML for user-editable workflow configuration and JSON for its
+internal metadata. Share the YAML and ``.celebi/config.json`` files in version
+control. Files named ``config.local.json`` contain machine-local settings or
+credentials and must remain uncommitted.
 
-Global Configuration (``~/.celebi/config.yaml``)
------------------------------------------------
+User configuration
+------------------
 
-The global configuration file stores user preferences and is located in
-the user's home directory under ``~/.celebi/``.
-
-Run ``user-config`` to create it. The file is generated from a documented
-template listing every available setting at its default value, then opened in
-your editor. An existing file is never rewritten, so your edits and comments
-always survive. ``user-config --list`` prints the settings in force, marking
-each as ``set`` or ``default``, without opening an editor.
-
-Any setting omitted from the file falls back to its built-in default, so it is
-safe to delete a line rather than guess a value.
-
-**Example:**
+User preferences live in ``~/.celebi/config.yaml``. Create or edit the file
+with ``celebi-cli user-config``; inspect effective values with
+``celebi-cli user-config --list``. Missing settings use built-in defaults.
 
 .. code-block:: yaml
 
-    editor: code
-    browser: firefox
-    default_runner: farm
+   editor: code
+   browser: firefox
+   default_runner: local
+   auto_download: true
+   cache_on_runner: false
+   task_environment: reanahub/reana-env-root6:6.18.04
+   algorithm_environment: script
+   dag_output_dir: ~/Downloads
 
-**Fields:**
+``editor``, ``file_opener`` and ``browser`` control external programs.
+``default_runner``, ``auto_download``, ``cache_on_runner`` and
+``task_environment`` are copied into newly created tasks; changing them does
+not rewrite existing tasks. ``algorithm_environment`` is the default written
+when an algorithm environment is needed. ``dag_output_dir`` controls where
+``draw-dag`` writes output.
 
-*Programs*
+Task configuration
+------------------
 
-* ``editor`` – Editor used by ``config``, ``edit``, ``edit-readme`` and
-  merge-conflict resolution (e.g., ``code``, ``vim``, ``nano``). Default: ``vi``
-* ``file_opener`` – Program used to open a local file, e.g. by
-  ``view local:...``. Default: ``open`` on macOS, ``xdg-open`` elsewhere
-* ``browser`` – Command used to open a URL. Leave empty to use the system
-  default browser. Default: empty
-
-*Defaults for newly created tasks*
-
-These are applied when a task is created and recorded on that task. Existing
-tasks keep whatever they were created with — changing a setting never rewrites
-a task that already exists.
-
-* ``default_runner`` – Runner assigned to new tasks. Default: ``local``
-* ``auto_download`` – Whether new tasks download outputs automatically.
-  Default: ``true``
-* ``cache_on_runner`` – Whether new tasks cache results on the runner.
-  Default: ``false``
-* ``task_environment`` – Environment written into a new task's ``celebi.yaml``.
-  Default: ``reanahub/reana-env-root6:6.18.04``
-* ``algorithm_environment`` – Environment written into a new algorithm's
-  ``celebi.yaml``. Default: ``script``
-
-*Output*
-
-* ``dag_output_dir`` – Directory where ``draw-dag`` writes its output.
-  Default: ``~/Downloads``
-
-.. warning::
-
-   ``task_environment`` and ``algorithm_environment`` are written **into**
-   ``celebi.yaml``, which is hashed into the object's impression. Two people
-   with different settings will therefore create tasks with different
-   impressions. That difference is visible in the committed ``celebi.yaml``,
-   so it is reviewable — but for a shared project, agree on a value.
-
-   Deliberately, these settings are consulted only when a file is *written*.
-   Reading an ``environment`` never falls back to them: if it did, two users
-   could share an impression id while executing in different environments.
-
-.. note::
-
-   ``user-config`` edits your own user-level settings. The similarly named
-   ``config`` command edits the *current task or algorithm's* ``celebi.yaml``,
-   documented below.
-
-
-Task Configuration (``celebi.yaml``)
-------------------------------------
-
-Each task directory contains a ``celebi.yaml`` file that defines the task's
-execution environment, parameters, and input aliases.
-
-**Minimal example (task with defaults):**
+A newly created task has this ``celebi.yaml`` shape:
 
 .. code-block:: yaml
 
-    alias: []
-    environment: reanahub/reana-env-root6:6.18.04
-    kubernetes_memory_limit: 256Mi
+   descriptor: fit
+   environment: reanahub/reana-env-root6:6.18.04
+   memory_limit: 256Mi
 
-**Example with parameters:**
-
-.. code-block:: yaml
-
-    alias: []
-    environment: reanahub/reana-env-root6:6.18.04
-    kubernetes_memory_limit: 256Mi
-    parameters:
-      events: '20000'
-
-**Example with input aliases:**
+Tasks may also contain parameters, inline commands and their input alias list:
 
 .. code-block:: yaml
 
-    alias:
-    - gen
-    environment: reanahub/reana-env-root6:6.18.04
-    kubernetes_memory_limit: 256Mi
-    parameters: {}
+   descriptor: fit
+   environment: analysis
+   memory_limit: 2Gi
+   alias:
+     - data
+   parameters:
+     events: "20000"
+   commands:
+     - python fit.py inputdata/data/result.root stageout/fit.png
 
-**Field descriptions:**
+``memory_limit`` is the current field. ``kubernetes_memory_limit`` is accepted
+only for compatibility with older projects. Input paths themselves are stored
+in ``.celebi/config.json``; ``alias`` records the stable names that contribute
+to the impression.
 
-* ``alias`` – List of short names for input dependencies (empty list if none)
-* ``environment`` – Docker image or execution environment identifier
-* ``kubernetes_memory_limit`` – Memory limit for Kubernetes execution (e.g., ``256Mi``, ``1Gi``)
-* ``parameters`` – Dictionary of parameter names and their values (empty ``{}`` if none)
+An inline-code task has its own ``commands`` and source files. Otherwise use
+``add-algorithm`` to link reusable algorithm code.
 
+Algorithm configuration
+-----------------------
 
-Algorithm Configuration (``celebi.yaml``)
------------------------------------------
-
-Algorithm directories also use ``celebi.yaml`` but with a different structure
-focused on execution commands rather than parameters.
-
-**Example (algorithm with script environment):**
-
-.. code-block:: yaml
-
-    environment: script
-    commands:
-      - root -b -q 'code/gendata.C(${events},"stageout/data.root")'
-
-**Example (algorithm with Docker environment):**
+Algorithm source files live directly in the algorithm directory. At runtime
+that directory is exposed as ``code/``, which is why commands refer to paths
+such as ``code/analysis.py``.
 
 .. code-block:: yaml
 
-    environment: reanahub/reana-env-root6:6.18.04
-    commands:
-      - root -b -q 'code/analysis.C("inputdata/stageout/data.root","stageout/plot.png")'
+   descriptor: fit-code
+   environment: analysis
+   commands:
+     - python code/analysis.py inputdata/data/result.root stageout/fit.png
 
-**Field descriptions:**
+``commands`` is a list of shell commands. ``${parameter}`` expands a task
+parameter. An algorithm can also contain build configuration used by the
+execution backend.
 
-* ``environment`` – Execution environment: ``script`` for local execution or Docker image name
-* ``commands`` – List of shell commands to execute; use ``${parameter}`` syntax for parameter substitution
+Data-list configuration
+-----------------------
 
+A normal or XRootD-backed datalist uses the reserved ``datalist`` environment:
 
-Project Configuration (``.celebi/config.json``)
------------------------------------------------
+.. code-block:: yaml
 
-Each project contains a ``config.json`` file (note: JSON format, not YAML)
-in the ``.celebi/`` directory at the project root.
+   descriptor: collision-data
+   environment: datalist
+   datalist:
+     - root://xrootd.example/path/file-001.root
+     - root://xrootd.example/path/file-002.root
+   data_source:
+     type: xrootd
+     url: root://xrootd.example/path
+   manifest:
+     checksum_policy: auto
 
-**Example:**
+For registered XRootD data, Celebi/Yuki writes the frozen file inventory and
+manifest. Do not regenerate it manually. When the datalist task runs, Yuki
+creates both ``stageout/filelist.txt`` and the compatibility name
+``stageout/dataList.txt``.
+
+Project metadata
+----------------
+
+``.celebi/config.json`` contains shared project metadata:
 
 .. code-block:: json
 
-    {
-        "object_type": "project",
-        "chern_version": "4.0.0",
-        "project_uuid": "b50a736ddde44f8cbbcc773b9a075adb"
-    }
+   {
+     "object_type": "project",
+     "chern_version": "1.0.0b4",
+     "project_uuid": "b50a736ddde44f8cbbcc773b9a075adb"
+   }
 
-**Field descriptions:**
+The version is written from the installed Celebi package; do not copy the
+example value into a project. Tasks, algorithms and directories have their own
+``.celebi/config.json`` files with object type and relationship metadata.
+Machine-local task settings such as the requested runner are written through
+the two-tier configuration and are not a substitute for ``celebi.yaml``.
 
-* ``object_type`` – Always ``"project"`` for project configuration
-* ``chern_version`` – Version of Celebi that created the project
-* ``project_uuid`` – Unique identifier for the project
-
-
-Task/Directory Configuration (``.celebi/config.json``)
-------------------------------------------------------
-
-Each task and directory also contains a ``config.json`` file in its
-``.celebi/`` subdirectory.
-
-**Example (task):**
-
-.. code-block:: json
-
-    {
-        "object_type": "task",
-        "auto_download": true,
-        "default_runner": "local"
-    }
-
-**Example (directory):**
-
-.. code-block:: json
-
-    {
-        "object_type": "directory"
-    }
-
-**Common fields:**
-
-* ``object_type`` – Type of object: ``"task"``, ``"directory"``, or ``"algorithm"``
-* ``auto_download`` – Whether to automatically download outputs (tasks only)
-* ``default_runner`` – Default execution runner (e.g., ``"local"``, ``"reana``")
-
-
-README Files (``README.md``)
-----------------------------
-
-While not YAML, each object (project, directory, task, algorithm) contains
-a ``README.md`` file for documentation.
-
-**Example:**
-
-.. code-block:: markdown
-
-    # Fit Task
-
-    This task performs a crystal ball fit on the generated J/psi data.
-
-    ## Inputs
-
-    - gen: Generated MC data
-
-    ## Outputs
-
-    - fit_result.png: Fit visualization
-    - fit_params.json: Fit parameters
-
-
-Complete Project Example
-------------------------
-
-A typical Celebi project structure with configuration files:
+Project layout
+--------------
 
 .. code-block:: text
 
-    my_project/
-    ├── README.md
-    ├── celebi.yaml              # (if project-level config needed)
-    ├── .celebi/
-    │   └── config.json          # Project metadata
-    ├── algorithms/
-    │   ├── gen_data/
-    │   │   ├── README.md
-    │   │   ├── celebi.yaml      # Algorithm config with commands
-    │   │   └── code/
-    │   └── fit_data/
-    │       ├── README.md
-    │       ├── celebi.yaml
-    │       └── code/
-    └── tasks/
-        ├── generate/
-        │   ├── README.md
-        │   ├── celebi.yaml      # Task config with parameters
-        │   └── .celebi/
-        │       └── config.json
-        └── fit/
-            ├── README.md
-            ├── celebi.yaml
-            └── .celebi/
-                └── config.json
+   my-project/
+   ├── .celebi/
+   │   ├── config.json
+   │   └── hosts.json
+   ├── .celebi-env/
+   │   └── analysis.yaml
+   ├── README.md
+   ├── algorithms/
+   │   └── fit/
+   │       ├── .celebi/config.json
+   │       ├── README.md
+   │       ├── celebi.yaml
+   │       └── analysis.py
+   └── tasks/
+       └── fit/
+           ├── .celebi/config.json
+           ├── README.md
+           └── celebi.yaml
+
+``celebi-cli init`` creates ``.celebi/``, ``.celebi-env/`` and the project
+README. There is no project-level ``celebi.yaml`` and no required ``code/``
+subdirectory inside algorithms.
