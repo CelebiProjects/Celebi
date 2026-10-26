@@ -94,20 +94,17 @@ class TestCreationDefaultsConfigured(CreationTestCase):
 
 class TestCreationDefaultsUnconfigured(CreationTestCase):
 
-    """With no config, creation matches the previous hardcoded behaviour."""
+    """With no config, creation uses the packaged local environment."""
 
     config = ""
 
-    def test_defaults_match_previous_behaviour(self):
-        """Unconfigured creation is byte-for-byte what it always was."""
+    def test_defaults_are_ready_for_local_execution(self):
+        """Unconfigured tasks target the bundled project environment."""
         path = self.make_task()
         local = metadata.TwoTierConfigFile(path + "/.celebi/config.json")
         self.assertIs(local.read_variable("auto_download"), True)
         self.assertEqual(local.read_variable("default_runner"), "local")
-        self.assertEqual(
-            self.read_yaml(path)["environment"],
-            "reanahub/reana-env-root6:6.18.04",
-        )
+        self.assertEqual(self.read_yaml(path)["environment"], "default")
 
 
 class TestReadPathsNotWired(CreationTestCase):

@@ -2003,7 +2003,7 @@ class TestChernVTask(unittest.TestCase):  # pylint: disable=too-many-public-meth
             self.assertEqual(yaml_calls[0][0], ("descriptor", "new_task"))
             self.assertEqual(
                 yaml_calls[1][0],
-                ("environment", "reanahub/reana-env-root6:6.18.04")
+                ("environment", "default")
             )
             self.assertEqual(yaml_calls[2][0], ("memory_limit", "256Mi"))
 

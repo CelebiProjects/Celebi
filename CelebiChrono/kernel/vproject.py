@@ -3,6 +3,7 @@
     The core part may move to c language in the future
 """
 import os
+from importlib import resources
 from .. import __version__
 from ..utils import metadata
 from ..utils import csys
@@ -361,6 +362,16 @@ def create_hostsfile(project_path):
     config_file.write_variable("serverurl", "127.0.0.1:3315")
 
 
+def create_default_environment(project_path):
+    """Create the packaged default Conda specification for a new project."""
+    template = resources.files("CelebiChrono").joinpath(
+        "templates", "default.yaml")
+    destination = os.path.join(project_path, ".celebi-env", "default.yaml")
+    with template.open("r", encoding="utf-8") as source, \
+            open(destination, "w", encoding="utf-8") as target:
+        target.write(source.read())
+
+
 ######################################
 # Functions:
 def init_project(project_uuid=None):
@@ -393,6 +404,7 @@ def init_project(project_uuid=None):
     uuid = project_uuid or csys.generate_uuid()
     os.mkdir(project_path+"/.celebi")
     os.mkdir(project_path+"/.celebi-env")
+    create_default_environment(project_path)
     create_readme(project_path)
     create_configfile(project_path, uuid)
     cache_policy = csys.configure_project_cache_policy(project_path)

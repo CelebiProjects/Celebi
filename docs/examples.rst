@@ -9,6 +9,7 @@ The following examples demonstrate typical **Celebi** usage patterns. These tuto
 
    Simple Gen & Fit <examples/demo-basic-01>
    Data Processing <examples/data_processing>
+   100 Gaussian Toys with Subtasks <examples/gaussian-toys>
 
 Overview of Examples
 --------------------
@@ -16,3 +17,5 @@ Overview of Examples
 * **Simple Gen & Fit**: A foundational workflow demonstrating the "Generation" and "Fitting" components using the REANA backend.
 * **Data Processing**: Register an XRootD sample without copying it, consume its
   generated file list, and collect selected outputs.
+* **100 Gaussian Toys**: Generate 100 datasets in one task, fit them with 100
+  subtasks in a second task, and summarize the ensemble in a third task.

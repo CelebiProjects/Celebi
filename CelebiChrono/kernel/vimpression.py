@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 from ..utils import csys
 from ..utils import metadata
+from ..utils.subtasks import read_subtask_count
 from .impression_materializer import ImpressionMaterializer
 from .impression_store import ImpressionStore
 
@@ -271,6 +272,8 @@ class VImpression:  # pylint: disable=too-many-instance-attributes,too-many-publ
 
     def create(self, obj: "VObject") -> None:
         """Create this impression from a VObject file tree."""
+        if obj.object_type() == "task":
+            read_subtask_count(metadata.YamlFile(os.path.join(obj.path, "celebi.yaml")))
         file_list = csys.tree_excluded(obj.path)
         dependencies = obj.pred_impressions()
         dependencies_uuid = [dep.uuid for dep in dependencies]

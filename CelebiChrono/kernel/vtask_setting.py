@@ -17,6 +17,7 @@ from logging import getLogger
 from os.path import join
 
 from ..utils import metadata
+from ..utils.subtasks import read_subtask_count
 from .vtask_core import Core
 
 logger = getLogger("ChernLogger")
@@ -24,6 +25,11 @@ logger = getLogger("ChernLogger")
 class SettingManager(Core):
     """ SettingManager class is responsible for managing the settings of the task.
     """
+    def subtasks(self):
+        """Return the repeat count, or None for an ordinary task."""
+        config = metadata.YamlFile(join(self.path, "celebi.yaml"))
+        return read_subtask_count(config)
+
     def environment(self):
         """
         Read the environment file
@@ -85,6 +91,8 @@ class SettingManager(Core):
         """
         Add a parameter to the parameters file
         """
+        if parameter == "index" and self.subtasks() is not None:
+            raise ValueError("index is reserved when subtasks is configured")
         parameters_file = metadata.YamlFile(join(self.path, "celebi.yaml"))
         parameters = parameters_file.read_variable("parameters", {})
         parameters[parameter] = value
@@ -155,6 +163,10 @@ class SettingManager(Core):
         """
         Check whether the task is validated or not
         """
+        try:
+            self.subtasks()
+        except ValueError:
+            return False
         if not self.env_validated():
             return False
         return True

@@ -69,6 +69,7 @@ For detailed usage, see the following pages:
    concepts
    usage
    configuration_files
+   subtasks
    commands
    examples
    api

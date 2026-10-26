@@ -15,6 +15,7 @@ Logs and file listings
 ----------------------
 
 * ``log [INDEX]`` reads a user-command log; ``--follow`` polls for new output.
+  For repeated tasks, ``log 0 --subtask 7`` selects command 0 of instance 7.
 * ``engine-logs`` reads workflow-engine diagnostics.
 * ``refresh-filelists`` forces Yuki to re-list stageout and log files on the
   runner. This is useful after a terminal workflow's saved listing has frozen.

@@ -446,7 +446,9 @@ def collect_command(contents: str, allow_failed: bool) -> None:
               help="Continuously poll for new log content.")
 @click.option("--poll-interval", "-i", type=float, default=2.0,
               help="Seconds between polls when --follow is set (default: 2).")
-def log_command(index: int, follow: bool, poll_interval: float) -> None:
+@click.option("--subtask", type=click.IntRange(min=0), default=None,
+              help="Read the log of this repeated execution (zero-based index).")
+def log_command(index: int, follow: bool, poll_interval: float, subtask=None) -> None:
     """View error log for the current task.
 
     Retrieves error log entries for the current object. Error logs
@@ -459,8 +461,9 @@ def log_command(index: int, follow: bool, poll_interval: float) -> None:
     """
     try:
         from CelebiChrono.interface.shell import error_log
+        options = {"subtask": subtask} if subtask is not None else {}
         if not follow:
-            result = error_log(index)
+            result = error_log(index, **options)
             output = format_output(result)
             if output:
                 print(output, end="")
@@ -472,7 +475,7 @@ def log_command(index: int, follow: bool, poll_interval: float) -> None:
 
         offset = 0
         while True:
-            result = error_log(index, offset=offset)
+            result = error_log(index, offset=offset, **options)
             output = format_output(result)
             if output:
                 print(output, end="")

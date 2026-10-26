@@ -97,6 +97,9 @@ class JobManager(Core):
 
         Shared by docker_test and ssh_test.
         """
+        if getattr(self, "subtasks", lambda: None)() is not None:
+            raise ValueError(
+                "Test commands do not expand subtasks; use workflow submission")
         commands = self.commands()  # pylint: disable=no-member
         # Parse the commands, and replace any placeholders with actual values if needed
         parameters = self.parameters()
@@ -338,12 +341,13 @@ class JobManager(Core):
             msg.add("Nothing collected to purge.\n", "info")
         return msg
 
-    def error_log(self, error_index=0, offset=0):
+    def error_log(self, error_index=0, offset=0, subtask=None):
         """ Collect the error logs of the job"""
         cherncc = ChernCommunicator.instance()
         cherncc.collect_logs(self.impression())
         msg = Message()
-        msg.add(cherncc.error_log(self.impression(), error_index, offset=offset))
+        options = {"subtask": subtask} if subtask is not None else {}
+        msg.add(cherncc.error_log(self.impression(), error_index, offset=offset, **options))
         return msg
 
     def engine_logs(self, fetch=False):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
@@ -954,6 +958,8 @@ class JobManager(Core):
 
     def workaround_preshell(self, skip_inputs=None) -> tuple[bool, str]:
         """ Pre-shell workaround"""
+        if getattr(self, "subtasks", lambda: None)() is not None:
+            return False, "Workaround does not expand subtasks; use workflow submission"
         print("Start constructing workaround environment...")
         cherncc = ChernCommunicator.instance()
         status = cherncc.dite_status()

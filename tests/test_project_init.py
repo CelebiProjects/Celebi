@@ -20,4 +20,13 @@ def test_init_project_creates_environment_directory(tmp_path, monkeypatch):
 
     vproject.init_project(project_uuid="project-uuid")
 
-    assert (project / ".celebi-env").is_dir()
+    default_environment = project / ".celebi-env" / "default.yaml"
+    assert default_environment.read_text(encoding="utf-8") == (
+        "name: env_root_6.38.04\n"
+        "channels:\n"
+        "  - conda-forge\n"
+        "dependencies:\n"
+        "  - root=6.38.04\n"
+        "  - numpy\n"
+        "  - python=3.10\n"
+    )

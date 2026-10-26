@@ -1,0 +1,7 @@
+name: env_root_6.38.04
+channels:
+  - conda-forge
+dependencies:
+  - root=6.38.04
+  - numpy
+  - python=3.10

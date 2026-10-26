@@ -94,7 +94,7 @@ SETTINGS: Tuple[Setting, ...] = (
     ),
     Setting(
         name="task_environment",
-        default="reanahub/reana-env-root6:6.18.04",
+        default="default",
         description=(
             "Environment written into a new task's celebi.yaml. Changing "
             "this changes the impression of tasks created afterwards."

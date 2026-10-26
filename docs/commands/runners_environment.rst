@@ -29,25 +29,27 @@ Commands for configuring execution backends and environments.
 Project environments
 --------------------
 
-Place a standard Conda environment file in the project, for example:
+New projects include this standard Conda environment file:
 
 .. code-block:: yaml
 
-   # .celebi-env/analysis.yaml
-   name: ignored-by-celebi
+   # .celebi-env/default.yaml
+   name: env_root_6.38.04
    channels:
      - conda-forge
    dependencies:
-     - python=3.12
+     - root=6.38.04
      - numpy
+     - python=3.10
 
-``celebi-cli init`` creates the ``.celebi-env/`` directory automatically.
+``celebi-cli init`` creates this file automatically. New tasks refer to it by
+the logical environment name ``default``.
 
 Install it on a registered SSH, IHEP, or native runner:
 
 .. code-block:: console
 
-   celebi-cli install-environment ihep analysis
+   celebi-cli install-environment local default
 
 Use ``--file PATH`` to read a different YAML file. Celebi always installs the
 environment under

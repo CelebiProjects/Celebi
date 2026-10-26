@@ -149,7 +149,7 @@ class TestRegisteredSettings(UserConfigTestCase):
         "auto_download": True,
         "cache_on_runner": False,
         "dag_output_dir": "~/Downloads",
-        "task_environment": "reanahub/reana-env-root6:6.18.04",
+        "task_environment": "default",
         "algorithm_environment": "script",
     }
 

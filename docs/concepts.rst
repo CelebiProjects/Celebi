@@ -15,8 +15,17 @@ Inputs and aliases
 
 Tasks form a directed acyclic graph. ``add-input`` records a predecessor and
 an alias. During execution the predecessor's staged output is available below
-``inputdata/<alias>/``. ``predecessors``, ``successors`` and ``draw-dag`` show
+``<alias>/stageout/``. ``predecessors``, ``successors`` and ``draw-dag`` show
 the resulting graph.
+
+Repeated tasks
+--------------
+
+A Task may declare ``subtasks: N`` to repeat its computation with integer
+``index`` values from zero to N - 1. It remains one Task and one impression;
+Yuki expands it into a Snakemake wildcard rule. Each instance writes through
+the literal path ``stageout/index/``, which maps to ``stageout/<number>/`` in
+caches, collected results and downstream aliases. See :doc:`subtasks`.
 
 Impressions
 -----------

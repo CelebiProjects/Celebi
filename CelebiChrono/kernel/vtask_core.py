@@ -133,6 +133,13 @@ class Core(VObject):
         message.add(f"{self.environment()}")
         message.add("\n")
 
+        try:
+            count = getattr(self, "subtasks", lambda: None)()
+            if count is not None:
+                message.add(f"Subtasks: {count} (index 0..{count - 1})\n")
+        except ValueError as error:
+            message.add(f"Invalid subtasks: {error}\n", "error")
+
         if self.environment() != "rawdata":
             message.add("Memory limit: ", "title0")
             message.add(f"{self.memory_limit()}")

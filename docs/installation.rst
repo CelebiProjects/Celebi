@@ -76,13 +76,18 @@ The default endpoint is ``127.0.0.1:3315``. Inspect or change it with:
    celebi-cli dite
    celebi-cli set-dite localhost:3315
 
-Then register and test an execution backend:
+Yuki registers the native ``local`` runner on first server start. Start its
+host agent, install the new project's bundled environment, and test it:
 
 .. code-block:: console
 
-   celebi-cli register-runner
-   celebi-cli runners
-   celebi-cli test-runner RUNNER
+   yuki native-runner start
+   celebi-cli install-environment local default
+   celebi-cli test-runner local
+
+``celebi-cli init`` creates ``.celebi-env/default.yaml`` with ROOT 6.38.04,
+NumPy and Python 3.10, and new tasks use the logical environment name
+``default``. Use ``celebi-cli register-runner`` only to add another backend.
 
 Runner-specific credentials are stored by Yuki, not committed to the Celebi
 project. Use ``register-booking-server`` for REANA booking credentials and the

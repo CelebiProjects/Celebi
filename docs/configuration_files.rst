@@ -20,7 +20,7 @@ with ``celebi-cli user-config``; inspect effective values with
    default_runner: local
    auto_download: true
    cache_on_runner: false
-   task_environment: reanahub/reana-env-root6:6.18.04
+   task_environment: default
    algorithm_environment: script
    dag_output_dir: ~/Downloads
 
@@ -39,7 +39,7 @@ A newly created task has this ``celebi.yaml`` shape:
 .. code-block:: yaml
 
    descriptor: fit
-   environment: reanahub/reana-env-root6:6.18.04
+   environment: default
    memory_limit: 256Mi
 
 Tasks may also contain parameters, inline commands and their input alias list:
@@ -63,6 +63,22 @@ to the impression.
 
 An inline-code task has its own ``commands`` and source files. Otherwise use
 ``add-algorithm`` to link reusable algorithm code.
+
+Add ``subtasks: N`` to repeat an executable task N times while retaining one
+impression. N must be a positive integer; ``index`` then becomes a reserved
+injected parameter in the range ``0 .. N - 1``. For example:
+
+.. code-block:: yaml
+
+   environment: python3.12
+   subtasks: 100
+   commands:
+     - python code/fit.py --index ${index} --input toys/stageout/${index}/*.json --output stageout/index
+
+``index`` in the output directory is a literal name. It maps directly to the
+current execution's numbered directory; the input path uses ``${index}`` to
+select an upstream partition. See :doc:`subtasks` and the
+:doc:`100-toy tutorial <examples/gaussian-toys>`.
 
 Algorithm configuration
 -----------------------
@@ -134,7 +150,7 @@ Project layout
    │   ├── config.json
    │   └── hosts.json
    ├── .celebi-env/
-   │   └── analysis.yaml
+   │   └── default.yaml
    ├── README.md
    ├── algorithms/
    │   └── fit/
@@ -148,6 +164,8 @@ Project layout
            ├── README.md
            └── celebi.yaml
 
-``celebi-cli init`` creates ``.celebi/``, ``.celebi-env/`` and the project
-README. There is no project-level ``celebi.yaml`` and no required ``code/``
-subdirectory inside algorithms.
+``celebi-cli init`` creates ``.celebi/``, the project README, and
+``.celebi-env/default.yaml`` (ROOT 6.38.04, NumPy and Python 3.10). New tasks
+use this ``default`` environment unless ``task_environment`` is customized.
+There is no project-level ``celebi.yaml`` and no required ``code/`` subdirectory
+inside algorithms.

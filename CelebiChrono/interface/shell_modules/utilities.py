@@ -303,7 +303,7 @@ def tree(_depth: int = -1) -> Message:
     return MANAGER.current_object().tree()
 
 
-def error_log(index: int, offset: int = 0) -> Message:
+def error_log(index: int, offset: int = 0, subtask=None) -> Message:
     """Get the error log.
 
     Retrieves error log entries for the current object. Error logs
@@ -331,7 +331,8 @@ def error_log(index: int, offset: int = 0) -> Message:
         - Includes both fatal errors and warnings
         - Useful for debugging execution problems
     """
-    return MANAGER.current_object().error_log(index, offset=offset)
+    options = {"subtask": subtask} if subtask is not None else {}
+    return MANAGER.current_object().error_log(index, offset=offset, **options)
 
 
 def danger_call(cmd: str) -> Message:

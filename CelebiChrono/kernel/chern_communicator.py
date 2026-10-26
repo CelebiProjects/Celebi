@@ -1418,15 +1418,18 @@ class ChernCommunicator():  # pylint: disable=too-many-instance-attributes
             return "unconnected to DITE"
         return r.text
 
-    def error_log(self, impression, index, offset=0):
+    def error_log(self, impression, index, offset=0, subtask=None):
         """ Get the index_th error log, starting at byte offset."""
         url = self.serverurl()
+        params = {"offset": offset}
+        if subtask is not None:
+            params["subtask"] = subtask
         try:
             r = self._request(
                 "GET",
                 f"http://{url}/error-log/{self.project_uuid}/{impression.uuid}/{index}",
                 "error_log",
-                params={"offset": offset},
+                params=params,
                 timeout=self.timeout,
                 log_context={"impression_uuid": impression.uuid, "log_index": index},
             )

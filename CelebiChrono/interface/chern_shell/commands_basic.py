@@ -166,17 +166,26 @@ class BasicCommands:
             print(f"Error showing short listing: {e}")
 
     def do_log(self, arg: str) -> None:
-        """Show log for current object. Usage: log [index] [--follow] [-i SECONDS]
+        """Show log. Usage: log [index] [--subtask N] [--follow] [-i SECONDS]
 
         With --follow, prints the current log and then polls for new content
         every interval (default 2s) until Ctrl-C.
         """
         try:
+            tokens = arg.split()
+            options = {}
+            if "--subtask" in tokens:
+                position = tokens.index("--subtask")
+                if position + 1 >= len(tokens) or not tokens[position + 1].isdigit():
+                    raise ValueError("--subtask requires a non-negative integer")
+                options["subtask"] = int(tokens[position + 1])
+                del tokens[position:position + 2]
+                arg = " ".join(tokens)
             index, follow, poll_interval = _parse_log_args(arg)
             if index is None:
                 return
             if not follow:
-                result = shell.error_log(index)
+                result = shell.error_log(index, **options)
                 output = result.colored()
                 if output:
                     print(output, end="")
@@ -188,7 +197,7 @@ class BasicCommands:
 
             offset = 0
             while True:
-                result = shell.error_log(index, offset=offset)
+                result = shell.error_log(index, offset=offset, **options)
                 output = result.colored()
                 if output:
                     print(output, end="")
