@@ -2,6 +2,7 @@
 
 
 LB_RUN_FIELDS = ("project", "version", "platform", "nightly")
+LB_RUN_ENVIRONMENT = "lb-run"
 
 
 def lb_run_spec(raw, substitute=None):
@@ -46,3 +47,26 @@ def lb_run_spec(raw, substitute=None):
 def read_lb_run_spec(yaml_file, substitute=None):
     """Read and validate ``lb_run`` from a Celebi YAML configuration."""
     return lb_run_spec(yaml_file.read_variable("lb_run", None), substitute)
+
+
+def validated_lb_run_spec(task_environment, command_environment, raw,
+                          substitute=None):
+    """Validate an ``lb_run`` declaration and its environment contract.
+
+    ``command_environment`` belongs to the object that supplied the effective
+    commands: the task for inline commands, otherwise the linked algorithm.
+    This keeps ``lb_run`` colocated with its commands while requiring the task
+    and command source to opt into the reserved ``lb-run`` execution mode.
+    """
+    spec = lb_run_spec(raw, substitute)
+    if spec is None:
+        if task_environment == LB_RUN_ENVIRONMENT:
+            raise ValueError(
+                "task environment 'lb-run' requires an lb_run declaration")
+        return None
+    if task_environment != LB_RUN_ENVIRONMENT:
+        raise ValueError("lb_run requires task environment 'lb-run'")
+    if command_environment != LB_RUN_ENVIRONMENT:
+        raise ValueError(
+            "lb_run requires command source environment 'lb-run'")
+    return spec

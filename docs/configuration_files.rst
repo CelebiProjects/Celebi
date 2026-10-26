@@ -70,7 +70,7 @@ are optional and all four fields support task-parameter substitution:
 
 .. code-block:: yaml
 
-   environment: script
+   environment: lb-run
    parameters:
      gauss_version: run5_stackglue_June2026
      nightly_slot: lhcb-sim11-run5-gluing/74
@@ -82,9 +82,12 @@ are optional and all four fields support task-parameter substitution:
    commands:
      - gaudirun.py code/options.py
 
-With ``nightly`` set, Yuki passes ``--nightly`` to ``lb-run`` and requires both
-the ``lhcb.cern.ch`` and ``lhcbdev.cern.ch`` CVMFS repositories. The ordinary
-``environment`` remains the compatible base execution environment.
+Both the task and the object supplying the effective commands must declare
+``environment: lb-run``. For inherited commands that object is the linked
+algorithm; an inline-code task is its own command source and needs no
+algorithm. Its ``commands`` and ``lb_run`` are kept together. With ``nightly``
+set, Yuki passes ``--nightly`` to ``lb-run`` and requires both the
+``lhcb.cern.ch`` and ``lhcbdev.cern.ch`` CVMFS repositories.
 
 Add ``subtasks: N`` to repeat an executable task N times while retaining one
 impression. N must be a positive integer; ``index`` then becomes a reserved

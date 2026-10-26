@@ -67,8 +67,9 @@ After installation, use the logical name in the task or algorithm:
    celebi-cli runner-environments ihep
 
 Explicit legacy mappings in Yuki's ``conda_env_map`` remain valid. The reserved
-environments ``script``, ``rawdata``, ``datalist``, and ``lhcb_ap_datalist``
-retain their existing behavior. REANA installation is not supported by this command.
+environments ``script``, ``lb-run``, ``rawdata``, ``datalist``, and
+``lhcb_ap_datalist`` retain their existing behavior. REANA installation is
+not supported by this command.
 
 For native runners, ``<runner-workdir>`` defaults to ``~/.Yuki/LocalWorkflows``.
 Native workflow workspaces live separately below

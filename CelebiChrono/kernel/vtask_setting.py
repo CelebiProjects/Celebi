@@ -17,6 +17,7 @@ from logging import getLogger
 from os.path import join
 
 from ..utils import metadata
+from ..utils.lb_run import validated_lb_run_spec
 from ..utils.subtasks import read_subtask_count
 from .vtask_core import Core
 
@@ -159,6 +160,33 @@ class SettingManager(Core):
                 return True
         return False
 
+    def lb_run_validated(self):
+        """Validate lb-run against the task and effective command source."""
+        task_yaml = metadata.YamlFile(join(self.path, "celebi.yaml"))
+        command_yaml = task_yaml
+        command_environment = self.environment()
+        if not self.task_commands():
+            algorithm = self.algorithm()
+            if algorithm is not None:
+                command_yaml = metadata.YamlFile(
+                    join(algorithm.path, "celebi.yaml"))
+                command_environment = algorithm.environment()
+
+        raw = command_yaml.read_variable("lb_run", None)
+        _keys, parameters = self.parameters()
+
+        def substitute(value):
+            for key, replacement in parameters.items():
+                value = value.replace("${" + key + "}", str(replacement))
+            return value
+
+        try:
+            validated_lb_run_spec(
+                self.environment(), command_environment, raw, substitute)
+        except ValueError:
+            return False
+        return True
+
     def validated(self):
         """
         Check whether the task is validated or not
@@ -168,5 +196,7 @@ class SettingManager(Core):
         except ValueError:
             return False
         if not self.env_validated():
+            return False
+        if not self.lb_run_validated():
             return False
         return True
