@@ -36,6 +36,10 @@ Tasks may run commands from a linked algorithm or define ``commands`` and
 source files directly as an inline-code task. Use ``celebi-cli COMMAND --help``
 for the exact range syntax and context restrictions.
 
+An ``lb_run`` mapping wraps effective commands in an LHCb release. It accepts
+required ``project`` and ``version`` fields plus optional ``platform`` and
+``nightly`` fields; see :doc:`../configuration_files`.
+
 Repeated execution of one task is configured with ``subtasks: N`` in its YAML.
 This retains one Task/impression and supplies ``${index}``; it does not create
 the independent objects produced by ``create-multi-tasks``. Write repeated

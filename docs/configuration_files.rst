@@ -64,6 +64,28 @@ to the impression.
 An inline-code task has its own ``commands`` and source files. Otherwise use
 ``add-algorithm`` to link reusable algorithm code.
 
+LHCb releases can wrap the effective user commands with ``lb-run``. The
+``project`` and ``version`` strings are required; ``platform`` and ``nightly``
+are optional and all four fields support task-parameter substitution:
+
+.. code-block:: yaml
+
+   environment: script
+   parameters:
+     gauss_version: run5_stackglue_June2026
+     nightly_slot: lhcb-sim11-run5-gluing/74
+   lb_run:
+     project: Gauss
+     version: ${gauss_version}
+     platform: x86_64_v3-el9-gcc15-opt
+     nightly: ${nightly_slot}
+   commands:
+     - gaudirun.py code/options.py
+
+With ``nightly`` set, Yuki passes ``--nightly`` to ``lb-run`` and requires both
+the ``lhcb.cern.ch`` and ``lhcbdev.cern.ch`` CVMFS repositories. The ordinary
+``environment`` remains the compatible base execution environment.
+
 Add ``subtasks: N`` to repeat an executable task N times while retaining one
 impression. N must be a positive integer; ``index`` then becomes a reserved
 injected parameter in the range ``0 .. N - 1``. For example:
