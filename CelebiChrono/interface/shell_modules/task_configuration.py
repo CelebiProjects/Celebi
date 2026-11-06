@@ -678,12 +678,11 @@ def user_config(list_only: bool = False) -> Message:
 
 
 def add_apd_token(token: str) -> Message:
-    """Add an APD token to the current LHCb AP data list task.
+    """Add an APD token to the current task.
 
-    Stores the token in .celebi/config.local.json and syncs it to
-    celebi.yaml so it propagates to Yuki/REANA when submitted.
-    The token is used by the LHCb AP data list generator to authenticate
-    with the LHCb Analysis Productions service.
+    Stores the token only in .celebi/config.local.json.  During submission,
+    Yuki stages it as a private APD token file and exports
+    APD_USER_TOKEN_FILE for the task, including ordinary lb-conda tasks.
 
     Args:
         token (str): The APD access token string.
@@ -703,15 +702,9 @@ def add_apd_token(token: str) -> Message:
         message.add("add-apd-token can only be used on a task.", "error")
         return message
 
-    # Verify this is an lhcb_ap_datalist task
-    yaml_file = metadata.YamlFile(join(obj.path, "celebi.yaml"))
-    environment = yaml_file.read_variable("environment", "")
-    if environment != "lhcb_ap_datalist":
-        message.add(
-            "add-apd-token can only be used on an LHCb AP data list task "
-            f"(environment: {environment}).",
-            "error",
-        )
+    token = token.strip()
+    if not token:
+        message.add("APD token cannot be empty.", "error")
         return message
 
     # Store in .celebi/config.local.json (local reference, gitignored)

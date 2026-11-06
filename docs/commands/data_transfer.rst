@@ -61,8 +61,10 @@ Locations and transfers
   ``runner:<name>``. ``--pattern`` filters files and ``--force`` overwrites.
 * ``purge-data`` removes collected stageout, logs and watermarks from Yuki.
   Without ``--force``, Yuki protects the last recoverable copy.
-* ``add-apd-token TOKEN`` stores an LHCb AP token in git-excluded local
-  configuration for an ``lhcb_ap_datalist`` task.
+* ``add-apd-token [TOKEN]`` stores an LHCb AP token in git-excluded local
+  configuration for the current task. Omitting ``TOKEN`` uses a hidden prompt.
+  Yuki exposes it to APD through ``APD_USER_TOKEN_FILE`` for both
+  ``lhcb_ap_datalist`` and ordinary execution tasks such as ``lb-conda``.
 
 Registration and collection are separate: registering SSH or XRootD data
 creates a reproducible input object, while ``collect`` retrieves outputs of a

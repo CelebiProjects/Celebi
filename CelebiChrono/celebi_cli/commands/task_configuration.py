@@ -246,14 +246,18 @@ def hosts_command():
         _handle_error(f"Command failed: {e}")
 
 @click.command(name="add-apd-token")
-@click.argument("token", type=str)
+@click.argument("token", type=str, required=False)
 def add_apd_token_command(token):
-    """Add an APD access token to the current LHCb AP data list task.
+    """Add an APD access token to the current task.
 
-    Stores the token in .celebi/config.local.json and writes
-    lbapi_key.json to the task directory for REANA submission.
+    With no TOKEN argument, prompts without echoing the secret.  The token is
+    stored in git-excluded .celebi/config.local.json and injected by Yuki as
+    APD_USER_TOKEN_FILE when the task runs.
     """
     try:
+        if token is None:
+            token = click.prompt("APD token", hide_input=True,
+                                 confirmation_prompt=False)
         from CelebiChrono.interface.shell import add_apd_token
         result = add_apd_token(token)
         _handle_result(result)

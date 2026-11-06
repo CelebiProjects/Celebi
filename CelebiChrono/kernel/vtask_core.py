@@ -43,14 +43,15 @@ class Core(VObject):
             if self.algorithm() is not None or self.commands():  # pylint: disable=no-member
                 message.append(self.show_algorithm())
 
-            # Show APD token status for LHCb AP data list tasks
+            # Show APD token status for AP-list and ordinary APD-enabled tasks.
             yaml_file = metadata.YamlFile(os.path.join(self.path, "celebi.yaml"))
-            if yaml_file.read_variable("environment", "") == "lhcb_ap_datalist":
-                local_config = metadata.ConfigFile(
-                    os.path.join(self.path, ".celebi", "config.local.json")
-                )
-                token = local_config.read_variable("apd_token", None)
-                message.add("temp_apd_token: ")
+            local_config = metadata.ConfigFile(
+                os.path.join(self.path, ".celebi", "config.local.json")
+            )
+            token = local_config.read_variable("apd_token", None)
+            if (yaml_file.read_variable("environment", "") == "lhcb_ap_datalist"
+                    or token):
+                message.add("apd_token: ")
                 if token:
                     message.add("[set]", "success")
                 else:
