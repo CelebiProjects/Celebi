@@ -708,8 +708,10 @@ def add_apd_token(token: str) -> Message:
         return message
 
     # Store in .celebi/config.local.json (local reference, gitignored)
-    local_config = metadata.ConfigFile(join(obj.path, ".celebi", "config.local.json"))
+    local_config_path = join(obj.path, ".celebi", "config.local.json")
+    local_config = metadata.ConfigFile(local_config_path)
     local_config.write_variable("apd_token", token)
+    os.chmod(local_config_path, 0o600)
 
     message.add("APD token stored successfully.", "success")
     return message

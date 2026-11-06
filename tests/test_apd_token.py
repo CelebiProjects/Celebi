@@ -1,4 +1,5 @@
 """APD tokens can be attached to ordinary execution tasks."""
+import stat
 
 from unittest import mock
 
@@ -21,6 +22,8 @@ def test_add_apd_token_accepts_ordinary_task(tmp_path):
     assert result.success
     local = metadata.ConfigFile(str(tmp_path / ".celebi/config.local.json"))
     assert local.read_variable("apd_token", "") == "lbapi:user:secret"
+    assert stat.S_IMODE(
+        (tmp_path / ".celebi/config.local.json").stat().st_mode) == 0o600
     yaml_file = metadata.YamlFile(str(tmp_path / "celebi.yaml"))
     assert yaml_file.read_variable("apd_token", None) is None
 
