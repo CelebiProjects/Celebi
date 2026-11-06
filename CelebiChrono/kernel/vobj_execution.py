@@ -1,10 +1,11 @@
 """ This module provides the ExecutionManagement class.
 """
+import os
 import time
 from logging import getLogger
 from typing import Optional, TYPE_CHECKING
 
-from ..utils import csys
+from ..utils import csys, metadata
 from ..utils.message import Message
 from .chern_communicator import ChernCommunicator
 from .vobj_core import Core
@@ -367,6 +368,15 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
             return
         cherncc = ChernCommunicator.instance()
         if self.is_deposited():
+            # Local secrets deliberately do not change the immutable impression
+            # UUID.  Refresh an existing Yuki deposit when APD authentication
+            # was attached after the original submission.
+            local_config_path = os.path.join(
+                self.path, ".celebi", "config.local.json")
+            local_config = metadata.ConfigFile(local_config_path)
+            token = local_config.read_variable("apd_token", "")
+            if isinstance(token, str) and token.strip():
+                cherncc.deposit(self.impression(), self.path)
             consult_table[self.path] = (consult_id, True)
             return
         if not self.is_impressed_fast():
