@@ -4,8 +4,145 @@ Utility functions for shell interface.
 Miscellaneous utility functions for workarounds, history, diagnostics, etc.
 """
 
+import time
+
+from tqdm import tqdm
+
+from ...kernel.chern_communicator import ChernCommunicator
 from ...utils.message import Message
 from ._manager import MANAGER
+
+
+def _scoped_task_impressions(current_obj, refresh=False):
+    """Return task impression UUIDs in the current project/directory/task scope."""
+    object_type = current_obj.object_type()
+    if object_type not in ("task", "directory", "project"):
+        raise ValueError(
+            "share-ssh-impressions requires the current object to be a task "
+            "or a directory/project scope")
+    if refresh:
+        current_obj.impress()
+    objects = ([current_obj] if object_type == "task" else
+               current_obj.sub_objects_recursively())
+    impressions = []
+    missing = []
+    for obj in objects:
+        if obj.object_type() != "task":
+            continue
+        impression = obj.impression()
+        if impression is None:
+            missing.append(obj.path)
+        elif impression.uuid not in impressions:
+            impressions.append(impression.uuid)
+    if missing:
+        raise ValueError(
+            "No current impression for: " + ", ".join(sorted(missing)))
+    if not impressions:
+        raise ValueError("The current scope contains no tasks")
+    return impressions
+
+
+def share_ssh_impressions(runner: str, operation: str, force: bool = False,
+                          timeout: int = None) -> Message:
+    """Share current task or directory/project task results through SSH."""
+    # pylint: disable=too-many-locals,too-many-return-statements,too-many-branches
+    message = Message()
+    current_obj = MANAGER.current_object()
+    if current_obj is None or not current_obj.project_path():
+        message.add("Run share-ssh-impressions inside a Celebi project", "error")
+        return message
+    if operation not in ("import", "export"):
+        message.add("Choose exactly one of --import or --export", "error")
+        return message
+    try:
+        impressions = _scoped_task_impressions(
+            current_obj, refresh=(operation == "import"))
+    except ValueError as exc:
+        message.add(str(exc), "error")
+        return message
+
+    communicator = ChernCommunicator.instance()
+    request_options = {"timeout": timeout} if timeout is not None else {}
+    response = communicator.share_ssh_impressions(
+        runner, current_obj.project_uuid(), operation, impressions,
+        force=force, **request_options)
+    if response.get("error"):
+        message.add(response["error"], "error")
+        return message
+    job_id = response.get("job_id")
+    if not job_id:
+        message.add("Share request did not return a job id", "error")
+        return message
+
+    print(f"share-ssh-impressions: job {job_id[:8]}... started on '{runner}'")
+    connection_errors = 0
+    unknown_polls = 0
+    progress_bar = tqdm(unit="B", unit_scale=True, unit_divisor=1024,
+                        desc=f"share-ssh-impressions: {operation}")
+    try:
+        while True:
+            try:
+                state = communicator.share_ssh_impressions_status(
+                    job_id, **request_options)
+            except ConnectionError as exc:
+                connection_errors += 1
+                if connection_errors >= 10:
+                    message.add(
+                        f"Stopped polling share job {job_id} after 10 consecutive "
+                        "connection failures. The server job may still be running. "
+                        f"Last error: {exc}", "error")
+                    return message
+                time.sleep(3)
+                continue
+            connection_errors = 0
+            status = state.get("status", "unknown")
+            total = state.get("bytes_total")
+            done = state.get("bytes_done")
+            if isinstance(total, int) and total > 0:
+                progress_bar.total = total
+                if isinstance(done, int):
+                    progress_bar.n = min(done, total)
+            progress_bar.set_description(f"share-ssh-impressions: {status}")
+            progress_bar.refresh()
+            if status == "unknown":
+                unknown_polls += 1
+                if unknown_polls >= 10:
+                    message.add(
+                        f"Share job {job_id} was not found after 10 polls", "error")
+                    return message
+            else:
+                unknown_polls = 0
+            if status == "done":
+                result = state.get("result") or {}
+                count = result.get("count", len(result.get("impressions", [])))
+                verb = "Exported" if operation == "export" else "Imported"
+                message.add(
+                    f"{verb} {count} matching impression(s) "
+                    f"{'to' if operation == 'export' else 'from'} "
+                    f"the shared store on runner '{runner}'", "success")
+                if result.get("missing"):
+                    message.add(
+                        "Missing impressions: " +
+                        ", ".join(result["missing"]), "warning")
+                if result.get("skipped"):
+                    message.add(
+                        f"Skipped {len(result['skipped'])} existing item(s)",
+                        "warning")
+                for failure in result.get("failed", []):
+                    message.add(
+                        f"Failed {failure.get('impression', '')}: "
+                        f"{failure.get('reason', 'unknown error')}", "error")
+                message.data.update(result)
+                message.data["job_id"] = job_id
+                return message
+            if status == "failed":
+                message.add(
+                    f"Share failed: {state.get('error', 'unknown error')}",
+                    "error")
+                return message
+            time.sleep(3)
+    finally:
+        progress_bar.close()
 
 
 def workaround_preshell(reference: str = "", skip_inputs: list[str] = None) -> Message:

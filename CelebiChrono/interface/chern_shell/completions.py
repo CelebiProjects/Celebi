@@ -356,6 +356,18 @@ class ChernShellCompletions:
             return [r for r in runners if r.startswith(text)]
         return []
 
+    def complete_share_ssh_impressions(
+        self, text: str, line: str, _begidx: int, _endidx: int
+    ) -> list:
+        """Complete the runner argument after the import/export flag."""
+        parts = line.split()
+        values = [part for part in parts[1:]
+                  if part not in ("--import", "--export", "--force")]
+        if len(values) <= 1:
+            runners = self.readline_file.read_variable("runners", [])
+            return [runner for runner in runners if runner.startswith(text)]
+        return []
+
     def complete_transfer(
         self, text: str, line: str, _begidx: int, _endidx: int
     ) -> list:

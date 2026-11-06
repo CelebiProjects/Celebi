@@ -158,7 +158,7 @@ def publish_git(root, commit_message=None, tag=None):
     remote = _git(root, "config", "--get", "branch." + branch + ".remote")
     upstream = _git(root, "config", "--get", "branch." + branch + ".merge")
     if remote == "." or not upstream.startswith("refs/heads/"):
-        raise ValueError("Configure a GitLab upstream branch before bookkeeping")
+        raise ValueError("Configure a Git upstream branch before bookkeeping")
     if tag:
         _git(root, "check-ref-format", "refs/tags/" + tag)
         local_tags = _git(root, "tag", "--list", tag)

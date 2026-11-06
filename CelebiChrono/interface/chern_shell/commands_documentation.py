@@ -10,6 +10,7 @@ from ...utils import user_config
 from ...utils.file_utils import open_url
 from ...interface import shell
 from ...interface.ChernManager import get_manager
+from ._timeout import parse_timeout
 
 
 MANAGER = get_manager()
@@ -121,6 +122,28 @@ class DocumentationCommands:
                 print(result.colored())
         except Exception as e:
             print(f"Error bookkeeping impressions: {e}")
+
+    def do_share_ssh_impressions(self, arg: str) -> None:
+        """Share current task or directory/project impressions through SSH."""
+        try:
+            args, options = parse_timeout(arg)
+            import_mode = "--import" in args
+            export_mode = "--export" in args
+            if import_mode == export_mode:
+                raise ValueError("Choose exactly one of --import or --export")
+            operation = "import" if import_mode else "export"
+            force = "--force" in args
+            positional = [value for value in args
+                          if value not in ("--import", "--export", "--force")]
+            if len(positional) != 1:
+                raise ValueError("Provide exactly one RUNNER")
+            runner = positional[0]
+            result = shell.share_ssh_impressions(
+                runner, operation, force=force, **options)
+            if result.messages:
+                print(result.colored())
+        except Exception as e:
+            print(f"Error sharing impressions: {e}")
 
     def do_bkkurl(self, _: str) -> None:
         """Get bookkeeping URL."""

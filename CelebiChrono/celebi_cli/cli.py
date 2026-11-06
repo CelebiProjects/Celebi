@@ -52,7 +52,7 @@ COMMAND_SECTIONS = (
     ("Impressions and provenance", (
         "impress", "impression", "view", "view-url", "search-impression",
         "trace", "history", "changes", "watermark", "bookkeep",
-        "bookkeeping-url", "open-bookkeeping",
+        "bookkeeping-url", "open-bookkeeping", "share-ssh-impressions",
     )),
     ("Runners and capacity", (
         "runners", "register-runner", "update-runner", "remove-runner",
@@ -279,6 +279,7 @@ cli.add_command(visualization.draw_dag_command)
 cli.add_command(utilities.watermark_command)
 cli.add_command(utilities.doctor_command)
 cli.add_command(utilities.bookkeep_command)
+cli.add_command(utilities.share_ssh_impressions_command)
 cli.add_command(utilities.bookkeep_url_command)
 cli.add_command(utilities.open_bookkeeping_command)
 cli.add_command(utilities.predecessors_command)

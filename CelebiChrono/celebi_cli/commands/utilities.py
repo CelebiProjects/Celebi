@@ -68,6 +68,46 @@ def bookkeep_command(commit_message, tag, server, token, path, yuki, allow_parti
         _handle_error(f"Command failed: {e}")
 
 
+@click.command(name="share-ssh-impressions")
+@click.option("--import", "import_mode", is_flag=True,
+              help="Import matching shared results from the SSH runner.")
+@click.option("--export", "export_mode", is_flag=True,
+              help="Export current results to the SSH runner's shared store.")
+@click.option("--force", is_flag=True,
+              help="Replace conflicting files in the destination store.")
+@click.option("--timeout", type=click.IntRange(min=1), default=None,
+              help="HTTP request timeout in seconds; not a total job limit.")
+@click.argument("runner", type=str)
+def share_ssh_impressions_command(import_mode, export_mode, force, timeout,
+                                  runner) -> None:
+    """Share current task or directory/project impressions through SSH.
+
+    Export the current task, or every task below the current directory/project:
+
+    \b
+      share-ssh-impressions --export RUNNER
+
+    Import only results matching the freshly impressed current scope:
+
+    \b
+      share-ssh-impressions --import RUNNER
+    """
+    # Click callbacks naturally receive one parameter per option/argument.
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    if import_mode == export_mode:
+        raise click.UsageError("Choose exactly one of --import or --export")
+    operation = "import" if import_mode else "export"
+    try:
+        from CelebiChrono.interface.shell import share_ssh_impressions
+        _handle_result(share_ssh_impressions(
+            runner, operation, force=force,
+            **({"timeout": timeout} if timeout is not None else {})))
+    except ImportError as e:
+        _handle_error(f"Failed to import shell function: {e}")
+    except Exception as e:
+        _handle_error(f"Command failed: {e}")
+
+
 @click.command(name="bookkeeping-url")
 def bookkeep_url_command() -> None:
     """Get the bookkeeping URL."""

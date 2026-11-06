@@ -88,7 +88,7 @@ password-protected `celebi_server` website and save its one-time analysis token.
 The website reads the project UUID directly from the committed
 `.celebi/config.json`; users do not enter or generate a UUID there.
 
-Configure a GitLab upstream, collect the task results into the updated Yuki
+Configure a GitLab or GitHub upstream, collect the task results into the updated Yuki
 server, and run inside the project:
 
 ```sh
@@ -106,7 +106,7 @@ and are included in bookkeeping commits (normal credential/result exclusions
 still apply inside that directory). Existing tags and behind/diverged branches are rejected.
 Before making any Git change, the CLI checks the locally saved analysis token
 against its server-side hash. An invalid token cannot create a commit or tag and
-cannot push. GitLab still applies the user's normal SSH/HTTPS push permission;
+cannot push. The Git provider still applies the user's normal SSH/HTTPS push permission;
 the bookkeeping server itself only needs read access to fetch the repository.
 Use `--allow-partial` to tolerate results not collected yet, then run
 `celebi-cli bookkeep` again without `--tag` after they arrive. Saved website

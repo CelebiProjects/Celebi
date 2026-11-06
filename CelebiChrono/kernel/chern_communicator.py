@@ -1137,6 +1137,51 @@ class ChernCommunicator():  # pylint: disable=too-many-instance-attributes
             return None
         return r.json()
 
+    def share_ssh_impressions(self, runner, project_uuid, operation,
+                              impressions, force=False, timeout=None):
+        """Share selected impressions through a managed SSH runner store."""
+        url = self.serverurl()
+        data = {
+            "runner": runner,
+            "project_uuid": project_uuid,
+            "operation": operation,
+            "impressions": list(impressions or []),
+            "force": force,
+        }
+        try:
+            response = requests.post(
+                f"http://{url}/share-ssh-impressions", json=data,
+                timeout=self.timeout if timeout is None else timeout)
+        except requests.exceptions.RequestException as exc:
+            raise ConnectionError(
+                f"Failed to connect to DITE server: {exc}") from exc
+        try:
+            body = response.json()
+        except ValueError:
+            body = {}
+        if response.status_code not in (200, 202):
+            return {"error": body.get(
+                "error", f"share failed (HTTP {response.status_code})")}
+        return body
+
+    def share_ssh_impressions_status(self, job_id, timeout=None):
+        """Poll an SSH impression sharing job."""
+        url = self.serverurl()
+        try:
+            response = requests.get(
+                f"http://{url}/share-ssh-impressions/{job_id}",
+                timeout=self.timeout if timeout is None else timeout)
+        except requests.exceptions.RequestException as exc:
+            raise ConnectionError(
+                f"Failed to connect to DITE server: {exc}") from exc
+        if response.status_code == 404:
+            return {"status": "unknown", "error": "job not found"}
+        try:
+            return response.json()
+        except ValueError:
+            return {"status": "unknown", "error": (
+                f"invalid response (HTTP {response.status_code})")}
+
     def transfer(self, project_uuid, impression, source, destination,
                  pattern=None, force=False, timeout=None):
         """Start a result transfer job on Yuki."""

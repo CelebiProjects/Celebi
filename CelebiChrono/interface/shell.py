@@ -46,7 +46,7 @@ from .shell_modules.reana_booking import (
 )
 from .shell_modules.utilities import (
     workaround_preshell, workaround_postshell, history,
-    watermark, changes, doctor, bookkeep, bookkeep_url,
+    watermark, changes, doctor, bookkeep, bookkeep_url, share_ssh_impressions,
     gc_impressions, pack_impressions, migrate_impressions, stats_impressions,
     tree, error_log, danger_call,
     git_merge, git_validate, git_status, git_enable,
@@ -87,6 +87,7 @@ __all__ = [
     # Utilities functions (from utilities.py)
     'workaround_preshell', 'workaround_postshell', 'history',
     'watermark', 'changes', 'doctor', 'bookkeep', 'bookkeep_url',
+    'share_ssh_impressions',
     'gc_impressions', 'pack_impressions', 'migrate_impressions', 'stats_impressions',
     'danger_call', 'tree', 'error_log',
     # REANA booking functions (from reana_booking.py)

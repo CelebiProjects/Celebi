@@ -67,3 +67,35 @@ Locations and transfers
 Registration and collection are separate: registering SSH or XRootD data
 creates a reproducible input object, while ``collect`` retrieves outputs of a
 completed workflow.
+
+Share complete impressions through SSH
+--------------------------------------
+
+``share-ssh-impressions`` uses the current Celebi object as its scope. Run it
+from a task to select that task, or from a directory to select every task below
+that directory. The project root behaves like the top-level directory and
+selects every task in the project. Algorithms are rejected.
+
+Export the selected impressions from Yuki into the runner's managed shared
+store:
+
+.. code-block:: console
+
+   celebi-cli share-ssh-impressions --export ssh-cluster
+
+Import from that shared store into Yuki:
+
+.. code-block:: console
+
+   celebi-cli share-ssh-impressions --import ssh-cluster
+
+Import first impresses the current task or directory. The resulting current
+task UUIDs form a strict allow-list: historical or unrelated shared
+impressions are not imported. Downloads land in staging before their files are
+merged into Yuki Storage. Existing files are protected unless ``--force`` is
+given.
+
+The runner must use an SSH backend. Its shared store lives below
+``<remote_workdir>/shared-impressions/<project_uuid>/`` and uses in-progress
+and complete markers plus read-only publication. ``--timeout`` controls each
+client-to-Yuki status request, not the total background transfer duration.
