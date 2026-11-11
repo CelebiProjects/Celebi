@@ -155,7 +155,7 @@ Project metadata
 
    {
      "object_type": "project",
-     "chern_version": "1.0.0b4",
+     "chern_version": "1.1.0",
      "project_uuid": "b50a736ddde44f8cbbcc773b9a075adb"
    }
 

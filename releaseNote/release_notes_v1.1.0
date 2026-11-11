@@ -1,0 +1,28 @@
+## v1.1.0
+
+Changes since v1.0.0b4:
+
++ Add repeated Task execution with `subtasks: N`.
+  - Substitute the reserved `${index}` parameter for each execution while retaining one
+    Task impression and one Yuki job.
+  - Store repeated outputs below numeric `stageout/<index>/` directories and add
+    `log INDEX --subtask N` support for per-execution logs.
+  - Document the required literal `stageout/index/` output path, cache behavior, retry
+    limitations, and a complete 100-toy Gaussian example.
++ Add project-level execution environment configuration.
+  - Ship a default `.celebi-env/default.yaml` template and document installation on
+    SSH, IHEP, and native runners.
+  - Preserve logical environment names in project configuration while Yuki resolves
+    their runner-specific prefixes.
++ Add first-class LHCb release execution through `lb-run`.
+  - Support fixed releases and nightly slots with parameter substitution for project,
+    version, platform, and nightly values.
+  - Require `environment: lb-run` on both the Task and its effective command source so
+    incompatible configurations fail before submission.
++ Add `share-ssh-impressions` for exporting and importing complete immutable impression
+  snapshots through a registered SSH runner's managed store.
++ Extend APD authentication to ordinary execution Tasks, including `lb-conda` Tasks.
+  - Keep APD tokens in git-excluded local configuration and refresh deposited secrets
+    when an existing impression is submitted again.
+  - Prevent shared impression configuration from overwriting the local APD token.
++ Set the CelebiChrono package version to `1.1.0`.
