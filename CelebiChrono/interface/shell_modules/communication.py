@@ -1,3 +1,5 @@
+# Public shell communication facade; retain existing import paths.
+# pylint: disable=too-many-lines
 """
 Communication functions for shell interface.
 
@@ -172,6 +174,8 @@ def runners() -> Message:  # pylint: disable=too-many-locals
         - Information is retrieved from Chern communicator
         - Message uses color coding for status display
     """
+    # Render the runner summary and its detailed diagnostics together.
+    # pylint: disable=too-many-statements
     message = Message()
     cherncc = ChernCommunicator.instance()
     dite_status = cherncc.dite_status()
@@ -366,6 +370,8 @@ def purge_ssh_runner_cache(runner: str, project: str = None,
     subobject when run inside a folder; an explicit impression skips the
     context lookup. Never purges the whole runner cache.
     """
+    # Keep preview, confirmation and cleanup tracking in one command.
+    # pylint: disable=too-many-locals
     message = Message()
     if not impression:
         scopes = _impression_scopes()
@@ -423,6 +429,8 @@ def cache_results(runner: str) -> Message:
     workflow's stageout into the runner's managed impressions cache and
     records the copy in the distribution registry.
     """
+    # Early returns preserve distinct validation and backend failure messages.
+    # pylint: disable=too-many-return-statements
     message = Message()
     scopes = _impression_scopes()
     if not scopes:
@@ -817,6 +825,8 @@ def install_environment(runner: str, name: str, file_path: str = None) -> Messag
         install_environment("local", "analysis")
         install_environment("ssh-cluster", "root", ".celebi-env/root-dev.yaml")
     """
+    # Runner-specific validation exits before submitting an installation.
+    # pylint: disable=too-many-locals,too-many-return-statements,too-many-branches
     message = Message()
     project_dir, project_uuid = _current_project()
     if not project_uuid:
@@ -941,8 +951,6 @@ def _current_project():
 
     Returns (None, "") when not inside a Celebi project.
     """
-    import os
-    from CelebiChrono.utils import metadata
     from CelebiChrono.utils.path_utils import project_path
     try:
         project_dir = project_path()

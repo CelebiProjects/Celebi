@@ -127,6 +127,8 @@ def _complete_ref(store, ref, checked_blobs):
             if not re.fullmatch(r"[0-9a-f]{64}", blob_hash):
                 return False
             if blob_hash not in checked_blobs:
+                # Internal store validation must verify the referenced blob on disk.
+                # pylint: disable-next=protected-access
                 checked_blobs[blob_hash] = Path(store._blob_path(blob_hash)).is_file()
             if not checked_blobs[blob_hash]:
                 return False
@@ -143,23 +145,29 @@ class _Payload:
         self.config_file = SimpleNamespace(read_variable=data.get)
 
     def pred_impressions(self):
+        """Return resolved predecessor identities in canonical order."""
         return [SimpleNamespace(uuid=uid) for uid in sorted(
             self.resolved[ref] for ref in self.data.get("predecessors", []))]
 
     def object_type(self):
+        """Return the executable object type from the captured payload."""
         return self.data["object_type"]
 
     def invariant_path(self):
+        """Return the project-relative object path."""
         return self.name
 
     def is_task_or_algorithm(self):
+        """Identify this payload as an executable object."""
         return True
 
     def alias_to_impression(self, alias):
+        """Resolve an input alias to its captured impression identity."""
         return SimpleNamespace(uuid=self.resolved[self.data["alias_to_path"][alias]])
 
     def impression(self):
         # Never trust committed or stale local pointers as execution history.
+        """Avoid treating a stale local pointer as execution history."""
         return None
 
 
@@ -170,6 +178,8 @@ def impress_immutable(project_root, cache_dir=None, progress=None):
     linear in input bytes; existing refs/payloads are never rewritten. The
     optional cache is project-scoped and survives disposable Git checkouts.
     """
+    # The graph walk tracks resolved identities and cache statistics in one pass.
+    # pylint: disable=too-many-locals,too-many-branches
     root = Path(project_root).resolve()
     if Path.cwd().resolve() != root:
         raise ValueError("Run immutable impress from the project root")
@@ -216,7 +226,7 @@ def impress_immutable(project_root, cache_dir=None, progress=None):
             resolved[name] = uid
             metadata.TwoTierConfigFile(str(root / name / ".celebi/config.json")).write_variable(
                 "impression", uid)
-            if index == 1 or index % 25 == 0 or index == len(ordered):
+            if index == 1 or not index % 25 or index == len(ordered):
                 stats = {"processed": index, "total": len(ordered),
                          "created": created, "reused": reused}
                 _write(root / ".celebi/immutable-impress-progress.json", stats)

@@ -45,7 +45,8 @@ def doctor_command() -> None:
 
 
 @click.command(name="bookkeep")
-@click.option("--commit", "commit_message", help="Stage shareable changes and commit with this message.")
+@click.option("--commit", "commit_message",
+              help="Stage shareable changes and commit with this message.")
 @click.option("--tag", help="Create and push a new Git tag; existing tags are rejected.")
 @click.option("--server", default="", help="Celebi bookkeeping server URL.")
 @click.option("--token", default="", help="Analysis token (or CELEBI_PROJECT_TOKEN).")
@@ -59,6 +60,8 @@ def bookkeep_command(commit_message, tag, server, token, path, yuki, allow_parti
     Run bookkeep --commit 'Publish results' --tag 'v1' to publish a version.
     To retry missing results, run bookkeep again without --tag.
     """
+    # Arguments mirror the public Click options.
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     try:
         from CelebiChrono.interface.shell_modules.server_booking import bookkeep
         bookkeep(commit_message, tag, server, token, path, yuki, allow_partial)

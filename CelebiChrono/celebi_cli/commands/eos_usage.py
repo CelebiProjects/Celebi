@@ -7,13 +7,16 @@ import click
 
 
 def format_size(value):
-    for unit in ("B", "KiB", "MiB", "GiB", "TiB", "PiB"):
-        if value < 1024 or unit == "PiB":
+    """Format a byte count using binary units, capped at PiB."""
+    for unit in ("B", "KiB", "MiB", "GiB", "TiB"):
+        if value < 1024:
             return f"{value:.1f} {unit}"
         value /= 1024
+    return f"{value:.1f} PiB"
 
 
 def display(state, as_json):
+    """Display the scan state and per-project usage, including incomplete scans."""
     if as_json:
         click.echo(json.dumps(state, indent=2))
         return
@@ -48,7 +51,8 @@ def display(state, as_json):
 
 @click.command(name="eos-usage")
 @click.argument("runner", required=False)
-@click.option("--all-projects", is_flag=True, help="Scan every project under this runner's EOS root.")
+@click.option("--all-projects", is_flag=True,
+              help="Scan every project under this runner's EOS root.")
 @click.option("--scan-id", help="Query an existing scan; does not submit a new job.")
 @click.option("--wait/--no-wait", default=True, show_default=True)
 @click.option("--timeout", type=click.IntRange(min=1), default=600, show_default=True,
@@ -61,6 +65,8 @@ def eos_usage_command(runner, all_projects, scan_id, wait, timeout, as_json):
     configured EOS root. Live sets older than 24h classify as unknown.
     Non-live means explicitly superseded, not automatically safe to delete.
     """
+    # CLI options cover scan submission, recovery and bounded polling.
+    # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
     from CelebiChrono.kernel.chern_communicator import ChernCommunicator
     from CelebiChrono.interface.shell_modules.communication import _current_project
     communicator = ChernCommunicator.instance()

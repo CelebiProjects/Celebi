@@ -1,3 +1,5 @@
+# Task job mixin keeps the existing public execution API together.
+# pylint: disable=too-many-lines
 
 """ JobManager class for managing tasks
 """
@@ -360,7 +362,8 @@ class JobManager(Core):
         Returns:
             Message containing formatted engine log content or error message.
         """
-        import json
+        # Handle each result format and fetch failure with an early return.
+        # pylint: disable=too-many-return-statements
 
         cherncc = ChernCommunicator.instance()
         # Check the connection
@@ -670,18 +673,18 @@ class JobManager(Core):
 
         if impression is None:
             logger.error("No impression available for export")
-            return
+            return None
 
         try:
             files = cherncc.output_files(impression, "none")
         except Exception as e:
             logger.error("Failed to list output files: %s", e)
-            return
+            return None
 
         matched = [f for f in files if fnmatch.fnmatch(f, pattern)]
         if not matched:
             print(f"No files matching pattern '{pattern}' found")
-            return
+            return None
 
         if timestamped:
             directory_name = (

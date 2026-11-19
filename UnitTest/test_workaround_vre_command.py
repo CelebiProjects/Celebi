@@ -38,8 +38,8 @@ def test_shell_workaround_vre_forwards_to_current_object():
     current_object.workaround_vre.assert_called_once_with("*.root")
 
 
-def test_workaround_vre_command_is_registered_instead_of_export():
+def test_workaround_vre_and_export_commands_are_registered():
     from CelebiChrono.celebi_cli.cli import cli
 
-    assert "workaround-vre" in cli.commands
-    assert "export" not in cli.commands
+    assert cli.commands["workaround-vre"] is file_cmd.workaround_vre_command
+    assert cli.commands["export"] is file_cmd.export_command

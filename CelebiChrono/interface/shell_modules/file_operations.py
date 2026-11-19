@@ -613,6 +613,8 @@ def transfer(source: str, destination: str, pattern: str = None,
 
     SOURCE and DESTINATION are 'yuki' or 'runner:<runner-id>'.
     """
+    # Each transfer direction has separate validation and failure reporting.
+    # pylint: disable=too-many-locals,too-many-return-statements
     message = Message()
     current_obj = MANAGER.current_object()
     if current_obj is None:

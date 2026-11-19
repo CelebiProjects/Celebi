@@ -15,6 +15,8 @@ BOOKKEEP_BATCH_SIZE = 25
 
 def _relay_results(session, relay, base, yuki, server, project_uuid, commit, needed, progress):
     """Publish bounded batches so successful uploads survive a later failure."""
+    # The relay carries both server sessions and identities through bounded batches.
+    # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
     result = {"uploaded": [], "failed": [], "missing": [], "skipped": []}
     for offset in range(0, len(needed), BOOKKEEP_BATCH_SIZE):
         batch = needed[offset:offset + BOOKKEEP_BATCH_SIZE]
@@ -51,6 +53,7 @@ def _relay_results(session, relay, base, yuki, server, project_uuid, commit, nee
 
 
 def project_root(path=""):
+    """Resolve a project root or reject paths outside a Celebi project."""
     root = csys.project_path(str(Path(path or os.getcwd()).resolve()))
     if not root:
         raise ValueError("Run inside a Celebi project or pass --path")
@@ -64,6 +67,7 @@ def _git(root, *args):
     return process.stdout if "-z" in args else process.stdout.strip()
 
 def forbidden(path):
+    """Identify credentials and generated artifacts excluded from publication."""
     parts = Path(path).parts
     # .celebi-env contains shareable environment definitions, not installed
     # environments. Keep normal credential/result exclusions inside it too.
@@ -81,6 +85,7 @@ def _url(value):
     return value.rstrip("/")
 
 def register(server, token, path="", yuki=""):
+    """Verify server credentials and save them in Git-excluded local settings."""
     root = project_root(path)
     project_uuid = json.loads((root / ".celebi/config.json").read_text())["project_uuid"]
     server = _url(server)
@@ -96,11 +101,13 @@ def register(server, token, path="", yuki=""):
     if not exclude.is_absolute():
         exclude = root / exclude
     exclude.parent.mkdir(parents=True, exist_ok=True)
-    with exclude.open("a") as handle:
+    with exclude.open("a", encoding="utf-8") as handle:
         handle.write("\n**/.celebi/bookkeeping.local.json\n**/.celebi/config.local.json\n"
-                     "**/.celebi/hosts.json\n**/.celebi/impressions/\n**/.celebi/impressions_store/\n"
+                     "**/.celebi/hosts.json\n**/.celebi/impressions/\n"
+                     "**/.celebi/impressions_store/\n"
                      "**/.celebi/immutable-impress*\n")
-    target.write_text(json.dumps({"server": server, "token": token, "yuki": _url(yuki) if yuki else ""}))
+    target.write_text(json.dumps(
+        {"server": server, "token": token, "yuki": _url(yuki) if yuki else ""}))
     target.chmod(0o600)
     return server
 
@@ -152,6 +159,8 @@ def _request(session, method, url, body=None, timeout=120):
 
 def publish_git(root, commit_message=None, tag=None):
     """Stage shareable project changes and push exactly this branch and tag."""
+    # Keep the ordered Git safety checks adjacent to publication.
+    # pylint: disable=too-many-locals
     if Path(_git(root, "rev-parse", "--show-toplevel")).resolve() != root.resolve():
         raise ValueError("The Celebi project must be the Git repository root")
     branch = _git(root, "symbolic-ref", "--short", "HEAD")
@@ -169,7 +178,8 @@ def publish_git(root, commit_message=None, tag=None):
     tracked = _git(root, "ls-files", "-z").split("\0")
     unsafe = [name for name in tracked if name and forbidden(name)]
     if unsafe:
-        raise ValueError("Remove local credentials/results from Git tracking first: " + ", ".join(unsafe))
+        raise ValueError("Remove local credentials/results from Git tracking first: "
+                         + ", ".join(unsafe))
     _git(root, "fetch", remote)
     ahead_behind = _git(root, "rev-list", "--left-right", "--count", "HEAD...@{upstream}").split()
     if int(ahead_behind[1]):
@@ -195,6 +205,8 @@ def publish_git(root, commit_message=None, tag=None):
 def bookkeep(commit_message=None, tag=None, server="", token="", path="", yuki="",
              allow_partial=False, progress=print):
     """Commit/push, request canonical server impressions, and relay missing results."""
+    # This public API coordinates authentication, publication and result relay.
+    # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
     root = project_root(path)
     settings_path = root / ".celebi/bookkeeping.local.json"
     settings = json.loads(settings_path.read_text()) if settings_path.exists() else {}
@@ -238,7 +250,7 @@ def bookkeep(commit_message=None, tag=None, server="", token="", path="", yuki="
         if job["git_commit"] != commit:
             raise ValueError("Server returned a different commit")
         needed = job["needed_impressions"]
-        progress(str(len(job["impressions"])) + " canonical impressions; " + str(len(needed)) + " need results")
+        progress(f"{len(job['impressions'])} canonical impressions; {len(needed)} need results")
         if not needed:
             return {"uploaded": [], "missing": [], "url": server + "/projects/" + project_uuid}
         result = _relay_results(session, relay, base, yuki, server, project_uuid,

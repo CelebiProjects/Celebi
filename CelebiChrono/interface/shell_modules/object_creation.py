@@ -580,6 +580,8 @@ def register_ssh_data(runner: str, remote_path: str,
     On success, fills the current rawdata task (or creates a pointer task)
     with the registered impression.
     """
+    # Keep SSH registration validation and task creation in one transaction.
+    # pylint: disable=too-many-locals,too-many-statements
     message = Message()
     current_obj = MANAGER.current_object()
     if current_obj is None:

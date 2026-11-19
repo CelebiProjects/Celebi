@@ -541,7 +541,7 @@ def get_script_path(filename: str) -> Message:
 
     Examples:
         get_script_path("script.py")  # Path in current object
-        get_script_path("code/main.py")  # Path in task's code root (task dir or linked algorithm dir)
+        get_script_path("code/main.py")  # Relative to task or linked algorithm code root
         get_script_path("code:utils.py")  # Alternative prefix syntax
 
     Returns:

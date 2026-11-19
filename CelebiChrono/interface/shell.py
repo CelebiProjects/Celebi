@@ -56,6 +56,8 @@ from .shell_modules.utilities import (
 # Explicitly export all functions for backward compatibility
 # This ensures underscore-prefixed functions are also exported
 __all__ = [
+    "kill_running_workflows", "sync_live", "purge_stale_cache",
+    "purge_stale_workflows", "kill_workflow",
     # Navigation functions
     'cd_project', 'shell_cd_project', 'cd', '_cd_by_index', '_cd_by_path', 'navigate',
     # File operations functions

@@ -53,7 +53,8 @@ class DocumentationCommands:
         """Show object guidance or detailed help for a command."""
         try:
             if arg.strip():
-                self.do_help(arg)
+                # cmd.Cmd supplies do_help on the composed shell.
+                self.do_help(arg)  # pylint: disable=no-member
                 return
             from .help_text import object_help
             current = MANAGER.current_object()

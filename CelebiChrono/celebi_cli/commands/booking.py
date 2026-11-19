@@ -1,6 +1,12 @@
 """Booking commands for celebi-cli."""
 import click
 
+from CelebiChrono.interface.shell_modules.reana_booking import (
+    register_booking_server,
+    book_reana,
+    check_booking_server,
+)
+
 
 @click.command(name="register-celebi-server")
 @click.option("--server", required=True, help="Celebi bookkeeping server URL.")
@@ -16,11 +22,7 @@ def register_celebi_server_command(server, token, path, yuki):
         raise click.ClickException(str(exc)) from exc
     click.echo("Registered Celebi bookkeeping server: " + url)
 
-from CelebiChrono.interface.shell_modules.reana_booking import (
-    register_booking_server,
-    book_reana,
-    check_booking_server,
-)
+
 
 
 @click.command(name="booking-server")

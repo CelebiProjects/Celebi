@@ -14,6 +14,8 @@ TERMINAL = {"planned", "done", "partial", "failed", "preflight_failed"}
 
 def refresh_local_live(communicator, projects, clear_projects=()):
     """Use isolated Celebi processes so caches cannot leak between projects."""
+    # Track each checkout and subprocess result separately to isolate project caches.
+    # pylint: disable=too-many-locals
     from CelebiChrono.interface.shell_modules.communication import _current_project
     config_path = Path.home() / ".celebi" / "config.json"
     config = json.loads(config_path.read_text()) if config_path.exists() else {}
@@ -47,6 +49,7 @@ def refresh_local_live(communicator, projects, clear_projects=()):
 
 
 def show_plan(state, as_json=False):
+    """Display the exact deletion manifest and any verification results."""
     if as_json:
         click.echo(json.dumps(state, indent=2))
         return
@@ -58,7 +61,8 @@ def show_plan(state, as_json=False):
                f"{format_size(sum(e['bytes'] for e in entries))}")
     for project in manifest["projects"]:
         rows = [e for e in entries if e["project"] == project]
-        scope = "ALL (including live)" if project in manifest["clear_projects"] else "selected non-live/unknown"
+        scope = ("ALL (including live)" if project in manifest["clear_projects"]
+                 else "selected non-live/unknown")
         click.echo(f"  {project}: {scope}; {len(rows)} directories, "
                    f"{format_size(sum(e['bytes'] for e in rows))}")
     click.echo(f"Protected live directories: {len(manifest['protected'])}; "
@@ -74,6 +78,7 @@ def show_plan(state, as_json=False):
 
 
 def poll(communicator, state, timeout):
+    """Poll an existing cleanup until terminal status or the time budget expires."""
     deadline = time.monotonic() + timeout
     while state["status"] not in TERMINAL:
         if time.monotonic() >= deadline:
@@ -90,13 +95,16 @@ def poll(communicator, state, timeout):
 @click.option("--scan-id", help="Build a preview from a completed, recent EOS scan.")
 @click.option("--plan-id", help="Query an existing plan, or execute it with --execute.")
 @click.option("--all-projects", is_flag=True, help="Include all projects in the scan.")
-@click.option("--project", "projects", multiple=True, help="Project UUID; repeat for multiple projects.")
-@click.option("--include-unknown", is_flag=True, help="Also select unknown caches with a project owner.")
+@click.option("--project", "projects", multiple=True,
+              help="Project UUID; repeat for multiple projects.")
+@click.option("--include-unknown", is_flag=True,
+              help="Also select unknown caches with a project owner.")
 @click.option("--clear-project", "clear_projects", multiple=True,
               help="Explicitly clear ALL cache for this project UUID, including live.")
 @click.option("--execute", is_flag=True, help="Execute after showing and confirming the preview.")
 @click.option("--yes", "-y", is_flag=True, help="Confirm the displayed manifest without prompting.")
-@click.option("--wait/--no-wait", default=True, help="Wait for cleanup and independent verification.")
+@click.option("--wait/--no-wait", default=True,
+              help="Wait for cleanup and independent verification.")
 @click.option("--timeout", type=click.IntRange(min=1), default=600, show_default=True)
 @click.option("--json", "as_json", is_flag=True, help="Show full manifest and reports as JSON.")
 def eos_cleanup_command(runner, scan_id, plan_id, all_projects, projects, include_unknown,
@@ -107,6 +115,9 @@ def eos_cleanup_command(runner, scan_id, plan_id, all_projects, projects, includ
     fingerprints. Without --all-projects/--project, scope is the current project.
     Unknown/unattributed directories are never silently included.
     """
+    # CLI options and explicit safety gates mirror the cleanup lifecycle.
+    # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+    # pylint: disable=too-many-branches,too-many-statements
     from CelebiChrono.kernel.chern_communicator import ChernCommunicator
     from CelebiChrono.interface.shell_modules.communication import _current_project
     communicator = ChernCommunicator.instance()
@@ -116,7 +127,7 @@ def eos_cleanup_command(runner, scan_id, plan_id, all_projects, projects, includ
         if as_json and execute and not yes:
             raise click.UsageError("JSON execution requires --yes; inspect the preview first")
         if plan_id:
-            if runner or scan_id or all_projects or projects or clear_projects or include_unknown:
+            if any((runner, scan_id, all_projects, projects, clear_projects, include_unknown)):
                 raise click.UsageError("--plan-id cannot be combined with new scope options")
             state = communicator.eos_cleanup_status(plan_id)
         else:
@@ -134,7 +145,8 @@ def eos_cleanup_command(runner, scan_id, plan_id, all_projects, projects, includ
                 raise click.UsageError("--clear-project must be in the selected scope")
             if runner:
                 scan_id = uuid.uuid4().hex
-                click.echo(f"Read-only scan: {scan_id}; resume with eos-cleanup --scan-id {scan_id} "
+                click.echo(f"Read-only scan: {scan_id}; "
+                           f"resume with eos-cleanup --scan-id {scan_id} "
                            "and the same scope flags", err=True)
                 scan = communicator.start_eos_usage(
                     runner, scan_id, selected[0] if len(selected) == 1 else None)
@@ -151,7 +163,8 @@ def eos_cleanup_command(runner, scan_id, plan_id, all_projects, projects, includ
             if all_projects:
                 selected = [p["project"] for p in scan["report"]["projects"]]
             refresh_local_live(communicator, selected, clear_projects)
-            state = communicator.plan_eos_cleanup(scan_id, selected, include_unknown, clear_projects)
+            state = communicator.plan_eos_cleanup(
+                scan_id, selected, include_unknown, clear_projects)
             plan_id = state["id"]
         if state["status"] == "planned":
             if as_json and execute:
@@ -160,21 +173,25 @@ def eos_cleanup_command(runner, scan_id, plan_id, all_projects, projects, includ
                 show_plan(state, as_json)
             if not execute or not state["manifest"]["entries"]:
                 if not as_json:
-                    click.echo(f"Preview only. Execute: celebi-cli eos-cleanup --plan-id {plan_id} --execute")
+                    click.echo("Preview only. Execute: celebi-cli eos-cleanup "
+                               f"--plan-id {plan_id} --execute")
                 return state
-            if not yes and not click.confirm("Permanently delete exactly this EOS manifest?", default=False):
+            if not yes and not click.confirm(
+                    "Permanently delete exactly this EOS manifest?", default=False):
                 click.echo("EOS cleanup cancelled; nothing deleted.")
                 return state
             # Existing plans also need a current live check. Server refuses changed plans.
             refresh_local_live(communicator, state["manifest"]["projects"],
                                state["manifest"]["clear_projects"])
-            click.echo(f"Cleanup plan: {plan_id}; resume with eos-cleanup --plan-id {plan_id}", err=True)
+            click.echo(f"Cleanup plan: {plan_id}; "
+                       f"resume with eos-cleanup --plan-id {plan_id}", err=True)
             state = communicator.execute_eos_cleanup(plan_id, state["manifest_sha256"])
         if wait:
             state = poll(communicator, state, timeout)
         show_plan(state, as_json)
         if state["status"] in ("failed", "partial", "preflight_failed"):
-            raise click.ClickException("Cleanup incomplete; inspect the saved plan/report. No automatic retry.")
+            raise click.ClickException(
+                "Cleanup incomplete; inspect the saved plan/report. No automatic retry.")
         return state
     except click.ClickException:
         raise

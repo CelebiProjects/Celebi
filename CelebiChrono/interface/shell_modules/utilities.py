@@ -45,6 +45,8 @@ def _scoped_task_impressions(current_obj, refresh=False):
 def share_ssh_impressions(runner: str, operation: str, force: bool = False,
                           timeout: int = None) -> Message:
     """Share current task or directory/project task results through SSH."""
+    # Keep job submission and streaming progress in the same command.
+    # pylint: disable=too-many-statements
     # pylint: disable=too-many-locals,too-many-return-statements,too-many-branches
     message = Message()
     current_obj = MANAGER.current_object()
@@ -56,7 +58,7 @@ def share_ssh_impressions(runner: str, operation: str, force: bool = False,
         return message
     try:
         impressions = _scoped_task_impressions(
-            current_obj, refresh=(operation == "import"))
+            current_obj, refresh=operation == "import")
     except ValueError as exc:
         message.add(str(exc), "error")
         return message

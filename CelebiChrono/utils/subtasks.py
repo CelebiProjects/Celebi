@@ -21,6 +21,8 @@ def subtask_count(config):
     if "subtasks" not in config:
         return None
     count = config["subtasks"]
+    # Only plain integers are valid; bool and subclasses are excluded.
+    # pylint: disable-next=unidiomatic-typecheck
     if type(count) is not int or count <= 0:
         raise ValueError("subtasks must be a positive integer")
     parameters = config.get("parameters") or {}
