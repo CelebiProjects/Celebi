@@ -59,6 +59,23 @@ def walk(top) -> Iterator[Tuple[str, List[str], List[str]]]:
             yield (path, dirs, names)
 
 
+def is_python_cache(path):
+    """Identify generated Python bytecode and everything in __pycache__."""
+    parts = Path(path).parts
+    return "__pycache__" in parts or Path(path).suffix in {".pyc", ".pyo"}
+
+
+def without_python_cache(tree):
+    """Filter cache entries from current or historical impression trees."""
+    return [
+        [path,
+         [name for name in dirs if not is_python_cache(name)],
+         [name for name in files if not is_python_cache(name)]]
+        for path, dirs, files in tree
+        if not is_python_cache(path)
+    ]
+
+
 def tree_excluded(path):
     """ Get the file tree
     """
@@ -69,7 +86,7 @@ def tree_excluded(path):
             if "README.md" in filenames:
                 filenames.remove("README.md")
         file_tree.append([dirpath, sorted(dirnames), sorted(filenames)])
-    return sorted(file_tree)
+    return sorted(without_python_cache(file_tree))
 
 
 def sorted_tree(tree):

@@ -21,6 +21,8 @@
 project = "Celebi: an analysis management project"
 copyright = "2026, Mingrui Zhao"
 author = "Mingrui Zhao"
+release = "1.1.2b1"
+version = release
 
 
 # -- General configuration ---------------------------------------------------

@@ -1540,3 +1540,54 @@ class ChernCommunicator():  # pylint: disable=too-many-instance-attributes
         r = requests.post(url, json=data, timeout=self.purge_timeout)
         r.raise_for_status()
         return r.json()
+
+
+    def start_eos_usage(self, runner, scan_id, project_uuid=None):
+        """Submit a read-only EOS scan; scan_id makes retry identity explicit."""
+        response = requests.post(f"http://{self.serverurl()}/eos-usage", json={
+            "runner": runner, "scan_id": scan_id, "project": project_uuid,
+        }, timeout=120)
+        response.raise_for_status()
+        return response.json()
+
+    def eos_usage_status(self, scan_id):
+        """Retrieve an existing scan without submitting another workflow."""
+        import re
+        if not re.fullmatch(r"[0-9a-f]{32}", scan_id):
+            raise ValueError("Invalid EOS scan ID")
+        response = requests.get(
+            f"http://{self.serverurl()}/eos-usage/{scan_id}", timeout=120)
+        response.raise_for_status()
+        return response.json()
+
+    def plan_eos_cleanup(self, scan_id, projects, include_unknown=False, clear_projects=()):
+        """Create a persisted preview; never submit a deletion job."""
+        response = requests.post(f"http://{self.serverurl()}/eos-cleanup/plan", json={
+            "scan_id": scan_id, "projects": projects, "include_unknown": include_unknown,
+            "clear_projects": list(clear_projects),
+        }, timeout=120)
+        if not response.ok:
+            raise ValueError(response.json().get("error", "Cannot plan EOS cleanup"))
+        return response.json()
+
+    def execute_eos_cleanup(self, plan_id, manifest_sha256):
+        """Execute exactly the confirmed preview, once."""
+        import re
+        if not re.fullmatch(r"[0-9a-f]{32}", plan_id):
+            raise ValueError("Invalid cleanup plan ID")
+        response = requests.post(
+            f"http://{self.serverurl()}/eos-cleanup/{plan_id}/execute",
+            json={"manifest_sha256": manifest_sha256}, timeout=120)
+        if not response.ok:
+            raise ValueError(response.json().get("error", "Cannot execute EOS cleanup"))
+        return response.json()
+
+    def eos_cleanup_status(self, plan_id):
+        """Poll deletion and its independent verification workflow."""
+        import re
+        if not re.fullmatch(r"[0-9a-f]{32}", plan_id):
+            raise ValueError("Invalid cleanup plan ID")
+        response = requests.get(f"http://{self.serverurl()}/eos-cleanup/{plan_id}", timeout=120)
+        if not response.ok:
+            raise ValueError(response.json().get("error", "Cannot query EOS cleanup"))
+        return response.json()

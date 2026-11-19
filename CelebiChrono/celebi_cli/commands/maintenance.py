@@ -28,7 +28,8 @@ def _select_runners(records: list[dict[str, str]]) -> list[dict[str, str]]:
     click.echo("\nAvailable runners:")
     for index, record in enumerate(records, 1):
         backend = record.get("backend_type") or "unknown"
-        cache_note = "" if backend in ("ssh", "ihep") else " (no SSH cache)"
+        cache_note = " (EOS via REANA job)" if backend == "reana" else (
+            "" if backend in ("ssh", "ihep") else " (no SSH cache)")
         click.echo(f"  {index}. {record['name']} [{backend}]{cache_note}")
 
     by_name = {record["name"]: record for record in records}
@@ -99,10 +100,12 @@ def _cleanup_runner_workflows(shell: Any, runner: str) -> bool:
 
 
 def _cleanup_runner_cache(shell: Any, record: dict[str, str]) -> bool:
-    """Preview and optionally purge one SSH runner's stale cache."""
+    """Preview and optionally purge a runner cache (SSH or REANA/EOS)."""
     runner = record["name"]
     backend = record.get("backend_type", "")
     click.echo(f"\nRunner '{runner}': impression cache")
+    if backend == "reana":
+        return _cleanup_eos(runner)
     if backend not in ("ssh", "ihep"):
         click.echo(f"Skipped: backend '{backend or 'unknown'}' has no SSH impression cache.")
         return False
@@ -122,6 +125,25 @@ def _cleanup_runner_cache(shell: Any, record: dict[str, str]) -> bool:
     _handle_result(shell.purge_stale_cache(runner, dry_run=False))
     return True
 
+
+
+def _cleanup_eos(runner: str) -> bool:
+    """EOS previews require a small read-only REANA workflow."""
+    from .eos_cleanup import eos_cleanup_command
+    if not click.confirm("Submit a read-only REANA job to preview EOS cache cleanup?",
+                         default=False):
+        return False
+    all_projects = click.confirm("Inspect all projects on this EOS root?", default=False)
+    include_unknown = click.confirm("Include unknown caches with a project owner?", default=False)
+    clear_projects = tuple(filter(None, (value.strip() for value in click.prompt(
+        "Project UUIDs to clear entirely, including live (comma separated; Enter for none)",
+        default="", show_default=False).split(","))))
+    state = click.get_current_context().invoke(
+        eos_cleanup_command, runner=runner, scan_id=None, plan_id=None,
+        all_projects=all_projects, projects=(), include_unknown=include_unknown,
+        clear_projects=clear_projects, execute=True, yes=False, wait=True,
+        timeout=600, as_json=False)
+    return bool(state and state["status"] not in ("planned", "preflight_failed", "failed"))
 
 def run_tidyup(grace_days: int = 14) -> None:
     """Run the shared tidyup questionnaire."""
@@ -157,6 +179,6 @@ def run_tidyup(grace_days: int = 14) -> None:
                     completed += 1
 
     if completed:
-        click.echo(f"\nTidyup finished: {completed} confirmed operation(s) executed.")
+        click.echo(f"\nTidyup finished: {completed} confirmed cleanup operation(s) requested.")
     else:
         click.echo("\nTidyup finished: nothing was deleted.")

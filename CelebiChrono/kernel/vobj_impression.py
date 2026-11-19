@@ -10,6 +10,7 @@ from logging import getLogger
 
 from ..utils import csys
 from ..utils.csys import colorize_diff
+from ..utils.file_utils import without_python_cache
 from ..utils.format_utils import format_node_display
 from ..utils.message import Message
 from .vobj_core import Core
@@ -171,7 +172,7 @@ class ImpressionManagement(Core):
         # start_time = time.time()
         # Check the file change: first to check the tree
         file_list = csys.tree_excluded(self.path)
-        impression_tree = impression.tree()
+        impression_tree = without_python_cache(impression.tree())
 
         # Check the file list is the same as the impression tree
         # if file_list != impression.tree():

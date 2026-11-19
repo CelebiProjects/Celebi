@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Tuple, List
 from ..utils import csys
 from ..utils.message import Message
 from ..utils.csys import colorize_diff
+from ..utils.file_utils import is_python_cache
 from .vobj_core import Core
 from .chern_cache import ChernCache
 
@@ -424,8 +425,8 @@ class FileManagementOperations(Core):
             csys.get_files_in_directory(new_root, exclude=("README.md",))
         )
 
-        old_files_set = set(old_files)
-        new_files_set = set(new_files)
+        old_files_set = {path for path in old_files if not is_python_cache(path)}
+        new_files_set = {path for path in new_files if not is_python_cache(path)}
 
         common = sorted(old_files_set & new_files_set)
         removed_files = sorted(old_files_set - new_files_set)

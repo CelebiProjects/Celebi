@@ -72,6 +72,23 @@ def _submission_level(submission):
     return "info"
 
 
+def _submission_cache_policy(owner, objects):
+    """Include task cache preferences throughout the submitted dependency DAG."""
+    pending = list(objects)
+    seen = set()
+    policy = {}
+    while pending:
+        obj = pending.pop()
+        if obj.path in seen:
+            continue
+        seen.add(obj.path)
+        pending.extend(obj.predecessors())
+        if obj.is_task():
+            task = owner.get_vtask(obj.path)
+            policy[task.impression().uuid] = task.cache_on_runner()
+    return policy
+
+
 class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
     """ Manage the contact with dite and runner. """
     def is_submitted(self, runner: str = "local") -> bool: # pylint: disable=unused-argument
@@ -140,13 +157,8 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
                         "warning"
                         )
                 return msg
-        cache_on_runner = {}
-        sub_objects = self.sub_objects_recursively()
-        for sub_object in sub_objects:
-            if not sub_object.is_task():
-                continue
-            task = self.get_vtask(sub_object.path)
-            cache_on_runner[task.impression().uuid] = task.cache_on_runner()
+        cache_on_runner = _submission_cache_policy(
+            self, self.sub_objects_recursively())
         impressions = self.get_impressions()
         if (initial_mtime is not None
                 and csys.dir_mtime(project_path) != initial_mtime):
@@ -232,13 +244,12 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
                 )
                 return msg
 
-        # Collect cache_on_runner and impressions
-        cache_on_runner = {}
+        # Collect cache preferences for dependencies as well as target tasks.
+        cache_on_runner = _submission_cache_policy(self, tasks)
         impressions = []
         seen_impressions = set()
         for task in tasks:
             impression = task.impression().uuid
-            cache_on_runner[impression] = task.cache_on_runner()
             if impression not in seen_impressions:
                 seen_impressions.add(impression)
                 impressions.append(impression)

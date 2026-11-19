@@ -9,6 +9,8 @@ from .commands import (
     project_management,
 )
 from .commands import liveness
+from .commands.eos_usage import eos_usage_command
+from .commands.eos_cleanup import eos_cleanup_command
 
 
 COMMAND_SECTIONS = (
@@ -57,7 +59,7 @@ COMMAND_SECTIONS = (
     ("Runners and capacity", (
         "runners", "register-runner", "update-runner", "remove-runner",
         "test-runner", "install-environment", "runner-environments",
-        "yuki-overview", "hosts",
+        "yuki-overview", "eos-usage", "hosts",
         "add-host", "refresh-distribution",
     )),
     ("Settings and services", (
@@ -67,7 +69,7 @@ COMMAND_SECTIONS = (
     )),
     ("Maintenance and recovery", (
         "doctor", "purge", "purge-old-impressions", "purge-impressions",
-        "tidyup",
+        "tidyup", "eos-cleanup",
         "gc-impressions", "pack-impressions", "migrate-impressions",
         "impression-stats", "purge-ssh-runner-cache", "purge-stale-cache",
         "purge-stale-workflows", "stop-orphaned-workflows", "stop-workflow",
@@ -248,6 +250,8 @@ cli.add_command(execution_management.purge_data_command)
 cli.add_command(liveness.kill_running_workflows_command)
 cli.add_command(liveness.kill_workflow_command)
 cli.add_command(liveness.sync_live_command)
+cli.add_command(eos_usage_command)
+cli.add_command(eos_cleanup_command)
 cli.add_command(liveness.purge_stale_cache_command)
 cli.add_command(liveness.purge_stale_workflows_command)
 

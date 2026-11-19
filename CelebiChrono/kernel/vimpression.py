@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 from ..utils import csys
 from ..utils import metadata
+from ..utils.file_utils import is_python_cache
 from ..utils.subtasks import read_subtask_count
 from .impression_materializer import ImpressionMaterializer
 from .impression_store import ImpressionStore
@@ -355,7 +356,7 @@ class VImpression:  # pylint: disable=too-many-instance-attributes,too-many-publ
             dirs[:] = [d for d in dirs if not (d.startswith(".") or d.startswith("__"))]
 
             for file_name in files:
-                if file_name == "README.md":
+                if file_name == "README.md" or is_python_cache(file_name):
                     continue
                 if file_name.startswith(".") or file_name.startswith("__"):
                     continue

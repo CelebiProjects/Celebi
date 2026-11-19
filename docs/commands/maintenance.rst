@@ -34,7 +34,18 @@ Runner cleanup
 * ``stop-workflow UUID`` force-stops a specific workflow, including a zombie
   run, while retaining its workspace.
 * ``tidyup`` is an interactive front end that previews local CAS, stale
-  workspace and SSH-cache cleanup before deletion.
+  workspace, SSH-cache and REANA EOS-cache cleanup before deletion.
+
+EOS cache commands (1.1.2b1)
+----------------------------
+
+* ``eos-usage RUNNER --all-projects`` measures project cache usage via REANA.
+* ``eos-cleanup RUNNER --all-projects`` previews non-live cache deletion.
+* ``eos-cleanup --plan-id PLAN_ID --execute`` executes the reviewed plan.
+* ``eos-cleanup --plan-id PLAN_ID`` queries cleanup and independent verification.
+
+See :doc:`../eos_cache` for unknown-data selection, whole-project clearing,
+classification freshness and recovery after timeouts.
 
 Advanced commands
 -----------------

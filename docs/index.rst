@@ -70,6 +70,8 @@ For detailed usage, see the following pages:
    usage
    configuration_files
    subtasks
+   eos_cache
+   release_notes
    commands
    examples
    api
