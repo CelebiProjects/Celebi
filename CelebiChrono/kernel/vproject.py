@@ -364,8 +364,7 @@ def create_hostsfile(project_path):
 
 def create_default_environment(project_path):
     """Create the packaged default Conda specification for a new project."""
-    template = resources.files("CelebiChrono").joinpath(
-        "templates", "default.yaml")
+    template = resources.files("CelebiChrono").joinpath("templates").joinpath("default.yaml")
     destination = os.path.join(project_path, ".celebi-env", "default.yaml")
     with template.open("r", encoding="utf-8") as source, \
             open(destination, "w", encoding="utf-8") as target:
