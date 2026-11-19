@@ -31,6 +31,8 @@ def _filter_hidden_files(files: List[str]) -> List[str]:
             if not any(part.startswith(".") for part in f.split(os.sep))]
 
 
+# Partial Core implementation; VObject/VTask supplies the remaining methods.
+# pylint: disable-next=abstract-method
 class FileManagementOperations(Core):
     """ File operations methods for file management.
     """

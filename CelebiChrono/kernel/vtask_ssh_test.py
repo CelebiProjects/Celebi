@@ -17,6 +17,8 @@ from .chern_communicator import ChernCommunicator
 from .vtask_core import Core
 
 
+# Partial Core implementation; VObject/VTask supplies the remaining methods.
+# pylint: disable-next=abstract-method
 class SshTestMixin(Core):
     """SSH test execution for tasks."""
 

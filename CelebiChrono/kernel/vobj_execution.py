@@ -89,6 +89,8 @@ def _submission_cache_policy(owner, objects):
     return policy
 
 
+# Partial Core implementation; VObject/VTask supplies the remaining methods.
+# pylint: disable-next=abstract-method
 class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
     """ Manage the contact with dite and runner. """
     def is_submitted(self, runner: str = "local") -> bool: # pylint: disable=unused-argument

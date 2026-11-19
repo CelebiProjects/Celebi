@@ -23,6 +23,8 @@ from .vtask_core import Core
 
 logger = getLogger("ChernLogger")
 
+# Partial Core implementation; VObject/VTask supplies the remaining methods.
+# pylint: disable-next=abstract-method
 class SettingManager(Core):
     """ SettingManager class is responsible for managing the settings of the task.
     """

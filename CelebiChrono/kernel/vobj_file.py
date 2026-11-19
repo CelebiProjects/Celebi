@@ -23,6 +23,8 @@ logger = getLogger("ChernLogger")
 __all__ = ['FileManagement', 'LsParameters']
 
 
+# Partial Core implementation; VObject/VTask supplies the remaining methods.
+# pylint: disable-next=abstract-method
 class FileManagement(
     FileManagementDisplay,
     FileManagementOperations,

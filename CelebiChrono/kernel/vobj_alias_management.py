@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 logger = getLogger("ChernLogger")
 
 
+# Partial Core implementation; VObject/VTask supplies the remaining methods.
+# pylint: disable-next=abstract-method
 class AliasManagement(Core):
     """ This class is used to manage the alias of the vobj.
     """

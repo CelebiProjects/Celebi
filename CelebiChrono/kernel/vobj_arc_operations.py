@@ -13,6 +13,8 @@ CHERN_CACHE = ChernCache.instance()
 logger = getLogger("ChernLogger")
 
 
+# Partial Core implementation; VObject/VTask supplies the remaining methods.
+# pylint: disable-next=abstract-method
 class ArcManagementOperations(Core):
     """ Basic arc operations for arc management.
     """

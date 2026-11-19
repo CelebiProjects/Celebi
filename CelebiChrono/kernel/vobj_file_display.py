@@ -69,6 +69,8 @@ class LsParameters:
     task_info: bool = True
 
 
+# Partial Core implementation; VObject/VTask supplies the remaining methods.
+# pylint: disable-next=abstract-method
 class FileManagementDisplay(Core):
     """ Display-related methods for file management.
     """

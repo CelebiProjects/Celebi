@@ -23,6 +23,8 @@ from .vtask_core import Core
 logger = getLogger("ChernLogger")
 
 
+# Partial Core implementation; VObject/VTask supplies the remaining methods.
+# pylint: disable-next=abstract-method
 class JobManager(Core):
     """Job management for task execution and Docker container orchestration."""
 
