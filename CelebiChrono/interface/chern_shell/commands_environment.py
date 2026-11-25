@@ -75,6 +75,7 @@ def _parse_submit_args(arg: str):
     runner = "local"
     timeout = None
     with_unknown = False
+    cores = None
     object_names = []
     index = 0
     while index < len(parts):
@@ -87,7 +88,7 @@ def _parse_submit_args(arg: str):
             index += 1
             continue
         option, separator, value = token.partition("=")
-        if option in ("--runner", "--timeout"):
+        if option in ("--runner", "--timeout", "--cores"):
             if not separator:
                 index += 1
                 value = parts[index] if index < len(parts) else ""
@@ -95,6 +96,13 @@ def _parse_submit_args(arg: str):
                 raise ValueError(f"{option} requires a value")
             if option == "--runner":
                 runner = value
+            elif option == "--cores":
+                try:
+                    cores = int(value)
+                except ValueError as exc:
+                    raise ValueError("--cores must be a positive integer") from exc
+                if cores < 1:
+                    raise ValueError("--cores must be a positive integer")
             else:
                 try:
                     timeout = int(value)
@@ -107,7 +115,7 @@ def _parse_submit_args(arg: str):
         else:
             object_names.append(token)
         index += 1
-    return runner, object_names, timeout, with_unknown
+    return runner, object_names, timeout, with_unknown, cores
 
 
 def _parse_purge_args(arg: str):
@@ -274,14 +282,14 @@ class EnvironmentCommands:
             submit a b
         """
         try:
-            runner, object_names, timeout, with_unknown = _parse_submit_args(arg)
+            runner, object_names, timeout, with_unknown, cores = _parse_submit_args(arg)
             if not object_names:
                 result = shell.submit(
-                    runner, timeout=timeout, with_unknown=with_unknown)
+                    runner, timeout=timeout, with_unknown=with_unknown, cores=cores)
             else:
                 result = shell.submit_objects(
                     object_names, runner, timeout=timeout,
-                    with_unknown=with_unknown)
+                    with_unknown=with_unknown, cores=cores)
             if result.messages:
                 print(result.colored())
         except Exception as e:

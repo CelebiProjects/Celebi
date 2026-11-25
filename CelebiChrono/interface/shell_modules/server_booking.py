@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 import requests
 from CelebiChrono.utils import csys
+from CelebiChrono.utils.yuki_endpoint import DEFAULT_YUKI_ENDPOINT, local_yuki_endpoint
 
 BOOKKEEP_BATCH_SIZE = 25
 
@@ -214,9 +215,12 @@ def bookkeep(commit_message=None, tag=None, server="", token="", path="", yuki="
     token = token or os.environ.get("CELEBI_PROJECT_TOKEN") or settings.get("token", "")
     if not token:
         raise ValueError("Register the analysis token with register-celebi-server")
-    hosts_path = root / ".celebi/hosts.json"
-    hosts = json.loads(hosts_path.read_text()) if hosts_path.exists() else {}
-    yuki = _url(yuki or settings.get("yuki") or hosts.get("serverurl", "127.0.0.1:3315"))
+    yuki = yuki or settings.get("yuki") or local_yuki_endpoint()
+    if not yuki:
+        hosts_path = root / ".celebi/hosts.json"
+        hosts = json.loads(hosts_path.read_text()) if hosts_path.exists() else {}
+        yuki = hosts.get("serverurl", DEFAULT_YUKI_ENDPOINT)
+    yuki = _url(yuki)
     project_uuid = json.loads((root / ".celebi/config.json").read_text())["project_uuid"]
     with requests.Session() as session, requests.Session() as relay:
         session.headers["Authorization"] = "Bearer " + token

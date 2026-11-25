@@ -71,6 +71,7 @@ For detailed usage, see the following pages:
    configuration_files
    subtasks
    eos_cache
+   secrets
    release_notes
    commands
    examples

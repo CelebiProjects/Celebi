@@ -31,6 +31,12 @@ def _raw_output(result: Optional[Any]) -> str:
 
 
 _RUNNER_SETTING_OPTIONS = [
+    click.option("--kerberos-keytab", type=str, default=None,
+                 help="Existing keytab path on SSH runner (never uploaded)"),
+    click.option("--kerberos-principal", type=str, default=None,
+                 help="Kerberos principal for SSH workflow credentials"),
+    click.option("--kerberos-renew-interval", type=click.IntRange(min=1), default=None,
+                 help="SSH ticket refresh interval in seconds (default: 1800)"),
     click.option("--ssh-host", type=str, default=None, help="SSH host (ssh backend)"),
     click.option("--ssh-user", type=str, default=None, help="SSH user (ssh backend)"),
     click.option("--ssh-key-path", type=str, default=None, help="SSH private key path"),
@@ -49,7 +55,8 @@ _RUNNER_SETTING_OPTIONS = [
 
 _SETTING_KEYS = ("ssh_host", "ssh_user", "ssh_key_path", "ssh_port",
                  "remote_workdir", "workdir", "cores", "mem_mb",
-                 "conda_path", "snakemake_path")
+                 "conda_path", "snakemake_path", "kerberos_keytab",
+                 "kerberos_principal", "kerberos_renew_interval")
 
 
 def _runner_setting_options(func):
@@ -184,6 +191,7 @@ def remove_runner_command(runner: str) -> None:
 @click.argument("name", type=str)
 @click.option("--url", type=str, default=None, help="Runner service URL")
 @click.option("--token", type=str, default=None, help="Authentication token")
+@click.option("--secret", default=None, help="Name of a keytab imported into Yuki")
 @click.option("--backend-type", type=str, default=None, help="Backend type (reana/native)")
 @click.option("--use-kerberos/--no-use-kerberos", default=None, help="Enable/disable Kerberos")
 @click.option("--eos-mount-point", type=str, default=None, help="EOS mount point path")
@@ -210,6 +218,13 @@ def update_runner_command(name, url, token, backend_type, use_kerberos,
         if eos_mount_point is not None:
             settings["eos_mount_point"] = eos_mount_point
         settings.update(_collect_cli_settings(kwargs))
+        if kwargs.get("secret") is not None:
+            if settings:
+                raise click.UsageError("Bind --secret separately from other runner changes")
+            from CelebiChrono.kernel.chern_communicator import ChernCommunicator
+            result = ChernCommunicator.instance().bind_secret(name, kwargs["secret"])
+            click.echo(result["message"])
+            return
         _handle_result(update_runner(name, **settings))
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
@@ -376,6 +391,7 @@ def install_environment_command(runner: str, name: str,
 
 
 @click.command(name="submit")
+@click.argument("objects", nargs=-1, metavar="[OBJECT ...]")
 @click.option(
     "--runner", type=str, default="local", show_default=True,
     help="Execution runner name.",
@@ -388,18 +404,37 @@ def install_environment_command(runner: str, name: str,
     "--with-unknown", is_flag=True,
     help="Refresh an unknown workflow before deciding whether to resubmit it.",
 )
+@click.option(
+    "--cores", type=click.IntRange(min=1), default=None, metavar="N",
+    help="Workflow core budget for this submission (default: runner setting).",
+)
 def submit_command(runner: str, timeout: int = None,
-                   with_unknown: bool = False) -> None:
-    """Submit current task for execution.
+                   with_unknown: bool = False, cores: int = None,
+                   objects: tuple[str, ...] = ()) -> None:
+    """Submit tasks or directories and their dependencies.
 
-    Sends the current task to a runner for processing. The runner executes
-    the task's algorithm with the specified inputs and parameters.
+    Without OBJECT arguments, submit the current task or recursively submit
+    all tasks in the current directory. With OBJECT arguments, submit the
+    selected tasks/directories together in one workflow, including dependencies.
+    Paths are relative to the current working directory.
 
-    Use --runner to select the execution environment.
+    Select only the directories you want to run to leave other tasks out;
+    their required dependencies are still included. Runner names must be
+    passed with --runner; positional arguments are object paths.
+
+    Examples:
+
+      celebi-cli submit --runner pkufarm212
+
+      celebi-cli submit dirA dirB --runner pkufarm212 --timeout 300
     """
     try:
-        from CelebiChrono.interface.shell import submit
-        result = submit(runner, timeout=timeout, with_unknown=with_unknown)
+        from CelebiChrono.interface.shell import submit, submit_objects
+        if objects:
+            result = submit_objects(
+                list(objects), runner, timeout=timeout, with_unknown=with_unknown, cores=cores)
+        else:
+            result = submit(runner, timeout=timeout, with_unknown=with_unknown, cores=cores)
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")
@@ -427,12 +462,16 @@ def kill_command() -> None:
 @click.argument("contents", type=str, default="", required=False)
 @click.option("--allow-failed", is_flag=True, default=False,
               help="Collect diagnostic stageout from failed workflows.")
-def collect_command(contents: str, allow_failed: bool) -> None:
+@click.option("--from", "source", default=None,
+              help="Collect outputs or a filename/glob from eos:<runner>.")
+def collect_command(contents: str, allow_failed: bool, source: str = None) -> None:
     """Collect task results: [all|plots|data|logs|<glob>|<name>] (default: plots+logs)."""
     try:
         from CelebiChrono.interface.shell import collect
-        result = (collect(contents, allow_failed=True)
-                  if allow_failed else collect(contents))
+        options = {"allow_failed": True} if allow_failed else {}
+        if source is not None:
+            options["source"] = source
+        result = collect(contents, **options)
         _handle_result(result)
     except ImportError as e:
         _handle_error(f"Failed to import shell function: {e}")

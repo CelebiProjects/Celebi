@@ -42,6 +42,14 @@ Celebi is particularly suited for complex analysis chains common in HEP, where d
 
 ---
 
+## 1.1.3b1 beta
+
+This beta adds Kerberos credential import and runner binding, EOS result downloads,
+selective multi-object submission, per-workflow core budgets, SSH APD via CVMFS,
+and local Yuki port discovery. Upgrade CelebiChrono and Yuki together and restart
+Yuki's HTTP service and workers. See the [release notes](releaseNote/release_notes_v1.1.3b1)
+and [credential guide](docs/secrets.rst) for supported backends and limitations.
+
 ## Installation
 
 ```sh

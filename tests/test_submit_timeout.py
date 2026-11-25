@@ -13,8 +13,9 @@ from CelebiChrono.kernel.vobj_execution import _submission_level, _submission_me
 from CelebiChrono.interface.shell_modules import execution_management as shell
 
 
+@pytest.mark.parametrize('cores', [None, 16])
 @pytest.mark.parametrize('timeout, expected', [(None, 10), (300, 300)])
-def test_submit_timeout_reaches_http_request(timeout, expected):
+def test_submit_timeout_reaches_http_request(timeout, expected, cores):
     communicator = object.__new__(ChernCommunicator)
     communicator.timeout = 10
     communicator.project_uuid = 'project'
@@ -29,6 +30,8 @@ def test_submit_timeout_reaches_http_request(timeout, expected):
     obj.get_impressions.return_value = ['impression']
     obj.submit.side_effect = lambda runner, **kw: ExecutionManagement.submit(obj, runner, **kw)
     args = ['submit'] + ([] if timeout is None else ['--timeout', str(timeout)])
+    if cores is not None:
+        args += ['--cores', str(cores)]
     with patch.object(shell.MANAGER, 'current_object', return_value=obj), \
          patch.object(ChernCommunicator, 'instance', return_value=communicator), \
          patch.object(communicator, 'dite_status', return_value='connected'), \
@@ -45,6 +48,10 @@ def test_submit_timeout_reaches_http_request(timeout, expected):
         assert post.call_args.kwargs['data']['timeout'] == timeout
     assert get.call_args.kwargs['timeout'] == 10
     assert communicator.timeout == 10
+    if cores is None:
+        assert "cores" not in post.call_args.kwargs["data"]
+    else:
+        assert post.call_args.kwargs["data"]["cores"] == cores
 
 
 @pytest.mark.parametrize('value', ['0', '-1', 'abc', '1.5'])
@@ -62,16 +69,51 @@ def test_cli_submit_uses_runner_option():
             cli, ['submit', '--runner', 'ihep'])
     assert not result.exit_code, result.output
     submit.assert_called_once_with(
-        'ihep', timeout=None, with_unknown=False)
+        'ihep', timeout=None, with_unknown=False, cores=None)
 
 
-def test_cli_submit_rejects_positional_runner():
-    """The former positional runner syntax is no longer ambiguous."""
-    with patch('CelebiChrono.interface.shell.submit') as submit:
-        result = CliRunner().invoke(cli, ['submit', 'ihep'])
-    assert result.exit_code == 2
-    assert 'unexpected extra argument' in result.output.lower()
+@pytest.mark.parametrize('objects', [['ihep'], ['dirA/task', 'dirB with spaces']])
+def test_cli_submit_routes_object_paths_to_one_batch(objects):
+    """Positionals select objects, even when a name resembles a runner."""
+    with patch('CelebiChrono.interface.shell.submit') as submit, \
+         patch('CelebiChrono.interface.shell.submit_objects') as batch:
+        result = CliRunner().invoke(cli, ['submit', *objects])
+    assert result.exit_code == 0, result.output
     submit.assert_not_called()
+    batch.assert_called_once_with(
+        objects, 'local', timeout=None, with_unknown=False, cores=None)
+
+
+def test_cli_batch_submit_forwards_interspersed_options():
+    with patch('CelebiChrono.interface.shell.submit') as submit, \
+         patch('CelebiChrono.interface.shell.submit_objects') as batch:
+        result = CliRunner().invoke(cli, [
+            'submit', 'dirA', '--runner', 'pkufarm212', '--timeout', '300',
+            'dirB with spaces', '--with-unknown', '--cores', '8',
+        ])
+    assert result.exit_code == 0, result.output
+    submit.assert_not_called()
+    batch.assert_called_once_with(
+        ['dirA', 'dirB with spaces'], 'pkufarm212',
+        timeout=300, with_unknown=True, cores=8)
+
+
+def test_cli_batch_submit_failure_is_not_retried():
+    with patch('CelebiChrono.interface.shell.submit_objects',
+               side_effect=requests.Timeout('timed out')) as batch:
+        result = CliRunner().invoke(cli, ['submit', 'dirA', 'dirB'])
+    assert result.exit_code == 1
+    assert 'timed out' in result.output
+    batch.assert_called_once()
+
+
+def test_cli_submit_help_describes_batch_scope():
+    result = CliRunner().invoke(cli, ['submit', '--help'])
+    assert result.exit_code == 0
+    assert '[OBJECT ...]' in result.output
+    assert 'recursively' in result.output
+    assert 'one workflow' in result.output
+    assert 'dependencies' in result.output
 
 
 def test_batch_submit_timeout():
@@ -89,8 +131,9 @@ def test_batch_submit_timeout():
          patch.object(shell.MANAGER, 'sub_object', return_value=task), \
          patch.object(ChernCommunicator, 'instance') as instance:
         instance.return_value.dite_status.return_value = 'connected'
-        shell.submit_objects(['task'], 'cluster', timeout=300)
+        shell.submit_objects(['task'], 'cluster', timeout=300, cores=24)
     assert instance.return_value.execute.call_args.kwargs['timeout'] == 300
+    assert instance.return_value.execute.call_args.kwargs['cores'] == 24
 
 
 def test_batch_submit_deduplicates_identical_impressions(tmp_path):
@@ -260,7 +303,7 @@ def test_execute_sends_with_unknown_opt_in():
          patch('CelebiChrono.kernel.chern_communicator.requests.post',
                return_value=deduplicated) as post:
         communicator.execute(
-            ['imp'], {'imp': False}, 'cluster', with_unknown=True)
+            ['imp'], {'imp': False}, 'cluster', with_unknown=True, cores=None)
 
     assert post.call_args.kwargs['data']['with_unknown'] == 'true'
 
@@ -297,3 +340,11 @@ def test_inconclusive_unknown_refresh_is_a_warning():
     assert _submission_level({'submission_reason': 'unknown'}) == 'warning'
     assert _submission_level({'submission_reason': 'refresh_failed'}) == 'warning'
     assert _submission_level({'submission_reason': 'replacement'}) == 'info'
+
+
+@pytest.mark.parametrize('value', ['0', '-1', 'abc', '1.5', 'all'])
+def test_invalid_cores_does_not_submit(value):
+    with patch('CelebiChrono.interface.shell.submit') as submit:
+        result = CliRunner().invoke(cli, ['submit', '--cores', value])
+    assert result.exit_code == 2
+    submit.assert_not_called()

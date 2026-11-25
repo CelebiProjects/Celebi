@@ -270,7 +270,7 @@ def dite_command() -> None:
 @click.command(name="set-dite")
 @click.argument("url", type=str)
 def set_dite_command(url: str) -> None:
-    """Set DITE connection URL."""
+    """Set the project's fallback DITE connection URL."""
     try:
         from CelebiChrono.interface.shell import set_dite
         result = set_dite(url)

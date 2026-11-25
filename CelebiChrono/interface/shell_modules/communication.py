@@ -117,36 +117,14 @@ def dite() -> Message:
 
 
 def set_dite(url: str = "") -> Message:
-    """Set DITE connection.
-
-    Configures or updates the Distributed Task Execution (DITE) server URL
-    for the current project. The URL is persisted in project configuration
-    and used for all subsequent distributed task operations.
-
-    Args:
-        url (str, optional): DITE server URL to connect to. If empty string,
-            function displays current configuration without changes.
-
-    Examples:
-        set_dite https://dite.example.com/api
-        set_dite()  # Show current DITE configuration
-
-    Returns:
-        Message: Formatted message confirming DITE URL update.
-
-    Note:
-        - URL is saved to project's .celebi/hosts.json file
-        - Empty URL parameter displays current configuration
-        - Changes affect all distributed operations in the project
-        - Requires project to be initialized
-    """
+    """Save the project's fallback DITE address in .celebi/hosts.json."""
     message = Message()
     project_path = csys.project_path()
     config_path = os.path.join(project_path, ".celebi", "hosts.json")
     config_file = metadata.ConfigFile(config_path)
     if url:
         config_file.write_variable("serverurl", url)
-        message.add(f"DITE URL set to: {url}", "success")
+        message.add(f"DITE fallback URL set to: {url}", "success")
     return message
 
 

@@ -4,11 +4,19 @@ Services, authentication and publishing
 Yuki endpoint and hosts
 -----------------------
 
-* ``dite`` displays the configured Yuki/DITE service and ``set-dite HOST:PORT``
-  changes it.
+* ``dite`` displays the active Yuki/DITE service. ``set-dite HOST:PORT`` saves
+  the project address used when local Yuki has no valid published port.
 * ``hosts`` lists communicator hosts; ``add-host HOST PORT`` adds one.
 * ``refresh-distribution`` rebuilds the current project's data-location
   registry without submitting work.
+
+Runner credentials
+------------------
+
+``add-secret NAME --file KEYTAB --type kerberos --principal USER@CERN.CH``
+imports a Kerberos keytab into Yuki. Bind it separately with
+``update-runner RUNNER --secret NAME`` for a REANA or SSH runner.
+See :doc:`../secrets` for transport requirements, storage and backend limitations.
 
 REANA booking
 -------------

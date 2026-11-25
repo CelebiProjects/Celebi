@@ -4,12 +4,26 @@ Execution and results
 Run workflows
 -------------
 
-* ``submit --runner RUNNER`` submits the current task and its dependencies.
+* ``submit [OBJECT ...] --runner RUNNER`` submits tasks and their dependencies.
+  Without object paths, it submits the current task or all tasks recursively
+  beneath the current directory. Multiple paths select tasks/directories to
+  submit together in one workflow. Paths are relative to the current directory;
+  runner names must be passed using ``--runner``.
 * ``test [docker|ssh] [RUNNER]`` tests the current task without creating an
   official impression. SSH tests stream output from the chosen SSH runner.
 * ``cancel`` cancels running impressions selected by the current task or
   directory.
 * ``status --wait`` waits until the relevant workflows reach a terminal state.
+
+Both the standalone CLI and interactive shell accept multiple object paths:
+
+.. code-block:: console
+
+   celebi-cli submit dirA dirB --runner pkufarm212 --timeout 300
+
+Select the desired directories to leave unrelated siblings out. Required
+upstream dependencies are still included; this is not a dependency exclusion.
+The command has no explicit ``--exclude`` option.
 
 Logs and file listings
 ----------------------

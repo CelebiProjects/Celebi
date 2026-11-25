@@ -17,6 +17,7 @@ from logging import getLogger
 from os.path import join
 
 from ..utils import metadata
+from ..utils.apd import apd_lb_conda_environment
 from ..utils.lb_run import validated_lb_run_spec
 from ..utils.subtasks import read_subtask_count
 from .vtask_core import Core
@@ -151,7 +152,14 @@ class SettingManager(Core):
         """
         Check whether the environment is validated or not
         """
-        if self.environment() in ("rawdata", "datalist", "lhcb_ap_datalist"):
+        if self.environment() == "lhcb_ap_datalist":
+            config = metadata.YamlFile(join(self.path, "celebi.yaml"))
+            try:
+                apd_lb_conda_environment(config.read_variable("ap_config", {}))
+            except ValueError:
+                return False
+            return True
+        if self.environment() in ("rawdata", "datalist"):
             return True
         if self.task_commands():
             return bool(self.environment())

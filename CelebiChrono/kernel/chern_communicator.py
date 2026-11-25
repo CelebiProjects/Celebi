@@ -94,6 +94,7 @@ from ..utils.file_utils import open_url
 from ..utils.resumable_upload import ResumableUploader, UploadError
 from .chern_cache import ChernCache
 from ..utils.message import Message
+from ..utils.yuki_endpoint import DEFAULT_YUKI_ENDPOINT, local_yuki_endpoint
 
 
 logger = getLogger("ChernLogger")
@@ -154,8 +155,9 @@ class ChernCommunicator():  # pylint: disable=too-many-instance-attributes
         self.config_file.write_variable("serverurl", url)
 
     def serverurl(self):
-        """ Get the serverurl """
-        return self.config_file.read_variable("serverurl", "127.0.0.1:3315")
+        """Use the current local Yuki port, falling back to the project address."""
+        return (local_yuki_endpoint()
+                or self.config_file.read_variable("serverurl", DEFAULT_YUKI_ENDPOINT))
 
     @staticmethod
     def _resolve_impression_tarfile(impression):
@@ -386,8 +388,10 @@ class ChernCommunicator():  # pylint: disable=too-many-instance-attributes
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     # pylint: disable=too-many-locals,too-many-branches
     def execute(self, impressions, cache_on_runner, machine="local",
-                timeout=None, with_unknown=False):
+                timeout=None, with_unknown=False, cores=None):
         """Submit impressions and wait for a durable scheduling decision."""
+        if cores is not None and (type(cores) is not int or cores < 1):
+            raise ValueError("cores must be a positive integer")
         files = {"impressions": " ".join(impressions)}
         url = self.serverurl()
         machine_id = self._request(
@@ -402,6 +406,8 @@ class ChernCommunicator():  # pylint: disable=too-many-instance-attributes
                 'project_uuid': self.project_uuid}
         if timeout is not None:
             data['timeout'] = timeout
+        if cores is not None:
+            data['cores'] = cores
         if with_unknown:
             data['with_unknown'] = 'true'
         response = self._request(
@@ -904,6 +910,45 @@ class ChernCommunicator():  # pylint: disable=too-many-instance-attributes
         if r.text != "successful":
             raise RuntimeError(f"Runner registration failed: {r.text}")
         return True
+
+    def _secret_request(self, method, endpoint, **kwargs):
+        """Upload credentials only over TLS or a local tunnel, without redirects."""
+        address = self.serverurl()
+        url = address if "://" in address else "http://" + address
+        parsed = urlsplit(url)
+        if parsed.scheme != "https" and not (
+                parsed.scheme == "http" and parsed.hostname in ("localhost", "127.0.0.1", "::1")):
+            raise ValueError("Secret operations require HTTPS or a localhost SSH tunnel to Yuki")
+        try:
+            response = self._request(method, url.rstrip("/") + endpoint, "secret",
+                                     timeout=120, allow_redirects=False, **kwargs)
+        except requests.exceptions.RequestException:
+            raise ConnectionError("Yuki secret request failed or timed out; check server state "
+                                  "before retrying") from None
+        if response.status_code not in (200, 201):
+            try:
+                detail = response.json().get("error", "Secret request rejected")
+            except ValueError:
+                detail = "Secret request rejected"
+            raise RuntimeError(f"{detail} (HTTP {response.status_code})")
+        return response.json()
+
+    def add_secret(self, name, filename, kind, principal):
+        """Send binary keytab bytes directly; never create project artifacts."""
+        with open(filename, "rb") as stream:
+            content = stream.read(1024 * 1024 + 1)
+        if len(content) > 1024 * 1024:
+            raise ValueError("Keytab must be at most 1 MiB")
+        return self._secret_request("POST", "/secrets",
+                                    data={"name": name, "type": kind, "principal": principal},
+                                    files={"file": ("credential.keytab", content,
+                                                    "application/octet-stream")})
+
+    def bind_secret(self, runner, name):
+        """Distribute an imported keytab to a configured runner."""
+        from urllib.parse import quote
+        return self._secret_request("PATCH", "/update-runner/" + quote(runner, safe=""),
+                                    json={"secret": name})
 
     def update_runner(self, runner, settings):
         """ Update settings for an existing runner on the server """

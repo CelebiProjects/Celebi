@@ -231,7 +231,8 @@ def transfer_command(source: str, destination: str,
                      timeout: int = None) -> None:
     """Transfer stageout results between Yuki and runner cache.
 
-    SOURCE and DESTINATION are 'yuki' or 'runner:<runner-id>'.
+    SOURCE and DESTINATION accept 'yuki' or 'runner:<name>'.
+    SOURCE also accepts 'eos:<reana-runner>'.
     """
     try:
         from CelebiChrono.interface.shell import transfer

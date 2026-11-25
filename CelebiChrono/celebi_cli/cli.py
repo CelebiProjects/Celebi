@@ -10,6 +10,7 @@ from .commands import (
 )
 from .commands import liveness
 from .commands.eos_usage import eos_usage_command
+from .commands.secrets import add_secret_command
 from .commands.eos_cleanup import eos_cleanup_command
 
 
@@ -65,7 +66,7 @@ COMMAND_SECTIONS = (
     ("Settings and services", (
         "user-config", "cache-policy", "dite", "set-dite", "booking-server",
         "register-booking-server", "book-reana",
-        "register-celebi-server",
+        "register-celebi-server", "add-secret",
     )),
     ("Maintenance and recovery", (
         "doctor", "purge", "purge-old-impressions", "purge-impressions",
@@ -251,6 +252,7 @@ cli.add_command(liveness.kill_running_workflows_command)
 cli.add_command(liveness.kill_workflow_command)
 cli.add_command(liveness.sync_live_command)
 cli.add_command(eos_usage_command)
+cli.add_command(add_secret_command)
 cli.add_command(eos_cleanup_command)
 cli.add_command(liveness.purge_stale_cache_command)
 cli.add_command(liveness.purge_stale_workflows_command)

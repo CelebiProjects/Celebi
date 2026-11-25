@@ -69,12 +69,20 @@ because it handles the normal and rootless-Docker ownership cases.
 Connect Celebi to Yuki
 ----------------------
 
-The default endpoint is ``127.0.0.1:3315``. Inspect or change it with:
+Celebi first uses the port published by a local Yuki instance started with
+``yuki-service start --auto-ports``. It reads ``run/yuki.port`` from
+``YUKIDIR`` (default ``~/.Yuki``) on each connection so it can follow a port
+change after restart. Set the same ``YUKIDIR`` for both tools if you are using
+a custom state directory.
+
+Without a valid local port, Celebi uses the project address saved with
+``set-dite``, or ``127.0.0.1:3315`` when none is configured.
+``celebi-cli dite`` displays the address in use.
 
 .. code-block:: console
 
    celebi-cli dite
-   celebi-cli set-dite localhost:3315
+   celebi-cli set-dite yuki.example.org:3315
 
 Yuki registers the native ``local`` runner on first server start. Start its
 host agent, install the new project's bundled environment, and test it:

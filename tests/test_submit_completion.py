@@ -7,13 +7,13 @@ from CelebiChrono.interface.chern_shell.completions import ChernShellCompletions
 
 
 @pytest.mark.parametrize('line,expected', [
-    ('submit ', ['--runner', '--timeout']),
-    ('submit --', ['--runner', '--timeout']),
+    ('submit ', ['--runner', '--timeout', '--cores']),
+    ('submit --', ['--runner', '--timeout', '--cores']),
     ('submit --r', ['--runner']),
     ('submit --t', ['--timeout']),
     ('submit --runner ', ['local', 'pkufarm212']),
     ('submit --runner p', ['pkufarm212']),
-    ('submit --runner pkufarm212 ', ['--runner', '--timeout']),
+    ('submit --runner pkufarm212 ', ['--runner', '--timeout', '--cores']),
     ('submit --runner pkufarm212 --t', ['--timeout']),
     ('submit --timeout ', []),
     ('submit --timeout 30', []),

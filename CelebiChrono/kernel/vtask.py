@@ -471,6 +471,7 @@ def create_lhcb_ap_data_list(path):
     yaml_file.write_variable("environment", "lhcb_ap_datalist")
     yaml_file.write_variable("cvmfs", ["lhcb.cern.ch"])
     yaml_file.write_variable("ap_config", {
+        "lb_conda": "default",
         "get_analysis_data": {
             "args": ["sl", "rds_hadronic"],
             "kwargs": {

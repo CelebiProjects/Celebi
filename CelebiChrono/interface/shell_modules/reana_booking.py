@@ -12,6 +12,7 @@ from ...utils.message import Message
 from ...utils import csys
 from ...utils import metadata
 from ...utils.pretty import colorize
+from ...utils.yuki_endpoint import DEFAULT_YUKI_ENDPOINT, local_yuki_endpoint
 
 logger = getLogger("ChernLogger")
 
@@ -24,18 +25,17 @@ def _flush_message(msg: Message) -> None:
 
 
 def _get_yuki_server_url() -> str:
-    """Read Yuki server URL from project hosts config.
-
-    The server URL is stored in the project's .celebi/hosts.json
-    (same as ChernCommunicator.serverurl).
-    """
+    """Use local Yuki if available, then the project's hosts configuration."""
+    local = local_yuki_endpoint()
+    if local:
+        return local
     project_path = csys.project_path()
     if project_path:
         hosts_path = os.path.join(project_path, ".celebi", "hosts.json")
         if os.path.exists(hosts_path):
             config_file = metadata.ConfigFile(hosts_path)
-            return config_file.read_variable("serverurl", "127.0.0.1:3315")
-    return "127.0.0.1:3315"
+            return config_file.read_variable("serverurl", DEFAULT_YUKI_ENDPOINT)
+    return DEFAULT_YUKI_ENDPOINT
 
 
 def _pack_project_to_tar(project_path: str) -> io.BytesIO:

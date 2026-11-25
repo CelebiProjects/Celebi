@@ -117,7 +117,7 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
 
     # pylint: disable=too-many-locals
     def submit(self, runner: str = "local", timeout: Optional[float] = None,
-               with_unknown: bool = False) -> Message:
+               with_unknown: bool = False, cores: Optional[int] = None) -> Message:
         """ Submit the impression to the runner. """
         now = time.time()
         cherncc = ChernCommunicator.instance()
@@ -178,7 +178,7 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
         )
         submission = cherncc.execute(
             impressions, cache_on_runner, runner, timeout=timeout,
-            with_unknown=with_unknown)
+            with_unknown=with_unknown, cores=cores)
         logger.info(
             "event=workflow_submit_completed runner=%s impressions=%d "
             "submission_status=%s workflow=%s duration=%dms",
@@ -197,7 +197,7 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
     def submit_objects(
             self, objects, runner: str = "local",
             timeout: Optional[float] = None,
-            with_unknown: bool = False) -> Message:
+            with_unknown: bool = False, cores: Optional[int] = None) -> Message:
         """ Submit multiple objects collectively.
 
         Similar to submit() on a directory, but only processes the given
@@ -272,7 +272,7 @@ class ExecutionManagement(Core):  # pylint: disable=too-many-public-methods
         )
         submission = cherncc.execute(
             impressions, cache_on_runner, runner, timeout=timeout,
-            with_unknown=with_unknown)
+            with_unknown=with_unknown, cores=cores)
         logger.info(
             "event=workflow_submit_completed runner=%s impressions=%d "
             "submission_status=%s workflow=%s duration=%dms",

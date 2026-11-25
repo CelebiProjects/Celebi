@@ -20,7 +20,7 @@ def test_current_object_submit(args, runner, timeout):
          patch.object(shell, 'submit_objects') as batch:
         EnvironmentCommands().do_submit(args)
     submit.assert_called_once_with(
-        runner, timeout=timeout, with_unknown=False)
+        runner, timeout=timeout, with_unknown=False, cores=None)
     batch.assert_not_called()
 
 
@@ -30,7 +30,7 @@ def test_named_objects_submit():
         EnvironmentCommands().do_submit('a --timeout 3000 "b c" --runner pkufarm212')
     submit.assert_not_called()
     batch.assert_called_once_with(
-        ['a', 'b c'], 'pkufarm212', timeout=3000, with_unknown=False)
+        ['a', 'b c'], 'pkufarm212', timeout=3000, with_unknown=False, cores=None)
 
 
 def test_submit_with_unknown_option():
@@ -40,7 +40,7 @@ def test_submit_with_unknown_option():
         EnvironmentCommands().do_submit(
             '--runner pkufarm212 --with-unknown')
     submit.assert_called_once_with(
-        'pkufarm212', timeout=None, with_unknown=True)
+        'pkufarm212', timeout=None, with_unknown=True, cores=None)
     batch.assert_not_called()
 
 
@@ -54,4 +54,27 @@ def test_invalid_options_do_not_resolve_objects(args, capsys):
         EnvironmentCommands().do_submit(args)
     submit.assert_not_called()
     batch.assert_not_called()
+    assert 'Error submitting:' in capsys.readouterr().out
+
+
+@pytest.mark.parametrize('args', ['--cores 16', '--cores=16'])
+def test_submit_core_budget(args):
+    with patch.object(shell, 'submit') as submit:
+        EnvironmentCommands().do_submit(args)
+    submit.assert_called_once_with('local', timeout=None, with_unknown=False, cores=16)
+
+
+def test_batch_submit_core_budget():
+    with patch.object(shell, 'submit_objects') as submit:
+        EnvironmentCommands().do_submit('a b --cores 24 --runner farm')
+    submit.assert_called_once_with(
+        ['a', 'b'], 'farm', timeout=None, with_unknown=False, cores=24)
+
+
+@pytest.mark.parametrize('args', ['--cores', '--cores=','--cores 0', '--cores -2',
+                                 '--cores 1.5', '--cores all'])
+def test_invalid_core_budget(args, capsys):
+    with patch.object(shell, 'submit') as submit:
+        EnvironmentCommands().do_submit(args)
+    submit.assert_not_called()
     assert 'Error submitting:' in capsys.readouterr().out

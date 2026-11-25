@@ -8,7 +8,7 @@ from ._manager import MANAGER
 
 
 def submit(runner: str = "local", timeout: float = None,
-           with_unknown: bool = False) -> Message:
+           with_unknown: bool = False, cores: int = None) -> Message:
     """Submit current task for execution.
 
     Sends the current task to a runner for processing. The runner executes
@@ -35,7 +35,7 @@ def submit(runner: str = "local", timeout: float = None,
         - Runner must be available and configured
     """
     message = MANAGER.current_object().submit(
-        runner, timeout=timeout, with_unknown=with_unknown)
+        runner, timeout=timeout, with_unknown=with_unknown, cores=cores)
     return message
 
 
@@ -46,7 +46,7 @@ def kill():
 
 def submit_objects(object_names: list[str], runner: str = "local",
                    timeout: float = None,
-                   with_unknown: bool = False) -> Message:
+                   with_unknown: bool = False, cores: int = None) -> Message:
     """Submit named sub-objects of the current object for execution.
 
     Resolves each name relative to the current working directory, then calls
@@ -71,7 +71,7 @@ def submit_objects(object_names: list[str], runner: str = "local",
             message.add(f"Error resolving {name}: {e}", "error")
             return message
     return MANAGER.current_object().submit_objects(
-        objects, runner, timeout=timeout, with_unknown=with_unknown)
+        objects, runner, timeout=timeout, with_unknown=with_unknown, cores=cores)
 
 
 def purge() -> Message:
@@ -124,9 +124,19 @@ def purge_old_impressions() -> Message:
     return message
 
 
-def collect(contents: str = "", allow_failed: bool = False) -> Message:
+def collect(contents: str = "", allow_failed: bool = False, source: str = None) -> Message:
     """Collect task results. contents: '', 'all', 'plots', 'data', 'logs',
     or a glob/filename. Default ('') collects plots + logs."""
+    if source is not None:
+        if (not source.startswith("eos:") or not source[4:] or allow_failed
+                or contents in ("all", "plots", "data", "logs")):
+            message = Message()
+            message.add("Use collect outputs (or a filename/glob) --from eos:<runner> "
+                        "without --allow-failed", "error")
+            return message
+        from .file_operations import transfer
+        pattern = None if contents in ("", "outputs") else contents
+        return transfer(source, "yuki", pattern=pattern)
     if allow_failed:
         return MANAGER.current_object().collect(contents, allow_failed=True)
     return MANAGER.current_object().collect(contents)

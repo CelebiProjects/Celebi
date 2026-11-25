@@ -46,3 +46,27 @@ Repeated execution of one task is configured with ``subtasks: N`` in its YAML.
 This retains one Task/impression and supplies ``${index}``; it does not create
 the independent objects produced by ``create-multi-tasks``. Write repeated
 outputs to literal ``stageout/index/``. See :doc:`../subtasks`.
+
+APD on SSH runners
+------------------
+
+An ``environment: lhcb_ap_datalist`` task automatically uses CVMFS
+``lb-conda default`` on SSH runners. No linked algorithm or local APD Conda
+installation is required. REANA continues to use the existing APD image.
+To pin a CVMFS release, set ``ap_config.lb_conda: default/2026-09-17``.
+The optional value accepts a package or package/date, without the ``lb-conda/``
+prefix. Existing APD queries and ``stageout/dataList.txt`` are unchanged.
+Use ``celebi-cli add-apd-token`` for authentication; the token stays outside
+versioned configuration and is injected as ``APD_USER_TOKEN_FILE``.
+
+
+Per-submission core budget
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use ``celebi-cli submit --runner pkufarm212 --cores 16`` (or
+``submit --runner pkufarm212 --cores 16`` in the interactive shell) to set
+this workflow's Snakemake core budget. ``--cores`` accepts a positive integer.
+It overrides the runner default for this submission only; omission preserves
+the runner setting. Native, SSH and IHEP backends support it; REANA rejects it.
+This is a workflow scheduling budget, not a thread count for each command.
+It does not resize an already active workflow or force completed work to rerun.

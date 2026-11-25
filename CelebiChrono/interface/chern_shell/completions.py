@@ -106,14 +106,14 @@ class ChernShellCompletions:
             candidates = [f"--runner={runner}" for runner in runners]
         elif previous and previous[-1] == "--runner":
             candidates = self.readline_file.read_variable("runners", [])
-        elif token.startswith("--timeout=") or (
-            previous and previous[-1] == "--timeout"
+        elif token.startswith(("--timeout=", "--cores=")) or (
+            previous and previous[-1] in ("--timeout", "--cores")
         ):
             return []
         elif "--" in previous:
             return []
         else:
-            candidates = ["--runner", "--timeout"]
+            candidates = ["--runner", "--timeout", "--cores"]
         # Readline may begin replacement after '=' rather than at the token start.
         offset = max(0, begidx - token_start)
         return [candidate[offset:] for candidate in candidates if candidate.startswith(token)]

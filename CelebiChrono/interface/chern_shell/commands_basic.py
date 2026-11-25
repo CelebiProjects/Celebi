@@ -3,6 +3,8 @@ Basic Operations Command Handlers for Chern Shell.
 
 This module contains command handlers for basic object operations.
 """
+import shlex
+
 # pylint: disable=broad-exception-caught
 from ...interface import shell
 from ...interface.ChernManager import get_manager
@@ -103,14 +105,19 @@ class BasicCommands:
             print(f"Error listing predecessors: {e}")
 
     def do_collect(self, arg: str) -> None:
-        """Collect results. Usage: collect [--allow-failed] [selector]"""
+        """Collect results. Usage: collect [--allow-failed] [selector] [--from eos:RUNNER]"""
         try:
-            tokens = arg.split()
+            tokens = shlex.split(arg)
             allow_failed = "--allow-failed" in tokens
             tokens = [token for token in tokens if token != "--allow-failed"]
-            contents = " ".join(tokens)
-            result = (shell.collect(contents, allow_failed=True)
-                      if allow_failed else shell.collect(contents))
+            options = {"allow_failed": True} if allow_failed else {}
+            if "--from" in tokens:
+                index = tokens.index("--from")
+                if index == len(tokens) - 1:
+                    raise ValueError("--from requires an EOS runner")
+                options["source"] = tokens.pop(index + 1)
+                tokens.pop(index)
+            result = shell.collect(" ".join(tokens), **options)
             if result.messages:
                 print(result.colored())
         except Exception as e:

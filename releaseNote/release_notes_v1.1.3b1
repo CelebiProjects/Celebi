@@ -1,0 +1,24 @@
+## v1.1.3b1 — 2026-11-25
+
+Changes since v1.1.2b1 (beta):
+
++ Add `add-secret` and `update-runner --secret` to import Kerberos keytabs into
+  Yuki and bind them to REANA or SSH runners. Credentials remain outside project
+  configuration and impressions. Secret operations require HTTPS or loopback HTTP.
++ Expose SSH Kerberos keytab, principal and ticket refresh settings.
++ Add `collect ... --from eos:RUNNER` and EOS transfer sources for retrieving
+  cached stageout into Yuki or an SSH runner.
++ Accept multiple task/directory paths in `submit`, including their dependencies
+  in one workflow, in both standalone and interactive CLIs.
++ Add a positive `submit --cores N` workflow budget for native, SSH and IHEP
+  runners. REANA rejects this option; existing workflow reuse is unchanged.
++ Run SSH APD tasks through CVMFS lb-conda, with optional ap_config.lb_conda
+  release selection, while preserving token-file injection and dataList output.
++ Discover a local Yuki service's published port on each connection, falling
+  back to the configured project endpoint when no valid local port is available.
++ Include Python 3.9 resource traversal and CI/lint compatibility fixes made
+  after the previous release preparation.
+
+Upgrade CelebiChrono and Yuki together to 1.1.3b1 and restart the Yuki HTTP service
+and workers. See docs/secrets.rst for credential storage and supported backends.
+This source release does not itself publish packages or deploy services.

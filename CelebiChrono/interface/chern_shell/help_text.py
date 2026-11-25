@@ -77,7 +77,7 @@ SHELL_USAGE = {
     "purge-impressions": "purge-impressions",
     "register-runner": "register-runner",
     "remove-multi-inputs": "remove-multi-inputs ALIAS [START] STOP",
-    "submit": "submit [OBJECT ...] [--runner RUNNER] [--timeout SECONDS]",
+    "submit": "submit [OBJECT ...] [--runner RUNNER] [--timeout SECONDS] [--cores N]",
     "system-shell": "system-shell",
     "view": "view [IMPRESSION]",
     "workaround": "workaround [docker] [--reference PATH] [--skip-input PATH]",
